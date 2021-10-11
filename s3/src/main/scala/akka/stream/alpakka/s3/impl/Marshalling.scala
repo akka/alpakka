@@ -229,7 +229,7 @@ import scala.xml.NodeSeq
           }.headOption
           val size = (v \\ "Size").text.toLong
           val storageClass = (v \ "StorageClass").text
-          val versionId = (v \ "VersionId").text
+          val versionId = (v \ "VersionId").headOption.flatMap(x => Utils.emptyStringToOption(x.text))
           ListObjectVersionsResultVersions(eTag, isLatest, key, lastModified, owner, size, storageClass, versionId)
         }
 
@@ -246,7 +246,7 @@ import scala.xml.NodeSeq
             val displayName = (o \ "DisplayName").text
             AWSIdentity(id, displayName)
           }.headOption
-          val versionId = (d \ "VersionId").text
+          val versionId = (d \ "VersionId").headOption.flatMap(x => Utils.emptyStringToOption(x.text))
           DeleteMarkers(isLatest, key, lastModified, owner, versionId)
         }
 

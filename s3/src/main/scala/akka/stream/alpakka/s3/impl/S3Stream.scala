@@ -613,7 +613,7 @@ import scala.util.{Failure, Success, Try}
               .zipN(
                 allVersions.map {
                   case (key, versionId) =>
-                    deleteObject(S3Location(bucket, key), versionId = Some(versionId), s3Headers)
+                    deleteObject(S3Location(bucket, key), versionId = versionId, s3Headers)
                 }
               )
               .map(_ => Done)
