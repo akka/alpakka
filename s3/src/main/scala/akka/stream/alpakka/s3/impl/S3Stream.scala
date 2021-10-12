@@ -149,8 +149,8 @@ import scala.util.{Failure, Success, Try}
                                                             maxParts: Int,
                                                             isTruncated: Boolean,
                                                             parts: Seq[ListPartsResultParts],
-                                                            initiator: AWSIdentity,
-                                                            owner: AWSIdentity,
+                                                            initiator: Option[AWSIdentity],
+                                                            owner: Option[AWSIdentity],
                                                             storageClass: String) {
 
   /**

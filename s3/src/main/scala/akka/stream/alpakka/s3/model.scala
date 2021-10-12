@@ -172,8 +172,8 @@ object AWSIdentity {
 
 final class ListMultipartUploadResultUploads private (val key: String,
                                                       val uploadId: String,
-                                                      val initiator: AWSIdentity,
-                                                      val owner: AWSIdentity,
+                                                      val initiator: Option[AWSIdentity],
+                                                      val owner: Option[AWSIdentity],
                                                       val storageClass: String,
                                                       val initiated: Instant) {
 
@@ -184,10 +184,10 @@ final class ListMultipartUploadResultUploads private (val key: String,
   def getUploadId: String = uploadId
 
   /** Java API */
-  def getInitiator: AWSIdentity = initiator
+  def getInitiator: Optional[AWSIdentity] = initiator.asJava
 
   /** Java API */
-  def getOwner: AWSIdentity = owner
+  def getOwner: Optional[AWSIdentity] = owner.asJava
 
   /** Java API */
   def getStorageClass: String = storageClass
@@ -197,15 +197,15 @@ final class ListMultipartUploadResultUploads private (val key: String,
 
   def withKey(value: String): ListMultipartUploadResultUploads = copy(key = value)
   def withUploadId(value: String): ListMultipartUploadResultUploads = copy(uploadId = value)
-  def withInitiator(value: AWSIdentity): ListMultipartUploadResultUploads = copy(initiator = value)
-  def withOwner(value: AWSIdentity): ListMultipartUploadResultUploads = copy(owner = value)
+  def withInitiator(value: AWSIdentity): ListMultipartUploadResultUploads = copy(initiator = Option(value))
+  def withOwner(value: AWSIdentity): ListMultipartUploadResultUploads = copy(owner = Option(value))
   def withStorageClass(value: String): ListMultipartUploadResultUploads = copy(storageClass = value)
   def withInitiated(value: Instant): ListMultipartUploadResultUploads = copy(initiated = value)
 
   private def copy(key: String = key,
                    uploadId: String = uploadId,
-                   initiator: AWSIdentity = initiator,
-                   owner: AWSIdentity = owner,
+                   initiator: Option[AWSIdentity] = initiator,
+                   owner: Option[AWSIdentity] = owner,
                    storageClass: String = storageClass,
                    initiated: Instant = initiated): ListMultipartUploadResultUploads =
     new ListMultipartUploadResultUploads(
@@ -248,8 +248,8 @@ object ListMultipartUploadResultUploads {
   /** Scala API */
   def apply(key: String,
             uploadId: String,
-            initiator: AWSIdentity,
-            owner: AWSIdentity,
+            initiator: Option[AWSIdentity],
+            owner: Option[AWSIdentity],
             storageClass: String,
             initiated: Instant): ListMultipartUploadResultUploads =
     new ListMultipartUploadResultUploads(key, uploadId, initiator, owner, storageClass, initiated)
@@ -257,11 +257,11 @@ object ListMultipartUploadResultUploads {
   /** Java API */
   def create(key: String,
              uploadId: String,
-             initiator: AWSIdentity,
-             owner: AWSIdentity,
+             initiator: Optional[AWSIdentity],
+             owner: Optional[AWSIdentity],
              storageClass: String,
              initiated: Instant): ListMultipartUploadResultUploads =
-    apply(key, uploadId, initiator, owner, storageClass, initiated)
+    apply(key, uploadId, initiator.asScala, owner.asScala, storageClass, initiated)
 }
 
 final class ListObjectVersionsResultVersions private (val eTag: String,

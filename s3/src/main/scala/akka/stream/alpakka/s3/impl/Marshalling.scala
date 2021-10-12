@@ -111,13 +111,13 @@ import scala.xml.NodeSeq
             val id = (i \ "ID").text
             val displayName = (i \ "DisplayName").text
             AWSIdentity(id, displayName)
-          }.head
+          }.headOption
 
           val owner = (u \\ "Owner").map { o =>
             val id = (o \ "ID").text
             val displayName = (o \ "DisplayName").text
             AWSIdentity(id, displayName)
-          }.head
+          }.headOption
 
           val storageClass = (u \ "StorageClass").text
           val initiated = Instant.parse((u \ "Initiated").text)
@@ -170,13 +170,13 @@ import scala.xml.NodeSeq
           val id = (i \ "ID").text
           val displayName = (i \ "DisplayName").text
           AWSIdentity(id, displayName)
-        }.head
+        }.headOption
 
         val owner = (x \\ "Owner").map { o =>
           val id = (o \ "ID").text
           val displayName = (o \ "DisplayName").text
           AWSIdentity(id, displayName)
-        }.head
+        }.headOption
 
         val storageClass = (x \ "StorageClass").text
 
