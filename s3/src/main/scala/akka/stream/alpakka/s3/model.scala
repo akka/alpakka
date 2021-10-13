@@ -45,7 +45,7 @@ final class MultipartUploadResult private (
   def getEtag: String = eTag
 
   /** Java API */
-  def getVersionId: java.util.Optional[String] = versionId.asJava
+  def getVersionId: Optional[String] = versionId.asJava
 
   def withLocation(value: Uri): MultipartUploadResult = copy(location = value)
   def withBucket(value: String): MultipartUploadResult = copy(bucket = value)
@@ -53,7 +53,13 @@ final class MultipartUploadResult private (
   def withETag(value: String): MultipartUploadResult = copy(eTag = value)
   @deprecated("Use withETag", "3.0.3")
   def withEtag(value: String): MultipartUploadResult = copy(eTag = value)
-  def withVersionId(value: String): MultipartUploadResult = copy(versionId = Option(value))
+  def withVersionId(value: String): MultipartUploadResult =
+    // See https://docs.aws.amazon.com/AmazonS3/latest/userguide/AddingObjectstoVersionSuspendedBuckets.html for more
+    // info.
+    if (value.trim.toLowerCase == "null")
+      copy(versionId = None)
+    else
+      copy(versionId = Option(value))
 
   private def copy(
       location: Uri = location,
@@ -101,13 +107,22 @@ object MultipartUploadResult {
       key: String,
       eTag: String,
       versionId: Option[String]
-  ): MultipartUploadResult = new MultipartUploadResult(
-    location,
-    bucket,
-    key,
-    eTag,
-    versionId
-  )
+  ): MultipartUploadResult = {
+    // See https://docs.aws.amazon.com/AmazonS3/latest/userguide/AddingObjectstoVersionSuspendedBuckets.html for more
+    // info.
+    val finalVersionId = versionId match {
+      case Some(s) if s.trim.toLowerCase == "null" => None
+      case rest => rest
+    }
+
+    new MultipartUploadResult(
+      location,
+      bucket,
+      key,
+      eTag,
+      finalVersionId
+    )
+  }
 
   /** Java API */
   def create(
@@ -268,10 +283,10 @@ final class ListObjectVersionsResultVersions private (val eTag: String,
                                                       val isLatest: Boolean,
                                                       val key: String,
                                                       val lastModified: Instant,
-                                                      val owner: AWSIdentity,
+                                                      val owner: Option[AWSIdentity],
                                                       val size: Long,
                                                       val storageClass: String,
-                                                      val versionId: String) {
+                                                      val versionId: Option[String]) {
 
   /** Java API */
   def getETag: String = eTag
@@ -286,7 +301,7 @@ final class ListObjectVersionsResultVersions private (val eTag: String,
   def getLastModified: Instant = lastModified
 
   /** Java API */
-  def getOwner: AWSIdentity = owner
+  def getOwner: Optional[AWSIdentity] = owner.asJava
 
   /** Java API */
   def getSize: Long = size
@@ -295,7 +310,7 @@ final class ListObjectVersionsResultVersions private (val eTag: String,
   def getStorageClass: String = storageClass
 
   /** Java API */
-  def getVersionId: String = versionId
+  def getVersionId: Optional[String] = versionId.asJava
 
   def withETag(value: String): ListObjectVersionsResultVersions = copy(eTag = value)
 
@@ -305,22 +320,28 @@ final class ListObjectVersionsResultVersions private (val eTag: String,
 
   def withLastModified(value: Instant): ListObjectVersionsResultVersions = copy(lastModified = value)
 
-  def withOwner(value: AWSIdentity): ListObjectVersionsResultVersions = copy(owner = value)
+  def withOwner(value: AWSIdentity): ListObjectVersionsResultVersions = copy(owner = Option(value))
 
   def withSize(value: Long): ListObjectVersionsResultVersions = copy(size = value)
 
   def withStorageClass(value: String): ListObjectVersionsResultVersions = copy(storageClass = value)
 
-  def withVersionId(value: String): ListObjectVersionsResultVersions = copy(versionId = value)
+  def withVersionId(value: String): ListObjectVersionsResultVersions =
+    // See https://docs.aws.amazon.com/AmazonS3/latest/userguide/AddingObjectstoVersionSuspendedBuckets.html for more
+    // info.
+    if (value.trim.toLowerCase == "null")
+      copy(versionId = None)
+    else
+      copy(versionId = Option(value))
 
   private def copy(eTag: String = eTag,
                    isLatest: Boolean = isLatest,
                    key: String = key,
                    lastModified: Instant = lastModified,
-                   owner: AWSIdentity = owner,
+                   owner: Option[AWSIdentity] = owner,
                    size: Long = size,
                    storageClass: String = storageClass,
-                   versionId: String = versionId): ListObjectVersionsResultVersions =
+                   versionId: Option[String] = versionId): ListObjectVersionsResultVersions =
     new ListObjectVersionsResultVersions(
       eTag = eTag,
       isLatest = isLatest,
@@ -369,29 +390,37 @@ object ListObjectVersionsResultVersions {
             isLatest: Boolean,
             key: String,
             lastModified: Instant,
-            owner: AWSIdentity,
+            owner: Option[AWSIdentity],
             size: Long,
             storageClass: String,
-            versionId: String): ListObjectVersionsResultVersions =
-    new ListObjectVersionsResultVersions(eTag, isLatest, key, lastModified, owner, size, storageClass, versionId)
+            versionId: Option[String]): ListObjectVersionsResultVersions = {
+    // See https://docs.aws.amazon.com/AmazonS3/latest/userguide/AddingObjectstoVersionSuspendedBuckets.html for more
+    // info.
+    val finalVersionId = versionId match {
+      case Some(s) if s.trim.toLowerCase == "null" => None
+      case rest => rest
+    }
+
+    new ListObjectVersionsResultVersions(eTag, isLatest, key, lastModified, owner, size, storageClass, finalVersionId)
+  }
 
   /** Java API */
   def create(eTag: String,
              isLatest: Boolean,
              key: String,
              lastModified: Instant,
-             owner: AWSIdentity,
+             owner: Optional[AWSIdentity],
              size: Long,
              storageClass: String,
-             versionId: String): ListObjectVersionsResultVersions =
-    apply(eTag, isLatest, key, lastModified, owner, size, storageClass, versionId)
+             versionId: Optional[String]): ListObjectVersionsResultVersions =
+    apply(eTag, isLatest, key, lastModified, owner.asScala, size, storageClass, versionId.asScala)
 }
 
 final class DeleteMarkers private (val isLatest: Boolean,
                                    val key: String,
                                    val lastModified: Instant,
-                                   val owner: AWSIdentity,
-                                   val versionId: String) {
+                                   val owner: Option[AWSIdentity],
+                                   val versionId: Option[String]) {
 
   /** Java API */
   def getIsLatest: Boolean = isLatest
@@ -403,10 +432,10 @@ final class DeleteMarkers private (val isLatest: Boolean,
   def getLastModified: Instant = lastModified
 
   /** Java API */
-  def getOwner: AWSIdentity = owner
+  def getOwner: Optional[AWSIdentity] = owner.asJava
 
   /** Java API */
-  def getVersionId: String = versionId
+  def getVersionId: Optional[String] = versionId.asJava
 
   def withIsLatest(value: Boolean): DeleteMarkers = copy(isLatest = value)
 
@@ -414,15 +443,21 @@ final class DeleteMarkers private (val isLatest: Boolean,
 
   def withLastModified(value: Instant): DeleteMarkers = copy(lastModified = value)
 
-  def withOwner(value: AWSIdentity): DeleteMarkers = copy(owner = value)
+  def withOwner(value: AWSIdentity): DeleteMarkers = copy(owner = Option(value))
 
-  def withVersionId(value: String): DeleteMarkers = copy(versionId = value)
+  def withVersionId(value: String): DeleteMarkers =
+    // See https://docs.aws.amazon.com/AmazonS3/latest/userguide/AddingObjectstoVersionSuspendedBuckets.html for more
+    // info.
+    if (value.trim.toLowerCase == "null")
+      copy(versionId = None)
+    else
+      copy(versionId = Option(value))
 
   private def copy(isLatest: Boolean = isLatest,
                    key: String = key,
                    lastModified: Instant = lastModified,
-                   owner: AWSIdentity = owner,
-                   versionId: String = versionId): DeleteMarkers =
+                   owner: Option[AWSIdentity] = owner,
+                   versionId: Option[String] = versionId): DeleteMarkers =
     new DeleteMarkers(isLatest, key, lastModified, owner, versionId)
 
   override def toString: String =
@@ -455,17 +490,25 @@ object DeleteMarkers {
   def apply(isLatest: Boolean,
             key: String,
             lastModified: Instant,
-            owner: AWSIdentity,
-            versionId: String): DeleteMarkers =
-    new DeleteMarkers(isLatest, key, lastModified, owner, versionId)
+            owner: Option[AWSIdentity],
+            versionId: Option[String]): DeleteMarkers = {
+    // See https://docs.aws.amazon.com/AmazonS3/latest/userguide/AddingObjectstoVersionSuspendedBuckets.html for more
+    // info.
+    val finalVersionId = versionId match {
+      case Some(s) if s.trim.toLowerCase == "null" => None
+      case rest => rest
+    }
+
+    new DeleteMarkers(isLatest, key, lastModified, owner, finalVersionId)
+  }
 
   /** Java API */
   def create(isLatest: Boolean,
              key: String,
              lastModified: Instant,
-             owner: AWSIdentity,
-             versionId: String): DeleteMarkers =
-    apply(isLatest, key, lastModified, owner, versionId)
+             owner: Optional[AWSIdentity],
+             versionId: Optional[String]): DeleteMarkers =
+    apply(isLatest, key, lastModified, owner.asScala, versionId.asScala)
 }
 
 final class CommonPrefixes private (val prefix: String) {

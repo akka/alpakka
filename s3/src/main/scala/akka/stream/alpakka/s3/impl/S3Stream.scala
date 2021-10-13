@@ -598,13 +598,18 @@ import scala.util.{Failure, Success, Try}
       }
       .mapMaterializedValue(_ => NotUsed)
 
-  def deleteObjectsByPrefix(bucket: String, prefix: Option[String], s3Headers: S3Headers): Source[Done, NotUsed] =
-    listBucket(bucket, prefix, s3Headers)
+  def deleteObjectsByPrefix(bucket: String,
+                            prefix: Option[String],
+                            deleteAllVersions: Boolean,
+                            s3Headers: S3Headers): Source[Done, NotUsed] = {
+    val baseDelete = listBucket(bucket, prefix, s3Headers)
       .flatMapConcat(
         listBucketResultContents =>
           deleteObject(S3Location(bucket, listBucketResultContents.key), versionId = None, s3Headers)
       )
-      .flatMapConcat { _ =>
+
+    if (deleteAllVersions)
+      baseDelete.flatMapConcat { _ =>
         listObjectVersions(bucket, prefix, s3Headers).flatMapConcat {
           case (versions, deleteMarkers) =>
             val allVersions =
@@ -613,12 +618,13 @@ import scala.util.{Failure, Success, Try}
               .zipN(
                 allVersions.map {
                   case (key, versionId) =>
-                    deleteObject(S3Location(bucket, key), versionId = Some(versionId), s3Headers)
+                    deleteObject(S3Location(bucket, key), versionId = versionId, s3Headers)
                 }
               )
               .map(_ => Done)
         }
-      }
+      } else baseDelete
+  }
 
   def putObject(s3Location: S3Location,
                 contentType: ContentType,

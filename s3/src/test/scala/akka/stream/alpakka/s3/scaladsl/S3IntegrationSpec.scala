@@ -17,6 +17,7 @@ import akka.testkit.TestKit
 import akka.util.ByteString
 import akka.{Done, NotUsed}
 import com.typesafe.config.ConfigFactory
+import org.scalatest.Inspectors.forEvery
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.flatspec.AnyFlatSpecLike
@@ -358,7 +359,10 @@ trait S3IntegrationSpec
 
     val results = for {
       // Clean the bucket just incase there is residual data in there
-      _ <- S3.deleteBucketContents(bucketWithVersioning).withAttributes(attributes).runWith(Sink.ignore)
+      _ <- S3
+        .deleteBucketContents(bucketWithVersioning, deleteAllVersions = true)
+        .withAttributes(attributes)
+        .runWith(Sink.ignore)
       _ <- S3
         .putObject(bucketWithVersioning, versionKey, Source.single(one), one.length, s3Headers = S3Headers())
         .withAttributes(attributes)
@@ -375,7 +379,10 @@ trait S3IntegrationSpec
         .listObjectVersions(bucketWithVersioning, None)
         .withAttributes(attributes)
         .runWith(Sink.seq)
-      _ <- S3.deleteBucketContents(bucketWithVersioning).withAttributes(attributes).runWith(Sink.ignore)
+      _ <- S3
+        .deleteBucketContents(bucketWithVersioning, deleteAllVersions = true)
+        .withAttributes(attributes)
+        .runWith(Sink.ignore)
       versionsAfterDelete <- S3
         .listObjectVersions(bucketWithVersioning, None)
         .withAttributes(attributes)
@@ -394,6 +401,30 @@ trait S3IntegrationSpec
     versionsBeforeDelete.size shouldEqual 3
     versionsAfterDelete.size shouldEqual 0
     bucketContentsAfterDelete.size shouldEqual 0
+  }
+
+  it should "listing object versions for a non versioned bucket should return None for versionId" in {
+    // TODO: Figure out a way to properly test this with Minio, see https://github.com/akka/alpakka/issues/2750
+    assume(this.isInstanceOf[AWSS3IntegrationSpec])
+    val objectKey = "listObjectVersionIdTest"
+    val bytes = ByteString(objectValue)
+    val data = Source.single(ByteString(objectValue))
+    val results = for {
+      _ <- S3
+        .putObject(defaultBucket,
+                   objectKey,
+                   data,
+                   bytes.length,
+                   s3Headers = S3Headers().withMetaHeaders(MetaHeaders(metaHeaders)))
+        .withAttributes(attributes)
+        .runWith(Sink.ignore)
+      result <- S3.listObjectVersions(defaultBucket, None).withAttributes(attributes).runWith(Sink.seq)
+      _ <- S3.deleteObject(defaultBucket, objectKey).withAttributes(attributes).runWith(Sink.ignore)
+    } yield result.flatMap { case (versions, _) => versions }
+
+    forEvery(results.futureValue) { version =>
+      version.versionId shouldEqual None
+    }
   }
 
   it should "upload 2 files, delete all files in bucket" in {
