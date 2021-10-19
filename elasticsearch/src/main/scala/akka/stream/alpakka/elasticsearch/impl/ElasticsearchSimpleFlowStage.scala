@@ -78,6 +78,7 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
         val request = HttpRequest(HttpMethods.POST)
           .withUri(uri)
           .withEntity(HttpEntity(NDJsonProtocol.`application/x-ndjson`, json))
+          .withHeaders(settings.connection.headers)
 
         ElasticsearchApi
           .executeRequest(
