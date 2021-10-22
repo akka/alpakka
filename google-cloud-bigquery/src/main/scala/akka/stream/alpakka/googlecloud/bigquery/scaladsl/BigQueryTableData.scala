@@ -101,7 +101,7 @@ private[scaladsl] trait BigQueryTableData { this: BigQueryRest =>
         .foreach(error => throw BigQueryException(error))
     }
 
-    requests.via(insertAll(tableId, datasetId, retryPolicy.retry)).to(errorSink)
+    requests.via(insertAll(datasetId, tableId, retryPolicy.retry)).to(errorSink)
   }
 
   /**
