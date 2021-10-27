@@ -28,7 +28,7 @@ private[elasticsearch] case class ScrollResponse[T](error: Option[String], resul
  * INTERNAL API
  */
 @InternalApi
-private[elasticsearch] case class ScrollResult[T](scrollId: String, messages: Seq[ReadResult[T]])
+private[elasticsearch] case class ScrollResult[T](scrollId: Option[String], messages: Seq[ReadResult[T]])
 
 /**
  * INTERNAL API
@@ -80,7 +80,7 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
     with OutHandler
     with StageLogging {
 
-  private var scrollId: String = null
+  private var scrollId: Option[String] = None
   private val responseHandler = getAsyncCallback[String](handleResponse)
   private val failureHandler = getAsyncCallback[Throwable](handleFailure)
 
@@ -97,116 +97,120 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
     try {
       waitingForElasticData = true
 
-      if (scrollId == null) {
-        log.debug("Doing initial search")
+      scrollId match {
+        case None => {
+          log.debug("Doing initial search")
 
-        // Add extra params to search
-        val extraParams = Seq(
-          if (!searchParams.contains("size")) {
-            Some(("size" -> settings.bufferSize.toString))
-          } else {
-            None
-          },
-          // Tell elastic to return the documents '_version'-property with the search-results
-          // http://nocf-www.elastic.co/guide/en/elasticsearch/reference/current/search-request-version.html
-          // https://www.elastic.co/guide/en/elasticsearch/guide/current/optimistic-concurrency-control.html
-          if (!searchParams.contains("version") && settings.includeDocumentVersion) {
-            Some(("version" -> "true"))
-          } else {
-            None
-          }
-        )
-
-        val baseMap = Map("scroll" -> settings.scroll)
-
-        // only force sorting by _doc (meaning order is not known) if not specified in search params
-        val sortQueryParam = if (searchParams.contains("sort")) {
-          None
-        } else {
-          Some(("sort", "_doc"))
-        }
-
-        val routingQueryParam = searchParams.get("routing").map(r => ("routing", r))
-
-        val queryParams = baseMap ++ routingQueryParam ++ sortQueryParam
-        val completeParams = searchParams ++ extraParams.flatten - "routing"
-
-        val searchBody = "{" + completeParams
-            .map {
-              case (name, json) =>
-                "\"" + name + "\":" + json
+          // Add extra params to search
+          val extraParams = Seq(
+            if (!searchParams.contains("size")) {
+              Some(("size" -> settings.bufferSize.toString))
+            } else {
+              None
+            },
+            // Tell elastic to return the documents '_version'-property with the search-results
+            // http://nocf-www.elastic.co/guide/en/elasticsearch/reference/current/search-request-version.html
+            // https://www.elastic.co/guide/en/elasticsearch/guide/current/optimistic-concurrency-control.html
+            if (!searchParams.contains("version") && settings.includeDocumentVersion) {
+              Some(("version" -> "true"))
+            } else {
+              None
             }
-            .mkString(",") + "}"
+          )
 
-        val endpoint: String = settings.apiVersion match {
-          case ApiVersion.V5 => s"/${elasticsearchParams.indexName}/${elasticsearchParams.typeName.get}/_search"
-          case ApiVersion.V7 => s"/${elasticsearchParams.indexName}/_search"
+          val baseMap = Map("scroll" -> settings.scroll)
+
+          // only force sorting by _doc (meaning order is not known) if not specified in search params
+          val sortQueryParam = if (searchParams.contains("sort")) {
+            None
+          } else {
+            Some(("sort", "_doc"))
+          }
+
+          val routingQueryParam = searchParams.get("routing").map(r => ("routing", r))
+
+          val queryParams = baseMap ++ routingQueryParam ++ sortQueryParam
+          val completeParams = searchParams ++ extraParams.flatten - "routing"
+
+          val searchBody = "{" + completeParams
+              .map {
+                case (name, json) =>
+                  "\"" + name + "\":" + json
+              }
+              .mkString(",") + "}"
+
+          val endpoint: String = settings.apiVersion match {
+            case ApiVersion.V5 => s"/${elasticsearchParams.indexName}/${elasticsearchParams.typeName.get}/_search"
+            case ApiVersion.V7 => s"/${elasticsearchParams.indexName}/_search"
+          }
+
+          val uri = prepareUri(Path(endpoint))
+            .withQuery(Uri.Query(queryParams))
+
+          val request = HttpRequest(HttpMethods.POST)
+            .withUri(uri)
+            .withEntity(
+              HttpEntity(ContentTypes.`application/json`, searchBody)
+            )
+            .withHeaders(settings.connection.headers)
+
+          ElasticsearchApi
+            .executeRequest(
+              request,
+              settings.connection
+            )
+            .flatMap {
+              case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
+                Unmarshal(responseEntity)
+                  .to[String]
+                  .map(json => responseHandler.invoke(json))
+              case HttpResponse(status, _, responseEntity, _) =>
+                Unmarshal(responseEntity).to[String].map { body =>
+                  failureHandler
+                    .invoke(new RuntimeException(s"Request failed for POST $uri, got $status with body: $body"))
+                }
+            }
+            .recover {
+              case cause: Throwable => failureHandler.invoke(cause)
+            }
         }
 
-        val uri = prepareUri(Path(endpoint))
-          .withQuery(Uri.Query(queryParams))
+        case Some(actualScrollId) => {
+          log.debug("Fetching next scroll")
 
-        val request = HttpRequest(HttpMethods.POST)
-          .withUri(uri)
-          .withEntity(
-            HttpEntity(ContentTypes.`application/json`, searchBody)
-          )
-          .withHeaders(settings.connection.headers)
+          val uri = prepareUri(Path("/_search/scroll"))
 
-        ElasticsearchApi
-          .executeRequest(
-            request,
-            settings.connection
-          )
-          .flatMap {
-            case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
-              Unmarshal(responseEntity)
-                .to[String]
-                .map(json => responseHandler.invoke(json))
-            case HttpResponse(status, _, responseEntity, _) =>
-              Unmarshal(responseEntity).to[String].map { body =>
-                failureHandler
-                  .invoke(new RuntimeException(s"Request failed for POST $uri, got $status with body: $body"))
-              }
-          }
-          .recover {
-            case cause: Throwable => failureHandler.invoke(cause)
-          }
-      } else {
-        log.debug("Fetching next scroll")
+          val request = HttpRequest(HttpMethods.POST)
+            .withUri(uri)
+            .withEntity(
+              HttpEntity(ContentTypes.`application/json`,
+                         Map("scroll" -> settings.scroll, "scroll_id" -> actualScrollId).toJson.compactPrint)
+            )
+            .withHeaders(settings.connection.headers)
 
-        val uri = prepareUri(Path("/_search/scroll"))
-
-        val request = HttpRequest(HttpMethods.POST)
-          .withUri(uri)
-          .withEntity(
-            HttpEntity(ContentTypes.`application/json`,
-                       Map("scroll" -> settings.scroll, "scroll_id" -> scrollId).toJson.compactPrint)
-          )
-          .withHeaders(settings.connection.headers)
-
-        ElasticsearchApi
-          .executeRequest(
-            request,
-            settings.connection
-          )
-          .flatMap {
-            case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
-              Unmarshal(responseEntity)
-                .to[String]
-                .map(json => responseHandler.invoke(json))
-            case HttpResponse(status, _, responseEntity, _) =>
-              Unmarshal(responseEntity)
-                .to[String]
-                .map { body =>
-                  failureHandler.invoke(
-                    new RuntimeException(s"Request failed for POST $uri, got $status with body: $body")
-                  )
-                }
-          }
-          .recover {
-            case cause: Throwable => failureHandler.invoke(cause)
-          }
+          ElasticsearchApi
+            .executeRequest(
+              request,
+              settings.connection
+            )
+            .flatMap {
+              case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
+                Unmarshal(responseEntity)
+                  .to[String]
+                  .map(json => responseHandler.invoke(json))
+              case HttpResponse(status, _, responseEntity, _) =>
+                Unmarshal(responseEntity)
+                  .to[String]
+                  .map { body =>
+                    failureHandler.invoke(
+                      new RuntimeException(s"Request failed for POST $uri, got $status with body: $body")
+                    )
+                  }
+            }
+            .recover {
+              case cause: Throwable => failureHandler.invoke(cause)
+            }
+        }
       }
     } catch {
       case ex: Exception => failureHandler.invoke(ex)
@@ -295,40 +299,42 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
   }
 
   /**
-   * If the [[scrollId]] is non null, attempt to clear the scroll.
+   * If the [[scrollId]] is defined, attempt to clear the scroll.
    * Complete the stage successfully, whether or not the clear call succeeds.
    * If the clear call fails, the scroll will eventually timeout.
    */
   def clearScrollAsync(): Unit = {
-    if (scrollId == null) {
-      log.debug("Scroll Id is null. Completing stage eagerly.")
-      completeStage()
-    } else {
-      // Clear the scroll
-      val uri = prepareUri(Path(s"/_search/scroll/$scrollId"))
+    scrollId match {
+      case None =>
+        log.debug("Scroll Id is empty. Completing stage eagerly.")
+        completeStage()
+      case Some(actualScrollId) => {
+        // Clear the scroll
+        val uri = prepareUri(Path(s"/_search/scroll/$actualScrollId"))
 
-      val request = HttpRequest(HttpMethods.DELETE)
-        .withUri(uri)
-        .withHeaders(settings.connection.headers)
+        val request = HttpRequest(HttpMethods.DELETE)
+          .withUri(uri)
+          .withHeaders(settings.connection.headers)
 
-      ElasticsearchApi
-        .executeRequest(request, settings.connection)
-        .flatMap {
-          case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
-            Unmarshal(responseEntity)
-              .to[String]
-              .map(json => {
-                clearScrollAsyncHandler.invoke(Success(json))
-              })
-          case HttpResponse(status, _, responseEntity, _) =>
-            Unmarshal(responseEntity).to[String].map { body =>
-              clearScrollAsyncHandler
-                .invoke(Failure(new RuntimeException(s"Request failed for POST $uri, got $status with body: $body")))
-            }
-        }
-        .recover {
-          case cause: Throwable => failureHandler.invoke(cause)
-        }
+        ElasticsearchApi
+          .executeRequest(request, settings.connection)
+          .flatMap {
+            case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
+              Unmarshal(responseEntity)
+                .to[String]
+                .map(json => {
+                  clearScrollAsyncHandler.invoke(Success(json))
+                })
+            case HttpResponse(status, _, responseEntity, _) =>
+              Unmarshal(responseEntity).to[String].map { body =>
+                clearScrollAsyncHandler
+                  .invoke(Failure(new RuntimeException(s"Request failed for POST $uri, got $status with body: $body")))
+              }
+          }
+          .recover {
+            case cause: Throwable => failureHandler.invoke(cause)
+          }
+      }
     }
   }
 

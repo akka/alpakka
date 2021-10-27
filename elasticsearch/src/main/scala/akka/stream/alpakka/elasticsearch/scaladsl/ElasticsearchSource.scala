@@ -126,7 +126,7 @@ object ElasticsearchSource {
           impl.ScrollResponse(Some(error.toString), None)
         }
         case None => {
-          val scrollId = jsObj.fields("_scroll_id").asInstanceOf[JsString].value
+          val scrollId = jsObj.fields.get("_scroll_id").map(v => v.asInstanceOf[JsString].value)
           val hits = jsObj.fields("hits").asJsObject.fields("hits").asInstanceOf[JsArray]
           val messages = hits.elements.map { element =>
             val doc = element.asJsObject

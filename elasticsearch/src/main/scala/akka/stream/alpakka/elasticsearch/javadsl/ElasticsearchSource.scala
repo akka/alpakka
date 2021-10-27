@@ -172,7 +172,7 @@ object ElasticsearchSource {
       if (jsonTree.has("error")) {
         impl.ScrollResponse(Some(jsonTree.get("error").asText()), None)
       } else {
-        val scrollId = jsonTree.get("_scroll_id").asText()
+        val scrollId = Option(jsonTree.get("_scroll_id")).map(_.asText())
         val hits = jsonTree.get("hits").get("hits").asInstanceOf[ArrayNode]
         val messages = hits.elements().asScala.toList.map { element =>
           val id = element.get("_id").asText()

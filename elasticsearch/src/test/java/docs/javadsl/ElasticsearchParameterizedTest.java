@@ -19,9 +19,11 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(value = Parameterized.class)
 public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {
@@ -191,6 +193,25 @@ public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {
             .get(0);
 
     assertEquals(externalVersion, message.version().get());
+  }
+
+  @Test
+  public void testMultipleIndicesWithNoMatching() throws Exception {
+    String indexName = "missing-*";
+    String typeName = "_doc";
+
+    // Assert that the document's external version is saved
+    List<ReadResult<Book>> readResults =
+        ElasticsearchSource.<Book>typed(
+                constructElasticsearchParams(indexName, typeName, apiVersion),
+                "{\"match_all\": {}}",
+                ElasticsearchSourceSettings.create(connectionSettings).withApiVersion(apiVersion),
+                Book.class)
+            .runWith(Sink.seq(), system)
+            .toCompletableFuture()
+            .get();
+
+    assertTrue(readResults.isEmpty());
   }
 
   public void compileOnlySample() {
