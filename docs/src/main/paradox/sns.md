@@ -31,7 +31,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Setup
 
-This connector requires an @scala[implicit] @javadoc[SnsAsyncClient](software.amazon.awssdk.services.sns.SnsAsyncClient) instance to communicate with AWS SQS.
+This connector requires an @scala[implicit] @javadoc[SnsAsyncClient](software.amazon.awssdk.services.sns.SnsAsyncClient) instance to communicate with AWS SNS.
 
 It is your code's responsibility to call `close` to free any resources held by the client. In this example it will be called when the actor system is terminated.
 

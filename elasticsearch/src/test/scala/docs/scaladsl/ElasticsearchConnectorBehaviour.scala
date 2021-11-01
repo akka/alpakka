@@ -65,8 +65,6 @@ trait ElasticsearchConnectorBehaviour {
       http.singleRequest(request).futureValue
     }
 
-    insertTestData(connectionSettings)
-
     "Source Settings" should {
       "convert scrollDuration value to correct scroll string value (Days)" in {
         val sourceSettings = ElasticsearchSourceSettings(connectionSettings)
@@ -624,6 +622,8 @@ trait ElasticsearchConnectorBehaviour {
     }
 
     "ElasticsearchSource" should {
+      insertTestData(connectionSettings)
+
       "allow search without specifying typeName" in assertAllStagesStopped {
         val readWithoutTypeName = ElasticsearchSource
           .typed[Book](
@@ -644,6 +644,20 @@ trait ElasticsearchConnectorBehaviour {
           "Scala Puzzlers",
           "Scala for Spark in Production"
         )
+      }
+
+      "allow search on index pattern with no matching index" in assertAllStagesStopped {
+        val readWithoutTypeName = ElasticsearchSource
+          .typed[Book](
+            constructElasticsearchParams("missing-*", "_doc", apiVersion),
+            query = """{"match_all": {}}""",
+            settings = baseSourceSettings.withBufferSize(5)
+          )
+          .map(_.source.title)
+          .runWith(Sink.seq)
+
+        val result = readWithoutTypeName.futureValue.toList
+        result shouldEqual Seq()
       }
 
       "sort by _doc by default" in assertAllStagesStopped {

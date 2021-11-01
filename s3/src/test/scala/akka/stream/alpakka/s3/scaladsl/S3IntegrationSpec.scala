@@ -7,7 +7,7 @@ package akka.stream.alpakka.s3.scaladsl
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.http.scaladsl.Http
-import akka.stream.Attributes
+import akka.stream.{Attributes, KillSwitches, SharedKillSwitch}
 import akka.stream.alpakka.s3.AccessStyle.PathAccessStyle
 import akka.stream.alpakka.s3.BucketAccess.{AccessGranted, NotExists}
 import akka.stream.alpakka.s3._
@@ -17,6 +17,7 @@ import akka.testkit.TestKit
 import akka.util.ByteString
 import akka.{Done, NotUsed}
 import com.typesafe.config.ConfigFactory
+import org.scalatest.Inspectors.forEvery
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.flatspec.AnyFlatSpecLike
@@ -25,6 +26,8 @@ import software.amazon.awssdk.auth.credentials._
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.regions.providers._
 
+import scala.annotation.tailrec
+import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -49,6 +52,8 @@ trait S3IntegrationSpec
 
   // with dots forcing path style access
   val bucketWithDots = "my.test.frankfurt"
+
+  val bucketWithVersioning = "my-bucket-with-versioning"
 
   val objectKey = "test"
 
@@ -153,7 +158,7 @@ trait S3IntegrationSpec
       (put, delete, metaBefore, metaAfter)
     }
 
-    val (putResult, deleteResult, metaBefore, metaAfter) = result.futureValue
+    val (putResult, _, metaBefore, metaAfter) = result.futureValue
     putResult.eTag should not be empty
     metaBefore should not be empty
     metaBefore.get.contentType shouldBe Some(ContentTypes.`application/octet-stream`.value)
@@ -344,6 +349,84 @@ trait S3IntegrationSpec
     }
   }
 
+  it should "create multiple versions of an object and successfully clean it with deleteBucketContents" in {
+    // TODO: Figure out a way to properly test this with Minio, see https://github.com/akka/alpakka/issues/2750
+    assume(this.isInstanceOf[AWSS3IntegrationSpec])
+    val versionKey = "test-version"
+    val one = ByteString("one")
+    val two = ByteString("two")
+    val three = ByteString("three")
+
+    val results = for {
+      // Clean the bucket just incase there is residual data in there
+      _ <- S3
+        .deleteBucketContents(bucketWithVersioning, deleteAllVersions = true)
+        .withAttributes(attributes)
+        .runWith(Sink.ignore)
+      _ <- S3
+        .putObject(bucketWithVersioning, versionKey, Source.single(one), one.length, s3Headers = S3Headers())
+        .withAttributes(attributes)
+        .runWith(Sink.ignore)
+      _ <- S3
+        .putObject(bucketWithVersioning, versionKey, Source.single(two), two.length, s3Headers = S3Headers())
+        .withAttributes(attributes)
+        .runWith(Sink.ignore)
+      _ <- S3
+        .putObject(bucketWithVersioning, versionKey, Source.single(three), three.length, s3Headers = S3Headers())
+        .withAttributes(attributes)
+        .runWith(Sink.ignore)
+      versionsBeforeDelete <- S3
+        .listObjectVersions(bucketWithVersioning, None)
+        .withAttributes(attributes)
+        .runWith(Sink.seq)
+      _ <- S3
+        .deleteBucketContents(bucketWithVersioning, deleteAllVersions = true)
+        .withAttributes(attributes)
+        .runWith(Sink.ignore)
+      versionsAfterDelete <- S3
+        .listObjectVersions(bucketWithVersioning, None)
+        .withAttributes(attributes)
+        .runWith(Sink.seq)
+      listBucketContentsAfterDelete <- S3
+        .listBucket(bucketWithVersioning, None)
+        .withAttributes(attributes)
+        .runWith(Sink.seq)
+
+    } yield (versionsBeforeDelete.flatMap { case (versions, _) => versions }, versionsAfterDelete.flatMap {
+      case (versions, _) => versions
+    }, listBucketContentsAfterDelete)
+
+    val (versionsBeforeDelete, versionsAfterDelete, bucketContentsAfterDelete) = results.futureValue
+
+    versionsBeforeDelete.size shouldEqual 3
+    versionsAfterDelete.size shouldEqual 0
+    bucketContentsAfterDelete.size shouldEqual 0
+  }
+
+  it should "listing object versions for a non versioned bucket should return None for versionId" in {
+    // TODO: Figure out a way to properly test this with Minio, see https://github.com/akka/alpakka/issues/2750
+    assume(this.isInstanceOf[AWSS3IntegrationSpec])
+    val objectKey = "listObjectVersionIdTest"
+    val bytes = ByteString(objectValue)
+    val data = Source.single(ByteString(objectValue))
+    val results = for {
+      _ <- S3
+        .putObject(defaultBucket,
+                   objectKey,
+                   data,
+                   bytes.length,
+                   s3Headers = S3Headers().withMetaHeaders(MetaHeaders(metaHeaders)))
+        .withAttributes(attributes)
+        .runWith(Sink.ignore)
+      result <- S3.listObjectVersions(defaultBucket, None).withAttributes(attributes).runWith(Sink.seq)
+      _ <- S3.deleteObject(defaultBucket, objectKey).withAttributes(attributes).runWith(Sink.ignore)
+    } yield result.flatMap { case (versions, _) => versions }
+
+    forEvery(results.futureValue) { version =>
+      version.versionId shouldEqual None
+    }
+  }
+
   it should "upload 2 files, delete all files in bucket" in {
     val sourceKey1 = "original/file1.txt"
     val sourceKey2 = "original/file2.txt"
@@ -371,6 +454,242 @@ trait S3IntegrationSpec
             .runFold(0)((result, _) => result + 1)
             .futureValue
         numOfKeysForPrefix shouldEqual 0
+    }
+  }
+
+  @tailrec
+  final def createStringCollectionWithMinChunkSizeRec(numberOfChunks: Int,
+                                                      stringAcc: BigInt = BigInt(0),
+                                                      currentChunk: Int = 0,
+                                                      result: Vector[ByteString] = Vector.empty): Vector[ByteString] = {
+
+    if (currentChunk == numberOfChunks)
+      result
+    else {
+      val newAcc = stringAcc + 1
+
+      result.lift(currentChunk) match {
+        case Some(currentString) =>
+          val newString = ByteString(s"\n${newAcc.toString()}")
+          if (currentString.length <= S3.MinChunkSize) {
+            val appendedString = currentString ++ newString
+            createStringCollectionWithMinChunkSizeRec(numberOfChunks,
+                                                      newAcc,
+                                                      currentChunk,
+                                                      result.updated(currentChunk, appendedString))
+          } else {
+            val newChunk = currentChunk + 1
+            val newResult = {
+              // // We are at the last index at this point so don't append a new entry at the end of the Vector
+              if (currentChunk == numberOfChunks - 1)
+                result
+              else
+                result :+ newString
+            }
+            createStringCollectionWithMinChunkSizeRec(numberOfChunks, newAcc, newChunk, newResult)
+          }
+        case None =>
+          // This case happens right at the start
+          val firstResult = Vector(ByteString("1"))
+          createStringCollectionWithMinChunkSizeRec(numberOfChunks, newAcc, currentChunk, firstResult)
+      }
+    }
+  }
+
+  /**
+   * Creates a `List` of `ByteString` where the size of each ByteString is guaranteed to be at least `S3.MinChunkSize`
+   * in size.
+   *
+   * This is useful for tests that deal with multipart uploads, since S3 persists a part everytime it receives
+   * `S3.MinChunkSize` bytes
+   * @param numberOfChunks The number of chunks to create
+   * @return A List of `ByteString` where each element is at least `S3.MinChunkSize` in size
+   */
+  def createStringCollectionWithMinChunkSize(numberOfChunks: Int): List[ByteString] =
+    createStringCollectionWithMinChunkSizeRec(numberOfChunks).toList
+
+  case object AbortException extends Exception("Aborting multipart upload")
+
+  def createSlowSource(data: immutable.Seq[ByteString],
+                       killSwitch: Option[SharedKillSwitch]): Source[ByteString, NotUsed] = {
+    val base = Source(data)
+      .throttle(1, 10.seconds)
+
+    killSwitch.fold(base)(ks => base.viaMat(ks.flow)(Keep.left))
+  }
+
+  def byteStringToMD5(byteString: ByteString): String = {
+    import java.math.BigInteger
+    import java.security.MessageDigest
+
+    val digest = MessageDigest.getInstance("MD5")
+    digest.update(byteString.asByteBuffer)
+    String.format("%032X", new BigInteger(1, digest.digest())).toLowerCase
+  }
+
+  it should "upload 1 file slowly, cancel it and retrieve a multipart upload + list part" in {
+    // This test doesn't work on Minio since minio doesn't properly implement this API, see
+    // https://github.com/minio/minio/issues/13246
+    assume(this.isInstanceOf[AWSS3IntegrationSpec])
+    val sourceKey = "original/file-slow.txt"
+    val sharedKillSwitch = KillSwitches.shared("abort-multipart-upload")
+
+    val inputData = createStringCollectionWithMinChunkSize(5)
+    val slowSource = createSlowSource(inputData, Some(sharedKillSwitch))
+
+    val multiPartUpload =
+      slowSource.toMat(S3.multipartUpload(defaultBucket, sourceKey).withAttributes(attributes))(Keep.right).run
+
+    val results = for {
+      _ <- akka.pattern.after(25.seconds)(Future {
+        sharedKillSwitch.abort(AbortException)
+      })
+      _ <- multiPartUpload.recover {
+        case AbortException => ()
+      }
+      incomplete <- S3.listMultipartUpload(defaultBucket, None).withAttributes(attributes).runWith(Sink.seq)
+      uploadIds = incomplete.collect {
+        case uploadPart if uploadPart.key == sourceKey => uploadPart.uploadId
+      }
+      parts <- Future.sequence(uploadIds.map { uploadId =>
+        S3.listParts(defaultBucket, sourceKey, uploadId).runWith(Sink.seq)
+      })
+      // Cleanup the uploads after
+      _ <- Future.sequence(uploadIds.map { uploadId =>
+        S3.deleteUpload(defaultBucket, sourceKey, uploadId)
+      })
+    } yield (uploadIds, incomplete, parts.flatten)
+
+    whenReady(results) {
+      case (uploadIds, incompleteFiles, parts) =>
+        val inputsUntilAbort = inputData.slice(0, 3)
+        incompleteFiles.exists(_.key == sourceKey) shouldBe true
+        parts.nonEmpty shouldBe true
+        uploadIds.size shouldBe 1
+        parts.size shouldBe 3
+        parts.map(_.size) shouldBe inputsUntilAbort.map(_.utf8String.getBytes("UTF-8").length)
+        // In S3 the etag's are actually an MD5 hash of the contents of the part so we can use this to check
+        // that the data has been uploaded correctly and in the right order, see
+        // https://docs.aws.amazon.com/AmazonS3/latest/API/RESTCommonResponseHeaders.html
+        parts.map(_.eTag.replaceAll("\"", "")) shouldBe inputsUntilAbort.map(byteStringToMD5)
+    }
+  }
+
+  it should "upload 1 file slowly, cancel it and then resume it to complete the upload" in {
+    // This test doesn't work on Minio since minio doesn't properly implement this API, see
+    // https://github.com/minio/minio/issues/13246
+    assume(this.isInstanceOf[AWSS3IntegrationSpec])
+    val sourceKey = "original/file-slow-2.txt"
+    val sharedKillSwitch = KillSwitches.shared("abort-multipart-upload-2")
+
+    val inputData = createStringCollectionWithMinChunkSize(6)
+
+    val slowSource = createSlowSource(inputData, Some(sharedKillSwitch))
+
+    val multiPartUpload =
+      slowSource
+        .toMat(S3.multipartUpload(defaultBucket, sourceKey).withAttributes(attributes))(
+          Keep.right
+        )
+        .run
+
+    val results = for {
+      _ <- akka.pattern.after(25.seconds)(Future {
+        sharedKillSwitch.abort(AbortException)
+      })
+      _ <- multiPartUpload.recover {
+        case AbortException => ()
+      }
+      incomplete <- S3.listMultipartUpload(defaultBucket, None).withAttributes(attributes).runWith(Sink.seq)
+
+      uploadId = incomplete.collectFirst {
+        case uploadPart if uploadPart.key == sourceKey => uploadPart.uploadId
+      }.get
+
+      parts <- S3.listParts(defaultBucket, sourceKey, uploadId).runWith(Sink.seq)
+
+      remainingData = inputData.slice(3, 6)
+      _ <- Source(remainingData)
+        .toMat(
+          S3.resumeMultipartUpload(defaultBucket, sourceKey, uploadId, parts.map(_.toPart))
+            .withAttributes(attributes)
+        )(
+          Keep.right
+        )
+        .run
+
+      // This delay is here because sometimes there is a delay when you complete a large file and its
+      // actually downloadable
+      downloaded <- akka.pattern.after(5.seconds)(
+        S3.download(defaultBucket, sourceKey).withAttributes(attributes).runWith(Sink.head).flatMap {
+          case Some((downloadSource, _)) =>
+            downloadSource
+              .runWith(Sink.seq)
+          case None => throw new Exception(s"Expected object in bucket $defaultBucket with key $sourceKey")
+        }
+      )
+
+      _ <- S3.deleteObject(defaultBucket, sourceKey).withAttributes(attributes).runWith(Sink.head)
+    } yield downloaded
+
+    whenReady(results) { downloads =>
+      val fullDownloadedFile = downloads.fold(ByteString.empty)(_ ++ _)
+      val fullInputData = inputData.fold(ByteString.empty)(_ ++ _)
+
+      fullInputData.utf8String shouldEqual fullDownloadedFile.utf8String
+    }
+  }
+
+  it should "upload a full file but complete it manually with S3.completeMultipartUploadSource" in {
+    assume(this.isInstanceOf[AWSS3IntegrationSpec])
+    val sourceKey = "original/file-slow-3.txt"
+    val sharedKillSwitch = KillSwitches.shared("abort-multipart-upload-3")
+
+    val inputData = createStringCollectionWithMinChunkSize(4)
+
+    val slowSource = createSlowSource(inputData, Some(sharedKillSwitch))
+
+    val multiPartUpload =
+      slowSource
+        .toMat(S3.multipartUpload(defaultBucket, sourceKey).withAttributes(attributes))(
+          Keep.right
+        )
+        .run
+
+    val results = for {
+      _ <- akka.pattern.after(25.seconds)(Future {
+        sharedKillSwitch.abort(AbortException)
+      })
+      _ <- multiPartUpload.recover {
+        case AbortException => ()
+      }
+      incomplete <- S3.listMultipartUpload(defaultBucket, None).withAttributes(attributes).runWith(Sink.seq)
+
+      uploadId = incomplete.collectFirst {
+        case uploadPart if uploadPart.key == sourceKey => uploadPart.uploadId
+      }.get
+
+      parts <- S3.listParts(defaultBucket, sourceKey, uploadId).runWith(Sink.seq)
+
+      _ <- S3.completeMultipartUpload(defaultBucket, sourceKey, uploadId, parts.map(_.toPart))
+      // This delay is here because sometimes there is a delay when you complete a large file and its
+      // actually downloadable
+      downloaded <- akka.pattern.after(5.seconds)(
+        S3.download(defaultBucket, sourceKey).withAttributes(attributes).runWith(Sink.head).flatMap {
+          case Some((downloadSource, _)) =>
+            downloadSource
+              .runWith(Sink.seq)
+          case None => throw new Exception(s"Expected object in bucket $defaultBucket with key $sourceKey")
+        }
+      )
+      _ <- S3.deleteObject(defaultBucket, sourceKey).withAttributes(attributes).runWith(Sink.head)
+    } yield downloaded
+
+    whenReady(results) { downloads =>
+      val fullDownloadedFile = downloads.fold(ByteString.empty)(_ ++ _)
+      val fullInputData = inputData.slice(0, 3).fold(ByteString.empty)(_ ++ _)
+
+      fullInputData.utf8String shouldEqual fullDownloadedFile.utf8String
     }
   }
 
@@ -409,6 +728,27 @@ trait S3IntegrationSpec
     } yield (make, delete)
 
     request.futureValue should equal((Done, Done))
+  }
+
+  it should "create a bucket in the non default us-east-1 region" in {
+    val bucketName = "samplebucketotherregion"
+
+    val request = for {
+      _ <- S3
+        .makeBucketSource(bucketName)
+        .withAttributes(S3Attributes.settings(otherRegionSettingsPathStyleAccess))
+        .runWith(Sink.head)
+      result <- S3
+        .checkIfBucketExistsSource(bucketName)
+        .withAttributes(S3Attributes.settings(otherRegionSettingsPathStyleAccess))
+        .runWith(Sink.head)
+      _ <- S3
+        .deleteBucketSource(bucketName)
+        .withAttributes(S3Attributes.settings(otherRegionSettingsPathStyleAccess))
+        .runWith(Sink.head)
+    } yield result
+
+    request.futureValue shouldEqual AccessGranted
   }
 
   it should "throw an exception while deleting bucket that doesn't exist" in {
@@ -478,7 +818,7 @@ trait S3IntegrationSpec
         _ <- S3.deleteObject(defaultBucket, objectKey).withAttributes(attributes).runWith(Sink.head)
       } yield upload
 
-    upload.futureValue.etag should not be empty
+    upload.futureValue.eTag should not be empty
   }
 
   private def uploadAndAndCheckParts(source: Source[ByteString, _], expectedParts: Int): Assertion = {
@@ -599,6 +939,10 @@ class AWSS3IntegrationSpec extends S3IntegrationSpec
  * docker run -e MINIO_ACCESS_KEY=TESTKEY -e MINIO_SECRET_KEY=TESTSECRET -e MINIO_DOMAIN=s3minio.alpakka -p 9000:9000 minio/minio server /data
  * AWS_ACCESS_KEY_ID=TESTKEY AWS_SECRET_ACCESS_KEY=TESTSECRET aws --endpoint-url http://localhost:9000 s3api create-bucket --bucket my-test-us-east-1
  * AWS_ACCESS_KEY_ID=TESTKEY AWS_SECRET_ACCESS_KEY=TESTSECRET aws --endpoint-url http://localhost:9000 s3api create-bucket --bucket my.test.frankfurt
+
+ * NOTE: Ideally you would run the following commands to create a versioned bucket in Minio however its not working, see https://github.com/akka/alpakka/issues/2750
+ * AWS_ACCESS_KEY_ID=TESTKEY AWS_SECRET_ACCESS_KEY=TESTSECRET aws --endpoint-url http://localhost:9000 s3api create-bucket --bucket my-bucket-with-versioning
+ * AWS_ACCESS_KEY_ID=TESTKEY AWS_SECRET_ACCESS_KEY=TESTSECRET aws --endpoint-url http://localhost:9000 s3api put-bucket-versioning --bucket my-bucket-with-versioning --versioning-configuration Status=Enabled
  *
  * Run the tests from inside sbt:
  * s3/testOnly *.MinioS3IntegrationSpec

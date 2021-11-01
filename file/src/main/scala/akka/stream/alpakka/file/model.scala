@@ -17,6 +17,13 @@ object ArchiveMetadata {
   def create(filePath: String): ArchiveMetadata = new ArchiveMetadata(filePath)
 }
 
+final case class ZipArchiveMetadata(name: String) {
+  def getName() = name
+}
+object ZipArchiveMetadata {
+  def create(name: String): ZipArchiveMetadata = ZipArchiveMetadata(name)
+}
+
 final class TarArchiveMetadata private (
     val filePathPrefix: Option[String],
     val filePathName: String,

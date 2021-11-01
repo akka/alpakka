@@ -141,7 +141,7 @@ object S3 {
    *
    * @param bucket the s3 bucket name
    * @param key the s3 object key
-   * @return A [[akka.stream.javadsl.Source Source]] that will emit [[java.lang.Void]] when operation is completed
+   * @return A [[akka.stream.javadsl.Source Source]] that will emit [[akka.Done]] when operation is completed
    */
   def deleteObject(bucket: String, key: String): Source[Done, NotUsed] =
     deleteObject(bucket, key, Optional.empty(), S3Headers.empty)
@@ -152,7 +152,7 @@ object S3 {
    * @param bucket the s3 bucket name
    * @param key the s3 object key
    * @param versionId optional version id of the object
-   * @return A [[akka.stream.javadsl.Source Source]] that will emit [[java.lang.Void]] when operation is completed
+   * @return A [[akka.stream.javadsl.Source Source]] that will emit [[akka.Done]] when operation is completed
    */
   def deleteObject(bucket: String, key: String, versionId: Optional[String]): Source[Done, NotUsed] =
     deleteObject(bucket, key, versionId, S3Headers.empty)
@@ -164,7 +164,7 @@ object S3 {
    * @param key the s3 object key
    * @param versionId optional version id of the object
    * @param s3Headers any headers you want to add
-   * @return A [[akka.stream.javadsl.Source Source]] that will emit [[java.lang.Void]] when operation is completed
+   * @return A [[akka.stream.javadsl.Source Source]] that will emit [[akka.Done]] when operation is completed
    */
   def deleteObject(bucket: String,
                    key: String,
@@ -179,17 +179,27 @@ object S3 {
    * Deletes all keys under the specified bucket
    *
    * @param bucket the s3 bucket name
-   * @return A [[akka.stream.javadsl.Source Source]] that will emit [[java.lang.Void]] when operation is completed
+   * @return A [[akka.stream.javadsl.Source Source]] that will emit [[akka.Done]] when operation is completed
    */
   def deleteObjectsByPrefix(bucket: String): Source[Done, NotUsed] =
-    deleteObjectsByPrefix(bucket, Optional.empty(), S3Headers.empty)
+    deleteObjectsByPrefix(bucket, Optional.empty(), deleteAllVersions = false, S3Headers.empty)
+
+  /**
+   * Deletes all keys under the specified bucket
+   *
+   * @param bucket the s3 bucket name
+   * @param deleteAllVersions Whether to delete all object versions as well (applies to versioned buckets)
+   * @return A [[akka.stream.javadsl.Source Source]] that will emit [[akka.Done]] when operation is completed
+   */
+  def deleteObjectsByPrefix(bucket: String, deleteAllVersions: Boolean): Source[Done, NotUsed] =
+    deleteObjectsByPrefix(bucket, Optional.empty(), deleteAllVersions, S3Headers.empty)
 
   /**
    * Deletes all keys which have the given prefix under the specified bucket
    *
    * @param bucket the s3 bucket name
    * @param prefix optional s3 objects prefix
-   * @return A [[akka.stream.javadsl.Source Source]] that will emit [[java.lang.Void]] when operation is completed
+   * @return A [[akka.stream.javadsl.Source Source]] that will emit [[akka.Done]] when operation is completed
    */
   def deleteObjectsByPrefix(bucket: String, prefix: Optional[String]): Source[Done, NotUsed] =
     deleteObjectsByPrefix(bucket, prefix, S3Headers.empty)
@@ -199,12 +209,38 @@ object S3 {
    *
    * @param bucket the s3 bucket name
    * @param prefix optional s3 objects prefix
+   * @return A [[akka.stream.javadsl.Source Source]] that will emit [[akka.Done]] when operation is completed
+   */
+  def deleteObjectsByPrefix(bucket: String,
+                            prefix: Optional[String],
+                            deleteAllVersions: Boolean): Source[Done, NotUsed] =
+    deleteObjectsByPrefix(bucket, prefix, deleteAllVersions, S3Headers.empty)
+
+  /**
+   * Deletes all keys which have the given prefix under the specified bucket
+   *
+   * @param bucket the s3 bucket name
+   * @param prefix optional s3 objects prefix
    * @param s3Headers any headers you want to add
-   * @return A [[akka.stream.javadsl.Source Source]] that will emit [[java.lang.Void]] when operation is completed
+   * @return A [[akka.stream.javadsl.Source Source]] that will emit [[akka.Done]] when operation is completed
    */
   def deleteObjectsByPrefix(bucket: String, prefix: Optional[String], s3Headers: S3Headers): Source[Done, NotUsed] =
+    S3.deleteObjectsByPrefix(bucket, prefix, deleteAllVersions = false, s3Headers)
+
+  /**
+   * Deletes all keys which have the given prefix under the specified bucket
+   *
+   * @param bucket the s3 bucket name
+   * @param prefix optional s3 objects prefix
+   * @param s3Headers any headers you want to add
+   * @return A [[akka.stream.javadsl.Source Source]] that will emit [[akka.Done]] when operation is completed
+   */
+  def deleteObjectsByPrefix(bucket: String,
+                            prefix: Optional[String],
+                            deleteAllVersions: Boolean,
+                            s3Headers: S3Headers): Source[Done, NotUsed] =
     S3Stream
-      .deleteObjectsByPrefix(bucket, Option(prefix.orElse(null)), s3Headers)
+      .deleteObjectsByPrefix(bucket, Option(prefix.orElse(null)), deleteAllVersions, s3Headers)
       .map(_ => Done.getInstance())
       .asJava
 
@@ -212,11 +248,21 @@ object S3 {
    * Deletes all S3 Objects within the given bucket
    *
    * @param bucket the s3 bucket name
-   * @return A [[akka.stream.javadsl.Source Source]] that will emit [[java.lang.Void]] when operation is completed
+   * @return A [[akka.stream.javadsl.Source Source]] that will emit [[akka.Done]] when operation is completed
    */
   def deleteBucketContents(bucket: String): Source[Done, NotUsed] =
+    S3.deleteBucketContents(bucket, deleteAllVersions = false)
+
+  /**
+   * Deletes all S3 Objects within the given bucket
+   *
+   * @param bucket the s3 bucket name
+   * @param deleteAllVersions Whether to delete all object versions as well (applies to versioned buckets)
+   * @return A [[akka.stream.javadsl.Source Source]] that will emit [[akka.Done]] when operation is completed
+   */
+  def deleteBucketContents(bucket: String, deleteAllVersions: Boolean): Source[Done, NotUsed] =
     S3Stream
-      .deleteObjectsByPrefix(bucket, None, S3Headers.empty)
+      .deleteObjectsByPrefix(bucket, None, deleteAllVersions, S3Headers.empty)
       .map(_ => Done.getInstance())
       .asJava
 
@@ -530,6 +576,165 @@ object S3 {
       .asJava
 
   /**
+   * Will return in progress or aborted multipart uploads. This will automatically page through all keys with the given parameters.
+   *
+   * @param bucket Which bucket that you list in-progress multipart uploads for
+   * @param prefix Prefix of the keys you want to list under passed bucket
+   * @return [[akka.stream.scaladsl.Source Source]] of [[ListMultipartUploadResultUploads]]
+   */
+  def listMultipartUpload(bucket: String, prefix: Optional[String]): Source[ListMultipartUploadResultUploads, NotUsed] =
+    listMultipartUpload(bucket, prefix, S3Headers.empty)
+
+  /**
+   * Will return in progress or aborted multipart uploads. This will automatically page through all keys with the given parameters.
+   *
+   * @param bucket Which bucket that you list in-progress multipart uploads for
+   * @param prefix Prefix of the keys you want to list under passed bucket
+   * @param s3Headers any headers you want to add
+   * @return [[akka.stream.scaladsl.Source Source]] of [[ListMultipartUploadResultUploads]]
+   */
+  def listMultipartUpload(bucket: String,
+                          prefix: Optional[String],
+                          s3Headers: S3Headers): Source[ListMultipartUploadResultUploads, NotUsed] =
+    scaladsl.S3.listMultipartUpload(bucket, prefix.asScala, s3Headers).asJava
+
+  /**
+   * Will return in progress or aborted multipart uploads with optional prefix and delimiter. This will automatically page through all keys with the given parameters.
+   *
+   * @param bucket Which bucket that you list in-progress multipart uploads for
+   * @param prefix Prefix of the keys you want to list under passed bucket
+   * @param delimiter Delimiter to use for listing only one level of hierarchy
+   * @param s3Headers any headers you want to add
+   * @return [[akka.stream.scaladsl.Source Source]] of [[akka.japi.Pair Pair]] of ([[java.util.List List]] of [[akka.stream.alpakka.s3.ListMultipartUploadResultUploads ListMultipartUploadResultUploads]], [[java.util.List List]] of [[akka.stream.alpakka.s3.CommonPrefixes CommonPrefixes]])
+   */
+  def listMultipartUploadAndCommonPrefixes(
+      bucket: String,
+      delimiter: String,
+      prefix: Optional[String],
+      s3Headers: S3Headers = S3Headers.empty
+  ): Source[akka.japi.Pair[java.util.List[ListMultipartUploadResultUploads], java.util.List[CommonPrefixes]], NotUsed] =
+    S3Stream
+      .listMultipartUploadAndCommonPrefixes(bucket, delimiter, prefix.asScala, s3Headers)
+      .map {
+        case (uploads, commonPrefixes) => akka.japi.Pair(uploads.asJava, commonPrefixes.asJava)
+      }
+      .asJava
+
+  /**
+   * List uploaded parts for a specific upload. This will automatically page through all keys with the given parameters.
+   *
+   * @param bucket Under which bucket the upload parts are contained
+   * @param key They key where the parts were uploaded to
+   * @param uploadId Unique identifier of the upload for which you want to list the uploaded parts
+   * @return [[akka.stream.scaladsl.Source Source]] of [[ListPartsResultParts]]
+   */
+  def listParts(bucket: String, key: String, uploadId: String): Source[ListPartsResultParts, NotUsed] =
+    listParts(bucket, key, uploadId, S3Headers.empty)
+
+  /**
+   * List uploaded parts for a specific upload. This will automatically page through all keys with the given parameters.
+   *
+   * @param bucket Under which bucket the upload parts are contained
+   * @param key They key where the parts were uploaded to
+   * @param uploadId Unique identifier of the upload for which you want to list the uploaded parts
+   * @param s3Headers any headers you want to add
+   * @return [[akka.stream.scaladsl.Source Source]] of [[ListPartsResultParts]]
+   */
+  def listParts(bucket: String,
+                key: String,
+                uploadId: String,
+                s3Headers: S3Headers): Source[ListPartsResultParts, NotUsed] =
+    scaladsl.S3.listParts(bucket, key, uploadId, s3Headers).asJava
+
+  /**
+   * List all versioned objects for a bucket with optional prefix. This will automatically page through all keys with the given parameters.
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectVersions.html
+   * @param bucket Which bucket that you list object versions for
+   * @param prefix Prefix of the keys you want to list under passed bucket
+   * @return [[akka.stream.scaladsl.Source Source]] of [[akka.japi.Pair Pair]] of ([[java.util.List List]] of [[akka.stream.alpakka.s3.ListObjectVersionsResultVersions ListObjectVersionsResultVersions]], [[java.util.List List]] of [[akka.stream.alpakka.s3.DeleteMarkers DeleteMarkers]])
+   */
+  def listObjectVersions(
+      bucket: String,
+      prefix: Optional[String]
+  ): Source[akka.japi.Pair[java.util.List[ListObjectVersionsResultVersions], java.util.List[DeleteMarkers]], NotUsed] =
+    S3Stream
+      .listObjectVersions(bucket, prefix.asScala, S3Headers.empty)
+      .map {
+        case (versions, markers) => akka.japi.Pair(versions.asJava, markers.asJava)
+      }
+      .asJava
+
+  /**
+   * List all versioned objects for a bucket with optional prefix. This will automatically page through all keys with the given parameters.
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectVersions.html
+   * @param bucket Which bucket that you list object versions for
+   * @param prefix Prefix of the keys you want to list under passed bucket
+   * @param s3Headers any headers you want to add
+   * @return [[akka.stream.scaladsl.Source Source]] of [[akka.japi.Pair Pair]] of ([[java.util.List List]] of [[akka.stream.alpakka.s3.ListObjectVersionsResultVersions ListObjectVersionsResultVersions]], [[java.util.List List]] of [[akka.stream.alpakka.s3.DeleteMarkers DeleteMarkers]])
+   */
+  def listObjectVersions(
+      bucket: String,
+      prefix: Optional[String],
+      s3Headers: S3Headers
+  ): Source[akka.japi.Pair[java.util.List[ListObjectVersionsResultVersions], java.util.List[DeleteMarkers]], NotUsed] =
+    S3Stream
+      .listObjectVersions(bucket, prefix.asScala, s3Headers)
+      .map {
+        case (versions, markers) => akka.japi.Pair(versions.asJava, markers.asJava)
+      }
+      .asJava
+
+  /**
+   * List all versioned objects for a bucket with optional prefix and delimiter. This will automatically page through all keys with the given parameters.
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectVersions.html
+   * @param bucket Which bucket that you list object versions for
+   * @param delimiter Delimiter to use for listing only one level of hierarchy
+   * @param prefix Prefix of the keys you want to list under passed bucket
+   * @param s3Headers any headers you want to add
+   * @return [[akka.stream.scaladsl.Source Source]] of [[akka.japi.Pair Pair]] of ([[java.util.List List]] of [[akka.stream.alpakka.s3.ListObjectVersionsResultVersions ListObjectVersionsResultVersions]], [[java.util.List List]] of [[akka.stream.alpakka.s3.DeleteMarkers DeleteMarkers]])
+   */
+  def listObjectVersions(
+      bucket: String,
+      delimiter: String,
+      prefix: Optional[String],
+      s3Headers: S3Headers
+  ): Source[akka.japi.Pair[java.util.List[ListObjectVersionsResultVersions], java.util.List[DeleteMarkers]], NotUsed] =
+    S3Stream
+      .listObjectVersionsAndCommonPrefixes(bucket, delimiter, prefix.asScala, s3Headers)
+      .map {
+        case (versions, markers, _) =>
+          akka.japi.Pair(versions.asJava, markers.asJava)
+      }
+      .asJava
+
+  /**
+   * List all versioned objects for a bucket with optional prefix and delimiter. This will automatically page through all keys with the given parameters.
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectVersions.html
+   * @param bucket Which bucket that you list object versions for
+   * @param delimiter Delimiter to use for listing only one level of hierarchy
+   * @param prefix Prefix of the keys you want to list under passed bucket
+   * @param s3Headers any headers you want to add
+   * @return [[akka.stream.scaladsl.Source Source]] of [[akka.japi.tuple.Tuple3 Tuple3]] of ([[java.util.List List]] of [[akka.stream.alpakka.s3.ListObjectVersionsResultVersions ListObjectVersionsResultVersions]], [[java.util.List List]] of [[akka.stream.alpakka.s3.DeleteMarkers DeleteMarkers]], [[java.util.List List]] of [[akka.stream.alpakka.s3.CommonPrefixes CommonPrefixes]])
+   */
+  def listObjectVersionsAndCommonPrefixes(bucket: String,
+                                          delimiter: String,
+                                          prefix: Option[String],
+                                          s3Headers: S3Headers): Source[akka.japi.tuple.Tuple3[java.util.List[
+    ListObjectVersionsResultVersions
+  ], java.util.List[DeleteMarkers], java.util.List[CommonPrefixes]], NotUsed] =
+    S3Stream
+      .listObjectVersionsAndCommonPrefixes(bucket, delimiter, prefix, s3Headers)
+      .map {
+        case (versions, markers, prefixes) =>
+          akka.japi.tuple.Tuple3(versions.asJava, markers.asJava, prefixes.asJava)
+      }
+      .asJava
+
+  /**
    * Uploads a S3 Object by making multiple requests
    *
    * @param bucket the s3 bucket name
@@ -569,6 +774,113 @@ object S3 {
    */
   def multipartUpload(bucket: String, key: String): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
     multipartUpload(bucket, key, ContentTypes.APPLICATION_OCTET_STREAM)
+
+  /**
+   * Uploads a S3 Object by making multiple requests
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param uploadId the upload that you want to resume
+   * @param previousParts The previously uploaded parts ending just before when this upload will commence
+   * @param contentType an optional [[akka.http.javadsl.model.ContentType ContentType]]
+   * @param s3Headers any headers you want to add
+   * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
+   */
+  def resumeMultipartUpload(bucket: String,
+                            key: String,
+                            uploadId: String,
+                            previousParts: java.lang.Iterable[Part],
+                            contentType: ContentType,
+                            s3Headers: S3Headers): Sink[ByteString, CompletionStage[MultipartUploadResult]] = {
+    S3Stream
+      .resumeMultipartUpload(S3Location(bucket, key),
+                             uploadId,
+                             previousParts.asScala.toList,
+                             contentType.asInstanceOf[ScalaContentType],
+                             s3Headers)
+      .mapMaterializedValue(_.toJava)
+      .asJava
+  }
+
+  /**
+   * Uploads a S3 Object by making multiple requests
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param uploadId the upload that you want to resume
+   * @param previousParts The previously uploaded parts ending just before when this upload will commence
+   * @param contentType an optional [[akka.http.javadsl.model.ContentType ContentType]]
+   * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
+   */
+  def resumeMultipartUpload(bucket: String,
+                            key: String,
+                            uploadId: String,
+                            previousParts: java.lang.Iterable[Part],
+                            contentType: ContentType): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+    resumeMultipartUpload(bucket,
+                          key,
+                          uploadId,
+                          previousParts,
+                          contentType,
+                          S3Headers.empty.withCannedAcl(CannedAcl.Private))
+
+  /**
+   * Uploads a S3 Object by making multiple requests
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param uploadId the upload that you want to resume
+   * @param previousParts The previously uploaded parts ending just before when this upload will commence
+   * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
+   */
+  def resumeMultipartUpload(
+      bucket: String,
+      key: String,
+      uploadId: String,
+      previousParts: java.lang.Iterable[Part]
+  ): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+    resumeMultipartUpload(bucket, key, uploadId, previousParts, ContentTypes.APPLICATION_OCTET_STREAM)
+
+  /**
+   * Complete a multipart upload with an already given list of parts
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CompleteMultipartUpload.html
+   * @param bucket bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param uploadId the upload that you want to complete
+   * @param parts A list of all of the parts for the multipart upload
+   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[MultipartUploadResult]]
+   */
+  def completeMultipartUpload(bucket: String, key: String, uploadId: String, parts: java.lang.Iterable[Part])(
+      implicit system: ClassicActorSystemProvider,
+      attributes: Attributes = Attributes()
+  ): CompletionStage[MultipartUploadResult] =
+    completeMultipartUpload(bucket, key, uploadId, parts, S3Headers.empty)
+
+  /**
+   * Complete a multipart upload with an already given list of parts
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CompleteMultipartUpload.html
+   * @param bucket bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param uploadId the upload that you want to complete
+   * @param parts A list of all of the parts for the multipart upload
+   * @param s3Headers any headers you want to add
+   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[MultipartUploadResult]]
+   */
+  def completeMultipartUpload(
+      bucket: String,
+      key: String,
+      uploadId: String,
+      parts: java.lang.Iterable[Part],
+      s3Headers: S3Headers
+  )(implicit system: ClassicActorSystemProvider, attributes: Attributes): CompletionStage[MultipartUploadResult] =
+    S3Stream
+      .completeMultipartUpload(S3Location(bucket, key), uploadId, parts.asScala.toList, s3Headers)(
+        SystemMaterializer(system).materializer,
+        attributes
+      )
+      .toJava
 
   /**
    * Copy a S3 Object by making multiple requests.
@@ -1011,6 +1323,70 @@ object S3 {
    */
   def checkIfBucketExistsSource(bucketName: String, s3Headers: S3Headers): Source[BucketAccess, NotUsed] =
     S3Stream.checkIfBucketExistsSource(bucketName, s3Headers).asJava
+
+  /**
+   * Delete all existing parts for a specific upload id
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_AbortMultipartUpload.html
+   * @param bucketName Which bucket the upload is inside
+   * @param key The key for the upload
+   * @param uploadId Unique identifier of the upload
+   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
+   */
+  def deleteUpload(bucketName: String, key: String, uploadId: String)(
+      implicit system: ClassicActorSystemProvider,
+      attributes: Attributes = Attributes()
+  ): CompletionStage[Done] =
+    deleteUpload(bucketName, key, uploadId, S3Headers.empty)
+
+  /**
+   * Delete all existing parts for a specific upload
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_AbortMultipartUpload.html
+   * @param bucketName Which bucket the upload is inside
+   * @param key The key for the upload
+   * @param uploadId Unique identifier of the upload
+   * @param s3Headers any headers you want to add
+   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
+   */
+  def deleteUpload(
+      bucketName: String,
+      key: String,
+      uploadId: String,
+      s3Headers: S3Headers
+  )(implicit system: ClassicActorSystemProvider, attributes: Attributes): CompletionStage[Done] =
+    S3Stream
+      .deleteUpload(bucketName, key, uploadId, s3Headers)(SystemMaterializer(system).materializer, attributes)
+      .toJava
+
+  /**
+   * Delete all existing parts for a specific upload
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_AbortMultipartUpload.html
+   * @param bucketName Which bucket the upload is inside
+   * @param key The key for the upload
+   * @param uploadId Unique identifier of the upload
+   * @return [[akka.stream.javadsl.Source Source]] of type [[Done]] as API doesn't return any additional information
+   */
+  def deleteUploadSource(bucketName: String, key: String, uploadId: String): Source[Done, NotUsed] =
+    deleteUploadSource(bucketName, key, uploadId, S3Headers.empty)
+
+  /**
+   * Delete all existing parts for a specific upload
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_AbortMultipartUpload.html
+   *
+   * @param bucketName Which bucket the upload is inside
+   * @param key The key for the upload
+   * @param uploadId Unique identifier of the upload
+   * @param s3Headers any headers you want to add
+   * @return [[akka.stream.javadsl.Source Source]] of type [[Done]] as API doesn't return any additional information
+   */
+  def deleteUploadSource(bucketName: String,
+                         key: String,
+                         uploadId: String,
+                         s3Headers: S3Headers): Source[Done, NotUsed] =
+    S3Stream.deleteUploadSource(bucketName, key, uploadId, s3Headers).asJava
 
   private def func[T, R](f: T => R) = new akka.japi.function.Function[T, R] {
     override def apply(param: T): R = f(param)

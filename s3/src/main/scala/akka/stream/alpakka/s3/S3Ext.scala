@@ -15,7 +15,7 @@ final class S3Ext private (sys: ExtendedActorSystem) extends Extension {
 }
 
 object S3Ext extends ExtensionId[S3Ext] with ExtensionIdProvider {
-  override def lookup = S3Ext
+  override def lookup: S3Ext.type = S3Ext
   override def createExtension(system: ExtendedActorSystem) = new S3Ext(system)
 
   /**

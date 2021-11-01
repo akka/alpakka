@@ -103,7 +103,7 @@ services:
       ADDED_FLAGS: "--tls=1"
   geode:
     container_name: geode
-    image: apachegeode/geode:1.13.3
+    image: apachegeode/geode:1.13.4
     hostname: geode
     mem_limit: 2g
     expose:
@@ -217,6 +217,9 @@ services:
       sh -c "
         aws --endpoint-url http://minio:9000 s3api create-bucket --bucket my.test.frankfurt
         aws --endpoint-url http://minio:9000 s3api create-bucket --bucket my-test-us-east-1
+        aws --endpoint-url http://minio:9000 s3api create-bucket --bucket my-bucket-with-versioning
+        # TODO: The following does not work due to https://github.com/akka/alpakka/issues/2750
+        aws --endpoint-url http://minio:9000 s3api put-bucket-versioning --bucket my-bucket-with-versioning --versioning-configuration Status=Enabled
       "
   mongo:
     image: mongo

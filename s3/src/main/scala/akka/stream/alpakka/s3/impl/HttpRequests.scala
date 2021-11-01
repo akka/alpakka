@@ -12,7 +12,7 @@ import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.Uri.{Authority, Query}
 import akka.http.scaladsl.model.headers.{`Raw-Request-URI`, Host, RawHeader}
-import akka.http.scaladsl.model.{ContentTypes, RequestEntity, _}
+import akka.http.scaladsl.model.{RequestEntity, _}
 import akka.stream.alpakka.s3.AccessStyle.{PathAccessStyle, VirtualHostAccessStyle}
 import akka.stream.alpakka.s3.{ApiVersion, S3Settings}
 import akka.stream.scaladsl.Source
@@ -56,6 +56,89 @@ import scala.concurrent.{ExecutionContext, Future}
       .withUri(requestUri(bucket, None).withQuery(query))
   }
 
+  def listMultipartUploads(
+      bucket: String,
+      prefix: Option[String] = None,
+      continuationToken: Option[ListMultipartUploadContinuationToken] = None,
+      delimiter: Option[String] = None,
+      headers: Seq[HttpHeader] = Nil
+  )(implicit conf: S3Settings): HttpRequest = {
+
+    val baseQuery = Seq(
+      "prefix" -> prefix,
+      "delimiter" -> delimiter,
+      "key-marker" -> continuationToken.flatMap(_.nextKeyMarker),
+      "upload-id-marker" -> continuationToken.flatMap(_.nextUploadIdMarker)
+    ).collect { case (k, Some(v)) => k -> v }.toMap
+
+    // We need to manually construct a query here because the Uri for getting a list of multipart uploads requires a
+    // query param `uploads` which has no value and the current Query dsl doesn't support mixing query params that have
+    // values with query params that do not have values
+    val query =
+      if (baseQuery.isEmpty)
+        Query("uploads")
+      else {
+        val rest = baseQuery.map { case (k, v) => s"$k=$v" }.mkString("&")
+        Query(s"uploads&$rest")
+      }
+
+    HttpRequest(HttpMethods.GET)
+      .withHeaders(Host(requestAuthority(bucket, conf.s3RegionProvider.getRegion)) +: headers)
+      .withUri(requestUri(bucket, None).withQuery(query))
+  }
+
+  def listParts(
+      bucket: String,
+      key: String,
+      uploadId: String,
+      continuationToken: Option[Int],
+      headers: Seq[HttpHeader] = Nil
+  )(implicit conf: S3Settings): HttpRequest = {
+
+    val query = Query(
+      Seq(
+        "part-number-marker" -> continuationToken.map(_.toString),
+        "uploadId" -> Some(uploadId)
+      ).collect { case (k, Some(v)) => k -> v }.toMap
+    )
+
+    HttpRequest(HttpMethods.GET)
+      .withHeaders(Host(requestAuthority(bucket, conf.s3RegionProvider.getRegion)) +: headers)
+      .withUri(requestUri(bucket, Some(key)).withQuery(query))
+  }
+
+  def listObjectVersions(
+      bucket: String,
+      delimiter: Option[String],
+      prefix: Option[String],
+      continuationToken: Option[ListObjectVersionContinuationToken],
+      headers: Seq[HttpHeader] = Nil
+  )(implicit conf: S3Settings): HttpRequest = {
+
+    val baseQuery = Seq(
+      "bucket" -> prefix,
+      "delimiter" -> delimiter,
+      "prefix" -> prefix,
+      "key-marker" -> continuationToken.flatMap(_.nextKeyMarker),
+      "version-id-marker" -> continuationToken.flatMap(_.nextVersionIdMarker)
+    ).collect { case (k, Some(v)) => k -> v }.toMap
+
+    // We need to manually construct a query here because the Uri for getting a list of multipart uploads requires a
+    // query param `uploads` which has no value and the current Query dsl doesn't support mixing query params that have
+    // values with query params that do not have values
+    val query =
+      if (baseQuery.isEmpty)
+        Query("versions")
+      else {
+        val rest = baseQuery.map { case (k, v) => s"$k=$v" }.mkString("&")
+        Query(s"versions&$rest")
+      }
+
+    HttpRequest(HttpMethods.GET)
+      .withHeaders(Host(requestAuthority(bucket, conf.s3RegionProvider.getRegion)) +: headers)
+      .withUri(requestUri(bucket, None).withQuery(query))
+  }
+
   def getDownloadRequest(s3Location: S3Location,
                          method: HttpMethod = HttpMethods.GET,
                          s3Headers: Seq[HttpHeader] = Seq.empty,
@@ -73,6 +156,23 @@ import scala.concurrent.{ExecutionContext, Future}
       headers: Seq[HttpHeader] = Seq.empty[HttpHeader]
   )(implicit conf: S3Settings): HttpRequest =
     s3Request(s3Location = s3Location, method = method)
+      .withDefaultHeaders(headers)
+
+  def uploadManagementRequest(
+      s3Location: S3Location,
+      uploadId: String,
+      method: HttpMethod,
+      headers: Seq[HttpHeader] = Seq.empty[HttpHeader]
+  )(implicit conf: S3Settings): HttpRequest =
+    s3Request(s3Location,
+              method,
+              _.withQuery(
+                Query(
+                  Map(
+                    "uploadId" -> uploadId
+                  )
+                )
+              ))
       .withDefaultHeaders(headers)
 
   def uploadRequest(s3Location: S3Location,
@@ -97,15 +197,14 @@ import scala.concurrent.{ExecutionContext, Future}
 
   def uploadPartRequest(upload: MultipartUpload,
                         partNumber: Int,
-                        payload: Source[ByteString, _],
-                        payloadSize: Int,
+                        payload: Chunk,
                         s3Headers: Seq[HttpHeader] = Seq.empty)(implicit conf: S3Settings): HttpRequest =
     s3Request(
       upload.s3Location,
       HttpMethods.PUT,
       _.withQuery(Query("partNumber" -> partNumber.toString, "uploadId" -> upload.uploadId))
     ).withDefaultHeaders(s3Headers)
-      .withEntity(HttpEntity(ContentTypes.`application/octet-stream`, payloadSize, payload))
+      .withEntity(payload.asEntity())
 
   def completeMultipartUploadRequest(upload: MultipartUpload, parts: Seq[(Int, String)], headers: Seq[HttpHeader])(
       implicit ec: ExecutionContext,
@@ -117,7 +216,7 @@ import scala.concurrent.{ExecutionContext, Future}
     // @formatter:off
     val payload = <CompleteMultipartUpload>
                     {
-                      parts.map { case (partNumber, etag) => <Part><PartNumber>{ partNumber }</PartNumber><ETag>{ etag }</ETag></Part> }
+                      parts.map { case (partNumber, eTag) => <Part><PartNumber>{ partNumber }</PartNumber><ETag>{ eTag }</ETag></Part> }
                     }
                   </CompleteMultipartUpload>
     // @formatter:on
@@ -132,6 +231,17 @@ import scala.concurrent.{ExecutionContext, Future}
     }
   }
 
+  def createBucketRegionPayload(region: Region)(implicit ec: ExecutionContext): Future[RequestEntity] = {
+    //Do not let the start LocationConstraint be on different lines
+    //  They tend to get split when this file is formatted by IntelliJ unless http://stackoverflow.com/a/19492318/1216965
+    // @formatter:off
+    val payload = <CreateBucketConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+      <LocationConstraint>{region.id()}</LocationConstraint>
+    </CreateBucketConfiguration>
+    // @formatter:on
+    Marshal(payload).to[RequestEntity]
+  }
+
   def uploadCopyPartRequest(multipartCopy: MultipartCopy,
                             sourceVersionId: Option[String] = None,
                             s3Headers: Seq[HttpHeader] = Seq.empty)(implicit conf: S3Settings): HttpRequest = {
@@ -140,7 +250,7 @@ import scala.concurrent.{ExecutionContext, Future}
     val range = copyPartition.range
     val source = copyPartition.sourceLocation.validate(conf)
     val encodedKey = URLEncoder.encode(source.key, StandardCharsets.UTF_8.toString)
-    val sourceHeaderValuePrefix = s"/${source.bucket}/${encodedKey}"
+    val sourceHeaderValuePrefix = s"/${source.bucket}/$encodedKey"
     val sourceHeaderValue = sourceVersionId
       .map(versionId => s"$sourceHeaderValuePrefix?versionId=$versionId")
       .getOrElse(sourceHeaderValuePrefix)

@@ -26,7 +26,7 @@ final class MetaHeaders private (val metaHeaders: Map[String, String]) {
     metaHeaders = metaHeaders
   )
 
-  override def toString =
+  override def toString: String =
     "MetaHeaders(" +
     s"metaHeaders=$metaHeaders," +
     ")"
@@ -45,7 +45,7 @@ object MetaHeaders {
   def apply(metaHeaders: Map[String, String]) =
     new MetaHeaders(metaHeaders)
 
-  def create(metaHeaders: java.util.Map[String, String]) =
+  def create(metaHeaders: java.util.Map[String, String]): MetaHeaders =
     apply(metaHeaders.asScala.toMap)
 }
 
@@ -70,13 +70,13 @@ final class S3Headers private (val cannedAcl: Option[CannedAcl] = None,
   @InternalApi private[s3] def headersFor(request: S3Request) =
     headers ++ serverSideEncryption.toIndexedSeq.flatMap(_.headersFor(request))
 
-  def withCannedAcl(cannedAcl: CannedAcl) = copy(cannedAcl = Some(cannedAcl))
-  def withMetaHeaders(metaHeaders: MetaHeaders) = copy(metaHeaders = Some(metaHeaders))
-  def withStorageClass(storageClass: StorageClass) = copy(storageClass = Some(storageClass))
-  def withCustomHeaders(customHeaders: Map[String, String]) = copy(customHeaders = customHeaders)
-  def withServerSideEncryption(serverSideEncryption: ServerSideEncryption) =
+  def withCannedAcl(cannedAcl: CannedAcl): S3Headers = copy(cannedAcl = Some(cannedAcl))
+  def withMetaHeaders(metaHeaders: MetaHeaders): S3Headers = copy(metaHeaders = Some(metaHeaders))
+  def withStorageClass(storageClass: StorageClass): S3Headers = copy(storageClass = Some(storageClass))
+  def withCustomHeaders(customHeaders: Map[String, String]): S3Headers = copy(customHeaders = customHeaders)
+  def withServerSideEncryption(serverSideEncryption: ServerSideEncryption): S3Headers =
     copy(serverSideEncryption = Some(serverSideEncryption))
-  def withOptionalServerSideEncryption(serverSideEncryption: Option[ServerSideEncryption]) =
+  def withOptionalServerSideEncryption(serverSideEncryption: Option[ServerSideEncryption]): S3Headers =
     copy(serverSideEncryption = serverSideEncryption)
 
   private def copy(
@@ -93,7 +93,7 @@ final class S3Headers private (val cannedAcl: Option[CannedAcl] = None,
     serverSideEncryption = serverSideEncryption
   )
 
-  override def toString =
+  override def toString: String =
     "S3Headers(" +
     s"cannedAcl=$cannedAcl," +
     s"metaHeaders=$metaHeaders," +
@@ -126,10 +126,10 @@ object S3Headers {
    */
   val empty: S3Headers = new S3Headers()
 
-  def apply() = empty
+  def apply(): S3Headers = empty
 
   /**
    * Java Api
    */
-  def create() = empty
+  def create(): S3Headers = empty
 }

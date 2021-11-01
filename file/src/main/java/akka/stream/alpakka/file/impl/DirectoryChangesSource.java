@@ -171,7 +171,7 @@ public final class DirectoryChangesSource<T> extends GraphStage<SourceShape<T>> 
               if (buffer.size() > maxBufferSize) {
                 failStage(
                     new RuntimeException(
-                        "Max event buffer size " + maxBufferSize + " reached for $path"));
+                        "Max event buffer size " + maxBufferSize + " reached for " + path));
               }
             }
           }

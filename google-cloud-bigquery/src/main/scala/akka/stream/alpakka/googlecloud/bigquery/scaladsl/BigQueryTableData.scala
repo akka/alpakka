@@ -101,7 +101,7 @@ private[scaladsl] trait BigQueryTableData { this: BigQueryRest =>
         .foreach(error => throw BigQueryException(error))
     }
 
-    requests.via(insertAll(tableId, datasetId, retryPolicy.retry)).to(errorSink)
+    requests.via(insertAll(datasetId, tableId, retryPolicy.retry)).to(errorSink)
   }
 
   /**
@@ -134,8 +134,9 @@ private[scaladsl] trait BigQueryTableData { this: BigQueryRest =>
         }
 
         val pool = {
-          val authority = BigQueryEndpoints.endpoint.authority
-          GoogleHttp().cachedHostConnectionPool[TableDataInsertAllResponse](authority.host.address, authority.port)(um)
+          val uri = BigQueryEndpoints.endpoint
+          GoogleHttp().cachedHostConnectionPool[TableDataInsertAllResponse](uri.authority.host.address,
+                                                                            uri.effectivePort)(um)
         }
 
         Flow[TableDataInsertAllRequest[In]]

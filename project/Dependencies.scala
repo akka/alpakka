@@ -139,7 +139,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
         "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test,
-        "com.typesafe.akka" %% "akka-stream-kafka" % "2.0.7" % Test,
+        "com.typesafe.akka" %% "akka-stream-kafka" % "2.1.1" % Test,
         "junit" % "junit" % "4.13" % Test, // Eclipse Public License 1.0
         "org.scalatest" %% "scalatest" % "3.1.4" % Test // ApacheV2
       )
@@ -193,7 +193,7 @@ object Dependencies {
       )
   )
 
-  val GeodeVersion = "1.13.3"
+  val GeodeVersion = "1.13.4"
   val GeodeVersionForDocs = "113"
 
   val Geode = Seq(

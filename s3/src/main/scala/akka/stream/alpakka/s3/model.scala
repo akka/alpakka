@@ -4,11 +4,12 @@
 
 package akka.stream.alpakka.s3
 
+import java.time.Instant
 import java.util.{Objects, Optional}
-
 import akka.http.scaladsl.model.{DateTime, HttpHeader, IllegalUriException, Uri}
 import akka.http.scaladsl.model.headers._
 import akka.stream.alpakka.s3.AccessStyle.PathAccessStyle
+import com.github.ghik.silencer.silent
 
 import scala.collection.immutable.Seq
 import scala.collection.immutable
@@ -19,9 +20,13 @@ final class MultipartUploadResult private (
     val location: Uri,
     val bucket: String,
     val key: String,
-    val etag: String,
+    val eTag: String,
     val versionId: Option[String]
 ) {
+
+  /** Scala API */
+  @deprecated("Use eTag", "3.0.3")
+  val etag: String = eTag
 
   /** Java API */
   def getLocation: akka.http.javadsl.model.Uri = akka.http.javadsl.model.Uri.create(location)
@@ -33,37 +38,49 @@ final class MultipartUploadResult private (
   def getKey: String = key
 
   /** Java API */
-  def getEtag: String = etag
+  def getETag: String = eTag
 
   /** Java API */
-  def getVersionId: java.util.Optional[String] = versionId.asJava
+  @deprecated("Use getETag", "3.0.3")
+  def getEtag: String = eTag
+
+  /** Java API */
+  def getVersionId: Optional[String] = versionId.asJava
 
   def withLocation(value: Uri): MultipartUploadResult = copy(location = value)
   def withBucket(value: String): MultipartUploadResult = copy(bucket = value)
   def withKey(value: String): MultipartUploadResult = copy(key = value)
-  def withEtag(value: String): MultipartUploadResult = copy(etag = value)
-  def withVersionId(value: String): MultipartUploadResult = copy(versionId = Option(value))
+  def withETag(value: String): MultipartUploadResult = copy(eTag = value)
+  @deprecated("Use withETag", "3.0.3")
+  def withEtag(value: String): MultipartUploadResult = copy(eTag = value)
+  def withVersionId(value: String): MultipartUploadResult =
+    // See https://docs.aws.amazon.com/AmazonS3/latest/userguide/AddingObjectstoVersionSuspendedBuckets.html for more
+    // info.
+    if (value.trim.toLowerCase == "null")
+      copy(versionId = None)
+    else
+      copy(versionId = Option(value))
 
   private def copy(
       location: Uri = location,
       bucket: String = bucket,
       key: String = key,
-      etag: String = etag,
+      eTag: String = eTag,
       versionId: Option[String] = versionId
   ): MultipartUploadResult = new MultipartUploadResult(
     location = location,
     bucket = bucket,
     key = key,
-    etag = etag,
+    eTag = eTag,
     versionId = versionId
   )
 
-  override def toString =
+  override def toString: String =
     "MultipartUploadResult(" +
     s"location=$location," +
     s"bucket=$bucket," +
     s"key=$key," +
-    s"etag=$etag," +
+    s"eTag=$eTag," +
     s"versionId=$versionId" +
     ")"
 
@@ -72,13 +89,13 @@ final class MultipartUploadResult private (
       Objects.equals(this.location, that.location) &&
       Objects.equals(this.bucket, that.bucket) &&
       Objects.equals(this.key, that.key) &&
-      Objects.equals(this.etag, that.etag) &&
+      Objects.equals(this.eTag, that.eTag) &&
       Objects.equals(this.versionId, that.versionId)
     case _ => false
   }
 
   override def hashCode(): Int =
-    Objects.hash(location, bucket, key, etag, versionId)
+    Objects.hash(location, bucket, key, eTag, versionId)
 }
 
 object MultipartUploadResult {
@@ -88,30 +105,555 @@ object MultipartUploadResult {
       location: Uri,
       bucket: String,
       key: String,
-      etag: String,
+      eTag: String,
       versionId: Option[String]
-  ): MultipartUploadResult = new MultipartUploadResult(
-    location,
-    bucket,
-    key,
-    etag,
-    versionId
-  )
+  ): MultipartUploadResult = {
+    // See https://docs.aws.amazon.com/AmazonS3/latest/userguide/AddingObjectstoVersionSuspendedBuckets.html for more
+    // info.
+    val finalVersionId = versionId match {
+      case Some(s) if s.trim.toLowerCase == "null" => None
+      case rest => rest
+    }
+
+    new MultipartUploadResult(
+      location,
+      bucket,
+      key,
+      eTag,
+      finalVersionId
+    )
+  }
 
   /** Java API */
   def create(
       location: akka.http.javadsl.model.Uri,
       bucket: String,
       key: String,
-      etag: String,
+      eTag: String,
       versionId: java.util.Optional[String]
   ): MultipartUploadResult = apply(
     location.asScala(),
     bucket,
     key,
-    etag,
+    eTag,
     versionId.asScala
   )
+}
+
+final class AWSIdentity private (val id: String, val displayName: String) {
+
+  /** Java API */
+  def getId: String = id
+
+  /** Java API */
+  def getDisplayName: String = displayName
+
+  def withId(value: String): AWSIdentity = copy(id = value)
+  def withDisplayName(value: String): AWSIdentity = copy(displayName = value)
+
+  private def copy(id: String = id, displayName: String = displayName): AWSIdentity = new AWSIdentity(
+    id,
+    displayName
+  )
+
+  override def toString: String =
+    "AWSIdentity(" +
+    s"id=$id," +
+    s"displayName=$displayName" +
+    ")"
+
+  override def equals(other: Any): Boolean =
+    other match {
+      case that: AWSIdentity =>
+        Objects.equals(this.id, that.id) &&
+        Objects.equals(this.displayName, that.displayName)
+      case _ => false
+    }
+
+  override def hashCode(): Int =
+    Objects.hash(id, displayName)
+
+}
+
+object AWSIdentity {
+
+  /** Scala API */
+  def apply(id: String, displayName: String): AWSIdentity = new AWSIdentity(id, displayName)
+
+  /** Java API */
+  def create(id: String, displayName: String): AWSIdentity = apply(id, displayName)
+
+}
+
+final class ListMultipartUploadResultUploads private (val key: String,
+                                                      val uploadId: String,
+                                                      val initiator: Option[AWSIdentity],
+                                                      val owner: Option[AWSIdentity],
+                                                      val storageClass: String,
+                                                      val initiated: Instant) {
+
+  /** Java API */
+  def getKey: String = key
+
+  /** Java API */
+  def getUploadId: String = uploadId
+
+  /** Java API */
+  def getInitiator: Optional[AWSIdentity] = initiator.asJava
+
+  /** Java API */
+  def getOwner: Optional[AWSIdentity] = owner.asJava
+
+  /** Java API */
+  def getStorageClass: String = storageClass
+
+  /** Java API */
+  def getInitiated: Instant = initiated
+
+  def withKey(value: String): ListMultipartUploadResultUploads = copy(key = value)
+  def withUploadId(value: String): ListMultipartUploadResultUploads = copy(uploadId = value)
+  def withInitiator(value: AWSIdentity): ListMultipartUploadResultUploads = copy(initiator = Option(value))
+  def withOwner(value: AWSIdentity): ListMultipartUploadResultUploads = copy(owner = Option(value))
+  def withStorageClass(value: String): ListMultipartUploadResultUploads = copy(storageClass = value)
+  def withInitiated(value: Instant): ListMultipartUploadResultUploads = copy(initiated = value)
+
+  private def copy(key: String = key,
+                   uploadId: String = uploadId,
+                   initiator: Option[AWSIdentity] = initiator,
+                   owner: Option[AWSIdentity] = owner,
+                   storageClass: String = storageClass,
+                   initiated: Instant = initiated): ListMultipartUploadResultUploads =
+    new ListMultipartUploadResultUploads(
+      key = key,
+      uploadId = uploadId,
+      initiator = initiator,
+      owner = owner,
+      storageClass = storageClass,
+      initiated = initiated
+    )
+
+  override def toString: String =
+    "ListMultipartUploadResultUploads(" +
+    s"key=$key," +
+    s"uploadId=$uploadId," +
+    s"initiator=$initiator," +
+    s"owner=$owner," +
+    s"storageClass=$storageClass," +
+    s"initiated=$initiated" +
+    ")"
+
+  override def equals(other: Any): Boolean =
+    other match {
+      case that: ListMultipartUploadResultUploads =>
+        Objects.equals(this.key, that.key) &&
+        Objects.equals(this.uploadId, that.uploadId) &&
+        Objects.equals(this.initiator, that.initiator) &&
+        Objects.equals(this.owner, that.owner) &&
+        Objects.equals(this.storageClass, that.storageClass) &&
+        Objects.equals(this.initiated, that.initiated)
+      case _ => false
+    }
+
+  override def hashCode(): Int =
+    Objects.hash(key, uploadId, initiator, owner, storageClass, initiated)
+}
+
+object ListMultipartUploadResultUploads {
+
+  /** Scala API */
+  def apply(key: String,
+            uploadId: String,
+            initiator: Option[AWSIdentity],
+            owner: Option[AWSIdentity],
+            storageClass: String,
+            initiated: Instant): ListMultipartUploadResultUploads =
+    new ListMultipartUploadResultUploads(key, uploadId, initiator, owner, storageClass, initiated)
+
+  /** Java API */
+  def create(key: String,
+             uploadId: String,
+             initiator: Optional[AWSIdentity],
+             owner: Optional[AWSIdentity],
+             storageClass: String,
+             initiated: Instant): ListMultipartUploadResultUploads =
+    apply(key, uploadId, initiator.asScala, owner.asScala, storageClass, initiated)
+}
+
+final class ListObjectVersionsResultVersions private (val eTag: String,
+                                                      val isLatest: Boolean,
+                                                      val key: String,
+                                                      val lastModified: Instant,
+                                                      val owner: Option[AWSIdentity],
+                                                      val size: Long,
+                                                      val storageClass: String,
+                                                      val versionId: Option[String]) {
+
+  /** Java API */
+  def getETag: String = eTag
+
+  /** Java API */
+  def getIsLatest: Boolean = isLatest
+
+  /** Java API */
+  def getKey: String = key
+
+  /** Java API */
+  def getLastModified: Instant = lastModified
+
+  /** Java API */
+  def getOwner: Optional[AWSIdentity] = owner.asJava
+
+  /** Java API */
+  def getSize: Long = size
+
+  /** Java API */
+  def getStorageClass: String = storageClass
+
+  /** Java API */
+  def getVersionId: Optional[String] = versionId.asJava
+
+  def withETag(value: String): ListObjectVersionsResultVersions = copy(eTag = value)
+
+  def withIsLatest(value: Boolean): ListObjectVersionsResultVersions = copy(isLatest = value)
+
+  def withKey(value: String): ListObjectVersionsResultVersions = copy(key = value)
+
+  def withLastModified(value: Instant): ListObjectVersionsResultVersions = copy(lastModified = value)
+
+  def withOwner(value: AWSIdentity): ListObjectVersionsResultVersions = copy(owner = Option(value))
+
+  def withSize(value: Long): ListObjectVersionsResultVersions = copy(size = value)
+
+  def withStorageClass(value: String): ListObjectVersionsResultVersions = copy(storageClass = value)
+
+  def withVersionId(value: String): ListObjectVersionsResultVersions =
+    // See https://docs.aws.amazon.com/AmazonS3/latest/userguide/AddingObjectstoVersionSuspendedBuckets.html for more
+    // info.
+    if (value.trim.toLowerCase == "null")
+      copy(versionId = None)
+    else
+      copy(versionId = Option(value))
+
+  private def copy(eTag: String = eTag,
+                   isLatest: Boolean = isLatest,
+                   key: String = key,
+                   lastModified: Instant = lastModified,
+                   owner: Option[AWSIdentity] = owner,
+                   size: Long = size,
+                   storageClass: String = storageClass,
+                   versionId: Option[String] = versionId): ListObjectVersionsResultVersions =
+    new ListObjectVersionsResultVersions(
+      eTag = eTag,
+      isLatest = isLatest,
+      key = key,
+      lastModified = lastModified,
+      owner = owner,
+      size = size,
+      storageClass = storageClass,
+      versionId = versionId
+    )
+
+  override def toString: String =
+    "ListObjectVersionsResultVersions(" +
+    s"eTag=$eTag," +
+    s"isLatest=$isLatest," +
+    s"key=$key," +
+    s"lastModified=$lastModified," +
+    s"owner=$owner," +
+    s"size=$size," +
+    s"storageClass=$storageClass," +
+    s"versionId=$versionId" +
+    ")"
+
+  override def equals(other: Any): Boolean =
+    other match {
+      case that: ListObjectVersionsResultVersions =>
+        Objects.equals(this.eTag, that.eTag) &&
+        Objects.equals(this.isLatest, that.isLatest) &&
+        Objects.equals(this.key, that.key) &&
+        Objects.equals(this.lastModified, that.lastModified) &&
+        Objects.equals(this.owner, that.owner) &&
+        Objects.equals(this.size, that.size) &&
+        Objects.equals(this.storageClass, that.storageClass) &&
+        Objects.equals(this.versionId, that.versionId)
+      case _ => false
+    }
+
+  override def hashCode(): Int =
+    Objects.hash(eTag, Boolean.box(isLatest), key, lastModified, owner, Long.box(size), storageClass, versionId)
+}
+
+object ListObjectVersionsResultVersions {
+
+  /** Scala API */
+  def apply(eTag: String,
+            isLatest: Boolean,
+            key: String,
+            lastModified: Instant,
+            owner: Option[AWSIdentity],
+            size: Long,
+            storageClass: String,
+            versionId: Option[String]): ListObjectVersionsResultVersions = {
+    // See https://docs.aws.amazon.com/AmazonS3/latest/userguide/AddingObjectstoVersionSuspendedBuckets.html for more
+    // info.
+    val finalVersionId = versionId match {
+      case Some(s) if s.trim.toLowerCase == "null" => None
+      case rest => rest
+    }
+
+    new ListObjectVersionsResultVersions(eTag, isLatest, key, lastModified, owner, size, storageClass, finalVersionId)
+  }
+
+  /** Java API */
+  def create(eTag: String,
+             isLatest: Boolean,
+             key: String,
+             lastModified: Instant,
+             owner: Optional[AWSIdentity],
+             size: Long,
+             storageClass: String,
+             versionId: Optional[String]): ListObjectVersionsResultVersions =
+    apply(eTag, isLatest, key, lastModified, owner.asScala, size, storageClass, versionId.asScala)
+}
+
+final class DeleteMarkers private (val isLatest: Boolean,
+                                   val key: String,
+                                   val lastModified: Instant,
+                                   val owner: Option[AWSIdentity],
+                                   val versionId: Option[String]) {
+
+  /** Java API */
+  def getIsLatest: Boolean = isLatest
+
+  /** Java API */
+  def getKey: String = key
+
+  /** Java API */
+  def getLastModified: Instant = lastModified
+
+  /** Java API */
+  def getOwner: Optional[AWSIdentity] = owner.asJava
+
+  /** Java API */
+  def getVersionId: Optional[String] = versionId.asJava
+
+  def withIsLatest(value: Boolean): DeleteMarkers = copy(isLatest = value)
+
+  def withKey(value: String): DeleteMarkers = copy(key = value)
+
+  def withLastModified(value: Instant): DeleteMarkers = copy(lastModified = value)
+
+  def withOwner(value: AWSIdentity): DeleteMarkers = copy(owner = Option(value))
+
+  def withVersionId(value: String): DeleteMarkers =
+    // See https://docs.aws.amazon.com/AmazonS3/latest/userguide/AddingObjectstoVersionSuspendedBuckets.html for more
+    // info.
+    if (value.trim.toLowerCase == "null")
+      copy(versionId = None)
+    else
+      copy(versionId = Option(value))
+
+  private def copy(isLatest: Boolean = isLatest,
+                   key: String = key,
+                   lastModified: Instant = lastModified,
+                   owner: Option[AWSIdentity] = owner,
+                   versionId: Option[String] = versionId): DeleteMarkers =
+    new DeleteMarkers(isLatest, key, lastModified, owner, versionId)
+
+  override def toString: String =
+    "DeleteMarkers(" +
+    s"isLatest=$isLatest," +
+    s"key=$key," +
+    s"lastModified=$lastModified," +
+    s"owner=$owner," +
+    s"versionId=$versionId" +
+    ")"
+
+  override def equals(other: Any): Boolean =
+    other match {
+      case that: DeleteMarkers =>
+        Objects.equals(this.isLatest, that.isLatest) &&
+        Objects.equals(this.key, that.key) &&
+        Objects.equals(this.lastModified, that.lastModified) &&
+        Objects.equals(this.owner, that.owner) &&
+        Objects.equals(this.versionId, that.versionId)
+      case _ => false
+    }
+
+  override def hashCode(): Int =
+    Objects.hash(Boolean.box(isLatest), key, lastModified, owner, owner, versionId)
+}
+
+object DeleteMarkers {
+
+  /** Scala API */
+  def apply(isLatest: Boolean,
+            key: String,
+            lastModified: Instant,
+            owner: Option[AWSIdentity],
+            versionId: Option[String]): DeleteMarkers = {
+    // See https://docs.aws.amazon.com/AmazonS3/latest/userguide/AddingObjectstoVersionSuspendedBuckets.html for more
+    // info.
+    val finalVersionId = versionId match {
+      case Some(s) if s.trim.toLowerCase == "null" => None
+      case rest => rest
+    }
+
+    new DeleteMarkers(isLatest, key, lastModified, owner, finalVersionId)
+  }
+
+  /** Java API */
+  def create(isLatest: Boolean,
+             key: String,
+             lastModified: Instant,
+             owner: Optional[AWSIdentity],
+             versionId: Optional[String]): DeleteMarkers =
+    apply(isLatest, key, lastModified, owner.asScala, versionId.asScala)
+}
+
+final class CommonPrefixes private (val prefix: String) {
+
+  /** Java API */
+  def getPrefix: String = prefix
+
+  def withPrefix(value: String): CommonPrefixes = copy(prefix = value)
+
+  // Warning is only being generated here because there is a single argument in the parameter list. If more fields
+  // get added to CommonPrefixes then the `@silent` is no longer needed
+  @silent
+  private def copy(prefix: String = prefix): CommonPrefixes =
+    new CommonPrefixes(prefix)
+
+  override def toString: String =
+    "CommonPrefixes(" +
+    s"prefix=$prefix" +
+    ")"
+
+  override def equals(other: Any): Boolean =
+    other match {
+      case that: CommonPrefixes =>
+        Objects.equals(this.prefix, that.prefix)
+      case _ => false
+    }
+
+  override def hashCode(): Int =
+    Objects.hash(prefix)
+}
+
+object CommonPrefixes {
+
+  /** Scala API */
+  def apply(prefix: String): CommonPrefixes =
+    new CommonPrefixes(prefix)
+
+  /** Java API */
+  def create(prefix: String): CommonPrefixes = apply(prefix)
+}
+
+final class ListPartsResultParts(val lastModified: Instant, val eTag: String, val partNumber: Int, val size: Long) {
+
+  /** Java API */
+  def getLastModified: Instant = lastModified
+
+  /** Java API */
+  def getETag: String = eTag
+
+  /** Java API */
+  def getPartNumber: Int = partNumber
+
+  /** Java API */
+  def getSize: Long = size
+
+  def withLastModified(value: Instant): ListPartsResultParts = copy(lastModified = value)
+  def withETag(value: String): ListPartsResultParts = copy(eTag = value)
+  def withPartNumber(value: Int): ListPartsResultParts = copy(partNumber = value)
+  def withSize(value: Long): ListPartsResultParts = copy(size = value)
+
+  private def copy(lastModified: Instant = lastModified,
+                   eTag: String = eTag,
+                   partNumber: Int = partNumber,
+                   size: Long = size): ListPartsResultParts =
+    new ListPartsResultParts(
+      lastModified,
+      eTag,
+      partNumber,
+      size
+    )
+
+  override def toString: String =
+    "ListPartsResultParts(" +
+    s"lastModified=$lastModified," +
+    s"eTag=$eTag," +
+    s"partNumber=$partNumber," +
+    s"size=$size" +
+    ")"
+
+  override def equals(other: Any): Boolean =
+    other match {
+      case that: ListPartsResultParts =>
+        Objects.equals(this.lastModified, that.lastModified) &&
+        Objects.equals(this.eTag, that.eTag) &&
+        Objects.equals(this.partNumber, that.partNumber) &&
+        Objects.equals(this.size, that.size)
+      case _ => false
+    }
+
+  override def hashCode(): Int =
+    Objects.hash(lastModified, eTag, Int.box(partNumber), Long.box(size))
+
+  def toPart: Part = Part(eTag, partNumber)
+}
+
+object ListPartsResultParts {
+
+  /** Scala API */
+  def apply(lastModified: Instant, eTag: String, partNumber: Int, size: Long): ListPartsResultParts =
+    new ListPartsResultParts(lastModified, eTag, partNumber, size)
+
+  /** Java API */
+  def create(lastModified: Instant, eTag: String, partNumber: Int, size: Long): ListPartsResultParts =
+    apply(lastModified, eTag, partNumber, size)
+}
+
+final class Part(val eTag: String, val partNumber: Int) {
+
+  /** Java API */
+  def getETag: String = eTag
+
+  /** Java API */
+  def getPartNumber: Int = partNumber
+
+  def withETag(value: String): Part = copy(eTag = value)
+
+  def withPartNumber(value: Int): Part = copy(partNumber = value)
+
+  private def copy(eTag: String = eTag, partNumber: Int = partNumber): Part = new Part(eTag, partNumber)
+
+  override def toString: String =
+    "Part(" +
+    s"eTag=$eTag," +
+    s"partNumber=$partNumber" +
+    ")"
+
+  override def equals(other: Any): Boolean =
+    other match {
+      case that: Part =>
+        Objects.equals(this.eTag, that.eTag) &&
+        Objects.equals(this.partNumber, that.partNumber)
+    }
+
+  override def hashCode(): Int =
+    Objects.hash(this.eTag, Int.box(this.partNumber))
+
+}
+
+object Part {
+
+  /** Scala API */
+  def apply(eTag: String, partNumber: Int): Part = new Part(eTag, partNumber)
+
+  /** Java API */
+  def create(eTag: String, partNumber: Int): Part = new Part(eTag, partNumber)
 }
 
 /**
@@ -127,10 +669,10 @@ final class FailedUpload private (
 
 object FailedUpload {
 
-  def apply(reasons: Seq[Throwable]) = new FailedUpload(reasons)
+  def apply(reasons: Seq[Throwable]): FailedUpload = new FailedUpload(reasons)
 
   /** Java API */
-  def create(reasons: Seq[Throwable]) = FailedUpload(reasons)
+  def create(reasons: Seq[Throwable]): FailedUpload = FailedUpload(reasons)
 }
 
 /**
@@ -191,7 +733,7 @@ final class ListBucketResultContents private (
     storageClass = storageClass
   )
 
-  override def toString =
+  override def toString: String =
     "ListBucketResultContents(" +
     s"bucketName=$bucketName," +
     s"key=$key," +
@@ -279,7 +821,7 @@ final class ListBucketResultCommonPrefixes private (
     prefix = prefix
   )
 
-  override def toString =
+  override def toString: String =
     "ListBucketResultCommonPrefixes(" +
     s"bucketName=$bucketName," +
     s"prefix=$prefix" +

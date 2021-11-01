@@ -145,8 +145,8 @@ jobs:
     - name: unix-domain-socket
     - name: xml
 
-    - stage: whitesource
-      script: git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH" && sbt -sbt-launch-repo https://repo1.maven.org/maven2 whitesourceCheckPolicies whitesourceUpdate whitesourceSupported/whitesourceUpdate
+    - stage: licenses
+      script: echo "License checking is temporarily disabled"
 
     - name: "Publish artifacts for Scala 2.12 and 2.13"
       env: CMD="ci-release"
@@ -171,7 +171,7 @@ stages:
     if: NOT tag =~ ^v
 
   # runs on main repo master commits or version-tagged commits
-  - name: whitesource
+  - name: licenses
     if: repo = akka/alpakka AND ( ( branch = master AND type = push ) OR tag =~ ^v )
 
   # runs on main repo master commits or version-tagged commits
@@ -197,12 +197,6 @@ cache:
 env:
   global:
     - RUN_DROP_TRAVIS_CACHES_STAGE=true
-    # encrypt with: travis encrypt WHITESOURCE_PASSWORD=...
-    - secure: "VpRSxeqP6gXCxnYCsjylMt1xxXxI/hlj6msibKuHpstDnfPkbDMS8RnRJ/39tyjx/szELZSzAllV0VpM27JpTXlKfIT/78ZUGcljqzfnmv3uh/dWh9k2ERQX1Hr3TGFFyljIbEKHcHjvgHBJtlIRGIuvoBv0tJ98pcqS6dCeplaaJa1Ya7Q53u17GOJakhvTjrT3ASz8gF1kV4GN9XhQCUjRfQSINiT+QC+ONoHy6ztZPIDgfUskBfKgZU5P1saDLcBjzBkXDWIwbKubfJGBl3DSs2fHaWNJE5CRZNJ64Wi8Hs006zvyomIaCfbVAWtxOiLCdXxlys/YQs43RRB0pBqyvTpxH4lEwnLR5uGDH+nuBQw9efCWqsM3CDsRSH7iobjBlunKgDCfjua5/dWJ3Wm2j8WOi6C6/y/YrGwU/DrncukRtcyKj92Mu3LHk5HEMiOiIA41P2NTqalvjvoqi1zMQ5On2g55e2YMcHmQ8dCsRAgegCYB3a6GyGq7T8zkuMMljpmpQJwayrJPQKi001d3ajZZwMLcv4YW9ndVYCZD9ducZ448Uo5BCpJFDPPG+xcXrvZowCUA9JtpnyXrTcTLvFITG2egXyLOQfZ0/FX9XneMtX8qX8ysHaBX9tWiYsplo/WfbpBHy935Ag8WnGH0cYvOXuqAKKUXRVq9ANI="
-    # encrypt with: travis encrypt BINTRAY_USER=...
-    - secure: "hnaw+GZ6kwf2TaJrdw7CMzt61Kh3gW0DVswrk0dFWvwEZkoXmjmdEOOITu/zucI9KfRZPV3fCwkYGhZKgstquW7vB8OfueLBUOZyNtx51oTCAlUztx1pKHjm5r3yDU+oO5RSaovH0qcV5dsJq0Gu7b+HWesohWSAproZsiu69oCRFqgNctNAwrZvqL8e+mXiSuKnRWcLQUof5MSgKcYdZ029muGlbh7fhjS9zewfURIROgVEXixCgYvBuhWcyNPzl8rhzxbXuvUx6BZ9bR0msl5imG4MNy/PfYw/xYDtrelPiVWMuHcjNQq5xyvQTj1W5M4Mn2R+3VNXRPPxifFw9TlTdU7GrmEZe6b2Apymy0gTXBntAqWHyA8/qhaqms8sZmxafAdx+YzHMbSkKnORY92jSPJ43hINSRBwotmL0GXzIpIM0wm2qKkW7+BAGi728wuotnS5NFudlm2w5nbIY8rQ+pP5/U5Ur3KFEpQ6cvW4u6jLFB3WxyOI0NSVWsplcq38SxrCyJxyh2mGXVMSWqDX0rj5gFGk2lnjZGRE1IN5CFgiHgW858K7IoTBAwuCLpeDnEaUBti3WUTOew56mbuEixawX+zGyD5Y2mhiGxXZ1HmeIdFT9W0O2jriFWo7t7NR/MSsIg3xh6WdfBCwhklZbrSXMrlA5Hm1JMriYyo="
-    # encrypt with: travis encrypt BINTRAY_PASS=...
-    - secure: "kra9cxN+5Ya6CEtEs1ry94uGOHDhVoQmJs7B700Jk4qYXu3tdPPDVt4lNheQvu/TGoTRDZecHymC526eiZTcJh7/87CAC2SYu+YW7lMP3NBcHaqnxuSWzXVNyiRjgCEWAy/pcDhGkJwL6LgNg5Vho09bV62SuySYZQ8K1QBeKIks0oZrYVIXqXborYfZ+FzSvVoOEOoEp5V1Uv98deTcfDzsqtLOXker0t6iLPIYAJA7vpNGfWk6aRqa3W1I73ojhVvcL5BqB6RK95meEJfaqclftObmp4m0aWNQujHzQIydw22rF9Sc7PAy67p2Pf28KLZPEuZYAx5KWeAYwO5rblqgvDR5hR1CqrACscl1FSpFFQMrAig+dLgHdOOAzBMGu1qqQPv/Muj2Mm4MXn7NLRdaxSRQbq4LleqUpADjEXP+LGkLjFwFHGsgNa3dNppSoeO1gvBBl4YcOCdAM8Io89M7VR7SOE3BVxDYwSJruqLcm/8nQ35CHigOm+HT03jNwY7ypgUPreHpJ5d9qFz+uRwSBSnHsHNampiydRVOjH8x0+UEPlzQ4/nYjHTJAk0Ru1CEDaUg5OFqOqdzPaplS4Yg2zpAJTSgVxh5Yr+O3KGTyapSX6wXP3LY728L1g3H0VNFGQ67TEVkXVO62rlw+1jltXLLxnp7/UhWFn02f04="
     # encrypt with: travis encrypt SONATYPE_USERNAME=...
     - secure: "b2zZTu9oo5fpP9GFDBzR/kpFEvTJW7GfSpu4ceqEEB2/Cr3npSPfHCplsYCmI8nXCg+XHkcd1pE3/K7z7DQtg9rHqR7mGBdOn2/YQ+myOZhZdUceomg11tFNZZW91qDRo1vWqZ7GSgkkDIuK42JCOhDaUBOdCN6LVQZypHvzL2VIkXemRgedmBS+2GEkAofIyi4Ny8ZiCtkUb+H7XSdvxyG76/XfPXAdNZuI0sEGByEGeTgEQzgmOxjgA+qsiyzPJXDz0A7qWRGlMlqJ2UQS4OVP0Stsc+c/fd15qA9LIprot2ujmwuY3athvxqeag0OorI7CnMeLJyao1ZnljUEAyPW4irWGe/z1yByOfpu7TPOJh55GJTqAoD1IPpsAfOuNCgJ2R6+TIUx8H90TTsLonRDps575D/W/psp3L4kZGYfry4FNGbPbyNPndUOuAY1f7P7Lpzx6d7RHdtI5SvGOskSWvJ3v5rUjiRdGfXfvsugSyCOfnAY4mK/wYbGlfS2Hxi/58wZOGo7HkUnaj4akOeRcqEn552s6GpE5X9bqO4EZf6BCRrcStFTm0V7wk7zYtQwc2qpy0evcFpV59R2yPPvx1HUF0GbVR0jbxeTcwpzHwJSRsHg6W2YTJG+RwDs6FU1HsnXFSJcB7o0UotHk2qZwUbTfQHozpOBBHoVQp4="
     # encrypt with: travis encrypt SONATYPE_PASSWORD=...
@@ -213,6 +207,6 @@ env:
 branches:
   only:
     - master
-    - release-2.0
+    - release-3.0
     # allow release tags
     - /^v\d+\.\d+(\.\d+)?(-\S*)?$/

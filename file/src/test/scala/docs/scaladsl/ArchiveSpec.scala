@@ -5,8 +5,7 @@
 package docs.scaladsl
 
 import java.io._
-import java.nio.file.{Path, Paths}
-
+import java.nio.file.{Files, Path, Paths}
 import akka.actor.ActorSystem
 import akka.stream.alpakka.file.ArchiveMetadata
 import akka.stream.alpakka.file.scaladsl.Archive
@@ -112,6 +111,46 @@ class ArchiveSpec
             .runWith(Sink.fold(ByteString.empty)(_ ++ _))
 
         archiveHelper.unzip(akkaZipped.futureValue).asScala shouldBe inputFiles
+      }
+
+      "unarchive files" in {
+        val inputFiles = generateInputFiles(5, 100)
+        val inputStream = filesToStream(inputFiles)
+        val zipFlow = Archive.zip()
+
+        val akkaZipped: Future[ByteString] =
+          inputStream
+            .via(zipFlow)
+            .runWith(Sink.fold(ByteString.empty)(_ ++ _))
+        // #zip-reader
+        val zipFile = // ???
+          // #zip-reader
+          File.createTempFile("pre", "post")
+        zipFile.deleteOnExit()
+
+        Source.future(akkaZipped).runWith(FileIO.toPath(zipFile.toPath)).futureValue
+
+        Archive
+          .zipReader(zipFile)
+          .map(f => f._1.name -> f._2.runWith(Sink.fold(ByteString.empty)(_ ++ _)).futureValue)
+          .runWith(Sink.seq)
+          .futureValue
+          .toMap shouldBe inputFiles
+
+        // #zip-reader
+        val target: Path = // ???
+          // #zip-reader
+          Files.createTempDirectory("alpakka-zip-")
+        // #zip-reader
+        Archive
+          .zipReader(zipFile)
+          .mapAsyncUnordered(4) {
+            case (metadata, source) =>
+              val targetFile = target.resolve(metadata.name)
+              targetFile.toFile.getParentFile.mkdirs() //missing error handler
+              source.runWith(FileIO.toPath(targetFile))
+          }
+        // #zip-reader
       }
     }
   }
