@@ -43,7 +43,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
   val contentType = MediaTypes.`image/jpeg`
   val acl = CannedAcl.PublicRead
   val metaHeaders: Map[String, String] = Map("location" -> "San Francisco", "orientation" -> "portrait")
-  val multipartUpload = MultipartUpload(S3Location("test-bucket", "testKey"), "uploadId")
+  val multipartUpload = MultipartUpload("test-bucket", "testKey", "uploadId")
 
   it should "initiate multipart upload when the region is us-east-1" in {
     implicit val settings = getSettings()
@@ -432,7 +432,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
   it should "add two (source, range) headers to multipart upload (copy) request when byte range populated" in {
     implicit val settings: S3Settings = getSettings()
 
-    val multipartUpload = MultipartUpload(S3Location("target-bucket", "target-key"), UUID.randomUUID().toString)
+    val multipartUpload = MultipartUpload("target-bucket", "target-key", UUID.randomUUID().toString)
     val copyPartition = CopyPartition(1, S3Location("source-bucket", "some/source-key"), Some(ByteRange(0, 5242880L)))
     val multipartCopy = MultipartCopy(multipartUpload, copyPartition)
 
@@ -444,7 +444,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
   it should "add only source header to multipart upload (copy) request when byte range missing" in {
     implicit val settings: S3Settings = getSettings()
 
-    val multipartUpload = MultipartUpload(S3Location("target-bucket", "target-key"), UUID.randomUUID().toString)
+    val multipartUpload = MultipartUpload("target-bucket", "target-key", UUID.randomUUID().toString)
     val copyPartition = CopyPartition(1, S3Location("source-bucket", "some/source-key"))
     val multipartCopy = MultipartCopy(multipartUpload, copyPartition)
 
@@ -456,7 +456,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
   it should "add versionId parameter to source header if provided" in {
     implicit val settings: S3Settings = getSettings()
 
-    val multipartUpload = MultipartUpload(S3Location("target-bucket", "target-key"), UUID.randomUUID().toString)
+    val multipartUpload = MultipartUpload("target-bucket", "target-key", UUID.randomUUID().toString)
     val copyPartition = CopyPartition(1, S3Location("source-bucket", "some/source-key"), Some(ByteRange(0, 5242880L)))
     val multipartCopy = MultipartCopy(multipartUpload, copyPartition)
 

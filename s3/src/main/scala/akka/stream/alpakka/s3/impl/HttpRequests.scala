@@ -14,7 +14,7 @@ import akka.http.scaladsl.model.Uri.{Authority, Query}
 import akka.http.scaladsl.model.headers.{`Raw-Request-URI`, Host, RawHeader}
 import akka.http.scaladsl.model.{RequestEntity, _}
 import akka.stream.alpakka.s3.AccessStyle.{PathAccessStyle, VirtualHostAccessStyle}
-import akka.stream.alpakka.s3.{ApiVersion, S3Settings}
+import akka.stream.alpakka.s3.{ApiVersion, MultipartUpload, S3Settings}
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import software.amazon.awssdk.regions.Region
@@ -200,7 +200,7 @@ import scala.concurrent.{ExecutionContext, Future}
                         payload: Chunk,
                         s3Headers: Seq[HttpHeader] = Seq.empty)(implicit conf: S3Settings): HttpRequest =
     s3Request(
-      upload.s3Location,
+      S3Location(upload.bucket, upload.key),
       HttpMethods.PUT,
       _.withQuery(Query("partNumber" -> partNumber.toString, "uploadId" -> upload.uploadId))
     ).withDefaultHeaders(s3Headers)
@@ -224,7 +224,7 @@ import scala.concurrent.{ExecutionContext, Future}
       entity <- Marshal(payload).to[RequestEntity]
     } yield {
       s3Request(
-        upload.s3Location,
+        S3Location(upload.bucket, upload.key),
         HttpMethods.POST,
         _.withQuery(Query("uploadId" -> upload.uploadId))
       ).withEntity(entity).withDefaultHeaders(headers)
@@ -261,7 +261,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
     val allHeaders = s3Headers ++ copyHeaders
 
-    s3Request(upload.s3Location,
+    s3Request(S3Location(upload.bucket, upload.key),
               HttpMethods.PUT,
               _.withQuery(Query("partNumber" -> copyPartition.partNumber.toString, "uploadId" -> upload.uploadId)))
       .withDefaultHeaders(allHeaders)
