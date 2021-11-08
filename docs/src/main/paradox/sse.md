@@ -29,7 +29,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Usage
 
-Define an `EventSource` by giving a URI, a function for sending HTTP requests, and an optional initial value for Last-Evend-ID header:  
+Define an `EventSource` by giving a URI, a function for sending HTTP requests, and an optional initial value for Last-Event-ID header:  
 
 Scala
 : @@snip [snip](/sse/src/test/scala/docs/scaladsl/EventSourceSpec.scala) { #event-source }
