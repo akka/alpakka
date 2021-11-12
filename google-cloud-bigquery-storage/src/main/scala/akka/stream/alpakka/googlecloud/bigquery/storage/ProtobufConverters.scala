@@ -4,13 +4,17 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.storage
 
+import akka.annotation.InternalApi
 import com.google.cloud.bigquery.storage.v1.ReadSession.TableReadOptions
 import com.google.cloud.bigquery.storage.v1.stream.ReadSession
 import scalapb.UnknownFieldSet
 
 import scala.collection.JavaConverters._
 
-private[storage] object ProtobufConverters {
+/**
+ * Internal API
+ */
+@InternalApi private[storage] object ProtobufConverters {
 
   implicit class TableReadOptionsAsScala(val readOption: TableReadOptions) {
     def asScala(): ReadSession.TableReadOptions = {

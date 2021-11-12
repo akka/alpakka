@@ -17,6 +17,7 @@ import akka.stream.scaladsl.Source
 import com.google.cloud.bigquery.storage.v1.stream.ReadSession.TableReadOptions
 
 import scala.concurrent.Future
+
 //#read-all
 
 class ExampleReader {

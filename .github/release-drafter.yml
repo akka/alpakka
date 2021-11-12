@@ -46,6 +46,8 @@ categories:
     label: 'p:geode'
   - title: 'Google Cloud BigQuery'
     label: 'p:google-cloud-bigquery'
+  - title: 'Google Cloud BigQuery Storage'
+    label: 'p:google-cloud-bigquery-storage'
   - title: 'Google Cloud Pub/Sub'
     label: 'p:google-cloud-pub-sub'
   - title: 'Google Cloud Pub/Sub gRPC'
