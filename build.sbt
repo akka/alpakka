@@ -82,9 +82,15 @@ lazy val alpakka = project
         .filterNot(_.data.getAbsolutePath.contains("commons-net-3.1.jar"))
         .filterNot(_.data.getAbsolutePath.contains("protobuf-java-2.6.1.jar"))
     },
-    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(`doc-examples`,
-                                                                             csvBench,
-                                                                             mqttStreamingBench),
+    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject
+      -- inProjects(
+        `doc-examples`,
+        csvBench,
+        mqttStreamingBench,
+        // googleCloudPubSubGrpc and googleCloudBigQueryStorage contain the same gRPC generated classes
+        // don't include ScalaDocs for googleCloudBigQueryStorage to make it work
+        googleCloudBigQueryStorage
+      ),
     crossScalaVersions := List() // workaround for https://github.com/sbt/sbt/issues/3465
   )
 
