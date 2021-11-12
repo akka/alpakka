@@ -26,6 +26,8 @@ import software.amazon.awssdk.regions.Region
 
   private val credentials: AwsCredentials = credProvider.resolveCredentials
 
+  def anonymous: Boolean = credentials.secretAccessKey() == None.orNull && credentials.accessKeyId() == None.orNull
+
   val rawKey = new SecretKeySpec(s"AWS4${credentials.secretAccessKey}".getBytes, algorithm)
 
   val sessionToken: Option[String] = credentials match {

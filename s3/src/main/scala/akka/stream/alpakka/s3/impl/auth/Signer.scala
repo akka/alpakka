@@ -17,20 +17,24 @@ import akka.stream.scaladsl.Source
 @InternalApi private[impl] object Signer {
   private val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmssX")
 
-  def signedRequest(request: HttpRequest, key: SigningKey): Source[HttpRequest, NotUsed] = {
-    val hashedBody = request.entity.dataBytes.via(digest()).map(hash => encodeHex(hash.toArray))
+  def signedRequest(request: HttpRequest,
+                    key: SigningKey,
+                    signAnonymousRequests: Boolean): Source[HttpRequest, NotUsed] =
+    if (!signAnonymousRequests && key.anonymous) Source.single(request)
+    else {
+      val hashedBody = request.entity.dataBytes.via(digest()).map(hash => encodeHex(hash.toArray))
 
-    hashedBody
-      .map { hb =>
-        val headersToAdd = Vector(RawHeader("x-amz-date", key.requestDate.format(dateFormatter)),
-                                  RawHeader("x-amz-content-sha256", hb)) ++ sessionHeader(key)
-        val reqWithHeaders = request.withHeaders(request.headers ++ headersToAdd)
-        val cr = CanonicalRequest.from(reqWithHeaders)
-        val authHeader = authorizationHeader("AWS4-HMAC-SHA256", key, key.requestDate, cr)
-        reqWithHeaders.withHeaders(reqWithHeaders.headers :+ authHeader)
-      }
-      .mapMaterializedValue(_ => NotUsed)
-  }
+      hashedBody
+        .map { hb =>
+          val headersToAdd = Vector(RawHeader("x-amz-date", key.requestDate.format(dateFormatter)),
+                                    RawHeader("x-amz-content-sha256", hb)) ++ sessionHeader(key)
+          val reqWithHeaders = request.withHeaders(request.headers ++ headersToAdd)
+          val cr = CanonicalRequest.from(reqWithHeaders)
+          val authHeader = authorizationHeader("AWS4-HMAC-SHA256", key, key.requestDate, cr)
+          reqWithHeaders.withHeaders(reqWithHeaders.headers :+ authHeader)
+        }
+        .mapMaterializedValue(_ => NotUsed)
+    }
 
   private[this] def sessionHeader(key: SigningKey): Option[HttpHeader] =
     key.sessionToken.map(RawHeader("X-Amz-Security-Token", _))

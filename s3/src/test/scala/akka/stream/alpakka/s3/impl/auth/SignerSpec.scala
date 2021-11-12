@@ -41,8 +41,8 @@ class SignerSpec(_system: ActorSystem)
 
   override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 
-  def signingKey(dateTime: ZonedDateTime) =
-    SigningKey(dateTime, credentials, CredentialScope(dateTime.toLocalDate, Region.US_EAST_1, "iam"))
+  def signingKey(dateTime: ZonedDateTime, provider: AwsCredentialsProvider = credentials) =
+    SigningKey(dateTime, provider, CredentialScope(dateTime.toLocalDate, Region.US_EAST_1, "iam"))
 
   val cr = CanonicalRequest(
     "GET",
@@ -71,7 +71,7 @@ class SignerSpec(_system: ActorSystem)
 
     val date = LocalDateTime.of(2015, 8, 30, 12, 36, 0).atZone(ZoneOffset.UTC)
     val srFuture =
-      Signer.signedRequest(req, signingKey(date)).runWith(Sink.head)
+      Signer.signedRequest(req, signingKey(date), signAnonymousRequests = true).runWith(Sink.head)
     whenReady(srFuture) { signedRequest =>
       signedRequest should equal(
         HttpRequest(HttpMethods.GET)
@@ -96,7 +96,7 @@ class SignerSpec(_system: ActorSystem)
 
     val date = LocalDateTime.of(2017, 12, 31, 12, 36, 0).atZone(ZoneOffset.UTC)
     val srFuture =
-      Signer.signedRequest(req, signingKey(date)).runWith(Sink.head)
+      Signer.signedRequest(req, signingKey(date), signAnonymousRequests = true).runWith(Sink.head)
 
     whenReady(srFuture) { signedRequest =>
       signedRequest.getHeader("x-amz-date").get.value should equal("20171231T123600Z")
@@ -118,7 +118,7 @@ class SignerSpec(_system: ActorSystem)
     val key = SigningKey(date, sessionCredentialsProvider, CredentialScope(date.toLocalDate, Region.US_EAST_1, "iam"))
 
     val srFuture =
-      Signer.signedRequest(req, key).runWith(Sink.head)
+      Signer.signedRequest(req, key, signAnonymousRequests = true).runWith(Sink.head)
 
     whenReady(srFuture) { signedRequest =>
       signedRequest.getHeader("x-amz-security-token").get.value should equal(sessionCredentials.sessionToken)
@@ -135,13 +135,28 @@ class SignerSpec(_system: ActorSystem)
       )
 
     val date = LocalDateTime.of(2015, 8, 30, 12, 36, 0).atZone(ZoneOffset.UTC)
-    val srFuture = Signer.signedRequest(req, signingKey(date)).runWith(Sink.head)
+    val srFuture = Signer.signedRequest(req, signingKey(date), signAnonymousRequests = true).runWith(Sink.head)
 
     whenReady(srFuture) { signedRequest =>
       signedRequest.getHeader("Authorization").asScala.value shouldEqual RawHeader(
         "Authorization",
         "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20150830/us-east-1/iam/aws4_request, SignedHeaders=content-type;host;x-amz-content-sha256;x-amz-date, Signature=dd479fa8a80364edf2119ec24bebde66712ee9c9cb2b0d92eb3ab9ccdc0c3947"
       )
+    }
+  }
+
+  it should "skip signing when signAnonymousRequests is false and credentials are anonymous" in {
+    val req = HttpRequest(HttpMethods.GET)
+      .withUri("https://iam.amazonaws.com/?Action=ListUsers&Version=2010-05-08")
+
+    val date = LocalDateTime.of(2017, 12, 31, 12, 36, 0).atZone(ZoneOffset.UTC)
+    val srFuture =
+      Signer
+        .signedRequest(req, signingKey(date, AnonymousCredentialsProvider.create()), signAnonymousRequests = false)
+        .runWith(Sink.head)
+
+    whenReady(srFuture) { signedRequest =>
+      signedRequest.headers shouldBe empty
     }
   }
 }

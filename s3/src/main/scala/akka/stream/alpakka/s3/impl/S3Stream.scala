@@ -1112,7 +1112,10 @@ import scala.util.{Failure, Success, Try}
                   uploadPartRequest(uploadInfo, chunkIndex, chunkedPayload, headers)
                 (partRequest, (uploadInfo, chunkIndex))
             }
-            .flatMapConcat { case (req, info) => Signer.signedRequest(req, signingKey).zip(Source.single(info)) }
+            .flatMapConcat {
+              case (req, info) =>
+                Signer.signedRequest(req, signingKey, conf.signAnonymousRequests).zip(Source.single(info))
+            }
             .via(superPool[(MultipartUpload, Int)])
 
         import conf.multipartUploadSettings.retrySettings._
@@ -1251,7 +1254,7 @@ import scala.util.{Failure, Success, Try}
     import mat.executionContext
 
     val retriableFlow = Flow[HttpRequest]
-      .flatMapConcat(req => Signer.signedRequest(req, signingKey))
+      .flatMapConcat(req => Signer.signedRequest(req, signingKey, conf.signAnonymousRequests))
       .mapAsync(parallelism = 1)(
         req =>
           singleRequest(req)
@@ -1326,7 +1329,8 @@ import scala.util.{Failure, Success, Try}
           }
           .mapConcat(identity)
           .flatMapConcat {
-            case (req, info) => Signer.signedRequest(req, signingKey).zip(Source.single(info))
+            case (req, info) =>
+              Signer.signedRequest(req, signingKey, conf.signAnonymousRequests).zip(Source.single(info))
           }
       }
       .mapMaterializedValue(_ => NotUsed)
