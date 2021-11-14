@@ -4,23 +4,20 @@
 
 package docs.scaladsl
 
-import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.http.scaladsl.unmarshalling.FromByteStringUnmarshaller
 import akka.stream.alpakka.googlecloud.bigquery.storage.{BigQueryRecord, BigQueryStorageSettings}
-import akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl.{
-  BigQueryArrowStorage,
-  BigQueryAvroStorage,
-  BigQueryStorageAttributes,
-  GrpcBigQueryStorageReader
-}
-import com.google.cloud.bigquery.storage.v1.DataFormat
-import com.google.cloud.bigquery.storage.v1.storage.ReadRowsResponse
-import com.google.cloud.bigquery.storage.v1.stream.ReadSession
+import akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl.{BigQueryArrowStorage, BigQueryAvroStorage, BigQueryStorageAttributes, GrpcBigQueryStorageReader}
+import org.scalatestplus.mockito.MockitoSugar.mock
+
 //#read-all
+import akka.NotUsed
+import com.google.cloud.bigquery.storage.v1.storage.ReadRowsResponse
+import com.google.cloud.bigquery.storage.v1.DataFormat
+import com.google.cloud.bigquery.storage.v1.stream.ReadSession
 import akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl.BigQueryStorage
 import akka.stream.scaladsl.Source
 import com.google.cloud.bigquery.storage.v1.stream.ReadSession.TableReadOptions
-
 import scala.concurrent.Future
 
 //#read-all
@@ -42,6 +39,7 @@ class ExampleReader {
   //#read-options
 
   //#read-merged
+  implicit val unmarshaller: FromByteStringUnmarshaller[List[BigQueryRecord]] = mock[FromByteStringUnmarshaller[List[BigQueryRecord]]]
   val sequentialSource: Source[List[BigQueryRecord], Future[NotUsed]] =
     BigQueryStorage.createMergedStreams("projectId", "datasetId", "tableId", DataFormat.AVRO)
   //#read-merged

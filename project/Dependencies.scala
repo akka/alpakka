@@ -238,7 +238,7 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http-spray-json" % "10.1.12",
         "org.apache.arrow" % "arrow-memory-netty" % "4.0.0" % Test,
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion
-      ) ++ Silencer
+      ) ++ Mockito ++ Silencer
   )
 
   val GooglePubSub = Seq(
