@@ -65,7 +65,7 @@ Java
 
 We can read in a number of ways. To read data from a table a read session needs to be created. 
 On the session creation we can specify the number of streams to be used in order to transfer the data, this makes it feasible to achieve parallelism while ingesting the data, thus achieving better performance.
-To create a session the data format needs to be specified. The options provided are AVRO and Arrow.
+To create a session the data format needs to be specified. The options provided are Avro and Arrow.
 
 If no TableReadOptions are specified all the table's columns shall be retrieved as a Source containing a Source for each stream, which will each deliver a section of the rows:
 Scala
@@ -98,7 +98,7 @@ Scala
 Java
 : @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-all }
 
-Since AVRO and Arrow are the formats available, streams for those specific formats can be created.
+Since Avro and Arrow are the formats available, streams for those specific formats can be created.
 
 You can read Arrow Records sequentially
 
@@ -115,6 +115,22 @@ Scala
 
 Java
 : @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-arrow-parallel }
+
+You can read Avro Records sequentially
+
+Scala
+: @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-avro-sequential }
+
+Java
+: @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-avro-sequential }
+
+You can read Arrow Records parallel
+
+Scala
+: @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-avro-parallel }
+
+Java
+: @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-avro-parallel }
 
 
 

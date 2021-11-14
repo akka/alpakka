@@ -14,6 +14,7 @@ import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryRecord;
 import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryStorageSettings;
 import akka.stream.alpakka.googlecloud.bigquery.storage.javadsl.BigQueryArrowStorage;
+import akka.stream.alpakka.googlecloud.bigquery.storage.javadsl.BigQueryAvroStorage;
 import akka.stream.alpakka.googlecloud.bigquery.storage.javadsl.BigQueryStorage;
 import akka.stream.alpakka.googlecloud.bigquery.storage.javadsl.BigQueryStorageAttributes;
 import akka.stream.alpakka.googlecloud.bigquery.storage.javadsl.GrpcBigQueryStorageReader;
@@ -68,15 +69,25 @@ public class ExampleReader {
 
   // #read-sequential
 
-  //#read-arrow-sequential
+  // #read-arrow-sequential
   Source<List<BigQueryRecord>, CompletionStage<NotUsed>> arrowSequentialSource =
-          BigQueryArrowStorage.readRecordsMerged("projectId", "datasetId", "tableId");
-  //#read-arrow-sequential
+      BigQueryArrowStorage.readRecordsMerged("projectId", "datasetId", "tableId");
+  // #read-arrow-sequential
 
-  //#read-arrow-parallel
-  Source<List<Source<BigQueryRecord,NotUsed>>, CompletionStage<NotUsed>> arrowParallelSource =
-          BigQueryArrowStorage.readRecords("projectId", "datasetId", "tableId");
-  //#read-arrow-parallel
+  // #read-arrow-parallel
+  Source<List<Source<BigQueryRecord, NotUsed>>, CompletionStage<NotUsed>> arrowParallelSource =
+      BigQueryArrowStorage.readRecords("projectId", "datasetId", "tableId");
+  // #read-arrow-parallel
+
+  // #read-avro-sequential
+  Source<List<BigQueryRecord>, CompletionStage<NotUsed>> avroSequentialSource =
+          BigQueryAvroStorage.readRecordsMerged("projectId", "datasetId", "tableId");
+  // #read-avro-sequential
+
+  // #read-avro-parallel
+  Source<List<Source<BigQueryRecord, NotUsed>>, CompletionStage<NotUsed>> avroParallelSource =
+          BigQueryAvroStorage.readRecords("projectId", "datasetId", "tableId");
+  // #read-avro-parallel
 
   // #attributes
   GrpcBigQueryStorageReader reader =
