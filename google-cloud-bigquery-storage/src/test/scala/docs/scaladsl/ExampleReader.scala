@@ -8,7 +8,7 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.unmarshalling.FromByteStringUnmarshaller
 import akka.stream.alpakka.googlecloud.bigquery.storage.{BigQueryRecord, BigQueryStorageSettings}
-import akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl.{BigQueryStorageAttributes, GrpcBigQueryStorageReader}
+import akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl.{BigQueryArrowStorage, BigQueryStorageAttributes, GrpcBigQueryStorageReader}
 import com.google.cloud.bigquery.storage.v1.DataFormat
 import com.google.cloud.bigquery.storage.v1.storage.ReadRowsResponse
 import com.google.cloud.bigquery.storage.v1.stream.ReadSession
@@ -43,10 +43,15 @@ class ExampleReader {
     BigQueryStorage.createMergedStreams("projectId", "datasetId", "tableId", DataFormat.AVRO)
   //#read-sequential
 
-  //#read-parallel
-  val parallelSource: Source[(ReadSession.Schema, Seq[Source[ReadRowsResponse.Rows, NotUsed]]), Future[NotUsed]] =
-    BigQueryStorage.create("projectId", "datasetId", "tableId", DataFormat.AVRO, Some(readOptions), 4)
-  //#read-parallel
+  //#read-arrow-sequential
+  val arrowSequentialSource: Source[Seq[BigQueryRecord], Future[NotUsed]] =
+    BigQueryArrowStorage.readRecordsMerged("projectId", "datasetId", "tableId")
+  //#read-arrow-sequential
+
+  //#read-arrow-parallel
+  val arrowParallelSource: Source[Seq[Source[BigQueryRecord, NotUsed]], Future[NotUsed]] =
+    BigQueryArrowStorage.readRecords("projectId", "datasetId", "tableId")
+  //#read-arrow-parallel
 
   //#attributes
   val reader: GrpcBigQueryStorageReader = GrpcBigQueryStorageReader(BigQueryStorageSettings("localhost", 8000))

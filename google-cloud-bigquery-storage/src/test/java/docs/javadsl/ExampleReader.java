@@ -13,6 +13,7 @@ import akka.stream.ActorMaterializer;
 // #read-all
 import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryRecord;
 import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryStorageSettings;
+import akka.stream.alpakka.googlecloud.bigquery.storage.javadsl.BigQueryArrowStorage;
 import akka.stream.alpakka.googlecloud.bigquery.storage.javadsl.BigQueryStorage;
 import akka.stream.alpakka.googlecloud.bigquery.storage.javadsl.BigQueryStorageAttributes;
 import akka.stream.alpakka.googlecloud.bigquery.storage.javadsl.GrpcBigQueryStorageReader;
@@ -67,15 +68,15 @@ public class ExampleReader {
 
   // #read-sequential
 
-  // #read-parallel
-  Source<
-          Tuple2<
-              com.google.cloud.bigquery.storage.v1.stream.ReadSession.Schema,
-              List<Source<ReadRowsResponse.Rows, NotUsed>>>,
-          CompletionStage<NotUsed>>
-      parallelSource =
-          BigQueryStorage.create("projectId", "datasetId", "tableId", DataFormat.AVRO, 4);
-  // #read-parallel
+  //#read-arrow-sequential
+  Source<List<BigQueryRecord>, CompletionStage<NotUsed>> arrowSequentialSource =
+          BigQueryArrowStorage.readRecordsMerged("projectId", "datasetId", "tableId");
+  //#read-arrow-sequential
+
+  //#read-arrow-parallel
+  Source<List<Source<BigQueryRecord,NotUsed>>, CompletionStage<NotUsed>> arrowParallelSource =
+          BigQueryArrowStorage.readRecords("projectId", "datasetId", "tableId");
+  //#read-arrow-parallel
 
   // #attributes
   GrpcBigQueryStorageReader reader =

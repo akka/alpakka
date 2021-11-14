@@ -82,7 +82,7 @@ Scala
 Java
 : @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-options }
 
-You can then choose to read and process these streams sequentially, essentially with no parallelism. You need to provide a from ByteString Unmarshaller implementation based on the format requested.
+You can then choose to read and process these streams sequentially, essentially with no parallelism. You need to provide a ByteString Unmarshaller based on the format requested.
 
 Scala
 : @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-sequential }
@@ -91,11 +91,31 @@ Java
 : @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-sequential }
 
 Or in parallel by processing streams of rows:
+
 Scala
 : @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-all }
 
 Java
 : @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-all }
+
+Since AVRO and Arrow are the formats available, streams for those specific formats can be created.
+
+You can read Arrow Records sequentially
+
+Scala
+: @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-arrow-sequential }
+
+Java
+: @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-arrow-sequential }
+
+You can read Arrow Records parallel
+
+Scala
+: @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-arrow-parallel }
+
+Java
+: @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-arrow-parallel }
+
 
 
 ## Running the test code
