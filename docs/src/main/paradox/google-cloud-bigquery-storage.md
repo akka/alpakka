@@ -117,7 +117,7 @@ Scala
 Java
 : @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-arrow-all }
 
-You can read Avro Records sequentially
+You can read Avro Record streams merged
 
 Scala
 : @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-avro-merged }
@@ -125,7 +125,7 @@ Scala
 Java
 : @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-avro-merged }
 
-You can read Arrow Records parallel
+You can read Avro Record streams individually
 
 Scala
 : @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-avro-all }
