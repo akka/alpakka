@@ -82,15 +82,16 @@ Scala
 Java
 : @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-options }
 
-You can then choose to read and process these streams sequentially, essentially with no parallelism. You need to provide a ByteString Unmarshaller based on the format requested.
+You can then choose to read and process these streams as is or merged. 
+You can process the streams merged in rows. You need to provide a ByteString Unmarshaller based on the format requested.
 
 Scala
-: @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-sequential }
+: @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-merged}
 
 Java
-: @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-sequential }
+: @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-merged }
 
-Or in parallel by processing streams of rows:
+Or process the stream of rows individually:
 
 Scala
 : @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-all }
@@ -100,37 +101,37 @@ Java
 
 Since Avro and Arrow are the formats available, streams for those specific formats can be created.
 
-You can read Arrow Records sequentially
+You can read Arrow Record streams merged 
 
 Scala
-: @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-arrow-sequential }
+: @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-arrow-merged }
 
 Java
-: @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-arrow-sequential }
+: @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-arrow-merged }
 
-You can read Arrow Records parallel
+You can read Arrow Record streams individually 
 
 Scala
-: @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-arrow-parallel }
+: @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-arrow-all }
 
 Java
-: @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-arrow-parallel }
+: @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-arrow-all }
 
 You can read Avro Records sequentially
 
 Scala
-: @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-avro-sequential }
+: @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-avro-merged }
 
 Java
-: @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-avro-sequential }
+: @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-avro-merged }
 
 You can read Arrow Records parallel
 
 Scala
-: @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-avro-parallel }
+: @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-avro-all }
 
 Java
-: @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-avro-parallel }
+: @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-avro-all }
 
 
 

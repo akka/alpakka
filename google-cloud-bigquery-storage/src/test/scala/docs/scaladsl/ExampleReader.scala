@@ -42,31 +42,31 @@ class ExampleReader {
     BigQueryStorage.create("projectId", "datasetId", "tableId", DataFormat.AVRO, Some(readOptions))
   //#read-options
 
-  //#read-sequential
+  //#read-merged
   implicit val unmarshaller: FromByteStringUnmarshaller[List[BigQueryRecord]] = ???
   val sequentialSource: Source[List[BigQueryRecord], Future[NotUsed]] =
     BigQueryStorage.createMergedStreams("projectId", "datasetId", "tableId", DataFormat.AVRO)
-  //#read-sequential
+  //#read-merged
 
-  //#read-arrow-sequential
+  //#read-arrow-merged
   val arrowSequentialSource: Source[Seq[BigQueryRecord], Future[NotUsed]] =
     BigQueryArrowStorage.readRecordsMerged("projectId", "datasetId", "tableId")
-  //#read-arrow-sequential
+  //#read-arrow-merged
 
-  //#read-arrow-parallel
+  //#read-arrow-all
   val arrowParallelSource: Source[Seq[Source[BigQueryRecord, NotUsed]], Future[NotUsed]] =
     BigQueryArrowStorage.readRecords("projectId", "datasetId", "tableId")
-  //#read-arrow-parallel
+  //#read-arrow-all
 
-  //#read-avro-sequential
+  //#read-avro-merged
   val avroSequentialSource: Source[Seq[BigQueryRecord], Future[NotUsed]] =
     BigQueryAvroStorage.readRecordsMerged("projectId", "datasetId", "tableId")
-  //#read-avro-sequential
+  //#read-avro-merged
 
-  //#read-avro-parallel
+  //#read-avro-all
   val avroParallelSource: Source[Seq[Source[BigQueryRecord, NotUsed]], Future[NotUsed]] =
     BigQueryAvroStorage.readRecords("projectId", "datasetId", "tableId")
-  //#read-avro-parallel
+  //#read-avro-all
 
   //#attributes
   val reader: GrpcBigQueryStorageReader = GrpcBigQueryStorageReader(BigQueryStorageSettings("localhost", 8000))

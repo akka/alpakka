@@ -61,33 +61,32 @@ public class ExampleReader {
               "projectId", "datasetId", "tableId", DataFormat.AVRO, readOptions, 1);
   // #read-options
 
-  // #read-sequential
+  // #read-merged
   Unmarshaller<ByteString, List<BigQueryRecord>> unmarshaller = null;
   Source<List<BigQueryRecord>, CompletionStage<NotUsed>> sequentialSource =
       BigQueryStorage.<List<BigQueryRecord>>createMergedStreams(
           "projectId", "datasetId", "tableId", DataFormat.AVRO, unmarshaller);
+  // #read-merged
 
-  // #read-sequential
-
-  // #read-arrow-sequential
+  // #read-arrow-merged
   Source<List<BigQueryRecord>, CompletionStage<NotUsed>> arrowSequentialSource =
       BigQueryArrowStorage.readRecordsMerged("projectId", "datasetId", "tableId");
-  // #read-arrow-sequential
+  // #read-arrow-merged
 
-  // #read-arrow-parallel
+  // #read-arrow-all
   Source<List<Source<BigQueryRecord, NotUsed>>, CompletionStage<NotUsed>> arrowParallelSource =
       BigQueryArrowStorage.readRecords("projectId", "datasetId", "tableId");
-  // #read-arrow-parallel
+  // #read-arrow-all
 
-  // #read-avro-sequential
+  // #read-avro-merged
   Source<List<BigQueryRecord>, CompletionStage<NotUsed>> avroSequentialSource =
       BigQueryAvroStorage.readRecordsMerged("projectId", "datasetId", "tableId");
-  // #read-avro-sequential
+  // #read-avro-merged
 
-  // #read-avro-parallel
+  // #read-avro-all
   Source<List<Source<BigQueryRecord, NotUsed>>, CompletionStage<NotUsed>> avroParallelSource =
       BigQueryAvroStorage.readRecords("projectId", "datasetId", "tableId");
-  // #read-avro-parallel
+  // #read-avro-all
 
   // #attributes
   GrpcBigQueryStorageReader reader =
