@@ -6,7 +6,6 @@ package docs.scaladsl
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.http.scaladsl.unmarshalling.FromByteStringUnmarshaller
 import akka.stream.alpakka.googlecloud.bigquery.storage.{BigQueryRecord, BigQueryStorageSettings}
 import akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl.{
   BigQueryArrowStorage,
@@ -43,7 +42,6 @@ class ExampleReader {
   //#read-options
 
   //#read-merged
-  implicit val unmarshaller: FromByteStringUnmarshaller[List[BigQueryRecord]] = ???
   val sequentialSource: Source[List[BigQueryRecord], Future[NotUsed]] =
     BigQueryStorage.createMergedStreams("projectId", "datasetId", "tableId", DataFormat.AVRO)
   //#read-merged
