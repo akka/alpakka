@@ -81,12 +81,12 @@ public class ExampleReader {
 
   // #read-avro-sequential
   Source<List<BigQueryRecord>, CompletionStage<NotUsed>> avroSequentialSource =
-          BigQueryAvroStorage.readRecordsMerged("projectId", "datasetId", "tableId");
+      BigQueryAvroStorage.readRecordsMerged("projectId", "datasetId", "tableId");
   // #read-avro-sequential
 
   // #read-avro-parallel
   Source<List<Source<BigQueryRecord, NotUsed>>, CompletionStage<NotUsed>> avroParallelSource =
-          BigQueryAvroStorage.readRecords("projectId", "datasetId", "tableId");
+      BigQueryAvroStorage.readRecords("projectId", "datasetId", "tableId");
   // #read-avro-parallel
 
   // #attributes

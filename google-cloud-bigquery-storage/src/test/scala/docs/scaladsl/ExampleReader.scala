@@ -8,7 +8,12 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.unmarshalling.FromByteStringUnmarshaller
 import akka.stream.alpakka.googlecloud.bigquery.storage.{BigQueryRecord, BigQueryStorageSettings}
-import akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl.{BigQueryArrowStorage, BigQueryAvroStorage, BigQueryStorageAttributes, GrpcBigQueryStorageReader}
+import akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl.{
+  BigQueryArrowStorage,
+  BigQueryAvroStorage,
+  BigQueryStorageAttributes,
+  GrpcBigQueryStorageReader
+}
 import com.google.cloud.bigquery.storage.v1.DataFormat
 import com.google.cloud.bigquery.storage.v1.storage.ReadRowsResponse
 import com.google.cloud.bigquery.storage.v1.stream.ReadSession
