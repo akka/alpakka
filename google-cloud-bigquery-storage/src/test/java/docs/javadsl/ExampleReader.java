@@ -11,15 +11,18 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 // #read-all
+import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryRecord;
 import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryStorageSettings;
 import akka.stream.alpakka.googlecloud.bigquery.storage.javadsl.BigQueryStorage;
 import akka.stream.alpakka.googlecloud.bigquery.storage.javadsl.BigQueryStorageAttributes;
 import akka.stream.alpakka.googlecloud.bigquery.storage.javadsl.GrpcBigQueryStorageReader;
 import akka.stream.javadsl.Source;
+import akka.util.ByteString;
 import scala.Tuple2;
 import com.google.cloud.bigquery.storage.v1.DataFormat;
 import com.google.cloud.bigquery.storage.v1.ReadSession;
 import com.google.cloud.bigquery.storage.v1.storage.ReadRowsResponse;
+import akka.http.javadsl.unmarshalling.Unmarshaller;
 
 // #read-all
 
@@ -55,6 +58,24 @@ public class ExampleReader {
           BigQueryStorage.create(
               "projectId", "datasetId", "tableId", DataFormat.AVRO, readOptions, 1);
   // #read-options
+
+  // #read-sequential
+  Unmarshaller<ByteString, List<BigQueryRecord>> unmarshaller = null;
+  Source<List<BigQueryRecord>, CompletionStage<NotUsed>> sequentialSource =
+      BigQueryStorage.<List<BigQueryRecord>>createMergedStreams(
+          "projectId", "datasetId", "tableId", DataFormat.AVRO, unmarshaller);
+
+  // #read-sequential
+
+  // #read-parallel
+  Source<
+          Tuple2<
+              com.google.cloud.bigquery.storage.v1.stream.ReadSession.Schema,
+              List<Source<ReadRowsResponse.Rows, NotUsed>>>,
+          CompletionStage<NotUsed>>
+      parallelSource =
+          BigQueryStorage.create("projectId", "datasetId", "tableId", DataFormat.AVRO, 4);
+  // #read-parallel
 
   // #attributes
   GrpcBigQueryStorageReader reader =

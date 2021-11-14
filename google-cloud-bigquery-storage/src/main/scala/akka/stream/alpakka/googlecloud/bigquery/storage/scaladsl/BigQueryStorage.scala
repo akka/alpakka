@@ -49,8 +49,7 @@ object BigQueryStorage {
       tableId: String,
       dataFormat: DataFormat,
       readOptions: Option[TableReadOptions] = None,
-      maxNumStreams: Int = 0,
-      parallelism: Int = 1
+      maxNumStreams: Int = 0
   )(implicit um: FromByteStringUnmarshaller[A]): Source[A, Future[NotUsed]] = {
     Source.fromMaterializer { (mat, attr) =>
       {

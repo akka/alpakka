@@ -5,10 +5,12 @@
 package akka.stream.alpakka.googlecloud.bigquery.storage.javadsl
 
 import akka.NotUsed
+import akka.http.javadsl.unmarshalling.Unmarshaller
 import akka.http.scaladsl.unmarshalling.FromByteStringUnmarshaller
 import akka.stream.alpakka.googlecloud.bigquery.storage.ProtobufConverters._
 import akka.stream.alpakka.googlecloud.bigquery.storage.{scaladsl => scstorage}
 import akka.stream.javadsl.Source
+import akka.util.ByteString
 import com.google.cloud.bigquery.storage.v1.DataFormat
 import com.google.cloud.bigquery.storage.v1.ReadSession.TableReadOptions
 import com.google.cloud.bigquery.storage.v1.storage.ReadRowsResponse
@@ -129,8 +131,8 @@ object BigQueryStorage {
                              datasetId: String,
                              tableId: String,
                              dataFormat: DataFormat,
-                             um: FromByteStringUnmarshaller[A]): Source[A, CompletionStage[NotUsed]] =
-    createMergedStreams(projectId, datasetId, tableId, dataFormat, None, 1, um)
+                             um: Unmarshaller[ByteString, A]): Source[A, CompletionStage[NotUsed]] =
+    createMergedStreams(projectId, datasetId, tableId, dataFormat, None, 1, um.asScala)
 
   /**
    * Create a source that contains a number of sources, one for each stream, or section of the table data.
@@ -147,8 +149,8 @@ object BigQueryStorage {
                              tableId: String,
                              dataFormat: DataFormat,
                              readOptions: TableReadOptions,
-                             um: FromByteStringUnmarshaller[A]): Source[A, CompletionStage[NotUsed]] =
-    createMergedStreams(projectId, datasetId, tableId, dataFormat, Some(readOptions), 0, um)
+                             um: Unmarshaller[ByteString, A]): Source[A, CompletionStage[NotUsed]] =
+    createMergedStreams(projectId, datasetId, tableId, dataFormat, Some(readOptions), 0, um.asScala)
 
   /**
    * Create a source that contains a number of sources, one for each stream, or section of the table data.
@@ -169,8 +171,8 @@ object BigQueryStorage {
                              dataFormat: DataFormat,
                              readOptions: TableReadOptions,
                              maxNumStreams: Int,
-                             um: FromByteStringUnmarshaller[A]): Source[A, CompletionStage[NotUsed]] =
-    createMergedStreams(projectId, datasetId, tableId, dataFormat, Some(readOptions), maxNumStreams, um)
+                             um: Unmarshaller[ByteString, A]): Source[A, CompletionStage[NotUsed]] =
+    createMergedStreams(projectId, datasetId, tableId, dataFormat, Some(readOptions), maxNumStreams, um.asScala)
 
   /**
    * Create a source that contains a number of sources, one for each stream, or section of the table data.
@@ -190,8 +192,8 @@ object BigQueryStorage {
                              tableId: String,
                              dataFormat: DataFormat,
                              maxNumStreams: Int,
-                             um: FromByteStringUnmarshaller[A]): Source[A, CompletionStage[NotUsed]] =
-    createMergedStreams(projectId, datasetId, tableId, dataFormat, None, maxNumStreams, um)
+                             um: Unmarshaller[ByteString, A]): Source[A, CompletionStage[NotUsed]] =
+    createMergedStreams(projectId, datasetId, tableId, dataFormat, None, maxNumStreams, um.asScala)
 
   private[this] def createMergedStreams[A](
       projectId: String,
