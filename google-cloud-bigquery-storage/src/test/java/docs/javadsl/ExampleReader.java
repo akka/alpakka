@@ -16,8 +16,8 @@ import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryStorageSettings;
 import akka.stream.alpakka.googlecloud.bigquery.storage.javadsl.BigQueryArrowStorage;
 import akka.stream.alpakka.googlecloud.bigquery.storage.javadsl.BigQueryAvroStorage;
 import akka.stream.alpakka.googlecloud.bigquery.storage.javadsl.BigQueryStorage;
-import akka.stream.alpakka.googlecloud.bigquery.storage.javadsl.BigQueryStorageAttributes;
-import akka.stream.alpakka.googlecloud.bigquery.storage.javadsl.GrpcBigQueryStorageReader;
+import akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl.BigQueryStorageAttributes;
+import akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl.GrpcBigQueryStorageReader;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import scala.Tuple2;
@@ -90,7 +90,7 @@ public class ExampleReader {
 
   // #attributes
   GrpcBigQueryStorageReader reader =
-      GrpcBigQueryStorageReader.create(BigQueryStorageSettings.apply("localhost", 8000), sys);
+      GrpcBigQueryStorageReader.apply(BigQueryStorageSettings.apply("localhost", 8000), sys);
 
   Source<
           Tuple2<

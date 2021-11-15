@@ -73,10 +73,16 @@ public class BigQueryStorageSpec extends BigQueryStorageSpecBase {
 
     AvroByteStringDecoder um = new AvroByteStringDecoder(FullAvroSchema());
 
-    CompletionStage<List<List<BigQueryRecord>>> bigQueryRecords =
+    List<List<BigQueryRecord>> bigQueryRecords =
         BigQueryStorage.createMergedStreams(Project(), Dataset(), Table(), DataFormat.AVRO, um)
             .withAttributes(mockBQReader())
-            .runWith(Sink.seq(), system());
+            .runWith(Sink.seq(), system())
+            .toCompletableFuture()
+            .get();
+
+    assertEquals(bigQueryRecords.size(), DefaultNumStreams());
+    assertEquals(bigQueryRecords.get(0), ResponsesPerStream());
+    assertEquals(bigQueryRecords.get(0), records);
   }
 
   public Attributes mockBQReader() {
