@@ -53,6 +53,7 @@ jobs:
       name: amqp
       env:
       - PRE_CMD="docker-compose up -d amqp"
+    - name: google-cloud-bigquery-storage
     - name: avroparquet
     - name: awslambda
     - name: aws-event-bridge
@@ -80,7 +81,6 @@ jobs:
       env:
       - PRE_CMD="docker-compose up -d geode"
     - name: google-cloud-bigquery
-    - name: google-cloud-bigquery-storage
     - name: google-cloud-pub-sub
       env:
         - PRE_CMD="docker-compose up -d gcloud-pubsub-emulator_prep"

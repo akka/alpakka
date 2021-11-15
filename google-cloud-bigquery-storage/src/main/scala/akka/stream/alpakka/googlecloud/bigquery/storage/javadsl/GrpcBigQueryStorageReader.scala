@@ -8,7 +8,7 @@ import akka.actor.{ClassicActorSystemProvider, ExtendedActorSystem, Extension, E
 import akka.annotation.ApiMayChange
 import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryStorageSettings
 import akka.stream.alpakka.googlecloud.bigquery.storage.impl.AkkaGrpcSettings
-import com.google.cloud.bigquery.storage.v1.storage.{BigQueryReadClient => JavaBigQueryReadClient}
+import com.google.cloud.bigquery.storage.v1.storage.BigQueryReadClient
 
 /**
  * Holds the gRPC java reader client instance.
@@ -16,8 +16,7 @@ import com.google.cloud.bigquery.storage.v1.storage.{BigQueryReadClient => JavaB
 final class GrpcBigQueryStorageReader private (settings: BigQueryStorageSettings, sys: ClassicActorSystemProvider) {
 
   @ApiMayChange
-  final val client =
-    JavaBigQueryReadClient.create(AkkaGrpcSettings.fromBigQuerySettings(settings)(sys), sys)
+  final val client = BigQueryReadClient(AkkaGrpcSettings.fromBigQuerySettings(settings)(sys))(sys)
 
   sys.classicSystem.registerOnTermination(client.close())
 }
