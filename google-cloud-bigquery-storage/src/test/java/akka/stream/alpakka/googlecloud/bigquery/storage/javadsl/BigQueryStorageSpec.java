@@ -11,6 +11,7 @@ import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryRecord;
 import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryStorageSettings;
 import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryStorageSpecBase;
 import akka.stream.alpakka.googlecloud.bigquery.storage.impl.AvroDecoder;
+import akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl.BigQueryStorageAttributes;
 import akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl.GrpcBigQueryStorageReader;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Sink;
