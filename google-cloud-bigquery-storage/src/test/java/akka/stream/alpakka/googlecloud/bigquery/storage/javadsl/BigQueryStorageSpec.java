@@ -11,6 +11,7 @@ import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryRecord;
 import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryStorageSettings;
 import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryStorageSpecBase;
 import akka.stream.alpakka.googlecloud.bigquery.storage.impl.AvroDecoder;
+import akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl.GrpcBigQueryStorageReader;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Sink;
 
@@ -210,7 +211,7 @@ public class BigQueryStorageSpec extends BigQueryStorageSpecBase {
 
   public Attributes mockBQReader(String host, int port) {
     GrpcBigQueryStorageReader reader =
-        GrpcBigQueryStorageReader.create(BigQueryStorageSettings.create(host, port), system());
+        GrpcBigQueryStorageReader.apply(BigQueryStorageSettings.create(host, port), system());
     return BigQueryStorageAttributes.reader(reader);
   }
 
