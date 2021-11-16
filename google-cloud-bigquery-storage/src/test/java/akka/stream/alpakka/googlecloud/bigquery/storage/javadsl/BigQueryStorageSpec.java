@@ -71,5 +71,4 @@ public class BigQueryStorageSpec extends BigQueryStorageSpecBase {
     stopMock();
     system().terminate();
   }
-
 }
