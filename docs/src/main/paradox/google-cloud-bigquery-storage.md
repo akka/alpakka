@@ -1,13 +1,12 @@
 # Google Cloud BigQuery Storage
 
-@@@ note
 The BigQuery Storage API offers fast access to BigQuery-managed storage using an [rpc-based](https://cloud.google.com/bigquery/docs/reference/storage/rpc) protocol.
 It is seen as an improvement over the REST API, and bulk data `extract` jobs for accessing BigQuery-managed table data, but doesn't offer any functionality around managing BigQuery resources.
 Further information at the official [Google Cloud documentation website](https://cloud.google.com/bigquery/docs/reference/storage).
-@@@
 
 This connector communicates to the BigQuery Storage API via the gRPC protocol. The integration between Akka Stream and gRPC is handled by the
-[Akka gRPC library](https://github.com/akka/akka-grpc). Currently this connector only supports returning each row as an Avro GenericRecord.
+@extref:[Akka gRPC library](akka-grpc:/). Currently, this connector only supports returning each row as an Avro GenericRecord.
+
 @@project-info{ projectId="google-cloud-bigquery-storage" }
 
 ## Artifacts
@@ -38,50 +37,17 @@ The Alpakka Google Cloud BigQuery Storage library contains the classes generated
 
 @@@note { title="ALPN on JDK 8" }
 
-For use on JDK 8 the ALPN Java agent needs to be set up explicitly.
+HTTP/2 requires ALPN negotiation, which comes with the JDK starting with
+version 8u251.
+
+For older versions of the JDK you will need to load the `jetty-alpn-agent`
+yourself, but we recommend upgrading.
 
 @@@
 
-### Maven
-
-When using JDK 8: configure your project to use the Java agent for ALPN and add `-javaagent:...` to your startup scripts as described in the @extref:[Akka gRPC documentation](akka-grpc:/buildtools/maven.html#starting-your-akka-grpc-server-from-maven).
-
-### sbt
-
-When using JDK 8: Configure your project to use the Java agent for ALPN and add `-javaagent:...` to your startup scripts.
-
-Pull in the [`sbt-javaagent`](https://github.com/sbt/sbt-javaagent) plugin.
-
-project/plugins.sbt
-: @@snip (/project/plugins.sbt) { #grpc-agent }
-
-Enable the Akka gRPC and JavaAgent plugins on the sbt project.
-
-build.sbt
-: @@snip (/build.sbt) { #grpc-plugins }
-
-Add the Java agent to the runtime configuration.
-
-build.sbt
-:   ```scala
-    javaAgents += "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "2.0.9"
-    ```
-
-### Gradle
-
-When using JDK 8: Configure your project to use the Java agent for ALPN and add `-javaagent:...` to your startup scripts as described in the @extref:[Akka gRPC documentation](akka-grpc:/buildtools/gradle.html#starting-your-akka-grpc-server-from-gradle).
-
 ## Configuration
 
-The connector comes with the default settings configured to work with the Google BigQuery endpoint and uses the default way of
-locating credentials by looking at the `GOOGLE_APPLICATION_CREDENTIALS` environment variable. Please check
-[Google official documentation](https://cloud.google.com/bigquery/docs/reference/libraries#setting_up_authentication) for more details
-on how to obtain credentials for your application.
-
-The defaults can be changed (for example when testing against a local implementation of the server) by tweaking the reference configuration:
-
-reference.conf
-: @@snip (/google-cloud-bigquery-storage/src/main/resources/reference.conf)
+The BigQuery Storage connector @ref[shares its basic configuration](google-common.md) with all the Google connectors in Alpakka.
 
 Example Test Configuration
 ```
@@ -95,7 +61,7 @@ alpakka.google.cloud.bigquery.grpc {
 
 For more configuration details consider the underlying configuration for @extref:[Akka gRPC](akka-grpc:/client/configuration.html).
 
-A manually initialized @scala[@scaladoc[GrpcBigQueryStorageReader](akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl.GrpcBigQueryStorageReader)]@java[@scaladoc[GrpcBigQueryStorageReader](akka.stream.alpakka.googlecloud.bigquery.storage.javadsl.GrpcBigQueryStorageReader)] can be used by providing it as an attribute to the stream:
+A manually initialized @scala[`akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl.GrpcBigQueryStorageReader`]@java[`akka.stream.alpakka.googlecloud.bigquery.storage.javadsl.GrpcBigQueryStorageReader`] can be used by providing it as an attribute to the stream:
 
 Scala
 : @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #attributes }
@@ -105,35 +71,79 @@ Java
 
 ## Reading
 
-We can read in a number of ways, depending on the parallelism required on consumption. This parallelism is one big advantage over the REST APIs
-First of all, specifying no TableReadOptions will return the whole table, as a Source containing a Source for each stream, which will each deliver a section of the rows:
+We can read in a number of ways. To read data from a table a read session needs to be created. 
+On the session creation we can specify the number of streams to be used in order to transfer the data, this makes it feasible to achieve parallelism while ingesting the data, thus achieving better performance.
+To create a session the data format needs to be specified. The options provided are Avro and Arrow.
+
+If no `TableReadOptions` are specified all the table's columns shall be retrieved as a `Source` containing a `Source` for each stream, which will each deliver a section of the rows:
+
 Scala
 : @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-all }
 
 Java
 : @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-all }
 
-Secondly, by specifying [TableReadOptions](https://cloud.google.com/bigquery/docs/reference/storage/rpc/google.cloud.bigquery.storage.v1#tablereadoptions), we can narrow down the amount of data returned, filtering down the columns returned, and/or a `row_restriction`. This is defined as:
-> SQL text filtering statement, similar to a WHERE clause in a query. Currently, only a single predicate that is a comparison between a column and a constant value is supported. Aggregates are not supported
+Secondly, by specifying [`TableReadOptions`](https://cloud.google.com/bigquery/docs/reference/storage/rpc/google.cloud.bigquery.storage.v1#tablereadoptions), we can narrow down the amount of data returned, filtering down the columns returned, and/or a `row_restriction`. This is defined as:
+
+> SQL text filtering statement, similar to a WHERE clause in a query. Currently, only a single predicate that is a comparison between a column and a constant value is supported. Aggregates are not supported.
+
 Scala
 : @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-options }
 
 Java
 : @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-options }
 
-You can then choose to read and process these streams sequentially, essentially with no parallelism:
+You can then choose to read and process these streams as is or merged. 
+You can process the streams merged in rows. You need to provide a `ByteString` `Unmarshaller` based on the format requested.
+
 Scala
-: @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-sequential }
+: @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-merged}
 
 Java
-: @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-sequential }
+: @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-merged }
 
-Or in parallel:
+Or process the stream of rows individually:
+
 Scala
-: @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-parallel }
+: @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-all }
 
 Java
-: @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-parallel }
+: @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-all }
+
+Since Avro and Arrow are the formats available, streams for those specific formats can be created.
+
+You can read Arrow Record streams merged 
+
+Scala
+: @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-arrow-merged }
+
+Java
+: @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-arrow-merged }
+
+You can read Arrow Record streams individually 
+
+Scala
+: @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-arrow-all }
+
+Java
+: @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-arrow-all }
+
+You can read Avro Record streams merged
+
+Scala
+: @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-avro-merged }
+
+Java
+: @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-avro-merged }
+
+You can read Avro Record streams individually
+
+Scala
+: @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-avro-all }
+
+Java
+: @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-avro-all }
+
 
 
 ## Running the test code

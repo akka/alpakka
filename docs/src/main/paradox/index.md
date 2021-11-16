@@ -34,7 +34,7 @@ The [Alpakka project](https://doc.akka.io/docs/alpakka/current/) is an open sour
 * [FTP](ftp.md)
 * [Google Common](google-common.md)
 * [Google Cloud BigQuery](google-cloud-bigquery.md)
-* [Google Cloud BigQuery Storage API](google-cloud-bigquery-storage.md)
+* [Google Cloud BigQuery Storage](google-cloud-bigquery-storage.md)  
 * [Google Cloud Pub/Sub](google-cloud-pub-sub.md)
 * [Google Cloud Pub/Sub gRPC](google-cloud-pub-sub-grpc.md)
 * [Google Cloud Storage](google-cloud-storage.md)
