@@ -23,14 +23,11 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
-import scala.Tuple2;
-import scala.collection.JavaConverters;
-import scala.collection.immutable.Seq;
 
 public class BigQueryStorageSpec extends BigQueryStorageSpecBase {
+
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   @Test
@@ -58,10 +55,6 @@ public class BigQueryStorageSpec extends BigQueryStorageSpecBase {
     return mockBQReader(bqHost(), bqPort());
   }
 
-  public Attributes mockBQReader(int port) {
-    return mockBQReader(bqHost(), port);
-  }
-
   public Attributes mockBQReader(String host, int port) {
     GrpcBigQueryStorageReader reader =
         GrpcBigQueryStorageReader.apply(BigQueryStorageSettings.create(host, port), system());
@@ -78,4 +71,5 @@ public class BigQueryStorageSpec extends BigQueryStorageSpecBase {
     stopMock();
     system().terminate();
   }
+
 }
