@@ -37,6 +37,14 @@ The Alpakka Google Cloud BigQuery Storage library contains the classes generated
 
 @@@note { title="ALPN on JDK 8" }
 
+HTTP/2 requires ALPN negotiation, which comes with the JDK starting with
+version 8u251.
+
+For older versions of the JDK you will need to load the `jetty-alpn-agent`
+yourself, but we recommend upgrading.
+
+@@@
+
 ## Configuration
 
 The BigQuery Storage connector @ref[shares its basic configuration](google-common.md) with all the Google connectors in Alpakka.
@@ -53,7 +61,7 @@ alpakka.google.cloud.bigquery.grpc {
 
 For more configuration details consider the underlying configuration for @extref:[Akka gRPC](akka-grpc:/client/configuration.html).
 
-A manually initialized @scala[@scaladoc[GrpcBigQueryStorageReader](akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl.GrpcBigQueryStorageReader)]@java[@scaladoc[GrpcBigQueryStorageReader](akka.stream.alpakka.googlecloud.bigquery.storage.javadsl.GrpcBigQueryStorageReader)] can be used by providing it as an attribute to the stream:
+A manually initialized @scala[`akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl.GrpcBigQueryStorageReader`]@java[`akka.stream.alpakka.googlecloud.bigquery.storage.javadsl.GrpcBigQueryStorageReader`] can be used by providing it as an attribute to the stream:
 
 Scala
 : @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #attributes }
@@ -67,15 +75,18 @@ We can read in a number of ways. To read data from a table a read session needs 
 On the session creation we can specify the number of streams to be used in order to transfer the data, this makes it feasible to achieve parallelism while ingesting the data, thus achieving better performance.
 To create a session the data format needs to be specified. The options provided are Avro and Arrow.
 
-If no TableReadOptions are specified all the table's columns shall be retrieved as a Source containing a Source for each stream, which will each deliver a section of the rows:
+If no `TableReadOptions` are specified all the table's columns shall be retrieved as a `Source` containing a `Source` for each stream, which will each deliver a section of the rows:
+
 Scala
 : @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-all }
 
 Java
 : @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-all }
 
-Secondly, by specifying [TableReadOptions](https://cloud.google.com/bigquery/docs/reference/storage/rpc/google.cloud.bigquery.storage.v1#tablereadoptions), we can narrow down the amount of data returned, filtering down the columns returned, and/or a `row_restriction`. This is defined as:
-> SQL text filtering statement, similar to a WHERE clause in a query. Currently, only a single predicate that is a comparison between a column and a constant value is supported. Aggregates are not supported
+Secondly, by specifying [`TableReadOptions`](https://cloud.google.com/bigquery/docs/reference/storage/rpc/google.cloud.bigquery.storage.v1#tablereadoptions), we can narrow down the amount of data returned, filtering down the columns returned, and/or a `row_restriction`. This is defined as:
+
+> SQL text filtering statement, similar to a WHERE clause in a query. Currently, only a single predicate that is a comparison between a column and a constant value is supported. Aggregates are not supported.
+
 Scala
 : @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-options }
 
@@ -83,7 +94,7 @@ Java
 : @@snip (/google-cloud-bigquery-storage/src/test/java/docs/javadsl/ExampleReader.java) { #read-options }
 
 You can then choose to read and process these streams as is or merged. 
-You can process the streams merged in rows. You need to provide a ByteString Unmarshaller based on the format requested.
+You can process the streams merged in rows. You need to provide a `ByteString` `Unmarshaller` based on the format requested.
 
 Scala
 : @@snip (/google-cloud-bigquery-storage/src/test/scala/docs/scaladsl/ExampleReader.scala) { #read-merged}
