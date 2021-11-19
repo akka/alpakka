@@ -40,7 +40,7 @@ import scala.collection.immutable.Iterable
     stopSimpleSender()
 
   private def processIncoming(event: (ActorRef, Any)): Unit = event match {
-    case (sender, Udp.SimpleSenderReady) ⇒
+    case (sender, Udp.SimpleSenderReady) =>
       simpleSender = sender
       pull(in)
     case _ =>

@@ -124,6 +124,7 @@ private[alpakka] final class GoogleHttp private (val http: HttpExt) extends AnyV
           http.cachedHostConnectionPoolHttps[Ctx](host, p)
         case Some(proxy) if https =>
           http.cachedHostConnectionPoolHttps[Ctx](host, p, proxy.connectionContext, proxy.poolSettings)
+        case _ => throw new RuntimeException(s"illegal proxy settings with https=$https")
       }
 
       val unmarshalFlow = Flow[(Try[HttpResponse], Ctx)].mapAsyncUnordered(parallelism) {

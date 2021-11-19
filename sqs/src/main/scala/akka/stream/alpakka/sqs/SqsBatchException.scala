@@ -10,13 +10,13 @@ final class SqsBatchException @InternalApi private[sqs] (val batchSize: Int, mes
     extends Exception(message) {
 
   @InternalApi
-  private[sqs] def this(batchSize: Int, cause: Throwable) {
+  private[sqs] def this(batchSize: Int, cause: Throwable) = {
     this(batchSize, cause.getMessage)
     initCause(cause)
   }
 
   @InternalApi
-  private[sqs] def this(batchSize: Int, message: String, cause: Throwable) {
+  private[sqs] def this(batchSize: Int, message: String, cause: Throwable) = {
     this(batchSize, message)
     initCause(cause)
   }

@@ -19,9 +19,8 @@ import akka.stream.alpakka.s3._
 import akka.stream.alpakka.s3.impl._
 import akka.stream.javadsl.{RunnableGraph, Sink, Source}
 import akka.util.ByteString
-import com.github.ghik.silencer.silent
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.compat.java8.OptionConverters._
 import scala.compat.java8.FutureConverters._
 
@@ -1241,7 +1240,6 @@ object S3 {
    * @deprecated pass in an `ClassicActorSystemProvider` instead of the `Materializer`, since 3.0.0
    */
   @Deprecated
-  @silent
   def makeBucket(bucketName: String, materializer: Materializer, attributes: Attributes): CompletionStage[Done] =
     makeBucket(bucketName, materializer, attributes, S3Headers.empty)
 
@@ -1269,7 +1267,6 @@ object S3 {
    * @deprecated pass in an `ClassicActorSystemProvider` instead of the `Materializer`, since 3.0.0
    */
   @Deprecated
-  @silent
   def makeBucket(bucketName: String, materializer: Materializer): CompletionStage[Done] =
     makeBucket(bucketName, materializer, Attributes(), S3Headers.empty)
 
@@ -1350,7 +1347,6 @@ object S3 {
    * @deprecated pass in an `ActorSystem` instead of the `Materializer`, since 3.0.0
    */
   @Deprecated
-  @silent
   def deleteBucket(bucketName: String, materializer: Materializer, attributes: Attributes): CompletionStage[Done] =
     deleteBucket(bucketName, materializer, attributes, S3Headers.empty)
 
@@ -1382,7 +1378,6 @@ object S3 {
    * @deprecated pass in an `ActorSystem` instead of the `Materializer`, since 3.0.0
    */
   @Deprecated
-  @silent
   def deleteBucket(bucketName: String, materializer: Materializer): CompletionStage[Done] =
     deleteBucket(bucketName, materializer, Attributes(), S3Headers.empty)
 
@@ -1459,7 +1454,6 @@ object S3 {
    * @deprecated pass in an `ActorSystem` instead of the `Materializer`, since 3.0.0
    */
   @Deprecated
-  @silent
   def checkIfBucketExists(bucketName: String,
                           materializer: Materializer,
                           attributes: Attributes): CompletionStage[BucketAccess] =
@@ -1493,7 +1487,6 @@ object S3 {
    * @deprecated pass in an `ActorSystem` instead of the `Materializer`, since 3.0.0
    */
   @Deprecated
-  @silent
   def checkIfBucketExists(bucketName: String, materializer: Materializer): CompletionStage[BucketAccess] =
     checkIfBucketExists(bucketName, materializer, Attributes(), S3Headers.empty)
 

@@ -9,7 +9,7 @@ import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRestJsonP
 import spray.json.{JsonFormat, RootJsonFormat}
 
 import java.util
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.immutable.Seq
 import scala.compat.java8.OptionConverters._
 

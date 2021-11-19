@@ -9,7 +9,7 @@ import akka.stream.alpakka.orientdb._
 import akka.stream.javadsl.Flow
 import com.orientechnologies.orient.core.record.impl.ODocument
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * Java API.

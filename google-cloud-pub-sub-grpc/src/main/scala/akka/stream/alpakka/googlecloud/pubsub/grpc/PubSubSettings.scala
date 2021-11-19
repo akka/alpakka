@@ -6,13 +6,14 @@ package akka.stream.alpakka.googlecloud.pubsub.grpc
 
 import akka.actor.ClassicActorSystemProvider
 import akka.stream.alpakka.googlecloud.pubsub.grpc.impl.DeprecatedCredentials
-import com.github.ghik.silencer.silent
 import com.google.auth.oauth2.GoogleCredentials
 import com.typesafe.config.Config
 import io.grpc.CallCredentials
 import io.grpc.auth.MoreCallCredentials
 
 import java.util.Collections
+
+import scala.annotation.nowarn
 
 /**
  * Connection settings used to establish Pub/Sub connection.
@@ -60,7 +61,7 @@ final class PubSubSettings private (
                    port: Int = port,
                    useTls: Boolean = useTls,
                    rootCa: Option[String] = rootCa,
-                   callCredentials: Option[CallCredentials] = callCredentials: @silent("deprecated")) =
+                   callCredentials: Option[CallCredentials] = callCredentials: @nowarn("msg=deprecated")) =
     new PubSubSettings(host, port, useTls, rootCa, callCredentials)
 }
 

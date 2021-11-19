@@ -49,6 +49,7 @@ private[hbase] class HBaseFlowStage[A](settings: HTableSettings[A]) extends Grap
                 case x: Delete => table.delete(x)
                 case x: Append => table.append(x)
                 case x: Increment => table.increment(x)
+                case _ =>
               }
             }
 

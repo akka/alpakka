@@ -38,7 +38,7 @@ private[couchbase] object RxUtilities {
   }
 
   def singleObservableToFuture[T](o: Observable[T], id: Any): Future[T] = {
-    val p = Promise[T]
+    val p = Promise[T]()
     o.single()
       .subscribe(new Subscriber[T]() {
         override def onCompleted(): Unit = p.tryFailure(new RuntimeException(s"No document found for $id"))
@@ -49,7 +49,7 @@ private[couchbase] object RxUtilities {
   }
 
   def zeroOrOneObservableToFuture[T](o: Observable[T]): Future[Option[T]] = {
-    val p = Promise[Option[T]]
+    val p = Promise[Option[T]]()
     o.subscribe(new Subscriber[T]() {
       override def onCompleted(): Unit = p.trySuccess(None)
       override def onError(e: Throwable): Unit = p.tryFailure(e)

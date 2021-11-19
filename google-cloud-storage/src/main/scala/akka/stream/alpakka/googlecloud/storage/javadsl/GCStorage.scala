@@ -17,7 +17,7 @@ import akka.stream.{Attributes, Materializer}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 

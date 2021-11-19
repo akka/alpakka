@@ -79,6 +79,7 @@ private[ironmq] final class IronMqPullStage(queueName: String, settings: IronMqS
       override protected def onTimer(timerKey: Any): Unit = timerKey match {
         case FetchMessagesTimerKey =>
           fetchMessages()
+        case _ =>
       }
 
       def fetchMessages(): Unit =

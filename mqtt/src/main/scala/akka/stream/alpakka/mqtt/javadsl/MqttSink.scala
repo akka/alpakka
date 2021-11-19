@@ -28,5 +28,5 @@ object MqttSink {
              defaultQos: MqttQoS): Sink[MqttMessage, CompletionStage[Done]] =
     MqttFlow
       .atMostOnce(connectionSettings, MqttSubscriptions.empty, bufferSize = 0, defaultQos)
-      .toMat(Sink.ignore[MqttMessage], Keep.right[CompletionStage[Done], CompletionStage[Done]])
+      .toMat(Sink.ignore[MqttMessage](), Keep.right[CompletionStage[Done], CompletionStage[Done]])
 }

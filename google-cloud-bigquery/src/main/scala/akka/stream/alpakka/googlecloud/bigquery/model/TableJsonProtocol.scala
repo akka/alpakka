@@ -7,14 +7,15 @@ package akka.stream.alpakka.googlecloud.bigquery.model
 import akka.stream.alpakka.google.scaladsl.Paginated
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRestJsonProtocol._
 import com.fasterxml.jackson.annotation.{JsonCreator, JsonProperty}
-import com.github.ghik.silencer.silent
 import spray.json.{JsonFormat, RootJsonFormat}
 
 import java.util
+
+import scala.annotation.nowarn
 import scala.annotation.varargs
-import scala.collection.JavaConverters._
 import scala.collection.immutable.Seq
 import scala.compat.java8.OptionConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * Table resource model
@@ -144,7 +145,7 @@ object TableReference {
  */
 final case class TableSchema private (fields: Seq[TableFieldSchema]) {
 
-  @silent("never used")
+  @nowarn("msg=never used")
   @JsonCreator
   private def this(@JsonProperty(value = "fields", required = true) fields: util.List[TableFieldSchema]) =
     this(fields.asScala.toList)
@@ -195,7 +196,7 @@ final case class TableFieldSchema private (name: String,
                                            mode: Option[TableFieldSchemaMode],
                                            fields: Option[Seq[TableFieldSchema]]) {
 
-  @silent("never used")
+  @nowarn("msg=never used")
   @JsonCreator
   private def this(@JsonProperty(value = "name", required = true) name: String,
                    @JsonProperty(value = "type", required = true) `type`: String,

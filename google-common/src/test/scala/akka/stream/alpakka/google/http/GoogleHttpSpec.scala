@@ -20,7 +20,6 @@ import akka.stream.alpakka.google.implicits._
 import akka.stream.alpakka.google.{GoogleHttpException, GoogleSettings, RequestSettings}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.testkit.TestKit
-import com.github.ghik.silencer.silent
 import org.mockito.ArgumentMatchers.{any, anyInt, argThat}
 import org.mockito.Mockito.when
 import org.scalatest.BeforeAndAfterAll
@@ -63,7 +62,7 @@ class GoogleHttpSpec
       .zipWith(response)(Keep.right)
       .map(Try(_))
       .map((_, mock[Nothing]))
-      .mapMaterializedValue(_ => mock[HostConnectionPool]), Nil: _*): @silent("dead code")
+      .mapMaterializedValue(_ => mock[HostConnectionPool]), Nil: _*): @nowarn("msg=dead code")
     http
   }
 

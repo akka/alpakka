@@ -138,6 +138,7 @@ private[jms] final class JmsProducerStage[E <: JmsEnvelope[PassThrough], PassThr
                 val holder = new Holder[E](NotYetThere)
                 inFlightMessages.enqueue(holder)
                 sendWithRetries(SendAttempt(m.asInstanceOf[E], holder))
+              case other => throw new MatchError(other)
             }
 
             // immediately ask for the next element if producers are available.
@@ -263,6 +264,7 @@ private[jms] object JmsProducerStage {
           val d = decider(ex)
           cachedSupervisionDirective = OptionVal.Some(d)
           d
+        case other => throw new MatchError(other)
       }
 
     override def apply(t: Try[A]): Unit = elem = t

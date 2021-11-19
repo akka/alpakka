@@ -15,7 +15,6 @@ import akka.stream.alpakka.google.firebase.fcm.FcmSettings
 import akka.stream.alpakka.google.firebase.fcm.v1.models.{FcmErrorResponse, FcmNotification, FcmSuccessResponse}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.testkit.TestKit
-import com.github.ghik.silencer.silent
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{doReturn, verify, when}
@@ -63,7 +62,7 @@ class FcmSenderSpec
       ).thenReturn(
         Future.successful(HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, """{"name": ""}""")))
       )
-      doReturn(system, Nil: _*).when(http).system: @silent("dead code")
+      doReturn(system, Nil: _*).when(http).system: @nowarn("msg=dead code")
 
       Await.result(sender.send(http, FcmSend(false, FcmNotification.empty)), defaultPatience.timeout)
 
@@ -90,7 +89,7 @@ class FcmSenderSpec
       ).thenReturn(
         Future.successful(HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, """{"name": "test"}""")))
       )
-      doReturn(system, Nil: _*).when(http).system: @silent("dead code")
+      doReturn(system, Nil: _*).when(http).system: @nowarn("msg=dead code")
 
       sender
         .send(http, FcmSend(false, FcmNotification.empty))
@@ -111,7 +110,7 @@ class FcmSenderSpec
                        entity = HttpEntity(ContentTypes.`application/json`, """{"name":"test"}"""))
         )
       )
-      doReturn(system, Nil: _*).when(http).system: @silent("dead code")
+      doReturn(system, Nil: _*).when(http).system: @nowarn("msg=dead code")
 
       sender
         .send(http, FcmSend(false, FcmNotification.empty))

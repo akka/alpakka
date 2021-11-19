@@ -59,7 +59,7 @@ object IronMqProducer {
       import GraphDSL.Implicits._
 
       val broadcast = builder.add(Broadcast[(PushMessage, ToCommit)](2))
-      val zip = builder.add(Zip[Message.Id, ToCommit])
+      val zip = builder.add(Zip[Message.Id, ToCommit]())
       val extractPushMessage = builder.add(Flow[(PushMessage, ToCommit)].map(_._1))
       val extractCommittable = builder.add(Flow[(PushMessage, ToCommit)].map(_._2))
 
@@ -76,7 +76,7 @@ object IronMqProducer {
       val broadcast = builder.add(Broadcast[(Message.Id, ToCommit)](2))
       val extractMessageId = builder.add(Flow[(Message.Id, ToCommit)].map(_._1))
       val extractCommittable = builder.add(Flow[(Message.Id, ToCommit)].map(_._2))
-      val zip = builder.add(Zip[Message.Id, CommitResult])
+      val zip = builder.add(Zip[Message.Id, CommitResult]())
 
       producer ~> broadcast ~> extractMessageId ~> zip.in0
       broadcast ~> extractCommittable ~> committer ~> zip.in1

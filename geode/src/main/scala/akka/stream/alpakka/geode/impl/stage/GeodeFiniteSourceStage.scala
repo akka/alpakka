@@ -24,7 +24,7 @@ private[geode] class GeodeFiniteSourceStage[V](cache: ClientCache, sql: String)
   override def shape: SourceShape[V] = SourceShape.of(out)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
-    val subPromise = Promise[Done]
+    val subPromise = Promise[Done]()
 
     (new GeodeQueryGraphLogic[V](shape, cache, sql) {
 

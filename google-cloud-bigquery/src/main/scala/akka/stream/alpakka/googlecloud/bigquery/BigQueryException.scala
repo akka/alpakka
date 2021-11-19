@@ -14,6 +14,8 @@ import akka.stream.alpakka.googlecloud.bigquery.model.ErrorProto
 import spray.json.DefaultJsonProtocol._
 import spray.json.{enrichAny, RootJsonFormat}
 
+import scala.annotation.nowarn
+
 final case class BigQueryException private (override val info: ErrorInfo, raw: String)
     extends ExceptionWithErrorInfo(info) {
   def getInfo = info
@@ -29,7 +31,7 @@ object BigQueryException {
     Unmarshaller
       .withMaterializer { implicit ec => implicit mat => response: HttpResponse =>
         import SprayJsonSupport._
-        val HttpResponse(status, _, entity, _) = response
+        val HttpResponse(status, _, entity, _) = response: @nowarn("msg=match may not be exhaustive")
         Unmarshaller
           .firstOf(
             sprayJsValueUnmarshaller.map { json =>

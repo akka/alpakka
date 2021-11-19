@@ -9,12 +9,13 @@ import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRestJsonP
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.{BigQueryRootJsonReader, BigQueryRootJsonWriter}
 import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.annotation._
-import com.github.ghik.silencer.silent
 import spray.json.{JsonFormat, RootJsonFormat, RootJsonReader, RootJsonWriter}
 
 import java.{lang, util}
+
+import scala.annotation.nowarn
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.immutable.Seq
 import scala.compat.java8.OptionConverters._
 
@@ -30,7 +31,7 @@ import scala.compat.java8.OptionConverters._
 @JsonIgnoreProperties(ignoreUnknown = true)
 final case class TableDataListResponse[+T] private (totalRows: Long, pageToken: Option[String], rows: Option[Seq[T]]) {
 
-  @silent("never used")
+  @nowarn("msg=never used")
   @JsonCreator
   private def this(@JsonProperty(value = "totalRows", required = true) totalRows: String,
                    @JsonProperty("pageToken") pageToken: String,
@@ -100,13 +101,13 @@ final case class TableDataInsertAllRequest[+T] private (skipInvalidRows: Option[
   @JsonIgnore def getTemplateSuffix = templateSuffix.asJava
   def getRows: util.List[Row[T] @uncheckedVariance] = rows.asJava
 
-  @silent("never used")
+  @nowarn("msg=never used")
   @JsonGetter("skipInvalidRows")
   private def skipInvalidRowsOrNull = skipInvalidRows.map(lang.Boolean.valueOf).orNull
-  @silent("never used")
+  @nowarn("msg=never used")
   @JsonGetter("ignoreUnknownValues")
   private def ignoreUnknownValuesOrNull = ignoreUnknownValues.map(lang.Boolean.valueOf).orNull
-  @silent("never used")
+  @nowarn("msg=never used")
   @JsonGetter("templateSuffix")
   private def templateSuffixOrNull = templateSuffix.orNull
 

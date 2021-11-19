@@ -21,6 +21,7 @@ package object scaladsl {
       case JmsConnectorStopping(Failure(t)) => JmsConnectorState.Failing(t)
       case JmsConnectorStopped(Success(Done)) => JmsConnectorState.Completed
       case JmsConnectorStopped(Failure(t)) => JmsConnectorState.Failed(t)
+      case other => throw new MatchError(other)
     }
   }
 }

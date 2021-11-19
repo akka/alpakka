@@ -124,5 +124,6 @@ private[jms] final class JmsAckSession(override val connection: jms.Connection,
         pendingAck -= 1
         drainAcks()
       case OptionVal.None =>
+      case other => throw new MatchError(other)
     }
 }

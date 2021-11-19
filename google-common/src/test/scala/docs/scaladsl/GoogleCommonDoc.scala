@@ -8,10 +8,9 @@ import akka.actor.ActorSystem
 import akka.stream.Graph
 import akka.stream.alpakka.google.{GoogleAttributes, GoogleSettings}
 import akka.stream.scaladsl.Source
-import com.github.ghik.silencer.silent
 
-@silent("never used")
-@silent("dead code")
+@nowarn("msg=never used")
+@nowarn("msg=dead code")
 class GoogleCommonDoc {
 
   implicit val system: ActorSystem = ???

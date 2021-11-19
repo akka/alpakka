@@ -35,7 +35,10 @@ private[ftp] abstract class FtpGraphStageLogic[T, FtpClient, S <: RemoteFileSett
       if (tryConnect.isSuccess) {
         handler = tryConnect.toOption
       } else
-        tryConnect.failed.foreach { case NonFatal(t) => throw t }
+        tryConnect.failed.foreach {
+          case NonFatal(t) => throw t
+          case _ =>
+        }
       doPreStart()
     } catch {
       case NonFatal(t) =>

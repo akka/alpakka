@@ -7,7 +7,7 @@ package akka.stream.alpakka.elasticsearch
 import akka.NotUsed
 import akka.annotation.InternalApi
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.compat.java8.OptionConverters._
 
 /**
@@ -158,7 +158,7 @@ final class WriteResult[T2, C2] @InternalApi private[elasticsearch] (val message
     s"""WriteResult(message=$message,error=$error)"""
 
   override def equals(other: Any): Boolean = other match {
-    case that: WriteResult[T2, C2] =>
+    case that: WriteResult[_, _] =>
       java.util.Objects.equals(this.message, that.message) &&
       java.util.Objects.equals(this.error, that.error)
     case _ => false

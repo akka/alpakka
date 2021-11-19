@@ -485,7 +485,7 @@ import scala.util.{Failure, Success}
       Behaviors
         .receivePartial[Event] {
           case (context, SubscribeReceivedFromRemote(subscribe, local)) =>
-            val subscribed = Promise[Done]
+            val subscribed = Promise[Done]()
             context.watch(
               context.spawnAnonymous(
                 Publisher(data.connect.clientId,
@@ -505,7 +505,7 @@ import scala.util.{Failure, Success}
               )
             )
           case (context, UnsubscribeReceivedFromRemote(unsubscribe, local)) =>
-            val unsubscribed = Promise[Done]
+            val unsubscribed = Promise[Done]()
             context.watch(
               context.spawnAnonymous(
                 Unpublisher(data.connect.clientId,
@@ -586,7 +586,7 @@ import scala.util.{Failure, Success}
               if data.publishers.exists(Topics.filter(_, publish.topicName)) =>
             val producerName = ActorName.mkName(ProducerNamePrefix + publish.topicName + "-" + context.children.size)
             if (!data.activeProducers.contains(publish.topicName)) {
-              val reply = Promise[Source[Producer.ForwardPublishingCommand, NotUsed]]
+              val reply = Promise[Source[Producer.ForwardPublishingCommand, NotUsed]]()
               import context.executionContext
               reply.future.foreach {
                 _.runForeach(command => context.self ! ReceivedProducerPublishingCommand(command))
@@ -606,7 +606,7 @@ import scala.util.{Failure, Success}
             if (i >= 0) {
               val prl = data.pendingLocalPublications(i)._2
               val producerName = ActorName.mkName(ProducerNamePrefix + topicName + "-" + context.children.size)
-              val reply = Promise[Source[Producer.ForwardPublishingCommand, NotUsed]]
+              val reply = Promise[Source[Producer.ForwardPublishingCommand, NotUsed]]()
               import context.executionContext
               reply.future.foreach {
                 _.runForeach(command => context.self ! ReceivedProducerPublishingCommand(command))
@@ -859,7 +859,7 @@ import scala.util.{Failure, Success}
   // State event handling
 
   def preparePublisher(data: Start): Behavior[Event] = Behaviors.setup { context =>
-    val reply = Promise[RemotePacketRouter.Registered.type]
+    val reply = Promise[RemotePacketRouter.Registered.type]()
     data.packetRouter ! RemotePacketRouter.Register(context.self.unsafeUpcast, data.clientId, data.packetId, reply)
     import context.executionContext
     reply.future.onComplete {
@@ -954,7 +954,7 @@ import scala.util.{Failure, Success}
   // State event handling
 
   def prepareServerUnpublisher(data: Start): Behavior[Event] = Behaviors.setup { context =>
-    val reply = Promise[RemotePacketRouter.Registered.type]
+    val reply = Promise[RemotePacketRouter.Registered.type]()
     data.packetRouter ! RemotePacketRouter.Register(context.self.unsafeUpcast, data.clientId, data.packetId, reply)
     import context.executionContext
     reply.future.onComplete {

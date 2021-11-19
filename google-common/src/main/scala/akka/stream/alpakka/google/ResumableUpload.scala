@@ -72,7 +72,7 @@ private[alpakka] object ResumableUpload {
               import settings.requestSettings.retrySettings._
               RetryFlow
                 .withBackoff(minBackoff, maxBackoff, randomFactor, maxRetries, flow) {
-                  case (chunk, Failure(Retry(_))) => Some(updatePosition(request, chunk.map(_.right.get)))
+                  case (chunk, Failure(Retry(_))) => Some(updatePosition(request, chunk.map(_.toOption.get)))
                   case _ => None
                 }
                 .map(_.recoverWith { case Retry(ex) => Failure(ex) })

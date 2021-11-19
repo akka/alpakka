@@ -15,7 +15,7 @@ import akka.stream.javadsl.Sink
 import akka.util.ByteString
 import akka.japi.function
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.Future
 
 import scala.compat.java8.FutureConverters._

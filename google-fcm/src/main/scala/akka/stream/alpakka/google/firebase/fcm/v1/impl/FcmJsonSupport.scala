@@ -53,6 +53,7 @@ private[fcm] object FcmJsonSupport extends DefaultJsonProtocol with SprayJsonSup
       case JsObject(fields) if fields.contains("image") => value.convertTo[ApnsFcmOptions]
       case JsObject(fields) if fields.contains("link") => value.convertTo[WebPushFcmOptions]
       case JsObject(_) => value.convertTo[FcmOptions]
+      case other: JsValue => throw new MatchError(other)
     }
   }
 

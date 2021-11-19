@@ -26,7 +26,7 @@ object InfluxDbSink {
   ): akka.stream.javadsl.Sink[java.util.List[InfluxDbWriteMessage[Point, NotUsed]], CompletionStage[Done]] =
     InfluxDbFlow
       .create(influxDB)
-      .toMat(Sink.ignore[java.util.List[InfluxDbWriteResult[Point, NotUsed]]],
+      .toMat(Sink.ignore[java.util.List[InfluxDbWriteResult[Point, NotUsed]]](),
              Keep.right[NotUsed, CompletionStage[Done]])
 
   def typed[T](
@@ -35,6 +35,6 @@ object InfluxDbSink {
   ): akka.stream.javadsl.Sink[java.util.List[InfluxDbWriteMessage[T, NotUsed]], CompletionStage[Done]] =
     InfluxDbFlow
       .typed(clazz, influxDB)
-      .toMat(Sink.ignore[java.util.List[InfluxDbWriteResult[T, NotUsed]]], Keep.right[NotUsed, CompletionStage[Done]])
+      .toMat(Sink.ignore[java.util.List[InfluxDbWriteResult[T, NotUsed]]](), Keep.right[NotUsed, CompletionStage[Done]])
 
 }

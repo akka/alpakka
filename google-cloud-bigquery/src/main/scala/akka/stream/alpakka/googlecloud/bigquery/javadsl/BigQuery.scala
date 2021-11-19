@@ -28,12 +28,13 @@ import akka.stream.javadsl.{Flow, Sink, Source}
 import akka.stream.{scaladsl => ss}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
-import com.github.ghik.silencer.silent
 
 import java.time.Duration
 import java.util.concurrent.CompletionStage
 import java.{lang, util}
-import scala.collection.JavaConverters._
+
+import scala.annotation.nowarn
+import scala.jdk.CollectionConverters._
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.{FiniteDuration, MILLISECONDS}
@@ -424,7 +425,7 @@ object BigQuery extends Google {
    * @tparam Job the data model for a job
    * @return a [[akka.stream.javadsl.Sink]] that uploads bytes and materializes a [[java.util.concurrent.CompletionStage]] containing the [[Job]] when completed
    */
-  def createLoadJob[@silent("shadows") Job](
+  def createLoadJob[@nowarn("msg=shadows") Job](
       job: Job,
       marshaller: Marshaller[Job, RequestEntity],
       unmarshaller: Unmarshaller[HttpEntity, Job]

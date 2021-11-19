@@ -15,11 +15,11 @@ import org.influxdb.dto.QueryResult
 import java.util.concurrent.TimeUnit
 
 import akka.annotation.InternalApi
-import com.github.ghik.silencer.silent
 import org.influxdb.InfluxDBMapperException
 import org.influxdb.dto.Point
 
-import scala.collection.JavaConverters._
+import scala.annotation.nowarn
+import scala.jdk.CollectionConverters._
 
 /**
  * Internal API.
@@ -64,7 +64,7 @@ private[impl] class AlpakkaResultMapperHelper {
         val columnName: String = column.name()
         val fieldType: Class[_] = field.getType()
 
-        @silent("deprecated")
+        @nowarn("msg=deprecated")
         val isAccessible = field.isAccessible()
         if (!isAccessible) {
           field.setAccessible(true);
@@ -175,7 +175,7 @@ private[impl] class AlpakkaResultMapperHelper {
     if (value == null) return
     val fieldType = field.getType
     try {
-      @silent("deprecated")
+      @nowarn("msg=deprecated")
       val isAccessible = field.isAccessible()
       if (!isAccessible) field.setAccessible(true)
       if (fieldValueModified(fieldType, field, obj, value, precision) || fieldValueForPrimitivesModified(

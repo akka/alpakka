@@ -169,6 +169,7 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
                   failureHandler
                     .invoke(new RuntimeException(s"Request failed for POST $uri, got $status with body: $body"))
                 }
+              case other: HttpResponse => throw new MatchError(other)
             }
             .recover {
               case cause: Throwable => failureHandler.invoke(cause)
@@ -206,6 +207,7 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
                       new RuntimeException(s"Request failed for POST $uri, got $status with body: $body")
                     )
                   }
+              case other: HttpResponse => throw new MatchError(other)
             }
             .recover {
               case cause: Throwable => failureHandler.invoke(cause)
@@ -254,8 +256,9 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
       case ScrollResponse(_, Some(result)) =>
         scrollId = result.scrollId
         log.debug("Pushing data downstream")
-        emitMultiple(out, result.messages.toIterator)
+        emitMultiple(out, result.messages.iterator)
         true
+      case other: ScrollResponse[T] => throw new MatchError(other)
     }
 
   setHandler(out, this)
@@ -330,6 +333,7 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
                 clearScrollAsyncHandler
                   .invoke(Failure(new RuntimeException(s"Request failed for POST $uri, got $status with body: $body")))
               }
+            case other: HttpResponse => throw new MatchError(other)
           }
           .recover {
             case cause: Throwable => failureHandler.invoke(cause)

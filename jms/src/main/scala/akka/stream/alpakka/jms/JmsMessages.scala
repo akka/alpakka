@@ -9,7 +9,7 @@ import javax.jms
 import akka.NotUsed
 import akka.stream.alpakka.jms.impl.JmsMessageReader._
 import akka.util.ByteString
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.compat.java8.OptionConverters._
 
 /**

@@ -9,13 +9,14 @@ import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRestJsonP
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRootJsonReader
 import akka.util.JavaDurationConverters._
 import com.fasterxml.jackson.annotation.{JsonCreator, JsonIgnoreProperties, JsonProperty}
-import com.github.ghik.silencer.silent
 import spray.json.{RootJsonFormat, RootJsonReader}
 
 import java.time.Duration
 import java.{lang, util}
+
+import scala.annotation.nowarn
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.immutable.Seq
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.FiniteDuration
@@ -194,7 +195,7 @@ final case class QueryResponse[+T] private (schema: Option[TableSchema],
                                             cacheHit: Option[Boolean],
                                             numDmlAffectedRows: Option[Long]) {
 
-  @silent("never used")
+  @nowarn("msg=never used")
   @JsonCreator
   private def this(@JsonProperty("schema") schema: TableSchema,
                    @JsonProperty(value = "jobReference", required = true) jobReference: JobReference,

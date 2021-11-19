@@ -16,7 +16,7 @@ import akka.util.{ByteIterator, ByteString, ByteStringBuilder}
 
 import scala.annotation.tailrec
 import scala.concurrent.duration._
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.{ExecutionContext, Promise}
 
@@ -819,6 +819,7 @@ object MqttCodec {
           case Right(l) =>
             Left(InvalidPacketSize(l, maxPacketSize))
           case Left(BufferUnderflow) => Left(BufferUnderflow)
+          case other @ Left(_) => throw new MatchError(other)
         }
       } catch {
         case _: NoSuchElementException => Left(BufferUnderflow)
@@ -857,10 +858,10 @@ object MqttCodec {
               val password =
                 if (connectFlags.contains(ConnectFlags.PasswordFlag)) Some(v.decodeString()) else None
               (clientId,
-               willTopic.fold[Either[DecodeError, Option[String]]](Right(None))(_.right.map(Some.apply)),
-               willMessage.fold[Either[DecodeError, Option[String]]](Right(None))(_.right.map(Some.apply)),
-               username.fold[Either[DecodeError, Option[String]]](Right(None))(_.right.map(Some.apply)),
-               password.fold[Either[DecodeError, Option[String]]](Right(None))(_.right.map(Some.apply))) match {
+               willTopic.fold[Either[DecodeError, Option[String]]](Right(None))(_.map(Some.apply)),
+               willMessage.fold[Either[DecodeError, Option[String]]](Right(None))(_.map(Some.apply)),
+               username.fold[Either[DecodeError, Option[String]]](Right(None))(_.map(Some.apply)),
+               password.fold[Either[DecodeError, Option[String]]](Right(None))(_.map(Some.apply))) match {
                 case (Right(ci), Right(wt), Right(wm), Right(un), Right(pw)) =>
                   Right(Connect(Connect.Mqtt, Connect.v311, ci, connectFlags, keepAlive, wt, wm, un, pw))
                 case _ =>
@@ -1100,7 +1101,7 @@ final case class Command[A](command: ControlPacket, completed: Option[Promise[Do
     this(
       command,
       completed.asScala.map { f =>
-        val p = Promise[Done]
+        val p = Promise[Done]()
         p.future
           .foreach(f.toCompletableFuture.complete)(ExecutionContext.fromExecutorService(ForkJoinPool.commonPool()))
         p

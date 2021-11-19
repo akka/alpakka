@@ -25,7 +25,7 @@ object OrientDbSink {
   ): Sink[java.util.List[OrientDbWriteMessage[ODocument, NotUsed]], CompletionStage[Done]] =
     OrientDbFlow
       .create(className, settings)
-      .toMat(Sink.ignore[java.util.List[OrientDbWriteMessage[ODocument, NotUsed]]],
+      .toMat(Sink.ignore[java.util.List[OrientDbWriteMessage[ODocument, NotUsed]]](),
              Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
@@ -36,5 +36,6 @@ object OrientDbSink {
                clazz: Class[T]): Sink[java.util.List[OrientDbWriteMessage[T, NotUsed]], CompletionStage[Done]] =
     OrientDbFlow
       .typed[T](className, settings, clazz)
-      .toMat(Sink.ignore[java.util.List[OrientDbWriteMessage[T, NotUsed]]], Keep.right[NotUsed, CompletionStage[Done]])
+      .toMat(Sink.ignore[java.util.List[OrientDbWriteMessage[T, NotUsed]]](),
+             Keep.right[NotUsed, CompletionStage[Done]])
 }

@@ -83,7 +83,7 @@ import scala.util.{Either, Failure, Success}
 
   def preparePublish(data: Start)(implicit mat: Materializer): Behavior[Event] = Behaviors.setup { context =>
     def requestPacketId(): Unit = {
-      val reply = Promise[LocalPacketRouter.Registered]
+      val reply = Promise[LocalPacketRouter.Registered]()
       data.packetRouter ! LocalPacketRouter.Register(context.self.unsafeUpcast, reply)
       import context.executionContext
       reply.future.onComplete {
@@ -155,6 +155,10 @@ import scala.util.{Either, Failure, Success}
               publishUnacknowledged(data),
               stash = Vector.empty
             )
+
+          case _ =>
+            Behaviors.same
+
         }
         .receiveSignal {
           case (_, PostStop) =>
@@ -265,7 +269,7 @@ import scala.util.{Either, Failure, Success}
   // State event handling
 
   def prepareClientConsumption(data: Start): Behavior[Event] = Behaviors.setup { context =>
-    val reply = Promise[RemotePacketRouter.Registered.type]
+    val reply = Promise[RemotePacketRouter.Registered.type]()
     data.packetRouter ! RemotePacketRouter.Register(context.self.unsafeUpcast, data.clientId, data.packetId, reply)
     import context.executionContext
     reply.future.onComplete {

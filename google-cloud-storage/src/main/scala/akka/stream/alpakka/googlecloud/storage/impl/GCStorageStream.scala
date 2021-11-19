@@ -24,9 +24,9 @@ import akka.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink, Source}
 import akka.stream.{Attributes, Materializer}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
-import com.github.ghik.silencer.silent
 import spray.json._
 
+import scala.annotation.nowarn
 import scala.concurrent.Future
 
 @InternalApi private[storage] object GCStorageStream {
@@ -251,6 +251,7 @@ import scala.concurrent.Future
           Unmarshal(entity).to[String].flatMap { err =>
             Future.failed(new RuntimeException(s"[${status.intValue}] $err"))
           }
+        case other: HttpResponse => throw new MatchError(other)
       }
     }.withDefaultRetry
 
@@ -266,6 +267,7 @@ import scala.concurrent.Future
           Unmarshal(entity).to[String].flatMap { err =>
             Future.failed(new RuntimeException(s"[${status.intValue}] $err"))
           }
+        case other: HttpResponse => throw new MatchError(other)
       }
     }.withDefaultRetry
 
@@ -288,7 +290,7 @@ import scala.concurrent.Future
       }
       .mapMaterializedValue(_ => NotUsed)
 
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   private def resolveSettings(mat: Materializer, attr: Attributes) = {
     implicit val sys = mat.system
     val legacySettings = attr

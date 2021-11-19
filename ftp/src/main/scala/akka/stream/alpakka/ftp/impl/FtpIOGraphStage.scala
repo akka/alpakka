@@ -132,6 +132,7 @@ private[ftp] trait FtpIOSourceStage[FtpClient, S <: RemoteFileSettings]
                                          s.maxUnconfirmedReads)
                 .get
             )
+          case _ => None
         }
 
       protected[this] def matSuccess(): Boolean =

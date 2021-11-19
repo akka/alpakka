@@ -9,7 +9,7 @@ import java.util.Optional
 
 import akka.http.scaladsl.model.ContentType
 import scala.compat.java8.OptionConverters._
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * Represents an object within Google Cloud Storage.

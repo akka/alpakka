@@ -547,6 +547,7 @@ import scala.util.{Failure, Success, Try}
               Source.future {
                 unmarshalError(code, entity)
               }
+            case other: HttpResponse => throw new MatchError(other)
           }
       }
       .mapMaterializedValue(_ => NotUsed)
@@ -572,6 +573,7 @@ import scala.util.{Failure, Success, Try}
               Source.future {
                 unmarshalError(code, entity)
               }
+            case other: HttpResponse => throw new MatchError(other)
           }
       }
       .mapMaterializedValue(_ => NotUsed)
@@ -637,6 +639,7 @@ import scala.util.{Failure, Success, Try}
               Source.future {
                 unmarshalError(code, entity)
               }
+            case other: HttpResponse => throw new MatchError(other)
           }
       }
       .mapMaterializedValue(_ => NotUsed)
@@ -794,6 +797,7 @@ import scala.util.{Failure, Success, Try}
         entity.discardBytes().future()
       case HttpResponse(code, _, entity, _) =>
         unmarshalError(code, entity)
+      case other: HttpResponse => throw new MatchError(other)
     }
   }
 
@@ -818,6 +822,7 @@ import scala.util.{Failure, Success, Try}
           )
       case HttpResponse(code, _, entity, _) =>
         unmarshalError(code, entity)
+      case other: HttpResponse => throw new MatchError(other)
     }
   }
 
@@ -928,6 +933,7 @@ import scala.util.{Failure, Success, Try}
             Source.future {
               unmarshalError(code, entity)
             }
+          case other: HttpResponse => throw new MatchError(other)
         }
       }
       .mapMaterializedValue(_ => NotUsed)
@@ -1016,7 +1022,7 @@ import scala.util.{Failure, Success, Try}
     Source
       .single(s3Location)
       .flatMapConcat(initiateMultipartUpload(_, contentType, s3Headers))
-      .mapConcat(r => Stream.continually(r))
+      .mapConcat(r => LazyList.continually(r))
       .zip(Source.fromIterator(() => Iterator.from(1)))
 
   private def poolSettings(implicit settings: S3Settings, system: ActorSystem) =
@@ -1421,6 +1427,7 @@ import scala.util.{Failure, Success, Try}
         Future.successful((entity, headers))
       case HttpResponse(code, _, entity, _) =>
         unmarshalError(code, entity)
+      case other: HttpResponse => throw new MatchError(other)
     }
   }
 

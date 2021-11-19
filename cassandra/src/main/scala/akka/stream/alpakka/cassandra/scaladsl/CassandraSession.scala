@@ -110,6 +110,7 @@ final class CassandraSession(system: akka.actor.ActorSystem,
         }
 
         result
+      case other => throw new MatchError(other)
     }
   }
 

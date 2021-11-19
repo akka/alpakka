@@ -19,7 +19,7 @@ import scala.annotation.tailrec
 import scala.util.control.NonFatal
 
 import scala.collection.immutable
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * Internal API
@@ -73,10 +73,10 @@ private final class SolrFlowLogic[T, C](
       sendBulkToSolr(messagesIn)
       tryPull()
     } catch {
-      case NonFatal(ex) ⇒
+      case NonFatal(ex) =>
         decider(ex) match {
-          case Supervision.Stop ⇒ failStage(ex)
-          case _ ⇒ tryPull() // for resume and restart strategies tryPull
+          case Supervision.Stop => failStage(ex)
+          case _ => tryPull() // for resume and restart strategies tryPull
         }
     }
   }

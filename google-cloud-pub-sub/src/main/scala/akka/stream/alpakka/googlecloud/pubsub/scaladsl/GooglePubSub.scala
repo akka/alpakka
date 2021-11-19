@@ -11,8 +11,8 @@ import akka.stream.alpakka.googlecloud.pubsub._
 import akka.stream.alpakka.googlecloud.pubsub.impl._
 import akka.stream.scaladsl.{Flow, FlowWithContext, Keep, Sink, Source}
 import akka.{Done, NotUsed}
-import com.github.ghik.silencer.silent
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -82,7 +82,7 @@ protected[pubsub] trait GooglePubSub {
   def acknowledge(subscription: String, config: PubSubConfig): Sink[AcknowledgeRequest, Future[Done]] =
     acknowledgeFlow(subscription, config).toMat(Sink.ignore)(Keep.right)
 
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   private def flow[In, Out](config: PubSubConfig)(flow: Flow[In, Out, NotUsed]): Flow[In, Out, NotUsed] =
     flow.addAttributes(config.settings.fold(Attributes.none)(GoogleAttributes.settings))
 

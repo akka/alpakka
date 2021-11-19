@@ -97,6 +97,7 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
                    new RuntimeException(s"Request failed for POST $uri, got $status with body: $body"))
                 )
               }
+            case other: HttpResponse => throw new MatchError(other)
           }
           .recoverWith {
             case cause: Throwable =>

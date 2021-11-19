@@ -6,7 +6,7 @@ package akka.stream.alpakka.dynamodb
 
 import software.amazon.awssdk.services.dynamodb.model._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 trait TestOps {
 

@@ -121,6 +121,7 @@ private[file] class TarReaderStage
                 )
               case NoopTermination =>
             }
+          case _ =>
         }
       }
 

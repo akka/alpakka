@@ -9,7 +9,6 @@ import akka.stream.alpakka.google.GoogleSettings
 import akka.stream.alpakka.googlecloud.storage.GCStorageSettings
 import akka.stream.alpakka.googlecloud.storage.scaladsl.GCStorageWiremockBase._
 import akka.testkit.TestKit
-import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 import io.specto.hoverfly.junit.core.SimulationSource.dsl
 import io.specto.hoverfly.junit.core.{Hoverfly, HoverflyConfig, HoverflyMode, SimulationSource}
@@ -20,7 +19,7 @@ import spray.json.enrichAny
 
 import scala.util.Random
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Hoverfly) extends TestKit(_system) {
 
   def this(mock: Hoverfly) =
@@ -910,7 +909,7 @@ object GCStorageWiremockBase {
 
   private def config(proxyPort: Int) =
     ConfigFactory.parseString(s"""
-    |${(GCStorageSettings: @silent("deprecated")).ConfigPath} {
+    |${(GCStorageSettings: @nowarn("msg=deprecated")).ConfigPath} {
     |  project-id = ""testX-XXXXX""
     |  client-email = "test-XXX@test-XXXXX.iam.gserviceaccount.com"
     |  private-key = \"\"\"
