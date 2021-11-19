@@ -42,9 +42,7 @@ jobs:
       env: CMD="verifyCodeStyle; mimaReportBinaryIssues"
       name: "Code style check and MiMa. Run locally with: sbt verifyCodeStyle; mimaReportBinaryIssues"
       if: type != cron
-#    - env: CMD="++2.12.11 Test/compile"
-#      name: "Compile all code with Scala 2.12 and fatal warnings enabled. Run locally with: env CI=true sbt ++2.12.11 Test/compile"
-    - env: CMD="++2.13.3 Test/compile"
+    - env: CMD="++2.13.7 Test/compile"
       name: "Compile all code with Scala 2.13"
     - env: CMD="unidoc; docs/paradox"
       name: "Create all API docs and create site with Paradox"
