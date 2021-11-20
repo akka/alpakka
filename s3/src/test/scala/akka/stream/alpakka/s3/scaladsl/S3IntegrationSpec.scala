@@ -27,7 +27,7 @@ import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.regions.providers._
 
 import java.util.concurrent.ConcurrentLinkedQueue
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
@@ -187,7 +187,7 @@ trait S3IntegrationSpec
       .download(defaultBucket, objectKey)
       .withAttributes(attributes)
       .runWith(Sink.head)
-      .futureValue
+      .futureValue: @nowarn("msg=match may not be exhaustive")
 
     val bodyFuture = source
       .map(_.decodeString("utf8"))
@@ -542,7 +542,7 @@ trait S3IntegrationSpec
     val slowSource = createSlowSource(inputData, Some(sharedKillSwitch))
 
     val multiPartUpload =
-      slowSource.toMat(S3.multipartUpload(defaultBucket, sourceKey).withAttributes(attributes))(Keep.right).run
+      slowSource.toMat(S3.multipartUpload(defaultBucket, sourceKey).withAttributes(attributes))(Keep.right).run()
 
     val results = for {
       _ <- akka.pattern.after(25.seconds)(Future {
@@ -595,7 +595,7 @@ trait S3IntegrationSpec
         .toMat(S3.multipartUpload(defaultBucket, sourceKey).withAttributes(attributes))(
           Keep.right
         )
-        .run
+        .run()
 
     val results = for {
       _ <- akka.pattern.after(25.seconds)(Future {
@@ -620,7 +620,7 @@ trait S3IntegrationSpec
         )(
           Keep.right
         )
-        .run
+        .run()
 
       // This delay is here because sometimes there is a delay when you complete a large file and its
       // actually downloadable
@@ -658,7 +658,7 @@ trait S3IntegrationSpec
         .toMat(S3.multipartUpload(defaultBucket, sourceKey).withAttributes(attributes))(
           Keep.right
         )
-        .run
+        .run()
 
     val results = for {
       _ <- akka.pattern.after(25.seconds)(Future {

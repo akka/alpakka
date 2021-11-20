@@ -51,7 +51,7 @@ class SlickSpec
 
   implicit val ec = system.dispatcher
   implicit val defaultPatience = PatienceConfig(timeout = 3.seconds, interval = 50.millis)
-  implicit val getUserResult = GetResult(r => User(r.nextInt, r.nextString))
+  implicit val getUserResult = GetResult(r => User(r.nextInt(), r.nextString()))
 
   val users = (1 to 40).map(i => User(i, s"Name$i")).toSet
 

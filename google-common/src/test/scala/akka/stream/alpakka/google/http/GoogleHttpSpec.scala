@@ -29,6 +29,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatestplus.mockito.MockitoSugar
 import spray.json.{JsObject, JsValue}
 
+import scala.annotation.nowarn
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
@@ -58,11 +59,12 @@ class GoogleHttpSpec
         any[ConnectionPoolSettings],
         any[LoggingAdapter]
       )
-    ) thenReturn (Flow[Any]
-      .zipWith(response)(Keep.right)
-      .map(Try(_))
-      .map((_, mock[Nothing]))
-      .mapMaterializedValue(_ => mock[HostConnectionPool]), Nil: _*): @nowarn("msg=dead code")
+    ).thenReturn(Flow[Any]
+                   .zipWith(response)(Keep.right)
+                   .map(Try(_))
+                   .map((_, mock[Nothing]))
+                   .mapMaterializedValue(_ => mock[HostConnectionPool]),
+                 Nil: _*): @nowarn("msg=dead code")
     http
   }
 
@@ -83,7 +85,7 @@ class GoogleHttpSpec
           any[ConnectionPoolSettings],
           any[LoggingAdapter]
         )
-      ) thenReturn (
+      ).thenReturn(
         Future.successful(response1),
         Future.successful(response2)
       )
@@ -113,7 +115,7 @@ class GoogleHttpSpec
           any[ConnectionPoolSettings],
           any[LoggingAdapter]
         )
-      ) thenReturn (Future.successful(response1), Future.successful(response2))
+      ).thenReturn(Future.successful(response1), Future.successful(response2))
 
       import GoogleHttpException._
       val result1 = GoogleHttp(http).singleRequest[JsValue](HttpRequest())
@@ -140,7 +142,7 @@ class GoogleHttpSpec
           any[ConnectionPoolSettings],
           any[LoggingAdapter]
         )
-      ) thenReturn Future.successful(HttpResponse(OK, Nil, HttpEntity(ContentTypes.`application/json`, "{}")))
+      ).thenReturn(Future.successful(HttpResponse(OK, Nil, HttpEntity(ContentTypes.`application/json`, "{}"))))
 
       import GoogleHttpException._
       val response = GoogleHttp(http).singleAuthenticatedRequest[JsValue](HttpRequest())
@@ -156,9 +158,9 @@ class GoogleHttpSpec
       final class AnotherException extends RuntimeException
 
       val credentials = mock[Credentials]
-      when(credentials.get()(any[ExecutionContext], any[RequestSettings])) thenReturn (
+      when(credentials.get()(any[ExecutionContext], any[RequestSettings])).thenReturn(
         Future.failed(GoogleOAuth2Exception(ErrorInfo())),
-        Future.failed(new AnotherException),
+        Future.failed(new AnotherException)
       )
       implicit val settingsWithMockedCredentials = GoogleSettings().copy(credentials = credentials)
 
@@ -170,7 +172,7 @@ class GoogleHttpSpec
           any[ConnectionPoolSettings],
           any[LoggingAdapter]
         )
-      ) thenReturn (
+      ).thenReturn(
         Future.successful(HttpResponse(BadRequest, Nil, HttpEntity(ContentTypes.`application/json`, "{}"))),
         Future.successful(HttpResponse(OK, Nil, HttpEntity(ContentTypes.`application/json`, "{}")))
       )

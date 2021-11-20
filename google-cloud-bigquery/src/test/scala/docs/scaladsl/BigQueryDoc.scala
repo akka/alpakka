@@ -24,13 +24,14 @@ import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryJsonProto
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.{Done, NotUsed}
 
+import scala.annotation.nowarn
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
 //#imports
 
 class BigQueryDoc {
 
-  @com.github.ghik.silencer.silent("dead code")
+  @nowarn("msg=dead code")
   implicit val system: akka.actor.ActorSystem = ???
   import system.dispatcher
 
@@ -41,9 +42,9 @@ class BigQueryDoc {
   implicit val personFormat = bigQueryJsonFormat4(Person)
   //#setup
 
-  @com.github.ghik.silencer.silent("dead code")
+  @nowarn("msg=dead code")
   val datasetId: String = ???
-  @com.github.ghik.silencer.silent("dead code")
+  @nowarn("msg=dead code")
   val tableId: String = ???
 
   //#run-query
@@ -71,7 +72,7 @@ class BigQueryDoc {
   val peopleLoadFlow: Flow[Person, Job, NotUsed] = BigQuery.insertAllAsync[Person](datasetId, tableId)
   //#async-insert
 
-  @com.github.ghik.silencer.silent("dead code")
+  @nowarn("msg=dead code")
   val people: List[Person] = ???
 
   //#job-status

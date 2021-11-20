@@ -226,7 +226,7 @@ class JmsTxConnectorsSpec extends JmsSharedServerSpec {
         )
         .futureValue shouldBe Done
 
-      val triggerRestart = Promise[Done]
+      val triggerRestart = Promise[Done]()
 
       val result = RestartSource
         .onFailuresWithBackoff(RestartSettings(5.seconds, 1.minute, 0.25)) { () =>

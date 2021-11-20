@@ -94,7 +94,7 @@ class KinesisFlowSpec extends AnyWordSpec with Matchers with KinesisMock with Lo
 
   trait KinesisFlowWithContextProbe { self: Settings =>
     val streamName = "stream-name"
-    val recordStream = Stream
+    val recordStream = LazyList
       .from(1)
       .map(
         i =>
@@ -105,7 +105,7 @@ class KinesisFlowSpec extends AnyWordSpec with Matchers with KinesisMock with Lo
              .build(),
            i)
       )
-    val resultStream = Stream
+    val resultStream = LazyList
       .from(1)
       .map(i => (PutRecordsResultEntry.builder().build(), i))
 

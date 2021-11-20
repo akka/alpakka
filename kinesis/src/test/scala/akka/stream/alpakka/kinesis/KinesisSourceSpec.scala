@@ -47,10 +47,10 @@ class KinesisSourceSpec extends AnyWordSpec with Matchers with KinesisMock with 
 
         val probe = KinesisSource.basic(shardSettings, amazonKinesisAsync).runWith(TestSink.probe)
 
-        probe.requestNext.utf8String shouldEqual "1"
-        probe.requestNext.utf8String shouldEqual "2"
-        probe.requestNext.utf8String shouldEqual "1"
-        probe.requestNext.utf8String shouldEqual "2"
+        probe.requestNext().utf8String shouldEqual "1"
+        probe.requestNext().utf8String shouldEqual "2"
+        probe.requestNext().utf8String shouldEqual "1"
+        probe.requestNext().utf8String shouldEqual "2"
         probe.cancel()
       }
     }
@@ -134,7 +134,7 @@ class KinesisSourceSpec extends AnyWordSpec with Matchers with KinesisMock with 
 
         val probe = KinesisSource.basic(shardSettings, amazonKinesisAsync).runWith(TestSink.probe)
 
-        probe.requestNext.utf8String shouldEqual "1"
+        probe.requestNext().utf8String shouldEqual "1"
         nextShardIterator.set(null)
         probe.request(1)
         probe.expectNext()

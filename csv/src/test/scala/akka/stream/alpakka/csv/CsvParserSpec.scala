@@ -39,7 +39,7 @@ class CsvParserSpec extends AnyWordSpec with Matchers with OptionValues with Log
       val in = ByteString.empty
       val parser = new CsvParser(',', '-', '.', maximumLineLength)
       parser.offer(in)
-      parser.poll(requireLineEnd = true) should be('empty)
+      parser.poll(requireLineEnd = true) should be(Symbol("empty"))
     }
 
     "parse leading comma to be an empty column" in {
@@ -239,18 +239,18 @@ class CsvParserSpec extends AnyWordSpec with Matchers with OptionValues with Log
     def splitInput(in1: String, in2: String, expect: List[String]) = {
       val parser = new CsvParser(delimiter = ',', quoteChar = '"', escapeChar = '\\', maximumLineLength)
       parser.offer(ByteString(in1))
-      parser.poll(requireLineEnd = true) should be('empty)
+      parser.poll(requireLineEnd = true) should be(Symbol("empty"))
       parser.offer(ByteString(in2) ++ ByteString("\n"))
       parser.poll(requireLineEnd = true).value.map(_.utf8String) should be(expect)
-      parser.poll(requireLineEnd = true) should be('empty)
+      parser.poll(requireLineEnd = true) should be(Symbol("empty"))
     }
 
     "fail for unclosed quotes at end of input" in {
       val parser = new CsvParser(delimiter = ',', quoteChar = '"', escapeChar = '\\', maximumLineLength)
       parser.offer(ByteString("\"A\""))
-      parser.poll(requireLineEnd = true) should be('empty)
+      parser.poll(requireLineEnd = true) should be(Symbol("empty"))
       parser.offer(ByteString("\",B"))
-      parser.poll(requireLineEnd = true) should be('empty)
+      parser.poll(requireLineEnd = true) should be(Symbol("empty"))
       val exception = the[MalformedCsvException] thrownBy {
         parser.poll(requireLineEnd = false)
       }
@@ -273,23 +273,23 @@ class CsvParserSpec extends AnyWordSpec with Matchers with OptionValues with Log
     "detect line ending correctly if input is split between CR & LF" in {
       val parser = new CsvParser(delimiter = ',', quoteChar = '"', escapeChar = '\\', maximumLineLength)
       parser.offer(ByteString("A,D\r"))
-      parser.poll(requireLineEnd = true) should be('empty)
+      parser.poll(requireLineEnd = true) should be(Symbol("empty"))
       parser.offer(ByteString("\nB,E\r\n"))
       parser.poll(requireLineEnd = true).value.map(_.utf8String) should be(List("A", "D"))
       parser.poll(requireLineEnd = true).value.map(_.utf8String) should be(List("B", "E"))
-      parser.poll(requireLineEnd = true) should be('empty)
+      parser.poll(requireLineEnd = true) should be(Symbol("empty"))
     }
 
     "detect line ending correctly if input is split between CR, CR & LF" in {
       val parser = new CsvParser(delimiter = ',', quoteChar = '"', escapeChar = '\\', maximumLineLength)
       parser.offer(ByteString("A,D\r"))
-      parser.poll(requireLineEnd = true) should be('empty)
+      parser.poll(requireLineEnd = true) should be(Symbol("empty"))
       parser.offer(ByteString("\r"))
-      parser.poll(requireLineEnd = true) should be('empty)
+      parser.poll(requireLineEnd = true) should be(Symbol("empty"))
       parser.offer(ByteString("\nB,E\r\n"))
       parser.poll(requireLineEnd = true).value.map(_.utf8String) should be(List("A", "D"))
       parser.poll(requireLineEnd = true).value.map(_.utf8String) should be(List("B", "E"))
-      parser.poll(requireLineEnd = true) should be('empty)
+      parser.poll(requireLineEnd = true) should be(Symbol("empty"))
     }
 
     "take double \" as single" in {
@@ -364,7 +364,7 @@ class CsvParserSpec extends AnyWordSpec with Matchers with OptionValues with Log
     expected.foreach { out =>
       parser.poll(requireLineEnd).value.map(_.utf8String) should be(out)
     }
-    parser.poll(requireLineEnd = true) should be('empty)
+    parser.poll(requireLineEnd = true) should be(Symbol("empty"))
   }
 
 }

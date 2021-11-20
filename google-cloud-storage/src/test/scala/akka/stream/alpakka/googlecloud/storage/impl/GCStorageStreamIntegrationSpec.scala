@@ -20,6 +20,7 @@ import scala.util.Random
 import akka.stream.alpakka.googlecloud.storage.GCStorageSettings
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 
+import scala.annotation.nowarn
 import scala.concurrent.Future
 
 /**

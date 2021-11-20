@@ -29,7 +29,7 @@ object SlickSourceWithPlainSQLQueryExample extends App {
   // into instances of the User class.
   // Please import slick.jdbc.GetResult
   // See also: "http://slick.lightbend.com/doc/3.2.1/sql.html#result-sets"
-  implicit val getUserResult = GetResult(r => User(r.nextInt, r.nextString))
+  implicit val getUserResult = GetResult(r => User(r.nextInt(), r.nextString()))
 
   // This import enables the use of the Slick sql"...",
   // sqlu"...", and sqlt"..." String interpolators.

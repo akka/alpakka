@@ -67,7 +67,7 @@ class SqsSourceSpec extends AnyFlatSpec with ScalaFutures with Matchers with Def
       val (switch, source) = SqsSource(queueUrl, SqsSourceSettings().withWaitTimeSeconds(0))
         .viaMat(KillSwitches.single)(Keep.right)
         .toMat(Sink.ignore)(Keep.both)
-        .run
+        .run()
 
       // make sure the source polled sqs once for an empty response
       Thread.sleep(1.second.toMillis)

@@ -17,9 +17,9 @@ import io.specto.hoverfly.junit.dsl.matchers.HoverflyMatchers.equalsToJson
 import spray.json.DefaultJsonProtocol.{mapFormat, StringJsonFormat}
 import spray.json.enrichAny
 
+import scala.annotation.nowarn
 import scala.util.Random
 
-@nowarn("msg=deprecated")
 abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Hoverfly) extends TestKit(_system) {
 
   def this(mock: Hoverfly) =

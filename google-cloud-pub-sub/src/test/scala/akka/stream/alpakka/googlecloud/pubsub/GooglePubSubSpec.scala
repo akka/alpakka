@@ -24,7 +24,6 @@ import org.scalatestplus.mockito.MockitoSugar
 import scala.collection.immutable.Seq
 import scala.concurrent.duration._
 
-@nowarn("msg=deprecation")
 class GooglePubSubSpec
     extends AnyFlatSpec
     with MockitoSugar

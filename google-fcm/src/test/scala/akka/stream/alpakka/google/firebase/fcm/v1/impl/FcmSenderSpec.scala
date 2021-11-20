@@ -24,6 +24,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
 
+import scala.annotation.nowarn
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 
@@ -38,7 +39,7 @@ class FcmSenderSpec
 
   import FcmJsonSupport._
 
-  override def afterAll: Unit =
+  override def afterAll(): Unit =
     TestKit.shutdownActorSystem(system)
 
   implicit val defaultPatience =

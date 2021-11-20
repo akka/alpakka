@@ -8,7 +8,6 @@ import java.io._
 import java.nio.file.{Files, Path, Paths}
 import java.time.Instant
 import java.util.Comparator
-
 import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.stream.alpakka.file.scaladsl.{Archive, Directory}
@@ -22,6 +21,7 @@ import org.scalatest.concurrent.{Eventually, IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
+import scala.annotation.nowarn
 import scala.jdk.CollectionConverters._
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
@@ -226,7 +226,7 @@ class TarArchiveSpec
     }
 
     "emit two files" in {
-      val Seq((name1, file1), (name2, file2)) = generateInputFiles(2, 400)
+      val Seq((name1, file1), (name2, file2)) = generateInputFiles(2, 400): @nowarn("msg=match may not be exhaustive")
 
       val metadata1 = TarArchiveMetadata(name1, file1.length)
       val metadata2 = TarArchiveMetadata(name2, file2.length)

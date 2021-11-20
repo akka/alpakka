@@ -509,7 +509,7 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
         )
         .runWith(Sink.seq)
 
-      writes.futureValue.filter(!_.success) shouldBe 'empty
+      writes.futureValue.filter(!_.success) shouldBe Symbol("empty")
       flushAndRefresh(connectionSettings, indexName)
 
       // Search for docs and ask elastic to only return some fields

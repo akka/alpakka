@@ -177,7 +177,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
           isDirectory shouldBe false
           size shouldBe getDefaultContent.length
           timestamp - lastModified.millis should be < 1.minute
-          perms should contain allOf (PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE)
+          perms should contain(allOf(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE))
       }
     }
   }

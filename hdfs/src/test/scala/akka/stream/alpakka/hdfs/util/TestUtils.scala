@@ -17,7 +17,6 @@ import org.apache.hadoop.io.compress.CompressionCodec
 import org.apache.hadoop.io.{SequenceFile, Text}
 
 import scala.collection.mutable.ListBuffer
-import scala.language.higherKinds
 import scala.util.Random
 import org.scalatest.matchers.should.Matchers
 
@@ -106,7 +105,7 @@ object ScalaTestUtils extends TestUtils with Matchers {
 
   def getFiles(fs: FileSystem): Sequence[FileStatus] = {
     val p = new Path(destination)
-    fs.listStatus(p)
+    fs.listStatus(p).toIndexedSeq
   }
 
   def generateFakeContent(count: Double, bytes: Long): Sequence[ByteString] =
@@ -114,7 +113,7 @@ object ScalaTestUtils extends TestUtils with Matchers {
       .allocate((count * bytes).toInt)
       .array()
       .toList
-      .map(_ => Random.nextPrintableChar)
+      .map(_ => Random.nextPrintableChar())
       .map(ByteString(_))
 
   def verifyOutputFileSize(fs: FileSystem, logs: Sequence[RotationMessage]): Assertion =
@@ -167,7 +166,7 @@ object ScalaTestUtils extends TestUtils with Matchers {
   def generateFakeContentForSequence(count: Double, bytes: Long): Sequence[(Text, Text)] = {
     val half = ((count * bytes) / 2).toInt
     (0 to half)
-      .map(_ => (new Text(Random.nextPrintableChar.toString), new Text(Random.nextPrintableChar.toString)))
+      .map(_ => (new Text(Random.nextPrintableChar().toString), new Text(Random.nextPrintableChar().toString)))
       .toList
   }
 }

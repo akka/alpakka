@@ -113,7 +113,7 @@ class PubSubApiSpec extends AnyFlatSpec with BeforeAndAfterAll with ScalaFutures
     )
     val flow = TestHttpApi.publish[Unit]("topic1", 1)
     val result =
-      Source.single((publishRequest, ())).via(flow).toMat(Sink.head)(Keep.right).run
+      Source.single((publishRequest, ())).via(flow).toMat(Sink.head)(Keep.right).run()
     result.futureValue._1.messageIds shouldBe Seq("1")
     result.futureValue._2 shouldBe (())
   }
@@ -145,7 +145,7 @@ class PubSubApiSpec extends AnyFlatSpec with BeforeAndAfterAll with ScalaFutures
 
     val flow = TestEmulatorHttpApi.publish[Unit]("topic1", 1)
     val result =
-      Source.single((publishRequest, ())).via(flow).toMat(Sink.last)(Keep.right).run
+      Source.single((publishRequest, ())).via(flow).toMat(Sink.last)(Keep.right).run()
     result.futureValue._1.messageIds shouldBe Seq("1")
     result.futureValue._2 shouldBe (())
   }
@@ -177,7 +177,7 @@ class PubSubApiSpec extends AnyFlatSpec with BeforeAndAfterAll with ScalaFutures
     )
 
     val flow = TestHttpApi.pull("sub1", true, 1000)
-    val result = Source.single(Done).via(flow).toMat(Sink.last)(Keep.right).run
+    val result = Source.single(Done).via(flow).toMat(Sink.last)(Keep.right).run()
     result.futureValue shouldBe PullResponse(Some(Seq(ReceivedMessage("ack1", message))))
 
   }
@@ -210,7 +210,7 @@ class PubSubApiSpec extends AnyFlatSpec with BeforeAndAfterAll with ScalaFutures
 
     val flow = TestEmulatorHttpApi.pull("sub1", true, 1000)
     val result =
-      Source.single(Done).via(flow).toMat(Sink.last)(Keep.right).run
+      Source.single(Done).via(flow).toMat(Sink.last)(Keep.right).run()
     result.futureValue shouldBe PullResponse(Some(Seq(ReceivedMessage("ack1", message))))
 
   }
@@ -235,7 +235,7 @@ class PubSubApiSpec extends AnyFlatSpec with BeforeAndAfterAll with ScalaFutures
 
     val flow = TestHttpApi.pull("sub1", true, 1000)
     val result =
-      Source.single(Done).via(flow).toMat(Sink.last)(Keep.right).run
+      Source.single(Done).via(flow).toMat(Sink.last)(Keep.right).run()
     result.futureValue shouldBe PullResponse(None)
 
   }
@@ -260,7 +260,7 @@ class PubSubApiSpec extends AnyFlatSpec with BeforeAndAfterAll with ScalaFutures
 
     val flow = TestHttpApi.pull("sub1", true, 1000)
     val result =
-      Source.single(Done).via(flow).toMat(Sink.last)(Keep.right).run
+      Source.single(Done).via(flow).toMat(Sink.last)(Keep.right).run()
     val failure = result.failed.futureValue
     failure.getMessage should include("418 I'm a teapot")
     failure.getMessage should include(pullResponse)
@@ -284,7 +284,7 @@ class PubSubApiSpec extends AnyFlatSpec with BeforeAndAfterAll with ScalaFutures
 
     val flow = TestHttpApi.acknowledge("sub1")
     val result =
-      Source.single(acknowledgeRequest).via(flow).toMat(Sink.last)(Keep.right).run
+      Source.single(acknowledgeRequest).via(flow).toMat(Sink.last)(Keep.right).run()
     result.futureValue shouldBe Done
 
   }
@@ -307,7 +307,7 @@ class PubSubApiSpec extends AnyFlatSpec with BeforeAndAfterAll with ScalaFutures
 
     val flow = TestHttpApi.acknowledge("sub1")
     val result =
-      Source.single(acknowledgeRequest).via(flow).toMat(Sink.last)(Keep.right).run
+      Source.single(acknowledgeRequest).via(flow).toMat(Sink.last)(Keep.right).run()
     result.failed.futureValue.getMessage should include("401")
   }
 
@@ -340,7 +340,7 @@ class PubSubApiSpec extends AnyFlatSpec with BeforeAndAfterAll with ScalaFutures
 
     val flow = TestHttpApi.publish[Unit]("topic1", 1)
     val result =
-      Source.single((publishRequest, ())).via(flow).toMat(Sink.last)(Keep.right).run
+      Source.single((publishRequest, ())).via(flow).toMat(Sink.last)(Keep.right).run()
 
     val failure = result.failed.futureValue
     failure shouldBe a[RuntimeException]

@@ -9,9 +9,9 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
+import scala.annotation.nowarn
 import scala.jdk.CollectionConverters._
 
-@nowarn("msg=deprecated")
 class GCStorageSettingsSpec extends AnyFlatSpec with Matchers with LogCapturing {
   "GCStorageSettings" should "create settings from application config" in {
     val projectId = "projectId"
@@ -34,6 +34,7 @@ class GCStorageSettingsSpec extends AnyFlatSpec with Matchers with LogCapturing 
       ).asJava
     )
 
+    @nowarn("msg=deprecated")
     val settings = GCStorageSettings(config)
 
     settings.projectId shouldBe projectId

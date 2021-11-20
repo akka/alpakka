@@ -9,6 +9,8 @@ import akka.stream.Graph
 import akka.stream.alpakka.google.{GoogleAttributes, GoogleSettings}
 import akka.stream.scaladsl.Source
 
+import scala.annotation.nowarn
+
 @nowarn("msg=never used")
 @nowarn("msg=dead code")
 class GoogleCommonDoc {

@@ -87,7 +87,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
       val input = Vector("one", "two", "three", "four", "five")
       val (rpcQueueF, probe) =
-        Source(input).map(s => ByteString(s)).viaMat(amqpRpcFlow)(Keep.right).toMat(TestSink.probe)(Keep.both).run
+        Source(input).map(s => ByteString(s)).viaMat(amqpRpcFlow)(Keep.right).toMat(TestSink.probe)(Keep.both).run()
       rpcQueueF.futureValue
 
       val amqpSink = AmqpSink.replyTo(
@@ -335,7 +335,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
           .viaMat(amqpRpcFlow)(Keep.right)
           .mapAsync(1)(cm => cm.ack().map(_ => cm.message))
           .toMat(TestSink.probe)(Keep.both)
-          .run
+          .run()
       rpcQueueF.futureValue
 
       val amqpSink = AmqpSink.replyTo(

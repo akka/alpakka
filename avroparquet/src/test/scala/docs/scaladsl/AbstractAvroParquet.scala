@@ -18,7 +18,6 @@ import org.apache.parquet.hadoop.util.HadoopInputFile
 import org.scalacheck.Gen
 import org.scalatest.{BeforeAndAfterAll, Suite}
 
-import scala.language.higherKinds
 import scala.reflect.io.Directory
 import scala.util.Random
 

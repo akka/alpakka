@@ -509,6 +509,7 @@ class JmsConnectorsSpec extends JmsSpec {
           .map {
             case textMessage: TextMessage =>
               textMessage.getText
+            case other => fail(s"didn't match `$other`")
           }
           .runWith(Sink.seq)
 

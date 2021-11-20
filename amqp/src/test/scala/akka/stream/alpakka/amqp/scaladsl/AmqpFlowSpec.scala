@@ -152,7 +152,7 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
           .viaMat(mockedFlowWithContextAndConfirm)(Keep.right)
           .asSource
           .toMat(TestSink.probe)(Keep.both)
-          .run
+          .run()
 
       probe.request(input.size)
 
@@ -239,7 +239,7 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
           .viaMat(mockedUnorderedFlowWithPassThrough)(Keep.right)
           .asSource
           .toMat(TestSink.probe)(Keep.both)
-          .run
+          .run()
 
       probe.request(input.size)
 
@@ -279,7 +279,7 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
         .map(s => WriteMessage(ByteString(s)))
         .viaMat(flow)(Keep.right)
         .toMat(TestSink.probe)(Keep.both)
-        .run
+        .run()
 
     val messages = probe.request(input.size).expectNextN(input.size)
 
@@ -297,7 +297,7 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
         .map(s => WriteMessage(ByteString(s)))
         .viaMat(flow)(Keep.right)
         .toMat(TestSink.probe)(Keep.both)
-        .run
+        .run()
 
     val messages = probe.request(input.size).expectNextN(input.size)
 
@@ -314,7 +314,7 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
         .map(s => (WriteMessage(ByteString(s)), s))
         .viaMat(flow)(Keep.right)
         .toMat(TestSink.probe)(Keep.both)
-        .run
+        .run()
 
     val messages = probe.request(input.size).expectNextN(input.size)
 
@@ -352,7 +352,7 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
         .map(s => WriteMessage(ByteString(s)))
         .viaMat(flow)(Keep.right)
         .toMat(TestSink.probe)(Keep.both)
-        .run
+        .run()
 
     probe.request(input.size)
 
@@ -380,7 +380,7 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
         .map(s => WriteMessage(ByteString(s)))
         .viaMat(flow)(Keep.right)
         .toMat(TestSink.probe)(Keep.both)
-        .run
+        .run()
 
     val messages = probe.request(input.size).expectNextN(input.size)
 
@@ -399,7 +399,7 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
         .map(s => WriteMessage(ByteString(s)))
         .viaMat(flow)(Keep.right)
         .toMat(TestSink.probe)(Keep.both)
-        .run
+        .run()
 
     probe.request(input.size)
 
@@ -438,7 +438,7 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
         .map(s => WriteMessage(ByteString(s)))
         .viaMat(flow)(Keep.right)
         .toMat(TestSink.probe)(Keep.right)
-        .run
+        .run()
 
     probe.request(sourceElements)
 
@@ -458,7 +458,7 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
         .map(s => WriteMessage(ByteString(s)))
         .viaMat(flow)(Keep.left)
         .toMat(TestSink.probe)(Keep.both)
-        .run
+        .run()
 
     sinkProbe.request(input.size)
     input.foreach(sourceProbe.sendNext)

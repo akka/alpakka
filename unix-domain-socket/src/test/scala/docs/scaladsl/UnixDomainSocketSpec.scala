@@ -34,7 +34,7 @@ class UnixDomainSocketSpec
     with IntegrationPatience
     with LogCapturing {
 
-  override def afterAll: Unit =
+  override def afterAll(): Unit =
     TestKit.shutdownActorSystem(system)
 
   implicit val ma: Materializer = Materializer(system)
@@ -48,7 +48,7 @@ class UnixDomainSocketSpec
       val path: java.nio.file.Path = // ...
         //#binding
         dir.resolve("sock1")
-      val received = Promise[ByteString]
+      val received = Promise[ByteString]()
 
       val serverSideFlow = Flow[ByteString]
         .buffer(1, OverflowStrategy.backpressure)
@@ -115,7 +115,7 @@ class UnixDomainSocketSpec
       val path = dir.resolve("sock4")
 
       val sendBytes = ByteString("Hello")
-      val receiving = Promise[Done]
+      val receiving = Promise[Done]()
 
       val binding =
         UnixDomainSocket().bindAndHandle(

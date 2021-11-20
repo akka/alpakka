@@ -127,7 +127,7 @@ trait MqttFlowSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll 
                 .toMat(BroadcastHub.sink)(Keep.both)
                 .run()
 
-              val subscribed = Promise[Done]
+              val subscribed = Promise[Done]()
               source
                 .runForeach {
                   case Right(Event(_: Connect, _)) =>

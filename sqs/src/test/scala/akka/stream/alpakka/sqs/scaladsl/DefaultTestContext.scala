@@ -48,14 +48,14 @@ trait DefaultTestContext extends Matchers with BeforeAndAfterAll with ScalaFutur
 
   def randomQueueUrl(): String =
     sqsClient
-      .createQueue(CreateQueueRequest.builder().queueName(s"queue-${Random.nextInt}").build())
+      .createQueue(CreateQueueRequest.builder().queueName(s"queue-${Random.nextInt()}").build())
       .get(2, TimeUnit.SECONDS)
       .queueUrl()
 
   val fifoQueueRequest =
     CreateQueueRequest
       .builder()
-      .queueName(s"queue-${Random.nextInt}.fifo")
+      .queueName(s"queue-${Random.nextInt()}.fifo")
       .attributesWithStrings(Map("FifoQueue" -> "true", "ContentBasedDeduplication" -> "true").asJava)
       .build()
 

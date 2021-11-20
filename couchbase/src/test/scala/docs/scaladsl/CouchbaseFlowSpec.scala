@@ -175,7 +175,7 @@ class CouchbaseFlowSpec
           .via(CouchbaseFlow.fromId(sessionSettings, bucketName, classOf[RawJsonDocument]))
           .runWith(Sink.seq)
 
-      resultsAsFuture.futureValue.map(_.id()) should contain inOrderOnly ("First", "Second", "Third", "Fourth")
+      resultsAsFuture.futureValue.map(_.id()) should contain(inOrderOnly("First", "Second", "Third", "Fourth"))
     }
 
     "insert multiple JsonDocuments" in assertAllStagesStopped {
@@ -202,7 +202,7 @@ class CouchbaseFlowSpec
           .runWith(Sink.seq)
       // #fromId
 
-      futureResult.futureValue.map(_.id()) should contain inOrderOnly ("First", "Second", "Third", "Fourth")
+      futureResult.futureValue.map(_.id()) should contain(inOrderOnly("First", "Second", "Third", "Fourth"))
     }
 
     "insert multiple StringDocuments" in assertAllStagesStopped {
@@ -229,7 +229,7 @@ class CouchbaseFlowSpec
           )
           .runWith(Sink.seq)
 
-      resultsAsFuture.futureValue.map(_.id()) should contain inOrder ("First", "Second", "Third", "Fourth")
+      resultsAsFuture.futureValue.map(_.id()) should contain(inOrder("First", "Second", "Third", "Fourth"))
     }
 
     "insert multiple BinaryDocuments" in assertAllStagesStopped {
@@ -311,7 +311,7 @@ class CouchbaseFlowSpec
       Thread.sleep(1000)
 
       val msgFuture: Future[Option[RawJsonDocument]] = session.get(sampleData.id, classOf[RawJsonDocument])
-      msgFuture.futureValue shouldBe 'empty
+      msgFuture.futureValue shouldBe Symbol("empty")
 
       val getFuture: Future[RawJsonDocument] =
         Source
@@ -350,7 +350,7 @@ class CouchbaseFlowSpec
             CouchbaseFlow.fromId(sessionSettings, bucketName, classOf[RawJsonDocument])
           )
           .runWith(Sink.seq)
-      getFuture.futureValue shouldBe 'empty
+      getFuture.futureValue shouldBe Symbol("empty")
     }
   }
 
@@ -454,7 +454,9 @@ class CouchbaseFlowSpec
           .via(CouchbaseFlow.fromId(sessionSettings, bucketName))
           .runWith(Sink.seq)
 
-      resultsAsFuture.futureValue.map(doc => doc.content().get("value")) should contain inOrderOnly ("First", "SecondReplace", "ThirdReplace", "Fourth")
+      resultsAsFuture.futureValue.map(doc => doc.content().get("value")) should contain(
+        inOrderOnly("First", "SecondReplace", "ThirdReplace", "Fourth")
+      )
     }
 
     "replace RawJsonDocument" in assertAllStagesStopped {
@@ -528,8 +530,8 @@ class CouchbaseFlowSpec
       // #upsertDocWithResult
 
       result.futureValue should have size sampleSequence.size
-      failedDocs shouldBe 'empty
-      forAll(result.futureValue)(_ shouldBe 'success)
+      failedDocs shouldBe Symbol("empty")
+      forAll(result.futureValue)(_ shouldBe Symbol("success"))
     }
 
     "expose failures in-stream" in assertAllStagesStopped {
@@ -620,8 +622,8 @@ class CouchbaseFlowSpec
       // #replaceDocWithResult
 
       result.futureValue should have size sampleSequence.size
-      failedDocs shouldBe 'empty
-      forAll(result.futureValue)(_ shouldBe 'success)
+      failedDocs shouldBe Symbol("empty")
+      forAll(result.futureValue)(_ shouldBe Symbol("success"))
     }
 
     "expose failures in-stream" in assertAllStagesStopped {

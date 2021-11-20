@@ -60,7 +60,7 @@ class QueueOfferStateSpec
     }
 
     "work when enqueued after some time" in {
-      val done = Promise[QueueOfferResult]
+      val done = Promise[QueueOfferResult]()
 
       val behavior = QueueOfferState.waitForQueueOfferCompleted[Msg](
         done.future,
@@ -83,7 +83,7 @@ class QueueOfferStateSpec
     }
 
     "work when unhandled" in {
-      val done = Promise[QueueOfferResult]
+      val done = Promise[QueueOfferResult]()
 
       val behavior = QueueOfferState.waitForQueueOfferCompleted[Msg](
         done.future,

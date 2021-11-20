@@ -98,7 +98,7 @@ class AmqpDocsSpec extends AmqpSpec {
         .map(s => ByteString(s))
         .viaMat(amqpRpcFlow)(Keep.right)
         .toMat(TestSink.probe)(Keep.both)
-        .run
+        .run()
       //#create-rpc-flow
       rpcQueueF.futureValue
 
@@ -153,7 +153,7 @@ class AmqpDocsSpec extends AmqpSpec {
       }
       //#create-exchange-source
 
-      val completion = Promise[Done]
+      val completion = Promise[Done]()
       val mergingFlow = mergedSources
         .viaMat(KillSwitches.single)(Keep.right)
         .to(Sink.fold(Set.empty[Int]) {

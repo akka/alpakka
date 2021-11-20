@@ -45,13 +45,13 @@ class AzureQueueSpec extends TestKit(ActorSystem()) with AsyncFlatSpecLike with 
     test()
   }
 
-  override def beforeAll: Unit =
+  override def beforeAll(): Unit =
     queueOpt.map(_.createIfNotExists)
 
-  override def afterAll: Unit = {
+  override def afterAll(): Unit = {
     queueOpt.map(_.deleteIfExists)
     TestKit.shutdownActorSystem(system)
-    super.afterAll
+    super.afterAll()
   }
 
   private var testMsgCount = 0
