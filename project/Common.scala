@@ -5,6 +5,7 @@ import org.scalafmt.sbt.ScalafmtPlugin.autoImport._
 import de.heikoseeberger.sbtheader._
 import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
 import com.lightbend.paradox.projectinfo.ParadoxProjectInfoPluginKeys._
+import com.lightbend.sbt.JavaFormatterPlugin.autoImport.javafmtOnCompile
 import com.typesafe.tools.mima.plugin.MimaKeys._
 import xerial.sbt.Sonatype.autoImport.sonatypeProfileName
 
@@ -120,8 +121,11 @@ object Common extends AutoPlugin {
       // This should not impact the total test time as we don't expect to hit this
       // timeout.
       testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-F", "4"),
-      scalafmtOnCompile := true,
-      headerLicense := Some(HeaderLicense.Custom("Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>")),
+      scalafmtOnCompile := insideCI.value,
+      javafmtOnCompile := insideCI.value,
+      headerLicense := Some(
+          HeaderLicense.Custom("Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>")
+        ),
       sonatypeProfileName := "com.lightbend"
     )
 }
