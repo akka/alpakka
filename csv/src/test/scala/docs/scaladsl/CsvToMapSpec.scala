@@ -204,15 +204,14 @@ class CsvToMapSpec extends CsvSpec {
         // format: off
       // #header-line
       // values as ByteString
-        Source
-          .single(ByteString(
-            """eins,zwei,drei,vier,fünt
-              |11,12,13
-              |21,22,23
-              |""".stripMargin))
-          .via(CsvParsing.lineScanner())
-          .via(CsvToMap.toMapAsStringsCombineAll(headerPlaceholder = Option.empty))
-          .runWith(Sink.seq)
+      Source
+        .single(ByteString("""eins,zwei,drei,vier,fünt
+                              |11,12,13
+                              |21,22,23
+                              |""".stripMargin))
+        .via(CsvParsing.lineScanner())
+        .via(CsvToMap.toMapAsStringsCombineAll(headerPlaceholder = Option.empty))
+        .runWith(Sink.seq)
       // #header-line
       // format: on
       val result = future.futureValue
@@ -236,15 +235,14 @@ class CsvToMapSpec extends CsvSpec {
         // format: off
       // #header-line
       // values as ByteString
-        Source
-          .single(ByteString(
-            """eins,zwei,drei
-              |11,12,13,14
-              |21,22,23
-              |""".stripMargin))
-          .via(CsvParsing.lineScanner())
-          .via(CsvToMap.toMapAsStringsCombineAll(headerPlaceholder = Option.empty))
-          .runWith(Sink.seq)
+      Source
+        .single(ByteString("""eins,zwei,drei
+                              |11,12,13,14
+                              |21,22,23
+                              |""".stripMargin))
+        .via(CsvParsing.lineScanner())
+        .via(CsvToMap.toMapAsStringsCombineAll(headerPlaceholder = Option.empty))
+        .runWith(Sink.seq)
       // #header-line
       // format: on
       val result = future.futureValue
@@ -268,15 +266,14 @@ class CsvToMapSpec extends CsvSpec {
         // format: off
       // #header-line
       // values as ByteString
-        Source
-          .single(ByteString(
-            """eins,zwei
-              |11,12,13
-              |21,22,
-              |""".stripMargin))
-          .via(CsvParsing.lineScanner())
-          .via(CsvToMap.toMapAsStringsCombineAll(headerPlaceholder = Option("MyCustomHeader")))
-          .runWith(Sink.seq)
+      Source
+        .single(ByteString("""eins,zwei
+                              |11,12,13
+                              |21,22,
+                              |""".stripMargin))
+        .via(CsvParsing.lineScanner())
+        .via(CsvToMap.toMapAsStringsCombineAll(headerPlaceholder = Option("MyCustomHeader")))
+        .runWith(Sink.seq)
       // #header-line
       // format: on
       val result = future.futureValue
@@ -300,15 +297,14 @@ class CsvToMapSpec extends CsvSpec {
         // format: off
         // #header-line
         // values as ByteString
-          Source
-            .single(ByteString(
-              """eins,zwei,drei,fünt
-                |11,12,13
-                |21,22,23
-                |""".stripMargin))
-            .via(CsvParsing.lineScanner())
-            .via(CsvToMap.toMapAsStringsCombineAll(customFieldValuePlaceholder = Option("missing")))
-            .runWith(Sink.seq)
+        Source
+          .single(ByteString("""eins,zwei,drei,fünt
+                                |11,12,13
+                                |21,22,23
+                                |""".stripMargin))
+          .via(CsvParsing.lineScanner())
+          .via(CsvToMap.toMapAsStringsCombineAll(customFieldValuePlaceholder = Option("missing")))
+          .runWith(Sink.seq)
         // #header-line
         // format: on
       val result = future.futureValue
@@ -333,15 +329,14 @@ class CsvToMapSpec extends CsvSpec {
       // format: off
     // #header-line
     // values as ByteString
-      Source
-        .single(ByteString(
-          """eins,zwei,drei,vier,fünt
-            |11,12,13
-            |21,22,23
-            |""".stripMargin))
-        .via(CsvParsing.lineScanner())
-        .via(CsvToMap.toMapCombineAll(headerPlaceholder = Option.empty))
-        .runWith(Sink.seq)
+    Source
+      .single(ByteString("""eins,zwei,drei,vier,fünt
+                            |11,12,13
+                            |21,22,23
+                            |""".stripMargin))
+      .via(CsvParsing.lineScanner())
+      .via(CsvToMap.toMapCombineAll(headerPlaceholder = Option.empty))
+      .runWith(Sink.seq)
     // #header-line
     // format: on
     val result = future.futureValue
@@ -374,14 +369,13 @@ class CsvToMapSpec extends CsvSpec {
     // #header-line
     // values as ByteString
       Source
-        .single(ByteString(
-          """eins,zwei,drei
-            |11,12,13,14,15
-            |21,22,23
-            |""".stripMargin))
-        .via(CsvParsing.lineScanner())
-        .via(CsvToMap.toMapCombineAll(headerPlaceholder = Option.empty))
-        .runWith(Sink.seq)
+      .single(ByteString("""eins,zwei,drei
+                            |11,12,13,14,15
+                            |21,22,23
+                            |""".stripMargin))
+      .via(CsvParsing.lineScanner())
+      .via(CsvToMap.toMapCombineAll(headerPlaceholder = Option.empty))
+      .runWith(Sink.seq)
     // #header-line
     // format: on
     val result = future.futureValue
@@ -410,14 +404,13 @@ class CsvToMapSpec extends CsvSpec {
     // #header-line
     // values as ByteString
       Source
-        .single(ByteString(
-          """eins,zwei
-            |11,12,13
-            |21,22,
-            |""".stripMargin))
-        .via(CsvParsing.lineScanner())
-        .via(CsvToMap.toMapCombineAll(headerPlaceholder = Option("MyCustomHeader")))
-        .runWith(Sink.seq)
+      .single(ByteString("""eins,zwei
+                            |11,12,13
+                            |21,22,
+                            |""".stripMargin))
+      .via(CsvParsing.lineScanner())
+      .via(CsvToMap.toMapCombineAll(headerPlaceholder = Option("MyCustomHeader")))
+      .runWith(Sink.seq)
     // #header-line
     // format: on
     val result = future.futureValue
@@ -441,15 +434,14 @@ class CsvToMapSpec extends CsvSpec {
       // format: off
       // #header-line
       // values as ByteString
-        Source
-          .single(ByteString(
-            """eins,zwei,drei,fünt
-              |11,12,13
-              |21,22,
-              |""".stripMargin))
-          .via(CsvParsing.lineScanner())
-          .via(CsvToMap.toMapCombineAll(headerPlaceholder = Option("MyCustomHeader"), customFieldValuePlaceholder = Option(ByteString("missing"))))
-          .runWith(Sink.seq)
+      Source
+        .single(ByteString("""eins,zwei,drei,fünt
+                              |11,12,13
+                              |21,22,
+                              |""".stripMargin))
+        .via(CsvParsing.lineScanner())
+        .via(CsvToMap.toMapCombineAll(headerPlaceholder = Option("MyCustomHeader"), customFieldValuePlaceholder = Option(ByteString("missing"))))
+        .runWith(Sink.seq)
       // #header-line
       // format: on
     val result = future.futureValue

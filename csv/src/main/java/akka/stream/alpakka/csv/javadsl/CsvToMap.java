@@ -53,13 +53,12 @@ public class CsvToMap {
   }
 
   /**
-   * A flow translating incoming [[scala.List]] of [[akka.util.ByteString]] to a map of String and
-   * ByteString using the stream's first element's values as keys. If the header values are shorter
-   * than the data (or vice-versa) placeholder elements are used to extend the shorter collection to
-   * the length of the longer.
+   * A flow translating incoming {@link Collection<ByteString>} to a {@link Map<String, ByteString>}
+   * using the stream's first element's values as keys. If the header values are shorter than the
+   * data (or vice-versa) placeholder elements are used to extend the shorter collection to the
+   * length of the longer.
    *
-   * @param charset the charset to decode [[akka.util.ByteString]] to [[scala.Predef.String]],
-   *     defaults to UTF-8
+   * @param charset the charset to decode {@link ByteString} to {@link String}, defaults to UTF-8
    * @param customFieldValuePlaceholder placeholder used when there are more data than headers.
    * @param headerPlaceholder placeholder used when there are more headers than data.
    */
@@ -73,13 +72,12 @@ public class CsvToMap {
   }
 
   /**
-   * A flow translating incoming [[scala.List]] of [[akka.util.ByteString]] to a map of String keys
-   * and values using the stream's first element's values as keys. If the header values are shorter
-   * than the data (or vice-versa) placeholder elements are used to extend the shorter collection to
-   * the length of the longer.
+   * A flow translating incoming {@link Collection<ByteString>} to a {@link Map<String, ByteString>}
+   * using the stream's first element's values as keys. If the header values are shorter than the
+   * data (or vice-versa) placeholder elements are used to extend the shorter collection to the
+   * length of the longer.
    *
-   * @param charset the charset to decode [[akka.util.ByteString]] to [[scala.Predef.String]],
-   *     defaults to UTF-8
+   * @param charset the charset to decode {@link ByteString} to {@link String}, defaults to UTF-8
    * @param customFieldValuePlaceholder placeholder used when there are more data than headers.
    * @param headerPlaceholder placeholder used when there are more headers than data.
    */
