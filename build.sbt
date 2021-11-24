@@ -147,7 +147,7 @@ lazy val ftp = alpakkaProject(
   Dependencies.Ftp,
   Test / fork := true,
   // To avoid potential blocking in machines with low entropy (default is `/dev/random`)
-  javaOptions in Test += "-Djava.security.egd=file:/dev/./urandom"
+  Test / javaOptions += "-Djava.security.egd=file:/dev/./urandom"
 )
 
 lazy val geode =
@@ -156,8 +156,8 @@ lazy val geode =
     "geode",
     Dependencies.Geode,
     Test / fork := true,
-    unmanagedSourceDirectories in Compile ++= {
-      val sourceDir = (sourceDirectory in Compile).value
+    Compile / unmanagedSourceDirectories ++= {
+      val sourceDir = (Compile / sourceDirectory).value
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, n)) if n >= 12 => Seq(sourceDir / "scala-2.12+")
         case _ => Seq.empty
@@ -198,7 +198,7 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
   akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala, AkkaGrpc.Java),
   Compile / PB.protoSources += (Compile / PB.externalIncludePath).value,
   // for the ExampleApp in the tests
-  connectInput in run := true,
+  run / connectInput := true,
   Compile / scalacOptions ++= Seq(
       "-P:silencer:pathFilters=akka-grpc/main",
       "-P:silencer:pathFilters=akka-grpc/test"
@@ -235,7 +235,7 @@ lazy val jsonStreaming = alpakkaProject("json-streaming", "json.streaming", Depe
 
 lazy val kinesis = alpakkaProject("kinesis", "aws.kinesis", Dependencies.Kinesis)
 
-lazy val kudu = alpakkaProject("kudu", "kudu", Dependencies.Kudu, fork in Test := false)
+lazy val kudu = alpakkaProject("kudu", "kudu", Dependencies.Kudu)
 
 lazy val mongodb = alpakkaProject("mongodb", "mongodb", Dependencies.MongoDb)
 
