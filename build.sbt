@@ -163,7 +163,9 @@ lazy val geode =
     "geode",
     "geode",
     Dependencies.Geode,
-    Test / fork := true
+    Test / fork := true,
+    // https://github.com/scala/bug/issues/12072
+    Test / scalacOptions += "-Xlint:-byname-implicit"
   )
 
 lazy val googleCommon = alpakkaProject(
