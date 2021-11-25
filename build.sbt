@@ -222,7 +222,7 @@ lazy val hbase = alpakkaProject("hbase", "hbase", Dependencies.HBase, Test / for
 lazy val hdfs = alpakkaProject("hdfs", "hdfs", Dependencies.Hdfs)
 
 lazy val huaweiPushKit =
-  alpakkaProject("huawei-push-kit", "huawei.pushkit", Dependencies.HuaweiPushKit, fatalWarnings := true)
+  alpakkaProject("huawei-push-kit", "huawei.pushkit", Dependencies.HuaweiPushKit)
     .disablePlugins(MimaPlugin)
 
 lazy val influxdb = alpakkaProject("influxdb", "influxdb", Dependencies.InfluxDB)

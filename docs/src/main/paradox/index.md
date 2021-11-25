@@ -41,7 +41,7 @@ The [Alpakka project](https://doc.akka.io/docs/alpakka/current/) is an open sour
 * [gRPC](external/grpc.md)
 * [Hadoop Distributed File System](hdfs.md)
 * [HBase](hbase.md)
-* [HUAWEI Push Kit](huawei-push-kit.md)
+* [Huawei Push Kit](huawei-push-kit.md)
 * [HTTP](external/http.md)
 * [IBM Bluemix Cloud Object storage](bluemix-cos.md)
 * [IBM DB2 Event Store](external/db2-event-store.md)
