@@ -289,6 +289,14 @@ object Dependencies {
       )
   )
 
+  val HuaweiPushKit = Seq(
+    libraryDependencies ++= Seq(
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
+        "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
+        "com.github.jwt-scala" %% "jwt-spray-json" % "7.1.0" // ApacheV2
+      ) ++ Mockito ++ Silencer
+  )
+
   val InfluxDB = Seq(
     libraryDependencies ++= Seq(
         "org.influxdb" % "influxdb-java" % InfluxDBJavaVersion // MIT

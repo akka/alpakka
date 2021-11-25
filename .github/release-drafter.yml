@@ -56,6 +56,8 @@ categories:
     label: 'p:google-fcm'
   - title: 'HBase'
     label: 'p:hbase'
+  - title: 'Huawei Push Kit'
+    label: 'p:huawei-push-kit'
   - title: 'InfluxDB'
     label: 'p:influxdb'
   - title: 'IronMQ'
@@ -98,8 +100,6 @@ categories:
 change-template: '- $TITLE [#$NUMBER](https://github.com/akka/alpakka/issues/$NUMBER) by [@$AUTHOR](https://github.com/$AUTHOR)'
 template: |
   # :mega: Alpakka $NEXT_PATCH_VERSION released!
-
-  ### See the full Release Notes in the [Alpakka documentation](https://doc.akka.io/docs/alpakka/3.0/release-notes/3.0.x.html).
 
   ## Changes
 
