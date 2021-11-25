@@ -18,6 +18,7 @@ lazy val alpakka = project
     geode,
     googleCommon,
     googleCloudBigQuery,
+    googleCloudBigQueryStorage,
     googleCloudPubSub,
     googleCloudPubSubGrpc,
     googleCloudStorage,
@@ -80,9 +81,15 @@ lazy val alpakka = project
         .filterNot(_.data.getAbsolutePath.contains("commons-net-3.1.jar"))
         .filterNot(_.data.getAbsolutePath.contains("protobuf-java-2.6.1.jar"))
     },
-    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(`doc-examples`,
-                                                                             csvBench,
-                                                                             mqttStreamingBench),
+    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject
+      -- inProjects(
+        `doc-examples`,
+        csvBench,
+        mqttStreamingBench,
+        // googleCloudPubSubGrpc and googleCloudBigQueryStorage contain the same gRPC generated classes
+        // don't include ScalaDocs for googleCloudBigQueryStorage to make it work
+        googleCloudBigQueryStorage
+      ),
     crossScalaVersions := List() // workaround for https://github.com/sbt/sbt/issues/3465
   )
 
@@ -180,6 +187,22 @@ lazy val googleCloudBigQuery = alpakkaProject(
   Dependencies.GoogleBigQuery,
   Test / fork := true
 ).dependsOn(googleCommon).enablePlugins(spray.boilerplate.BoilerplatePlugin)
+
+lazy val googleCloudBigQueryStorage = alpakkaProject(
+  "google-cloud-bigquery-storage",
+  "google.cloud.bigquery.storage",
+  Dependencies.GoogleBigQueryStorage,
+  akkaGrpcCodeGeneratorSettings ~= { _.filterNot(_ == "flat_package") },
+  akkaGrpcCodeGeneratorSettings += "server_power_apis",
+  akkaGrpcGeneratedSources := Seq(AkkaGrpc.Client),
+  akkaGrpcGeneratedSources in Test := Seq(AkkaGrpc.Server),
+  akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala, AkkaGrpc.Java),
+  Compile / scalacOptions ++= Seq(
+      "-P:silencer:pathFilters=akka-grpc/main",
+      "-P:silencer:pathFilters=akka-grpc/test"
+    ),
+  compile / javacOptions := (compile / javacOptions).value.filterNot(_ == "-Xlint:deprecation")
+).dependsOn(googleCommon).disablePlugins(MimaPlugin).enablePlugins(AkkaGrpcPlugin)
 
 lazy val googleCloudPubSub = alpakkaProject(
   "google-cloud-pub-sub",
