@@ -244,7 +244,15 @@ lazy val hdfs = alpakkaProject("hdfs", "hdfs", Dependencies.Hdfs)
 lazy val huaweiPushKit =
   alpakkaProject("huawei-push-kit", "huawei.pushkit", Dependencies.HuaweiPushKit)
 
-lazy val influxdb = alpakkaProject("influxdb", "influxdb", Dependencies.InfluxDB)
+lazy val influxdb = alpakkaProject(
+  "influxdb",
+  "influxdb",
+  Dependencies.InfluxDB,
+  Compile / scalacOptions ++= Seq(
+      // JDK 11: method isAccessible in class AccessibleObject is deprecated
+      "-Wconf:cat=deprecation:s"
+    )
+)
 
 lazy val ironmq = alpakkaProject(
   "ironmq",

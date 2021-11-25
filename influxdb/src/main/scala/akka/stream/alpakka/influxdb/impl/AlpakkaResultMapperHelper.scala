@@ -17,7 +17,6 @@ import akka.annotation.InternalApi
 import org.influxdb.InfluxDBMapperException
 import org.influxdb.dto.Point
 
-import scala.annotation.nowarn
 import scala.jdk.CollectionConverters._
 
 /**
@@ -63,7 +62,7 @@ private[impl] class AlpakkaResultMapperHelper {
         val columnName: String = column.name()
         val fieldType: Class[_] = field.getType()
 
-        val isAccessible = field.isAccessible(): @nowarn("msg=deprecated")
+        val isAccessible = field.isAccessible() // deprecated in JDK 11+
         if (!isAccessible) {
           field.setAccessible(true);
         }
@@ -173,7 +172,7 @@ private[impl] class AlpakkaResultMapperHelper {
     if (value == null) return
     val fieldType = field.getType
     try {
-      val isAccessible = field.isAccessible(): @nowarn("msg=deprecated")
+      val isAccessible = field.isAccessible() // deprecated in JDK 11+
       if (!isAccessible) field.setAccessible(true)
       if (fieldValueModified(fieldType, field, obj, value, precision) || fieldValueForPrimitivesModified(
             fieldType,
