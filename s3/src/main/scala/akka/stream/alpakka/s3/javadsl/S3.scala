@@ -776,7 +776,7 @@ object S3 {
     multipartUpload(bucket, key, ContentTypes.APPLICATION_OCTET_STREAM)
 
   /**
-   * Uploads a S3 Object by making multiple requests
+   * Resumes from a previously aborted multipart upload by providing the uploadId and previous upload part identifiers
    *
    * @param bucket the s3 bucket name
    * @param key the s3 object key
@@ -803,7 +803,7 @@ object S3 {
   }
 
   /**
-   * Uploads a S3 Object by making multiple requests
+   * Resumes from a previously aborted multipart upload by providing the uploadId and previous upload part identifiers
    *
    * @param bucket the s3 bucket name
    * @param key the s3 object key
@@ -825,7 +825,7 @@ object S3 {
                           S3Headers.empty.withCannedAcl(CannedAcl.Private))
 
   /**
-   * Uploads a S3 Object by making multiple requests
+   * Resumes from a previously aborted multipart upload by providing the uploadId and previous upload part identifiers
    *
    * @param bucket the s3 bucket name
    * @param key the s3 object key
