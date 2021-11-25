@@ -88,7 +88,9 @@ lazy val alpakka = project
         mqttStreamingBench,
         // googleCloudPubSubGrpc and googleCloudBigQueryStorage contain the same gRPC generated classes
         // don't include ScalaDocs for googleCloudBigQueryStorage to make it work
-        googleCloudBigQueryStorage
+        googleCloudBigQueryStorage,
+        // springWeb triggers an esoteric ScalaDoc bug (from Java code)
+        springWeb
       ),
     crossScalaVersions := List() // workaround for https://github.com/sbt/sbt/issues/3465
   )
@@ -193,8 +195,8 @@ lazy val googleCloudBigQueryStorage = alpakkaProject(
   Test / akkaGrpcGeneratedSources := Seq(AkkaGrpc.Server),
   akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala, AkkaGrpc.Java),
   Compile / scalacOptions ++= Seq(
-      "-P:silencer:pathFilters=akka-grpc/main",
-      "-P:silencer:pathFilters=akka-grpc/test"
+      "-Wconf:src=.+/akka-grpc/main/.+:s",
+      "-Wconf:src=.+/akka-grpc/test/.+:s"
     ),
   compile / javacOptions := (compile / javacOptions).value.filterNot(_ == "-Xlint:deprecation")
 ).dependsOn(googleCommon).enablePlugins(AkkaGrpcPlugin)

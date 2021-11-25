@@ -56,7 +56,7 @@ import java.util.concurrent.Executor
     val setCallCredentials = (settings: GrpcClientSettings) => {
       implicit val config = system.classicSystem.settings.config
       val executor: Executor = system.classicSystem.dispatcher
-      settings.withCallCredentials(MoreCallCredentials.from(credentials.asGoogle(executor, requestSettings)))
+      settings.withCallCredentials(MoreCallCredentials.from(credentials().asGoogle(executor, requestSettings())))
     }
 
     Seq(setTls, setCallCredentials).foldLeft(settings) {

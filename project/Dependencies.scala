@@ -227,7 +227,7 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http2-support" % AkkaHttpVersion,
         "org.apache.arrow" % "arrow-memory-netty" % "4.0.0" % Test,
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion
-      ) ++ Mockito ++ Silencer
+      ) ++ Mockito
   )
 
   val GooglePubSub = Seq(
@@ -296,7 +296,7 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         "com.github.jwt-scala" %% "jwt-spray-json" % "7.1.0" // ApacheV2
-      ) ++ Mockito ++ Silencer
+      ) ++ Mockito
   )
 
   val InfluxDB = Seq(
