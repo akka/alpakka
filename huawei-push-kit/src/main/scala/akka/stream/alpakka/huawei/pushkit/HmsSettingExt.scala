@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.huawei.pushkit
@@ -17,6 +17,7 @@ import akka.annotation.InternalApi
 import scala.collection.immutable.ListMap
 
 /**
+ * INTERNAL API.
  * Manages one [[HmsSettings]] per `ActorSystem`.
  */
 @InternalApi
@@ -32,6 +33,9 @@ private[pushkit] final class HmsSettingExt private (sys: ExtendedActorSystem) ex
     })
 }
 
+/**
+ * INTERNAL API
+ */
 @InternalApi
 private[pushkit] object HmsSettingExt extends ExtensionId[HmsSettingExt] with ExtensionIdProvider {
 

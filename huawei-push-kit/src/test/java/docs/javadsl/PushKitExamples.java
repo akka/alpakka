@@ -55,7 +55,7 @@ public class PushKitExamples {
                 res -> {
                   if (!res.isFailure()) {
                     PushKitResponse response = (PushKitResponse) res;
-                    System.out.println("Response" + response);
+                    System.out.println("Response " + response);
                   } else {
                     ErrorResponse response = (ErrorResponse) res;
                     System.out.println("Send error " + response);

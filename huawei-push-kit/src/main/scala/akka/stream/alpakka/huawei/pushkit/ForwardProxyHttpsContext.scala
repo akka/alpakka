@@ -1,10 +1,11 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.huawei.pushkit
 
 import akka.actor.ActorSystem
+import akka.annotation.InternalApi
 import akka.http.scaladsl.{Http, HttpsConnectionContext}
 
 import java.io.FileInputStream
@@ -12,6 +13,10 @@ import java.security.KeyStore
 import java.security.cert.{CertificateFactory, X509Certificate}
 import javax.net.ssl.{SSLContext, TrustManagerFactory}
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[pushkit] object ForwardProxyHttpsContext {
 
   val SSL = "SSL"

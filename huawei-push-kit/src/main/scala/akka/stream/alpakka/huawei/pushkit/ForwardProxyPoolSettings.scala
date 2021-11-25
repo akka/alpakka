@@ -1,16 +1,21 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.huawei.pushkit
 
 import akka.actor.ActorSystem
+import akka.annotation.InternalApi
 import akka.http.scaladsl.ClientTransport
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import akka.http.scaladsl.settings.{ClientConnectionSettings, ConnectionPoolSettings}
 
 import java.net.InetSocketAddress
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[pushkit] object ForwardProxyPoolSettings {
 
   implicit class ForwardProxyPoolSettings(forwardProxy: ForwardProxy) {
