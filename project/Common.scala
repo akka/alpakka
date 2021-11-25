@@ -121,8 +121,8 @@ object Common extends AutoPlugin {
       // This should not impact the total test time as we don't expect to hit this
       // timeout.
       Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-F", "4"),
-      scalafmtOnCompile := insideCI.value,
-      javafmtOnCompile := insideCI.value,
+      scalafmtOnCompile := false,
+      javafmtOnCompile := false,
       headerLicense := Some(
           HeaderLicense.Custom("Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>")
         ),
