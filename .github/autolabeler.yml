@@ -20,6 +20,7 @@ dependency-change: "/project/Dependencies.scala"
 'p:ftp': ["/ftp"]
 'p:geode': ["/geode"]
 'p:google-cloud-bigquery': ["/google-cloud-bigquery"]
+'p:google-cloud-bigquery-storage': ["/google-cloud-bigquery-storage"]
 'p:google-cloud-pub-sub': ["/google-cloud-pub-sub"]
 'p:google-cloud-pub-sub-grpc': ["/google-cloud-pub-sub-grpc"]
 'p:google-cloud-storage': ["/google-cloud-storage"]
