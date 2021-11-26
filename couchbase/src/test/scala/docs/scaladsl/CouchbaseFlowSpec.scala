@@ -175,7 +175,7 @@ class CouchbaseFlowSpec
           .via(CouchbaseFlow.fromId(sessionSettings, bucketName, classOf[RawJsonDocument]))
           .runWith(Sink.seq)
 
-      resultsAsFuture.futureValue.map(_.id()) should contain(inOrderOnly("First", "Second", "Third", "Fourth"))
+      resultsAsFuture.futureValue.map(_.id()) should contain.inOrderOnly("First", "Second", "Third", "Fourth")
     }
 
     "insert multiple JsonDocuments" in assertAllStagesStopped {
@@ -202,7 +202,7 @@ class CouchbaseFlowSpec
           .runWith(Sink.seq)
       // #fromId
 
-      futureResult.futureValue.map(_.id()) should contain(inOrderOnly("First", "Second", "Third", "Fourth"))
+      futureResult.futureValue.map(_.id()) should contain.inOrderOnly("First", "Second", "Third", "Fourth")
     }
 
     "insert multiple StringDocuments" in assertAllStagesStopped {
@@ -229,7 +229,7 @@ class CouchbaseFlowSpec
           )
           .runWith(Sink.seq)
 
-      resultsAsFuture.futureValue.map(_.id()) should contain(inOrder("First", "Second", "Third", "Fourth"))
+      resultsAsFuture.futureValue.map(_.id()) should contain.inOrder("First", "Second", "Third", "Fourth")
     }
 
     "insert multiple BinaryDocuments" in assertAllStagesStopped {
@@ -454,9 +454,10 @@ class CouchbaseFlowSpec
           .via(CouchbaseFlow.fromId(sessionSettings, bucketName))
           .runWith(Sink.seq)
 
-      resultsAsFuture.futureValue.map(doc => doc.content().get("value")) should contain(
-        inOrderOnly("First", "SecondReplace", "ThirdReplace", "Fourth")
-      )
+      resultsAsFuture.futureValue.map(doc => doc.content().get("value")) should contain.inOrderOnly("First",
+                                                                                                    "SecondReplace",
+                                                                                                    "ThirdReplace",
+                                                                                                    "Fourth")
     }
 
     "replace RawJsonDocument" in assertAllStagesStopped {

@@ -85,12 +85,7 @@ class XmlProcessingSpec extends AnyWordSpec with Matchers with ScalaFutures with
         })
         .runWith(Sink.seq)
 
-      result.futureValue should contain(
-        inOrderOnly(
-          "elem1",
-          "elem2"
-        )
-      )
+      result.futureValue should contain.inOrderOnly("elem1", "elem2")
       // #parser-to-data
     }
 
