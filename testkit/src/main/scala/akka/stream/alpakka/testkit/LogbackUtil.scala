@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.testkit
