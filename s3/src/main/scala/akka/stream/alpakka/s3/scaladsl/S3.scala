@@ -509,6 +509,11 @@ object S3 {
    * @param chunkUploadSink A sink that's a callback which gets executed whenever an entire Chunk is uploaded to S3
    *                        (successfully or unsuccessfully). Since each chunk can contain more than one emitted element
    *                        from the original flow/source you get provided with the list of context's.
+   *
+   *                        The internal implementation uses `Flow.alsoTo` for `chunkUploadSink` which means that
+   *                        backpressure is applied to the upload stream if `chunkUploadSink` is too slow, likewise any
+   *                        failure will also be propagated to the upload stream. Sink Materialization is also shared
+   *                        with the returned `Sink`.
    * @param contentType an optional [[akka.http.scaladsl.model.ContentType ContentType]]
    * @param metaHeaders any meta-headers you want to add
    * @param cannedAcl a [[CannedAcl]], defaults to [[CannedAcl.Private]]
@@ -551,6 +556,11 @@ object S3 {
    * @param chunkUploadSink A sink that's a callback which gets executed whenever an entire Chunk is uploaded to S3
    *                        (successfully or unsuccessfully). Since each chunk can contain more than one emitted element
    *                        from the original flow/source you get provided with the list of context's.
+   *
+   *                        The internal implementation uses `Flow.alsoTo` for `chunkUploadSink` which means that
+   *                        backpressure is applied to the upload stream if `chunkUploadSink` is too slow, likewise any
+   *                        failure will also be propagated to the upload stream. Sink Materialization is also shared
+   *                        with the returned `Sink`.
    * @param contentType an optional [[akka.http.scaladsl.model.ContentType ContentType]]
    * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
    * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
@@ -630,6 +640,11 @@ object S3 {
    * @param chunkUploadSink A sink that's a callback which gets executed whenever an entire Chunk is uploaded to S3
    *                        (successfully or unsuccessfully). Since each chunk can contain more than one emitted element
    *                        from the original flow/source you get provided with the list of context's.
+   *
+   *                        The internal implementation uses `Flow.alsoTo` for `chunkUploadSink` which means that
+   *                        backpressure is applied to the upload stream if `chunkUploadSink` is too slow, likewise any
+   *                        failure will also be propagated to the upload stream. Sink Materialization is also shared
+   *                        with the returned `Sink`.
    * @param contentType an optional [[akka.http.scaladsl.model.ContentType ContentType]]
    * @param metaHeaders any meta-headers you want to add
    * @param cannedAcl a [[CannedAcl]], defaults to [[CannedAcl.Private]]
@@ -716,6 +731,11 @@ object S3 {
    * @param chunkUploadSink A sink that's a callback which gets executed whenever an entire Chunk is uploaded to S3
    *                        (successfully or unsuccessfully). Since each chunk can contain more than one emitted element
    *                        from the original flow/source you get provided with the list of context's.
+   *
+   *                        The internal implementation uses `Flow.alsoTo` for `chunkUploadSink` which means that
+   *                        backpressure is applied to the upload stream if `chunkUploadSink` is too slow, likewise any
+   *                        failure will also be propagated to the upload stream. Sink Materialization is also shared
+   *                        with the returned `Sink`.
    * @param contentType an optional [[akka.http.scaladsl.model.ContentType ContentType]]
    * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
    * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
