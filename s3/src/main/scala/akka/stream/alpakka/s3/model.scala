@@ -16,6 +16,177 @@ import scala.collection.immutable
 import scala.collection.JavaConverters._
 import scala.compat.java8.OptionConverters._
 
+final class MultipartUpload private (val bucket: String, val key: String, val uploadId: String) {
+
+  /** Java API */
+  def getBucket: String = bucket
+
+  /** Java API */
+  def getKey: String = key
+
+  /** Java API */
+  def getUploadId: String = uploadId
+
+  def withBucket(value: String): MultipartUpload = copy(bucket = value)
+
+  def withKey(value: String): MultipartUpload = copy(key = value)
+
+  def withUploadId(value: String): MultipartUpload = copy(uploadId = value)
+
+  private def copy(bucket: String = bucket, key: String = key, uploadId: String = uploadId): MultipartUpload =
+    new MultipartUpload(
+      bucket,
+      key,
+      uploadId
+    )
+
+  override def toString: String =
+    "MultipartUpload(" +
+    s"bucket=$bucket," +
+    s"key=$key," +
+    s"uploadId=$uploadId" +
+    ")"
+
+  override def equals(other: Any): Boolean = other match {
+    case that: MultipartUpload =>
+      Objects.equals(this.bucket, that.bucket) &&
+      Objects.equals(this.key, that.key) &&
+      Objects.equals(this.uploadId, that.uploadId)
+    case _ => false
+  }
+
+  override def hashCode(): Int =
+    Objects.hash(bucket, key, uploadId)
+}
+
+object MultipartUpload {
+
+  /** Scala API */
+  def apply(bucket: String, key: String, uploadId: String): MultipartUpload = {
+    new MultipartUpload(bucket, key, uploadId)
+  }
+
+  /** Java API */
+  def create(bucket: String, key: String, uploadId: String): MultipartUpload = apply(bucket, key, uploadId)
+}
+
+sealed trait UploadPartResponse {
+
+  /** Scala API */
+  def multipartUpload: MultipartUpload
+
+  /** Scala API */
+  def partNumber: Int
+
+  /** Java API */
+  def getMultipartUpload: MultipartUpload = multipartUpload
+
+  /** Java API */
+  def getPartNumber: Int = partNumber
+}
+
+final class SuccessfulUploadPart private (val multipartUpload: MultipartUpload, val partNumber: Int, val eTag: String)
+    extends UploadPartResponse {
+
+  /** Java API */
+  def getETag: String = eTag
+
+  def withMultipartUpload(value: MultipartUpload): SuccessfulUploadPart = copy(multipartUpload = value)
+
+  def withPartNumber(value: Int): SuccessfulUploadPart = copy(partNumber = value)
+
+  def withETag(value: String): SuccessfulUploadPart = copy(eTag = value)
+
+  private def copy(multipartUpload: MultipartUpload = multipartUpload,
+                   partNumber: Int = partNumber,
+                   eTag: String = eTag): SuccessfulUploadPart =
+    new SuccessfulUploadPart(multipartUpload, partNumber, eTag)
+
+  override def toString: String =
+    "SuccessfulUploadPart(" +
+    s"multipartUpload=$multipartUpload," +
+    s"partNumber=$partNumber," +
+    s"eTag=$eTag" +
+    ")"
+
+  override def equals(other: Any): Boolean = other match {
+    case that: SuccessfulUploadPart =>
+      Objects.equals(this.multipartUpload, that.multipartUpload) &&
+      Objects.equals(this.partNumber, that.partNumber) &&
+      Objects.equals(this.eTag, that.eTag)
+    case _ => false
+  }
+
+  override def hashCode(): Int =
+    Objects.hash(multipartUpload, Int.box(partNumber), eTag)
+
+}
+
+object SuccessfulUploadPart {
+
+  /** Scala API */
+  def apply(multipartUpload: MultipartUpload, partNumber: Int, eTag: String): SuccessfulUploadPart =
+    new SuccessfulUploadPart(
+      multipartUpload,
+      partNumber,
+      eTag
+    )
+
+  /** Java API */
+  def create(multipartUpload: MultipartUpload, partNumber: Int, eTag: String): SuccessfulUploadPart =
+    apply(multipartUpload, partNumber, eTag)
+}
+
+final class FailedUploadPart private (val multipartUpload: MultipartUpload,
+                                      val partNumber: Int,
+                                      val exception: Throwable)
+    extends UploadPartResponse {
+
+  /** Java API */
+  def getException: Throwable = exception
+
+  def withMultipartUpload(value: MultipartUpload): FailedUploadPart = copy(multipartUpload = value)
+
+  def withPartNumber(value: Int): FailedUploadPart = copy(partNumber = value)
+
+  def withException(value: Throwable): FailedUploadPart = copy(exception = value)
+
+  private def copy(multipartUpload: MultipartUpload = multipartUpload,
+                   partNumber: Int = partNumber,
+                   exception: Throwable = exception): FailedUploadPart =
+    new FailedUploadPart(multipartUpload, partNumber, exception)
+
+  override def toString: String =
+    "FailedUploadPart(" +
+    s"multipartUpload=$multipartUpload," +
+    s"partNumber=$partNumber," +
+    s"exception=$exception" +
+    ")"
+
+  override def equals(other: Any): Boolean =
+    other match {
+      case that: FailedUploadPart =>
+        Objects.equals(this.multipartUpload, that.multipartUpload) &&
+        Objects.equals(this.partNumber, that.partNumber) &&
+        Objects.equals(this.exception, that.exception)
+      case _ => false
+    }
+
+  override def hashCode(): Int =
+    Objects.hash(multipartUpload, Int.box(partNumber), exception)
+}
+
+object FailedUploadPart {
+
+  /** Scala API */
+  def apply(multipartUpload: MultipartUpload, partNumber: Int, exception: Throwable): FailedUploadPart =
+    new FailedUploadPart(multipartUpload, partNumber, exception)
+
+  /** Java API */
+  def create(multipartUpload: MultipartUpload, partNumber: Int, exception: Throwable): FailedUploadPart =
+    apply(multipartUpload, partNumber, exception)
+}
+
 final class MultipartUploadResult private (
     val location: Uri,
     val bucket: String,
