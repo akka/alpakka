@@ -202,7 +202,7 @@ lazy val googleCloudBigQueryStorage = alpakkaProject(
       "-P:silencer:pathFilters=akka-grpc/test"
     ),
   compile / javacOptions := (compile / javacOptions).value.filterNot(_ == "-Xlint:deprecation")
-).dependsOn(googleCommon).disablePlugins(MimaPlugin).enablePlugins(AkkaGrpcPlugin)
+).dependsOn(googleCommon).enablePlugins(AkkaGrpcPlugin)
 
 lazy val googleCloudPubSub = alpakkaProject(
   "google-cloud-pub-sub",
@@ -246,7 +246,6 @@ lazy val hdfs = alpakkaProject("hdfs", "hdfs", Dependencies.Hdfs)
 
 lazy val huaweiPushKit =
   alpakkaProject("huawei-push-kit", "huawei.pushkit", Dependencies.HuaweiPushKit)
-    .disablePlugins(MimaPlugin)
 
 lazy val influxdb = alpakkaProject("influxdb", "influxdb", Dependencies.InfluxDB)
 
