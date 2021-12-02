@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.s3.impl.auth
@@ -25,6 +25,8 @@ import software.amazon.awssdk.regions.Region
                                                        algorithm: String = "HmacSHA256") {
 
   private val credentials: AwsCredentials = credProvider.resolveCredentials
+
+  def anonymous: Boolean = credentials.secretAccessKey() == None.orNull && credentials.accessKeyId() == None.orNull
 
   val rawKey = new SecretKeySpec(s"AWS4${credentials.secretAccessKey}".getBytes, algorithm)
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.s3.scaladsl
@@ -497,6 +497,96 @@ object S3 {
       )
 
   /**
+   * Uploads a S3 Object by making multiple requests. Unlike `multipartUpload`, this version allows you to pass in a
+   * context (typically from a `SourceWithContext`/`FlowWithContext`) along with a chunkUploadSink that defines how to
+   * act whenever a chunk is uploaded.
+   *
+   * Note that this version of resuming multipart upload ignores buffering
+   *
+   * @tparam C The Context that is passed along with the `ByteString`
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param chunkUploadSink A sink that's a callback which gets executed whenever an entire Chunk is uploaded to S3
+   *                        (successfully or unsuccessfully). Since each chunk can contain more than one emitted element
+   *                        from the original flow/source you get provided with the list of context's.
+   *
+   *                        The internal implementation uses `Flow.alsoTo` for `chunkUploadSink` which means that
+   *                        backpressure is applied to the upload stream if `chunkUploadSink` is too slow, likewise any
+   *                        failure will also be propagated to the upload stream. Sink Materialization is also shared
+   *                        with the returned `Sink`.
+   * @param contentType an optional [[akka.http.scaladsl.model.ContentType ContentType]]
+   * @param metaHeaders any meta-headers you want to add
+   * @param cannedAcl a [[CannedAcl]], defaults to [[CannedAcl.Private]]
+   * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
+   * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
+   * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts ([[ByteString]], [[C]])'s and materializes to a [[scala.concurrent.Future Future]] of [[MultipartUploadResult]]
+   */
+  def multipartUploadWithContext[C](
+      bucket: String,
+      key: String,
+      chunkUploadSink: Sink[(UploadPartResponse, immutable.Iterable[C]), NotUsed],
+      contentType: ContentType = ContentTypes.`application/octet-stream`,
+      metaHeaders: MetaHeaders = MetaHeaders(Map()),
+      cannedAcl: CannedAcl = CannedAcl.Private,
+      chunkSize: Int = MinChunkSize,
+      chunkingParallelism: Int = 4,
+      sse: Option[ServerSideEncryption] = None
+  ): Sink[(ByteString, C), Future[MultipartUploadResult]] = {
+    val headers =
+      S3Headers.empty.withCannedAcl(cannedAcl).withMetaHeaders(metaHeaders).withOptionalServerSideEncryption(sse)
+    multipartUploadWithHeadersAndContext(bucket,
+                                         key,
+                                         chunkUploadSink,
+                                         contentType,
+                                         chunkSize,
+                                         chunkingParallelism,
+                                         headers)
+  }
+
+  /**
+   * Uploads a S3 Object by making multiple requests. Unlike `multipartUploadWithHeaders`, this version allows you to
+   * pass in a context (typically from a `SourceWithContext`/`FlowWithContext`) along with a chunkUploadSink that
+   * defines how to act whenever a chunk is uploaded.
+   *
+   * Note that this version of resuming multipart upload ignores buffering
+   *
+   * @tparam C The Context that is passed along with the `ByteString`
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param chunkUploadSink A sink that's a callback which gets executed whenever an entire Chunk is uploaded to S3
+   *                        (successfully or unsuccessfully). Since each chunk can contain more than one emitted element
+   *                        from the original flow/source you get provided with the list of context's.
+   *
+   *                        The internal implementation uses `Flow.alsoTo` for `chunkUploadSink` which means that
+   *                        backpressure is applied to the upload stream if `chunkUploadSink` is too slow, likewise any
+   *                        failure will also be propagated to the upload stream. Sink Materialization is also shared
+   *                        with the returned `Sink`.
+   * @param contentType an optional [[akka.http.scaladsl.model.ContentType ContentType]]
+   * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
+   * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
+   * @param s3Headers any headers you want to add
+   * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts ([[ByteString]], [[C]])'s and materializes to a [[scala.concurrent.Future Future]] of [[MultipartUploadResult]]
+   */
+  def multipartUploadWithHeadersAndContext[C](
+      bucket: String,
+      key: String,
+      chunkUploadSink: Sink[(UploadPartResponse, immutable.Iterable[C]), NotUsed],
+      contentType: ContentType = ContentTypes.`application/octet-stream`,
+      chunkSize: Int = MinChunkSize,
+      chunkingParallelism: Int = 4,
+      s3Headers: S3Headers = S3Headers.empty
+  ): Sink[(ByteString, C), Future[MultipartUploadResult]] =
+    S3Stream
+      .multipartUploadWithContext(
+        S3Location(bucket, key),
+        chunkUploadSink,
+        contentType,
+        s3Headers,
+        chunkSize,
+        chunkingParallelism
+      )
+
+  /**
    * Resumes from a previously aborted multipart upload by providing the uploadId and previous upload part identifiers
    *
    * @param bucket the s3 bucket name
@@ -535,7 +625,64 @@ object S3 {
   }
 
   /**
-   * Resumes from a previously aborted multipart upload by providing the uploadId and previous upload part identifiers
+   * Resumes from a previously aborted multipart upload by providing the uploadId and previous upload part identifiers.
+   * Unlike `resumeMultipartUpload`, this version allows you to pass in a context (typically from a
+   * `SourceWithContext`/`FlowWithContext`) along with a chunkUploadSink that defines how to act whenever a chunk is
+   * uploaded.
+   *
+   * Note that this version of resuming multipart upload ignores buffering
+   *
+   * @tparam C The Context that is passed along with the `ByteString`
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param uploadId the upload that you want to resume
+   * @param previousParts The previously uploaded parts ending just before when this upload will commence
+   * @param chunkUploadSink A sink that's a callback which gets executed whenever an entire Chunk is uploaded to S3
+   *                        (successfully or unsuccessfully). Since each chunk can contain more than one emitted element
+   *                        from the original flow/source you get provided with the list of context's.
+   *
+   *                        The internal implementation uses `Flow.alsoTo` for `chunkUploadSink` which means that
+   *                        backpressure is applied to the upload stream if `chunkUploadSink` is too slow, likewise any
+   *                        failure will also be propagated to the upload stream. Sink Materialization is also shared
+   *                        with the returned `Sink`.
+   * @param contentType an optional [[akka.http.scaladsl.model.ContentType ContentType]]
+   * @param metaHeaders any meta-headers you want to add
+   * @param cannedAcl a [[CannedAcl]], defaults to [[CannedAcl.Private]]
+   * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
+   * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
+   * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts ([[ByteString]], [[C]])'s and materializes to a [[scala.concurrent.Future Future]] of [[MultipartUploadResult]]
+   */
+  def resumeMultipartUploadWithContext[C](
+      bucket: String,
+      key: String,
+      uploadId: String,
+      previousParts: immutable.Iterable[Part],
+      chunkUploadSink: Sink[(UploadPartResponse, immutable.Iterable[C]), NotUsed],
+      contentType: ContentType = ContentTypes.`application/octet-stream`,
+      metaHeaders: MetaHeaders = MetaHeaders(Map()),
+      cannedAcl: CannedAcl = CannedAcl.Private,
+      chunkSize: Int = MinChunkSize,
+      chunkingParallelism: Int = 4,
+      sse: Option[ServerSideEncryption] = None
+  ): Sink[(ByteString, C), Future[MultipartUploadResult]] = {
+    val headers =
+      S3Headers.empty.withCannedAcl(cannedAcl).withMetaHeaders(metaHeaders).withOptionalServerSideEncryption(sse)
+    resumeMultipartUploadWithHeadersAndContext(bucket,
+                                               key,
+                                               uploadId,
+                                               previousParts,
+                                               chunkUploadSink,
+                                               contentType,
+                                               chunkSize,
+                                               chunkingParallelism,
+                                               headers)
+  }
+
+  /**
+   * Resumes from a previously aborted multipart upload by providing the uploadId and previous upload part identifiers.
+   * Unlike `resumeMultipartUpload`, this version allows you to pass in a context (typically from a
+   * `SourceWithContext`/`FlowWithContext`) along with a chunkUploadSink that defines how to act whenever a chunk is
+   * uploaded.
    *
    * @param bucket the s3 bucket name
    * @param key the s3 object key
@@ -562,6 +709,56 @@ object S3 {
         S3Location(bucket, key),
         uploadId,
         previousParts,
+        contentType,
+        s3Headers,
+        chunkSize,
+        chunkingParallelism
+      )
+
+  /**
+   * Resumes from a previously aborted multipart upload by providing the uploadId and previous upload part identifiers.
+   * Unlike `resumeMultipartUploadWithHeaders`, this version allows you to pass in a context (typically from a
+   * `SourceWithContext`/`FlowWithContext`) along with a chunkUploadSink that defines how to act whenever a chunk is
+   * uploaded.
+   *
+   * Note that this version of resuming multipart upload ignores buffering
+   *
+   * @tparam C The Context that is passed along with the `ByteString`
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param uploadId the upload that you want to resume
+   * @param previousParts The previously uploaded parts ending just before when this upload will commence
+   * @param chunkUploadSink A sink that's a callback which gets executed whenever an entire Chunk is uploaded to S3
+   *                        (successfully or unsuccessfully). Since each chunk can contain more than one emitted element
+   *                        from the original flow/source you get provided with the list of context's.
+   *
+   *                        The internal implementation uses `Flow.alsoTo` for `chunkUploadSink` which means that
+   *                        backpressure is applied to the upload stream if `chunkUploadSink` is too slow, likewise any
+   *                        failure will also be propagated to the upload stream. Sink Materialization is also shared
+   *                        with the returned `Sink`.
+   * @param contentType an optional [[akka.http.scaladsl.model.ContentType ContentType]]
+   * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
+   * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
+   * @param s3Headers any headers you want to add
+   * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts ([[ByteString]], [[C]])'s and materializes to a [[scala.concurrent.Future Future]] of [[MultipartUploadResult]]
+   */
+  def resumeMultipartUploadWithHeadersAndContext[C](
+      bucket: String,
+      key: String,
+      uploadId: String,
+      previousParts: immutable.Iterable[Part],
+      chunkUploadSink: Sink[(UploadPartResponse, immutable.Iterable[C]), NotUsed],
+      contentType: ContentType = ContentTypes.`application/octet-stream`,
+      chunkSize: Int = MinChunkSize,
+      chunkingParallelism: Int = 4,
+      s3Headers: S3Headers = S3Headers.empty
+  ): Sink[(ByteString, C), Future[MultipartUploadResult]] =
+    S3Stream
+      .resumeMultipartUploadWithContext(
+        S3Location(bucket, key),
+        uploadId,
+        previousParts,
+        chunkUploadSink,
         contentType,
         s3Headers,
         chunkSize,

@@ -18,12 +18,14 @@ lazy val alpakka = project
     geode,
     googleCommon,
     googleCloudBigQuery,
+    googleCloudBigQueryStorage,
     googleCloudPubSub,
     googleCloudPubSubGrpc,
     googleCloudStorage,
     googleFcm,
     hbase,
     hdfs,
+    huaweiPushKit,
     influxdb,
     ironmq,
     jms,
@@ -79,9 +81,15 @@ lazy val alpakka = project
         .filterNot(_.data.getAbsolutePath.contains("commons-net-3.1.jar"))
         .filterNot(_.data.getAbsolutePath.contains("protobuf-java-2.6.1.jar"))
     },
-    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(`doc-examples`,
-                                                                             csvBench,
-                                                                             mqttStreamingBench),
+    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject
+      -- inProjects(
+        `doc-examples`,
+        csvBench,
+        mqttStreamingBench,
+        // googleCloudPubSubGrpc and googleCloudBigQueryStorage contain the same gRPC generated classes
+        // don't include ScalaDocs for googleCloudBigQueryStorage to make it work
+        googleCloudBigQueryStorage
+      ),
     crossScalaVersions := List() // workaround for https://github.com/sbt/sbt/issues/3465
   )
 
@@ -147,7 +155,7 @@ lazy val ftp = alpakkaProject(
   Dependencies.Ftp,
   Test / fork := true,
   // To avoid potential blocking in machines with low entropy (default is `/dev/random`)
-  javaOptions in Test += "-Djava.security.egd=file:/dev/./urandom"
+  Test / javaOptions += "-Djava.security.egd=file:/dev/./urandom"
 )
 
 lazy val geode =
@@ -156,8 +164,8 @@ lazy val geode =
     "geode",
     Dependencies.Geode,
     Test / fork := true,
-    unmanagedSourceDirectories in Compile ++= {
-      val sourceDir = (sourceDirectory in Compile).value
+    Compile / unmanagedSourceDirectories ++= {
+      val sourceDir = (Compile / sourceDirectory).value
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, n)) if n >= 12 => Seq(sourceDir / "scala-2.12+")
         case _ => Seq.empty
@@ -180,6 +188,22 @@ lazy val googleCloudBigQuery = alpakkaProject(
   Test / fork := true
 ).dependsOn(googleCommon).enablePlugins(spray.boilerplate.BoilerplatePlugin)
 
+lazy val googleCloudBigQueryStorage = alpakkaProject(
+  "google-cloud-bigquery-storage",
+  "google.cloud.bigquery.storage",
+  Dependencies.GoogleBigQueryStorage,
+  akkaGrpcCodeGeneratorSettings ~= { _.filterNot(_ == "flat_package") },
+  akkaGrpcCodeGeneratorSettings += "server_power_apis",
+  akkaGrpcGeneratedSources := Seq(AkkaGrpc.Client),
+  Test / akkaGrpcGeneratedSources := Seq(AkkaGrpc.Server),
+  akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala, AkkaGrpc.Java),
+  Compile / scalacOptions ++= Seq(
+      "-P:silencer:pathFilters=akka-grpc/main",
+      "-P:silencer:pathFilters=akka-grpc/test"
+    ),
+  compile / javacOptions := (compile / javacOptions).value.filterNot(_ == "-Xlint:deprecation")
+).dependsOn(googleCommon).disablePlugins(MimaPlugin).enablePlugins(AkkaGrpcPlugin)
+
 lazy val googleCloudPubSub = alpakkaProject(
   "google-cloud-pub-sub",
   "google.cloud.pubsub",
@@ -198,7 +222,7 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
   akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala, AkkaGrpc.Java),
   Compile / PB.protoSources += (Compile / PB.externalIncludePath).value,
   // for the ExampleApp in the tests
-  connectInput in run := true,
+  run / connectInput := true,
   Compile / scalacOptions ++= Seq(
       "-P:silencer:pathFilters=akka-grpc/main",
       "-P:silencer:pathFilters=akka-grpc/test"
@@ -220,6 +244,10 @@ lazy val hbase = alpakkaProject("hbase", "hbase", Dependencies.HBase, Test / for
 
 lazy val hdfs = alpakkaProject("hdfs", "hdfs", Dependencies.Hdfs)
 
+lazy val huaweiPushKit =
+  alpakkaProject("huawei-push-kit", "huawei.pushkit", Dependencies.HuaweiPushKit)
+    .disablePlugins(MimaPlugin)
+
 lazy val influxdb = alpakkaProject("influxdb", "influxdb", Dependencies.InfluxDB)
 
 lazy val ironmq = alpakkaProject(
@@ -235,7 +263,7 @@ lazy val jsonStreaming = alpakkaProject("json-streaming", "json.streaming", Depe
 
 lazy val kinesis = alpakkaProject("kinesis", "aws.kinesis", Dependencies.Kinesis)
 
-lazy val kudu = alpakkaProject("kudu", "kudu", Dependencies.Kudu, fork in Test := false)
+lazy val kudu = alpakkaProject("kudu", "kudu", Dependencies.Kudu)
 
 lazy val mongodb = alpakkaProject("mongodb", "mongodb", Dependencies.MongoDb)
 

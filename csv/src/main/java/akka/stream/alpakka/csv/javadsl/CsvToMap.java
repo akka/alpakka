@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.csv.javadsl;
@@ -34,7 +34,9 @@ public class CsvToMap {
    * @param charset the charset to decode {@link ByteString} to {@link String}
    */
   public static Flow<Collection<ByteString>, Map<String, ByteString>, ?> toMap(Charset charset) {
-    return Flow.fromGraph(new CsvToMapJavaStage(Optional.empty(), charset));
+    return Flow.fromGraph(
+        new CsvToMapJavaStage(
+            Optional.empty(), charset, false, Optional.empty(), Optional.empty()));
   }
 
   /**
@@ -45,7 +47,47 @@ public class CsvToMap {
    */
   public static Flow<Collection<ByteString>, Map<String, String>, ?> toMapAsStrings(
       Charset charset) {
-    return Flow.fromGraph(new CsvToMapAsStringsJavaStage(Optional.empty(), charset));
+    return Flow.fromGraph(
+        new CsvToMapAsStringsJavaStage(
+            Optional.empty(), charset, false, Optional.empty(), Optional.empty()));
+  }
+
+  /**
+   * A flow translating incoming {@link Collection<ByteString>} to a {@link Map<String, ByteString>}
+   * using the stream's first element's values as keys. If the header values are shorter than the
+   * data (or vice-versa) placeholder elements are used to extend the shorter collection to the
+   * length of the longer.
+   *
+   * @param charset the charset to decode {@link ByteString} to {@link String}, defaults to UTF-8
+   * @param customFieldValuePlaceholder placeholder used when there are more data than headers.
+   * @param headerPlaceholder placeholder used when there are more headers than data.
+   */
+  public static Flow<Collection<ByteString>, Map<String, ByteString>, ?> toMapCombineAll(
+      Charset charset,
+      Optional<ByteString> customFieldValuePlaceholder,
+      Optional<String> headerPlaceholder) {
+    return Flow.fromGraph(
+        new CsvToMapJavaStage(
+            Optional.empty(), charset, true, customFieldValuePlaceholder, headerPlaceholder));
+  }
+
+  /**
+   * A flow translating incoming {@link Collection<ByteString>} to a {@link Map<String, ByteString>}
+   * using the stream's first element's values as keys. If the header values are shorter than the
+   * data (or vice-versa) placeholder elements are used to extend the shorter collection to the
+   * length of the longer.
+   *
+   * @param charset the charset to decode {@link ByteString} to {@link String}, defaults to UTF-8
+   * @param customFieldValuePlaceholder placeholder used when there are more data than headers.
+   * @param headerPlaceholder placeholder used when there are more headers than data.
+   */
+  public static Flow<Collection<ByteString>, Map<String, String>, ?> toMapAsStringsCombineAll(
+      Charset charset,
+      Optional<String> customFieldValuePlaceholder,
+      Optional<String> headerPlaceholder) {
+    return Flow.fromGraph(
+        new CsvToMapAsStringsJavaStage(
+            Optional.empty(), charset, true, customFieldValuePlaceholder, headerPlaceholder));
   }
 
   /**
@@ -57,7 +99,12 @@ public class CsvToMap {
   public static Flow<Collection<ByteString>, Map<String, ByteString>, ?> withHeaders(
       String... headers) {
     return Flow.fromGraph(
-        new CsvToMapJavaStage(Optional.of(Arrays.asList(headers)), StandardCharsets.UTF_8));
+        new CsvToMapJavaStage(
+            Optional.of(Arrays.asList(headers)),
+            StandardCharsets.UTF_8,
+            false,
+            Optional.empty(),
+            Optional.empty()));
   }
 
   /**
@@ -69,6 +116,11 @@ public class CsvToMap {
   public static Flow<Collection<ByteString>, Map<String, String>, ?> withHeadersAsStrings(
       Charset charset, String... headers) {
     return Flow.fromGraph(
-        new CsvToMapAsStringsJavaStage(Optional.of(Arrays.asList(headers)), charset));
+        new CsvToMapAsStringsJavaStage(
+            Optional.of(Arrays.asList(headers)),
+            charset,
+            false,
+            Optional.empty(),
+            Optional.empty()));
   }
 }

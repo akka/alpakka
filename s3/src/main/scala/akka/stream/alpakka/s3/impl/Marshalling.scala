@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.s3.impl
@@ -26,7 +26,7 @@ import scala.xml.NodeSeq
     nodeSeqUnmarshaller(MediaTypes.`application/xml`, ContentTypes.`application/octet-stream`) map {
       case NodeSeq.Empty => throw Unmarshaller.NoContentException
       case x =>
-        MultipartUpload(S3Location((x \ "Bucket").text, (x \ "Key").text), (x \ "UploadId").text)
+        MultipartUpload((x \ "Bucket").text, (x \ "Key").text, (x \ "UploadId").text)
     }
   }
 

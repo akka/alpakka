@@ -5,6 +5,7 @@ import org.scalafmt.sbt.ScalafmtPlugin.autoImport._
 import de.heikoseeberger.sbtheader._
 import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
 import com.lightbend.paradox.projectinfo.ParadoxProjectInfoPluginKeys._
+import com.lightbend.sbt.JavaFormatterPlugin.autoImport.javafmtOnCompile
 import com.typesafe.tools.mima.plugin.MimaKeys._
 import xerial.sbt.Sonatype.autoImport.sonatypeProfileName
 
@@ -69,7 +70,7 @@ object Common extends AutoPlugin {
           "-doc-version",
           version.value,
           "-sourcepath",
-          (baseDirectory in ThisBuild).value.toString,
+          (ThisBuild / baseDirectory).value.toString,
           "-skip-packages",
           "akka.pattern:" + // for some reason Scaladoc creates this
           "org.mongodb.scala:" + // this one is a mystery as well
@@ -111,17 +112,20 @@ object Common extends AutoPlugin {
       autoAPIMappings := true,
       apiURL := Some(url(s"https://doc.akka.io/api/alpakka/${version.value}/akka/stream/alpakka/index.html")),
       // show full stack traces and test case durations
-      testOptions in Test += Tests.Argument("-oDF"),
+      Test / testOptions += Tests.Argument("-oDF"),
       // -a Show stack traces and exception class name for AssertionErrors.
       // -v Log "test run started" / "test started" / "test run finished" events on log level "info" instead of "debug".
       // -q Suppress stdout for successful tests.
-      testOptions in Test += Tests.Argument(TestFrameworks.JUnit, "-a", "-v", "-q"),
+      Test / testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v", "-q"),
       // By default scalatest futures time out in 150 ms, dilate that to 600ms.
       // This should not impact the total test time as we don't expect to hit this
       // timeout.
-      testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-F", "4"),
-      scalafmtOnCompile := true,
-      headerLicense := Some(HeaderLicense.Custom("Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>")),
+      Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-F", "4"),
+      scalafmtOnCompile := false,
+      javafmtOnCompile := false,
+      headerLicense := Some(
+          HeaderLicense.Custom("Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>")
+        ),
       sonatypeProfileName := "com.lightbend"
     )
 }

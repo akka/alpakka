@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.s3
@@ -30,6 +30,7 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
           |  random-factor = 0.0
           |}
           |multipart-upload.retry-settings = $${retry-settings}
+          |sign-anonymous-requests = true
           |$more
         """.stripMargin
         )
@@ -267,5 +268,10 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
                 """.stripMargin
     noException should be thrownBy mkSettings(config)
     mkSettings(config).forwardProxy shouldEqual None
+  }
+
+  it should "parse sign-anonymous-requests" in {
+    val settings = mkSettings("sign-anonymous-requests = false")
+    settings.signAnonymousRequests shouldBe false
   }
 }

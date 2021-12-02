@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.s3.scaladsl
@@ -26,10 +26,12 @@ import software.amazon.awssdk.auth.credentials._
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.regions.providers._
 
+import java.util.concurrent.ConcurrentLinkedQueue
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.CollectionConverters._
 
 trait S3IntegrationSpec
     extends AnyFlatSpecLike
@@ -45,7 +47,7 @@ trait S3IntegrationSpec
   )
   implicit val ec: ExecutionContext = actorSystem.dispatcher
 
-  implicit val defaultPatience: PatienceConfig = PatienceConfig(90.seconds, 100.millis)
+  implicit val defaultPatience: PatienceConfig = PatienceConfig(3.minutes, 100.millis)
 
   val defaultBucket = "my-test-us-east-1"
   val nonExistingBucket = "nowhere"
@@ -471,7 +473,9 @@ trait S3IntegrationSpec
       result.lift(currentChunk) match {
         case Some(currentString) =>
           val newString = ByteString(s"\n${newAcc.toString()}")
-          if (currentString.length <= S3.MinChunkSize) {
+          //TODO: Performance here can be improved by using the same technique as in
+          //createStringCollectionContextWithMinChunkSizeRec to keep track of the current string size in bytes
+          if (currentString.toArray.length < S3.MinChunkSize) {
             val appendedString = currentString ++ newString
             createStringCollectionWithMinChunkSizeRec(numberOfChunks,
                                                       newAcc,
@@ -690,6 +694,112 @@ trait S3IntegrationSpec
       val fullInputData = inputData.slice(0, 3).fold(ByteString.empty)(_ ++ _)
 
       fullInputData.utf8String shouldEqual fullDownloadedFile.utf8String
+    }
+  }
+  @tailrec
+  final def createStringCollectionContextWithMinChunkSizeRec(
+      numberOfChunks: Int,
+      stringAcc: BigInt = BigInt(0),
+      currentChunk: Int = 0,
+      currentChunkSize: Int = 0,
+      result: Vector[Vector[(ByteString, BigInt)]] = Vector.empty
+  ): Vector[Vector[(ByteString, BigInt)]] = {
+
+    if (currentChunk == numberOfChunks)
+      result
+    else {
+      val newAcc = stringAcc + 1
+
+      result.lift(currentChunk) match {
+        case Some(currentStrings) =>
+          val newString = ByteString(s"\n${newAcc.toString()}")
+          if (currentChunkSize < S3.MinChunkSize) {
+            val newChunkSize = currentChunkSize + newString.toArray.length
+            val newEntry = currentStrings :+ ((newString, newAcc))
+            createStringCollectionContextWithMinChunkSizeRec(numberOfChunks,
+                                                             newAcc,
+                                                             currentChunk,
+                                                             newChunkSize,
+                                                             result.updated(currentChunk, newEntry))
+          } else {
+            val newChunk = currentChunk + 1
+            val (newResult, newChunkSize) = {
+              // // We are at the last index at this point so don't append a new entry at the end of the Vector
+              if (currentChunk == numberOfChunks - 1)
+                (result, currentChunkSize)
+              else
+                (result :+ Vector((newString, newAcc)), newString.toArray.length)
+            }
+            createStringCollectionContextWithMinChunkSizeRec(numberOfChunks, newAcc, newChunk, newChunkSize, newResult)
+          }
+        case None =>
+          // This case happens right at the start
+          val initial = ByteString("1")
+          val firstResult = Vector(Vector((initial, newAcc)))
+          createStringCollectionContextWithMinChunkSizeRec(numberOfChunks,
+                                                           newAcc,
+                                                           currentChunk,
+                                                           initial.toArray.length,
+                                                           firstResult)
+      }
+    }
+  }
+
+  /**
+   * Creates a `List` of `List[(ByteString, BigInt)]` where the accumulated size of each ByteString in the list is
+   * guaranteed to be at least `S3.MinChunkSize` in size.
+   *
+   * This is useful for tests that deal with multipart uploads, since S3 persists a part everytime it receives
+   * `S3.MinChunkSize` bytes. Unlike `createStringCollectionWithMinChunkSizeRec` this version also adds an index
+   * to each individual `ByteString` which is helpful when dealing with testing for context
+   * @param numberOfChunks The number of chunks to create
+   * @return A List of `List[ByteString]` where each element is at least `S3.MinChunkSize` in size along with an
+   *         incrementing index for each `ByteString`
+   */
+  def createStringCollectionContextWithMinChunkSize(numberOfChunks: Int): List[List[(ByteString, BigInt)]] =
+    createStringCollectionContextWithMinChunkSizeRec(numberOfChunks).toList.map(_.toList)
+
+  it should "perform a chunked multi-part upload with the correct context" in {
+    val sourceKey = "original/file-context-1.txt"
+    val inputData = createStringCollectionContextWithMinChunkSize(4)
+    val source = Source(inputData.flatten)
+    val originalContexts = inputData.map(_.map { case (_, contexts) => contexts })
+    val originalData = inputData.flatten.map { case (data, _) => data }.fold(ByteString.empty)(_ ++ _)
+    val resultingContexts = new ConcurrentLinkedQueue[List[BigInt]]()
+    val collectContextSink = Sink
+      .foreach[(UploadPartResponse, immutable.Iterable[BigInt])] {
+        case (_, contexts) =>
+          resultingContexts.add(contexts.toList)
+      }
+      .mapMaterializedValue(_ => NotUsed)
+
+    val results = for {
+      _ <- source
+        .toMat(
+          S3.multipartUploadWithContext[BigInt](defaultBucket, sourceKey, collectContextSink, chunkingParallelism = 1)
+            .withAttributes(attributes)
+        )(
+          Keep.right
+        )
+        .run
+      // This delay is here because sometimes there is a delay when you complete a large file and its
+      // actually downloadable
+      downloaded <- akka.pattern.after(5.seconds)(
+        S3.download(defaultBucket, sourceKey).withAttributes(attributes).runWith(Sink.head).flatMap {
+          case Some((downloadSource, _)) =>
+            downloadSource
+              .runWith(Sink.seq)
+          case None => throw new Exception(s"Expected object in bucket $defaultBucket with key $sourceKey")
+        }
+      )
+      _ <- S3.deleteObject(defaultBucket, sourceKey).withAttributes(attributes).runWith(Sink.head)
+
+    } yield downloaded
+
+    whenReady(results) { downloads =>
+      val fullDownloadedFile = downloads.fold(ByteString.empty)(_ ++ _)
+      originalData.utf8String shouldEqual fullDownloadedFile.utf8String
+      originalContexts shouldEqual resultingContexts.asScala.toList
     }
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.s3
@@ -350,7 +350,8 @@ final class S3Settings private (
     val forwardProxy: Option[ForwardProxy],
     val validateObjectKey: Boolean,
     val retrySettings: RetrySettings,
-    val multipartUploadSettings: MultipartUploadSettings
+    val multipartUploadSettings: MultipartUploadSettings,
+    val signAnonymousRequests: Boolean
 ) {
 
   /** Java API */
@@ -388,6 +389,9 @@ final class S3Settings private (
   /** Java API */
   def getMultipartUploadSettings: MultipartUploadSettings = multipartUploadSettings
 
+  /** Java API */
+  def isSignAnonymousRequests: Boolean = signAnonymousRequests
+
   def withBufferType(value: BufferType): S3Settings = copy(bufferType = value)
 
   def withCredentialsProvider(value: AwsCredentialsProvider): S3Settings =
@@ -409,6 +413,9 @@ final class S3Settings private (
 
   def withMultipartUploadSettings(value: MultipartUploadSettings): S3Settings = copy(multipartUploadSettings = value)
 
+  def withSignAnonymousRequests(value: Boolean): S3Settings =
+    if (signAnonymousRequests == value) this else copy(signAnonymousRequests = value)
+
   private def copy(
       bufferType: BufferType = bufferType,
       credentialsProvider: AwsCredentialsProvider = credentialsProvider,
@@ -419,7 +426,8 @@ final class S3Settings private (
       forwardProxy: Option[ForwardProxy] = forwardProxy,
       validateObjectKey: Boolean = validateObjectKey,
       retrySettings: RetrySettings = retrySettings,
-      multipartUploadSettings: MultipartUploadSettings = multipartUploadSettings
+      multipartUploadSettings: MultipartUploadSettings = multipartUploadSettings,
+      signAnonymousRequests: Boolean = signAnonymousRequests
   ): S3Settings = new S3Settings(
     bufferType,
     credentialsProvider,
@@ -430,7 +438,8 @@ final class S3Settings private (
     forwardProxy,
     validateObjectKey,
     retrySettings,
-    multipartUploadSettings
+    multipartUploadSettings,
+    signAnonymousRequests
   )
 
   override def toString: String =
@@ -444,7 +453,8 @@ final class S3Settings private (
     s"forwardProxy=$forwardProxy," +
     s"validateObjectKey=$validateObjectKey" +
     s"retrySettings=$retrySettings" +
-    s"multipartUploadSettings=$multipartUploadSettings)"
+    s"multipartUploadSettings=$multipartUploadSettings)" +
+    s"signAnonymousRequests=$signAnonymousRequests"
 
   override def equals(other: Any): Boolean = other match {
     case that: S3Settings =>
@@ -457,7 +467,8 @@ final class S3Settings private (
       Objects.equals(this.forwardProxy, that.forwardProxy) &&
       this.validateObjectKey == that.validateObjectKey &&
       Objects.equals(this.retrySettings, that.retrySettings) &&
-      Objects.equals(this.multipartUploadSettings, multipartUploadSettings)
+      Objects.equals(this.multipartUploadSettings, multipartUploadSettings) &&
+      this.signAnonymousRequests == that.signAnonymousRequests
     case _ => false
   }
 
@@ -472,7 +483,8 @@ final class S3Settings private (
       forwardProxy,
       Boolean.box(validateObjectKey),
       retrySettings,
-      multipartUploadSettings
+      multipartUploadSettings,
+      Boolean.box(signAnonymousRequests)
     )
 }
 
@@ -618,6 +630,8 @@ object S3Settings {
       RetrySettings(multipartUploadConfig.getConfig("retry-settings"))
     )
 
+    val signAnonymousRequests = c.getBoolean("sign-anonymous-requests")
+
     new S3Settings(
       bufferType,
       credentialsProvider,
@@ -628,7 +642,8 @@ object S3Settings {
       maybeForwardProxy,
       validateObjectKey,
       retrySettings,
-      multipartUploadSettings
+      multipartUploadSettings,
+      signAnonymousRequests
     )
   }
 
@@ -653,7 +668,8 @@ object S3Settings {
     forwardProxy = None,
     validateObjectKey = true,
     RetrySettings.default,
-    MultipartUploadSettings(RetrySettings.default)
+    MultipartUploadSettings(RetrySettings.default),
+    signAnonymousRequests = true
   )
 
   /** Java API */

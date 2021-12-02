@@ -1,0 +1,2 @@
+# Add signAnonymousRequests setting
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.s3.S3Settings.this")
