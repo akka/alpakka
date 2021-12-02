@@ -54,7 +54,7 @@ object Common extends AutoPlugin {
           "-target:jvm-1.8"
         ),
       scalacOptions ++= (scalaVersion.value match {
-          case Dependencies.Scala213 if /* TODO insideCI.value && */ fatalWarnings.value && !Dependencies.CronBuild =>
+          case Dependencies.Scala213 if insideCI.value && fatalWarnings.value && !Dependencies.CronBuild =>
             Seq("-Werror")
           case _ => Seq.empty[String]
         }),

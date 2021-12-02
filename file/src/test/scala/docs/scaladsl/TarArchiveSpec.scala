@@ -324,7 +324,7 @@ class TarArchiveSpec
         .single(ByteString.empty)
         .via(Archive.tarReader())
         .runWith(Sink.seq)
-      tar.futureValue shouldBe Symbol("empty")
+      tar.futureValue shouldBe empty
     }
 
     "fail on missing sub source subscription" in {

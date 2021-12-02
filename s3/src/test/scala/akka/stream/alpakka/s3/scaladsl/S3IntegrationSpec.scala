@@ -781,7 +781,7 @@ trait S3IntegrationSpec
         )(
           Keep.right
         )
-        .run
+        .run()
       // This delay is here because sometimes there is a delay when you complete a large file and its
       // actually downloadable
       downloaded <- akka.pattern.after(5.seconds)(

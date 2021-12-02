@@ -391,7 +391,7 @@ trait ElasticsearchConnectorBehaviour {
           .runWith(Sink.seq)
 
         // Assert no errors
-        createBooks.futureValue.filter(!_.success) shouldBe Symbol("empty")
+        createBooks.futureValue.filter(!_.success) shouldBe empty
         flushAndRefresh(connectionSettings, indexName)
 
         // Create a second dataset with matching indexes to test partial update
@@ -424,7 +424,7 @@ trait ElasticsearchConnectorBehaviour {
           .runWith(Sink.seq)
 
         // Assert no errors
-        upserts.futureValue.filter(!_.success) shouldBe Symbol("empty")
+        upserts.futureValue.filter(!_.success) shouldBe empty
         flushAndRefresh(connectionSettings, indexName)
 
         // Assert docs in sink7/_doc
@@ -509,7 +509,7 @@ trait ElasticsearchConnectorBehaviour {
           .runWith(Sink.seq)
 
         // Assert no errors
-        indexResults.futureValue.filter(!_.success) shouldBe Symbol("empty")
+        indexResults.futureValue.filter(!_.success) shouldBe empty
         flushAndRefresh(connectionSettings, indexName)
 
         // search for the documents and assert them being at version 1,
@@ -540,7 +540,7 @@ trait ElasticsearchConnectorBehaviour {
           )
           .runWith(Sink.seq)
 
-        updatedVersions.futureValue.filter(!_.success) shouldBe Symbol("empty")
+        updatedVersions.futureValue.filter(!_.success) shouldBe empty
 
         flushAndRefresh(connectionSettings, indexName)
         // Search again to assert that all documents are now on version 2

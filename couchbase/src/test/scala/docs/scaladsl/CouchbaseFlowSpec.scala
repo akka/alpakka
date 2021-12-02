@@ -311,7 +311,7 @@ class CouchbaseFlowSpec
       Thread.sleep(1000)
 
       val msgFuture: Future[Option[RawJsonDocument]] = session.get(sampleData.id, classOf[RawJsonDocument])
-      msgFuture.futureValue shouldBe Symbol("empty")
+      msgFuture.futureValue shouldBe empty
 
       val getFuture: Future[RawJsonDocument] =
         Source
@@ -350,7 +350,7 @@ class CouchbaseFlowSpec
             CouchbaseFlow.fromId(sessionSettings, bucketName, classOf[RawJsonDocument])
           )
           .runWith(Sink.seq)
-      getFuture.futureValue shouldBe Symbol("empty")
+      getFuture.futureValue shouldBe empty
     }
   }
 
@@ -531,7 +531,7 @@ class CouchbaseFlowSpec
       // #upsertDocWithResult
 
       result.futureValue should have size sampleSequence.size
-      failedDocs shouldBe Symbol("empty")
+      failedDocs shouldBe empty
       forAll(result.futureValue)(_ shouldBe Symbol("success"))
     }
 
@@ -623,7 +623,7 @@ class CouchbaseFlowSpec
       // #replaceDocWithResult
 
       result.futureValue should have size sampleSequence.size
-      failedDocs shouldBe Symbol("empty")
+      failedDocs shouldBe empty
       forAll(result.futureValue)(_ shouldBe Symbol("success"))
     }
 

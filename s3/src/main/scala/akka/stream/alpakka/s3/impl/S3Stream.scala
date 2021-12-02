@@ -1281,7 +1281,7 @@ import scala.util.{Failure, Success, Try}
         Source
           .single(s3Location)
           .flatMapConcat(_ => Source.single(MultipartUpload(s3Location.bucket, s3Location.key, uploadId)))
-          .mapConcat(r => Stream.continually(r))
+          .mapConcat(r => LazyList.continually(r))
           .zip(Source.fromIterator(() => Iterator.from(initialIndex)))
       case None =>
         // First step of the multi part upload process is made.
