@@ -206,8 +206,8 @@ import scala.concurrent.Future
         Source
           .unfoldAsync[RewriteState, RewriteResponse](Starting) {
             case Finished => Future.successful(None)
-            case Starting => rewriteRequest(None).runWith(Sink.head)(mat)
-            case Running(token) => rewriteRequest(Some(token)).runWith(Sink.head)(mat)
+            case Starting => rewriteRequest(None).withAttributes(attr).runWith(Sink.head)(mat)
+            case Running(token) => rewriteRequest(Some(token)).withAttributes(attr).runWith(Sink.head)(mat)
           }
       }
       .toMat(Sink.last[RewriteResponse])(Keep.right)
