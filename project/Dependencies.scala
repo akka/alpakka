@@ -18,7 +18,7 @@ object Dependencies {
   val AwsSpiAkkaHttpVersion = "0.0.11"
   // Sync with plugins.sbt
   val AkkaGrpcBinaryVersion = "1.0"
-  val AkkaHttp101 = "10.1.11"
+  val AkkaHttp101 = "10.1.15"
   val AkkaHttp102 = "10.2.0"
   val AkkaHttp1024 = "10.2.4"
   val AkkaHttpVersion = if (CronBuild) AkkaHttp102 else AkkaHttp101
@@ -202,7 +202,7 @@ object Dependencies {
         .map("org.apache.geode" % _ % GeodeVersion) ++
       Seq(
         "com.chuusai" %% "shapeless" % "2.3.3",
-        "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.12.1" % Test
+        "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.16.0" % Test
       ) ++ JacksonDatabindDependencies
   )
 
