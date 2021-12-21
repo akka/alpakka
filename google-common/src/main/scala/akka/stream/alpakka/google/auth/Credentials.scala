@@ -39,14 +39,23 @@ object Credentials {
             creds
           } catch {
             case NonFatal(ex2) =>
-              log.warning("Unable to find Application Default Credentials for Google APIs")
-              log.warning("Service account: {}", ex1.getMessage)
-              log.warning("Compute Engine: {}", ex2.getMessage)
-              parseNone(c) // TODO Once credentials are guaranteed to be managed centrally we can throw an error instead
+              try {
+                val creds = parseUserAccess(c)
+                log.info("Using user access credentials")
+                creds
+              } catch {
+                case NonFatal(ex3) =>
+                  log.warning("Unable to find Application Default Credentials for Google APIs")
+                  log.warning("Service account: {}", ex1.getMessage)
+                  log.warning("Compute Engine: {}", ex2.getMessage)
+                  log.warning("User access: {}", ex3.getMessage)
+                  parseNone(c) // TODO Once credentials are guaranteed to be managed centrally we can throw an error instead
+              }
           }
       }
     case "service-account" => parseServiceAccount(c)
     case "compute-engine" => parseComputeEngine(c)
+    case "user-access" => parseUserAccess(c)
     case "none" => parseNone(c)
   }
 
@@ -55,6 +64,9 @@ object Credentials {
 
   private def parseComputeEngine(c: Config)(implicit system: ClassicActorSystemProvider) =
     Await.result(ComputeEngineCredentials(), c.getDuration("compute-engine.timeout").asScala)
+
+  private def parseUserAccess(c: Config)(implicit system: ClassicActorSystemProvider) =
+    UserAccessCredentials(c.getConfig("user-access"))
 
   private def parseNone(c: Config) = NoCredentials(c.getConfig("none"))
 
