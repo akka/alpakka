@@ -18,6 +18,7 @@ import spray.json.JsonFormat
 
 import java.time.Clock
 import scala.concurrent.Future
+import scala.util.control.NonFatal
 
 @InternalApi
 private[auth] object GoogleOAuth2 {
@@ -34,12 +35,17 @@ private[auth] object GoogleOAuth2 {
     import implicits._
     implicit val system = mat.system
 
-    val entity = FormData(
-      "grant_type" -> "urn:ietf:params:oauth:grant-type:jwt-bearer",
-      "assertion" -> generateJwt(clientEmail, privateKey, scopes)
-    ).toEntity
+    try {
+      val entity = FormData(
+        "grant_type" -> "urn:ietf:params:oauth:grant-type:jwt-bearer",
+        "assertion" -> generateJwt(clientEmail, privateKey, scopes)
+      ).toEntity
 
-    GoogleHttp().singleRequest[AccessToken](HttpRequest(POST, oAuthTokenUrl, entity = entity))
+      GoogleHttp().singleRequest[AccessToken](HttpRequest(POST, oAuthTokenUrl, entity = entity))
+    } catch {
+      case NonFatal(e) =>
+        Future.failed(e)
+    }
   }
 
   private def generateJwt(clientEmail: String, privateKey: String, scopes: Seq[String])(
