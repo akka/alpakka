@@ -1951,7 +1951,7 @@ class MqttSessionSpec
       val client2 = TestProbe()
       val toClient2 = Sink.foreach[ByteString](bytes => client2.ref ! bytes)
       val (client2Connection, fromClient2) = Source
-        .queue[ByteString](1, OverflowStrategy.dropHead)
+        .queue[ByteString](0, OverflowStrategy.dropHead)
         .toMat(BroadcastHub.sink)(Keep.both)
         .run()
 
