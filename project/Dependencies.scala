@@ -202,7 +202,7 @@ object Dependencies {
         .map("org.apache.geode" % _ % GeodeVersion) ++
       Seq(
         "com.chuusai" %% "shapeless" % "2.3.3",
-        "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.17.0" % Test
+        "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.17.1" % Test
       ) ++ JacksonDatabindDependencies
   )
 
