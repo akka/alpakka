@@ -258,8 +258,6 @@ services:
     image: datadog/squid
     volumes:
       - ./ftp/src/test/resources/squid.conf:/etc/squid/squid.conf
-    ports:
-      - "3128:3128"
   pravega:
     image: pravega/pravega:0.9.0
     ports:
