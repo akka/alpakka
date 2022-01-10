@@ -55,7 +55,7 @@ object IronMqProducer {
   ): Flow[(PushMessage, ToCommit), (Message.Id, CommitResult), CommitMat] = {
 
     // This graph is used to pass the ToCommit through the producer. It assume a 1-to-1 semantic on the producer
-    val producerGraph = GraphDSL.create(flow(queueName, settings)) { implicit builder => producer =>
+    val producerGraph = GraphDSL.createGraph(flow(queueName, settings)) { implicit builder => producer =>
       import GraphDSL.Implicits._
 
       val broadcast = builder.add(Broadcast[(PushMessage, ToCommit)](2))
@@ -70,7 +70,7 @@ object IronMqProducer {
     }
 
     // This graph is used to pass the ToCommit through the commitFlow. Again it assume the commitFlow to have 1-to-1 semantic
-    Flow.fromGraph(GraphDSL.create(producerGraph, commitFlow)(Keep.right) { implicit builder => (producer, committer) =>
+    Flow.fromGraph(GraphDSL.createGraph(producerGraph, commitFlow)(Keep.right) { implicit builder => (producer, committer) =>
       import GraphDSL.Implicits._
 
       val broadcast = builder.add(Broadcast[(Message.Id, ToCommit)](2))

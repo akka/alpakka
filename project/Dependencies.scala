@@ -8,7 +8,7 @@ object Dependencies {
   val Scala213 = "2.13.7" // update even 2 places in .travis.yml and in link-validator.conf
   val ScalaVersions = Seq(Scala213)
 
-  val AkkaVersion = "2.6.14"
+  val AkkaVersion = "2.6.18"
   val AkkaBinaryVersion = "2.6"
 
   val InfluxDBJavaVersion = "2.15"

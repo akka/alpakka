@@ -129,7 +129,7 @@ private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
             .flatMapConcat(_.dataBytes)
             .intersperse(newline)
             .toMat(createLoadJob(job))(Keep.right)
-          Flow.fromGraph(GraphDSL.create(sink) { implicit b => sink =>
+          Flow.fromGraph(GraphDSL.createGraph(sink) { implicit b => sink =>
             import GraphDSL.Implicits._
             FlowShape(sink.in, b.materializedValue.mapAsync(1)(identity).outlet)
           })

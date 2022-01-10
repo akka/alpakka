@@ -206,7 +206,7 @@ class OrientDbSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with
         .runWith(Sink.seq)
       //#run-flow
 
-      f1.futureValue.flatten should have('size (7))
+      f1.futureValue.flatten should have(Symbol("size") (7))
 
       val f2 = OrientDbSource(
         sink5,

@@ -16,7 +16,7 @@ private[google] object EitherFlow {
       rightFlow: Flow[RightIn, RightOut, RightMat]
   ): Flow[Either[LeftIn, RightIn], Either[LeftOut, RightOut], (LeftMat, RightMat)] =
     Flow.fromGraph(
-      GraphDSL.create(leftFlow, rightFlow)(Keep.both) { implicit b => (leftFlow, rightFlow) =>
+      GraphDSL.createGraph(leftFlow, rightFlow)(Keep.both) { implicit b => (leftFlow, rightFlow) =>
         import GraphDSL.Implicits._
         val in = b.add(Partition[Either[LeftIn, RightIn]](2, x => if (x.isRight) 1 else 0))
         val out = b.add(Merge[Either[LeftOut, RightOut]](2))
