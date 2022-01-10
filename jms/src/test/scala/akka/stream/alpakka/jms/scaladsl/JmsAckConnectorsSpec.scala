@@ -365,7 +365,7 @@ class JmsAckConnectorsSpec extends JmsSpec {
 
       killSwitch2.shutdown()
 
-      resultList.toSet should contain theSameElementsAs(numsIn.map(_.toString))
+      resultList.toSet should contain.theSameElementsAs(numsIn.map(_.toString))
 
       jmsSource.takeWithin(1.second).runWith(Sink.seq).futureValue shouldBe empty
     }
