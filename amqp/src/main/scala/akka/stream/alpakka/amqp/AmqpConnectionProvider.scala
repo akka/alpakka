@@ -266,10 +266,16 @@ final class AmqpSSLConfiguration private (val protocol: Option[String] = None,
 
 object AmqpSSLConfiguration {
 
+  def apply(): AmqpSSLConfiguration = new AmqpSSLConfiguration()
   def apply(protocol: String): AmqpSSLConfiguration = new AmqpSSLConfiguration(Some(protocol))
   def apply(protocol: String, trustManager: TrustManager): AmqpSSLConfiguration =
     new AmqpSSLConfiguration(Some(protocol), Some(trustManager))
   def apply(context: SSLContext): AmqpSSLConfiguration = new AmqpSSLConfiguration(context = Some(context))
+
+  /**
+   * Java API
+   */
+  def create(): AmqpSSLConfiguration = new AmqpSSLConfiguration()
 
   /**
    * Java API
