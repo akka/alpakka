@@ -215,8 +215,8 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
       val publisher = TestPublisher.probe[ByteString]()
       val subscriber = TestSubscriber.probe[ReadResult]()
-      amqpSink.addAttributes(Attributes.inputBuffer(1, 1)).runWith(Source.fromPublisher(publisher))
-      amqpSource.addAttributes(Attributes.inputBuffer(1, 1)).runWith(Sink.fromSubscriber(subscriber))
+      Source.fromPublisher(publisher).to(amqpSink).addAttributes(Attributes.inputBuffer(1, 1)).run()
+      amqpSource.to(Sink.fromSubscriber(subscriber)).addAttributes(Attributes.inputBuffer(1, 1)).run()
 
       // note that this essentially is testing rabbitmq just as much as it tests our sink and source
       publisher.ensureSubscription()
