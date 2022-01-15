@@ -377,19 +377,19 @@ object TableReaderSettingsBuilder {
    * Create reader settings from the default configuration
    * `akka.alpakka.pravega`.
    */
-  def apply[K, V](implicit actorSystem: ActorSystem,
-                  keySerializer: Serializer[K],
-                  valueSerializer: Serializer[V]): TableReaderSettingsBuilder[K, V] =
+  def apply[K, V]()(implicit actorSystem: ActorSystem,
+                    keySerializer: Serializer[K],
+                    valueSerializer: Serializer[V]): TableReaderSettingsBuilder[K, V] =
     apply(actorSystem.settings.config.getConfig(configPath), keySerializer, valueSerializer)
 
   /**
    * Create reader settings from the default configuration
    * `akka.alpakka.pravega`.
    */
-  def create[K, V](implicit actorSystem: ActorSystem,
+  def create[K, V](actorSystem: ActorSystem,
                    keySerializer: Serializer[K],
                    valueSerializer: Serializer[V]): TableReaderSettingsBuilder[K, V] =
-    apply(actorSystem, keySerializer, valueSerializer)
+    apply()(actorSystem, keySerializer, valueSerializer)
 
   /**
    * Create settings from a configuration with the same layout as
@@ -505,19 +505,19 @@ object TableWriterSettingsBuilder {
    * Create writer settings from the default configuration
    * `akka.alpakka.pravega`.
    */
-  def apply[K, V](implicit actorSystem: ActorSystem,
-                  keySerializer: Serializer[K],
-                  valueSerializer: Serializer[V]): TableWriterSettingsBuilder[K, V] =
+  def apply[K, V]()(implicit actorSystem: ActorSystem,
+                    keySerializer: Serializer[K],
+                    valueSerializer: Serializer[V]): TableWriterSettingsBuilder[K, V] =
     apply(actorSystem.settings.config.getConfig(configPath), keySerializer, valueSerializer)
 
   /**
    * Create writer settings from the default configuration
    * `akka.alpakka.pravega`.
    */
-  def create[K, V](implicit actorSystem: ActorSystem,
+  def create[K, V](actorSystem: ActorSystem,
                    keySerializer: Serializer[K],
                    valueSerializer: Serializer[V]): TableWriterSettingsBuilder[K, V] =
-    apply(actorSystem, keySerializer, valueSerializer)
+    apply()(actorSystem, keySerializer, valueSerializer)
 
   /**
    * Create settings from a configuration with the same layout as

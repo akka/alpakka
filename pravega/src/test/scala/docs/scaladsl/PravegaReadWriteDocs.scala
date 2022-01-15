@@ -27,7 +27,7 @@ class PravegaReadWriteDocs {
 
   implicit val system = ActorSystem("PravegaDocs")
 
-  implicit val serializer = new UTF8StringSerializer
+  val serializer = new UTF8StringSerializer
 
   implicit def personSerialiser: Serializer[Person] = ???
 
