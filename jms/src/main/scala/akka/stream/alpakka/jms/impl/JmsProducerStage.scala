@@ -138,7 +138,8 @@ private[jms] final class JmsProducerStage[E <: JmsEnvelope[PassThrough], PassThr
                 val holder = new Holder[E](NotYetThere)
                 inFlightMessages.enqueue(holder)
                 sendWithRetries(SendAttempt(m.asInstanceOf[E], holder))
-              case other => throw new MatchError(other)
+              case other =>
+                log.warning("unhandled element []", other)
             }
 
             // immediately ask for the next element if producers are available.

@@ -240,11 +240,10 @@ import scala.concurrent.Future
       response match {
         case HttpResponse(status, _, entity, _) if status.isSuccess() && !status.isRedirection() =>
           Unmarshal(entity).to[T]
-        case HttpResponse(status, _, entity, _) =>
-          Unmarshal(entity).to[String].flatMap { err =>
-            Future.failed(new RuntimeException(s"[${status.intValue}] $err"))
+        case response: HttpResponse =>
+          Unmarshal(response.entity).to[String].flatMap { err =>
+            Future.failed(new RuntimeException(s"[${response.status.intValue}] $err"))
           }
-        case other: HttpResponse => throw new MatchError(other)
       }
     }.withDefaultRetry
 
@@ -256,11 +255,10 @@ import scala.concurrent.Future
         case HttpResponse(StatusCodes.NotFound, _, entity, _) =>
           entity.discardBytes()
           Future.successful(None)
-        case HttpResponse(status, _, entity, _) =>
-          Unmarshal(entity).to[String].flatMap { err =>
-            Future.failed(new RuntimeException(s"[${status.intValue}] $err"))
+        case response: HttpResponse =>
+          Unmarshal(response.entity).to[String].flatMap { err =>
+            Future.failed(new RuntimeException(s"[${response.status.intValue}] $err"))
           }
-        case other: HttpResponse => throw new MatchError(other)
       }
     }.withDefaultRetry
 

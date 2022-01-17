@@ -121,7 +121,8 @@ private[file] class TarReaderStage
                 )
               case NoopTermination =>
             }
-          case _ =>
+          case other =>
+            log.warning("unexpected timer [{}]", other)
         }
       }
 

@@ -164,12 +164,13 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
                 Unmarshal(responseEntity)
                   .to[String]
                   .map(json => responseHandler.invoke(json))
-              case HttpResponse(status, _, responseEntity, _) =>
-                Unmarshal(responseEntity).to[String].map { body =>
+              case response: HttpResponse =>
+                Unmarshal(response.entity).to[String].map { body =>
                   failureHandler
-                    .invoke(new RuntimeException(s"Request failed for POST $uri, got $status with body: $body"))
+                    .invoke(
+                      new RuntimeException(s"Request failed for POST $uri, got ${response.status} with body: $body")
+                    )
                 }
-              case other: HttpResponse => throw new MatchError(other)
             }
             .recover {
               case cause: Throwable => failureHandler.invoke(cause)
@@ -199,15 +200,14 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
                 Unmarshal(responseEntity)
                   .to[String]
                   .map(json => responseHandler.invoke(json))
-              case HttpResponse(status, _, responseEntity, _) =>
-                Unmarshal(responseEntity)
+              case response: HttpResponse =>
+                Unmarshal(response.entity)
                   .to[String]
                   .map { body =>
                     failureHandler.invoke(
-                      new RuntimeException(s"Request failed for POST $uri, got $status with body: $body")
+                      new RuntimeException(s"Request failed for POST $uri, got ${response.status} with body: $body")
                     )
                   }
-              case other: HttpResponse => throw new MatchError(other)
             }
             .recover {
               case cause: Throwable => failureHandler.invoke(cause)
@@ -258,7 +258,9 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
         log.debug("Pushing data downstream")
         emitMultiple(out, result.messages.iterator)
         true
-      case other: ScrollResponse[T] => throw new MatchError(other)
+      case other: ScrollResponse[T] =>
+        failStage(new IllegalArgumentException(s"unexpected response: $other"))
+        false
     }
 
   setHandler(out, this)
@@ -328,12 +330,15 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
                 .map(json => {
                   clearScrollAsyncHandler.invoke(Success(json))
                 })
-            case HttpResponse(status, _, responseEntity, _) =>
-              Unmarshal(responseEntity).to[String].map { body =>
+            case response: HttpResponse =>
+              Unmarshal(response.entity).to[String].map { body =>
                 clearScrollAsyncHandler
-                  .invoke(Failure(new RuntimeException(s"Request failed for POST $uri, got $status with body: $body")))
+                  .invoke(
+                    Failure(
+                      new RuntimeException(s"Request failed for POST $uri, got ${response.status} with body: $body")
+                    )
+                  )
               }
-            case other: HttpResponse => throw new MatchError(other)
           }
           .recover {
             case cause: Throwable => failureHandler.invoke(cause)

@@ -232,7 +232,8 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
                   case _: PendingReceiveAck =>
                 }
               case _: ((Selector, SelectionKey) => Unit) @unchecked =>
-              case _ => // makes this match exhaustive
+              case other =>
+                log.warning("unexpected receive: [{}]", other)
             }
           }
           if (keySelectable) keys.remove()

@@ -543,11 +543,10 @@ import scala.util.{Failure, Success, Try}
               }
             case HttpResponse(NotFound, _, entity, _) =>
               Source.future(entity.discardBytes().future().map(_ => None)(ExecutionContexts.parasitic))
-            case HttpResponse(code, _, entity, _) =>
+            case response: HttpResponse =>
               Source.future {
-                unmarshalError(code, entity)
+                unmarshalError(response.status, response.entity)
               }
-            case other: HttpResponse => throw new MatchError(other)
           }
       }
       .mapMaterializedValue(_ => NotUsed)
@@ -569,11 +568,10 @@ import scala.util.{Failure, Success, Try}
           .flatMapConcat {
             case HttpResponse(NoContent, _, entity, _) =>
               Source.future(entity.discardBytes().future().map(_ => Done)(ExecutionContexts.parasitic))
-            case HttpResponse(code, _, entity, _) =>
+            case response: HttpResponse =>
               Source.future {
-                unmarshalError(code, entity)
+                unmarshalError(response.status, response.entity)
               }
-            case other: HttpResponse => throw new MatchError(other)
           }
       }
       .mapMaterializedValue(_ => NotUsed)
@@ -635,11 +633,10 @@ import scala.util.{Failure, Success, Try}
                   ObjectMetadata(h :+ `Content-Length`(entity.contentLengthOption.getOrElse(0)))
                 }
               }
-            case HttpResponse(code, _, entity, _) =>
+            case response: HttpResponse =>
               Source.future {
-                unmarshalError(code, entity)
+                unmarshalError(response.status, response.entity)
               }
-            case other: HttpResponse => throw new MatchError(other)
           }
       }
       .mapMaterializedValue(_ => NotUsed)
@@ -795,9 +792,8 @@ import scala.util.{Failure, Success, Try}
     response match {
       case HttpResponse(status, _, entity, _) if status.isSuccess() =>
         entity.discardBytes().future()
-      case HttpResponse(code, _, entity, _) =>
-        unmarshalError(code, entity)
-      case other: HttpResponse => throw new MatchError(other)
+      case response: HttpResponse =>
+        unmarshalError(response.status, response.entity)
     }
   }
 
@@ -820,9 +816,8 @@ import scala.util.{Failure, Success, Try}
                 case other => throw new IllegalArgumentException(s"received status $other")
               }
           )
-      case HttpResponse(code, _, entity, _) =>
-        unmarshalError(code, entity)
-      case other: HttpResponse => throw new MatchError(other)
+      case response: HttpResponse =>
+        unmarshalError(response.status, response.entity)
     }
   }
 
@@ -929,11 +924,10 @@ import scala.util.{Failure, Success, Try}
         signAndRequest(req).flatMapConcat {
           case HttpResponse(status, _, entity, _) if status.isSuccess() =>
             Source.future(Unmarshal(entity).to[MultipartUpload])
-          case HttpResponse(code, _, entity, _) =>
+          case response: HttpResponse =>
             Source.future {
-              unmarshalError(code, entity)
+              unmarshalError(response.status, response.entity)
             }
-          case other: HttpResponse => throw new MatchError(other)
         }
       }
       .mapMaterializedValue(_ => NotUsed)
@@ -1425,9 +1419,8 @@ import scala.util.{Failure, Success, Try}
     resp match {
       case HttpResponse(status, headers, entity, _) if status.isSuccess() && !status.isRedirection() =>
         Future.successful((entity, headers))
-      case HttpResponse(code, _, entity, _) =>
-        unmarshalError(code, entity)
-      case other: HttpResponse => throw new MatchError(other)
+      case response: HttpResponse =>
+        unmarshalError(response.status, response.entity)
     }
   }
 

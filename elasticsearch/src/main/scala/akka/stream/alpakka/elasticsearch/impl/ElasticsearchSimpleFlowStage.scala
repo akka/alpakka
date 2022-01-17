@@ -90,14 +90,13 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
               Unmarshal(responseEntity)
                 .to[String]
                 .map(json => responseHandler.invoke((messages, resultsPassthrough, json)))
-            case HttpResponse(status, _, responseEntity, _) =>
-              Unmarshal(responseEntity).to[String].map { body =>
+            case response: HttpResponse =>
+              Unmarshal(response.entity).to[String].map { body =>
                 failureHandler.invoke(
                   (resultsPassthrough,
-                   new RuntimeException(s"Request failed for POST $uri, got $status with body: $body"))
+                   new RuntimeException(s"Request failed for POST $uri, got ${response.status} with body: $body"))
                 )
               }
-            case other: HttpResponse => throw new MatchError(other)
           }
           .recoverWith {
             case cause: Throwable =>
