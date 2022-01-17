@@ -89,8 +89,6 @@ class PravegaReadWriteDocs {
 
     }
 
-  case class Person(id: Int, firstname: String)
-
   implicit val tablewriterSettings = TableWriterSettingsBuilder[Int, Person]
     .withSerializers(id => new TableKey(intSerializer.serialize(id)))
     .build()

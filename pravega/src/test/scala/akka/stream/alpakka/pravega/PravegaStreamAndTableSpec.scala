@@ -15,6 +15,8 @@ import scala.concurrent.{Await, Promise}
 import scala.util.Using
 import io.pravega.client.tables.TableKey
 
+import docs.scaladsl.Serializers._
+
 class PravegaStreamAndTableSpec extends PravegaBaseSpec with Repeated {
 
   val writterSettings = WriterSettingsBuilder(system).withSerializer(stringSerializer)

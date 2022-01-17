@@ -2,13 +2,13 @@
  * Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.stream.alpakka
+package docs.scaladsl
 
 import io.pravega.client.stream.Serializer
 import java.nio.ByteBuffer
 import io.pravega.client.stream.impl.UTF8StringSerializer
 
-package object pravega {
+object Serializers {
 
   implicit val stringSerializer = new UTF8StringSerializer()
 

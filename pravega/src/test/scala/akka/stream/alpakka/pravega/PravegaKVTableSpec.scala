@@ -12,6 +12,9 @@ import akka.stream.alpakka.testkit.scaladsl.Repeated
 import akka.stream.alpakka.pravega.scaladsl.PravegaTable
 import io.pravega.client.tables.TableKey
 
+import docs.scaladsl.Person
+import docs.scaladsl.Serializers._
+
 class PravegaKVTableSpec extends PravegaBaseSpec with Repeated {
 
   private val tablewriterSettings: TableWriterSettings[Int, Person] =
