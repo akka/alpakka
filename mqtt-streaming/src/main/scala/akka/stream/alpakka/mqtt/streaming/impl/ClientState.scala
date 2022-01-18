@@ -12,6 +12,7 @@ import akka.annotation.InternalApi
 import akka.stream.{Materializer, OverflowStrategy, QueueOfferResult}
 import akka.stream.scaladsl.{BroadcastHub, Keep, Source, SourceQueueWithComplete}
 import akka.util.ByteString
+
 import scala.collection.immutable.Seq
 import scala.concurrent.Promise
 import scala.concurrent.duration.FiniteDuration
@@ -429,14 +430,14 @@ import scala.util.{Either, Failure, Success}
             context.watch(
               context.spawnAnonymous(Subscriber(subscribeData, remote, data.subscriberPacketRouter, data.settings))
             )
-            serverConnected(data)
+            serverConnected(data, resetPingReqTimer = true)
 
           case (context, UnsubscribeReceivedLocally(_, _, unsubscribeData, remote)) =>
             context.watch(
               context
                 .spawnAnonymous(Unsubscriber(unsubscribeData, remote, data.unsubscriberPacketRouter, data.settings))
             )
-            serverConnected(data)
+            serverConnected(data, resetPingReqTimer = true)
 
           case (_, PublishReceivedFromRemote(_, publish, local))
               if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 =>
@@ -486,10 +487,11 @@ import scala.util.{Either, Failure, Success}
                   activeConsumers = data.activeConsumers + (topicName -> consumer),
                   pendingRemotePublications =
                     data.pendingRemotePublications.take(i) ++ data.pendingRemotePublications.drop(i + 1)
-                )
+                ),
+                resetPingReqTimer = true
               )
             } else {
-              serverConnected(data.copy(activeConsumers = data.activeConsumers - topicName))
+              serverConnected(data.copy(activeConsumers = data.activeConsumers - topicName), resetPingReqTimer = true)
             }
 
           case (context, PublishReceivedLocally(publish, _))
@@ -497,14 +499,14 @@ import scala.util.{Either, Failure, Success}
             QueueOfferState.waitForQueueOfferCompleted(
               data.remote.offer(ForwardPublish(publish, None)),
               result => QueueOfferCompleted(ByteString.empty, result.toEither),
-              serverConnected(data),
+              serverConnected(data, resetPingReqTimer = true),
               stash = Vector.empty
             )
 
           case (context, prl @ PublishReceivedLocally(publish, publishData)) =>
             val producerName = ActorName.mkName(ProducerNamePrefix + publish.topicName + "-" + context.children.size)
             if (!data.activeProducers.contains(publish.topicName)) {
-              val reply = Promise[Source[Producer.ForwardPublishingCommand, NotUsed]]
+              val reply = Promise[Source[Producer.ForwardPublishingCommand, NotUsed]]()
 
               Source
                 .futureSource(reply.future)
@@ -514,10 +516,12 @@ import scala.util.{Either, Failure, Success}
                 context.spawn(Producer(publish, publishData, reply, data.producerPacketRouter, data.settings),
                               producerName)
               context.watch(producer)
-              serverConnected(data.copy(activeProducers = data.activeProducers + (publish.topicName -> producer)))
+              serverConnected(data.copy(activeProducers = data.activeProducers + (publish.topicName -> producer)),
+                              resetPingReqTimer = true)
             } else {
               serverConnected(
-                data.copy(pendingLocalPublications = data.pendingLocalPublications :+ (publish.topicName -> prl))
+                data.copy(pendingLocalPublications = data.pendingLocalPublications :+ (publish.topicName -> prl)),
+                resetPingReqTimer = true
               )
             }
 
@@ -526,7 +530,7 @@ import scala.util.{Either, Failure, Success}
             if (i >= 0) {
               val prl = data.pendingLocalPublications(i)._2
               val producerName = ActorName.mkName(ProducerNamePrefix + topicName + "-" + context.children.size)
-              val reply = Promise[Source[Producer.ForwardPublishingCommand, NotUsed]]
+              val reply = Promise[Source[Producer.ForwardPublishingCommand, NotUsed]]()
 
               Source
                 .futureSource(reply.future)
@@ -542,10 +546,11 @@ import scala.util.{Either, Failure, Success}
                   activeProducers = data.activeProducers + (topicName -> producer),
                   pendingLocalPublications =
                     data.pendingLocalPublications.take(i) ++ data.pendingLocalPublications.drop(i + 1)
-                )
+                ),
+                resetPingReqTimer = true
               )
             } else {
-              serverConnected(data.copy(activeProducers = data.activeProducers - topicName))
+              serverConnected(data.copy(activeProducers = data.activeProducers - topicName), resetPingReqTimer = true)
             }
 
           case (context, ReceivedProducerPublishingCommand(Producer.ForwardPublish(publish, packetId))) =>
@@ -576,13 +581,13 @@ import scala.util.{Either, Failure, Success}
               data.remote
                 .offer(ForwardPingReq),
               result => QueueOfferCompleted(ByteString.empty, result.toEither),
-              serverConnected(data.copy(pendingPingResp = true)),
+              serverConnected(data.copy(pendingPingResp = true), resetPingReqTimer = true),
               stash = Vector.empty
             )
 
           case (_, PingRespReceivedFromRemote(_, local)) =>
             local.success(ForwardPingResp)
-            serverConnected(data.copy(pendingPingResp = false))
+            serverConnected(data.copy(pendingPingResp = false), resetPingReqTimer = true)
         }
         .receiveSignal {
           case (context, ChildFailed(_, failure))
@@ -601,7 +606,7 @@ import scala.util.{Either, Failure, Success}
                   case None =>
                 }
             }
-            serverConnected(data)
+            serverConnected(data, resetPingReqTimer = true)
           case (_, PostStop) =>
             data.remote.complete()
             Behaviors.same
@@ -659,7 +664,7 @@ import scala.util.{Either, Failure, Success}
   // State event handling
 
   def prepareServerSubscribe(data: Start): Behavior[Event] = Behaviors.setup { context =>
-    val reply = Promise[LocalPacketRouter.Registered]
+    val reply = Promise[LocalPacketRouter.Registered]()
     data.packetRouter ! LocalPacketRouter.Register(context.self, reply)
     import context.executionContext
     reply.future.onComplete {
@@ -743,7 +748,7 @@ import scala.util.{Either, Failure, Success}
   // State event handling
 
   def prepareServerUnsubscribe(data: Start): Behavior[Event] = Behaviors.setup { context =>
-    val reply = Promise[LocalPacketRouter.Registered]
+    val reply = Promise[LocalPacketRouter.Registered]()
     data.packetRouter ! LocalPacketRouter.Register(context.self, reply)
     import context.executionContext
     reply.future.onComplete {

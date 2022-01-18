@@ -13,6 +13,7 @@ import javax.jms
 final class AcknowledgeMode(val mode: Int) {
   override def equals(other: Any): Boolean = other match {
     case that: AcknowledgeMode => this.mode == that.mode
+    case _ => false
   }
   override def hashCode: Int = mode
   override def toString: String = s"AcknowledgeMode(${AcknowledgeMode.asString(this)})"

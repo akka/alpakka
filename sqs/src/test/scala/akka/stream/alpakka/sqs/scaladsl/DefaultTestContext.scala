@@ -22,7 +22,7 @@ import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.CreateQueueRequest
 //#init-client
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.duration._
 import scala.util.Random
 
@@ -48,14 +48,14 @@ trait DefaultTestContext extends Matchers with BeforeAndAfterAll with ScalaFutur
 
   def randomQueueUrl(): String =
     sqsClient
-      .createQueue(CreateQueueRequest.builder().queueName(s"queue-${Random.nextInt}").build())
+      .createQueue(CreateQueueRequest.builder().queueName(s"queue-${Random.nextInt()}").build())
       .get(2, TimeUnit.SECONDS)
       .queueUrl()
 
   val fifoQueueRequest =
     CreateQueueRequest
       .builder()
-      .queueName(s"queue-${Random.nextInt}.fifo")
+      .queueName(s"queue-${Random.nextInt()}.fifo")
       .attributesWithStrings(Map("FifoQueue" -> "true", "ContentBasedDeduplication" -> "true").asJava)
       .build()
 

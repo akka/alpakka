@@ -27,7 +27,7 @@ object GooglePubSub {
     Flow
       .fromMaterializer { (mat, attr) =>
         Flow
-          .create[PublishRequest]
+          .create[PublishRequest]()
           .mapAsyncUnordered(parallelism, publisher(mat, attr).client.publish(_))
       }
       .mapMaterializedValue(_ => NotUsed)
@@ -102,7 +102,7 @@ object GooglePubSub {
     Flow
       .fromMaterializer { (mat, attr) =>
         Flow
-          .create[AcknowledgeRequest]
+          .create[AcknowledgeRequest]()
           .mapAsyncUnordered(1,
                              req =>
                                subscriber(mat, attr).client.acknowledge(req).thenApply[AcknowledgeRequest](_ => req))
@@ -120,7 +120,7 @@ object GooglePubSub {
     Sink
       .fromMaterializer { (mat, attr) =>
         Flow
-          .create[AcknowledgeRequest]
+          .create[AcknowledgeRequest]()
           .mapAsyncUnordered(parallelism, subscriber(mat, attr).client.acknowledge(_))
           .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
       }

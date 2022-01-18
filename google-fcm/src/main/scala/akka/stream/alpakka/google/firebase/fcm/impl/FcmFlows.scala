@@ -11,14 +11,12 @@ import akka.stream.alpakka.google.{GoogleAttributes, GoogleSettings}
 import akka.stream.{Attributes, Materializer}
 import akka.stream.alpakka.google.firebase.fcm._
 import akka.stream.scaladsl.Flow
-import com.github.ghik.silencer.silent
 
 import scala.concurrent.Future
 
 /**
  * INTERNAL API
  */
-@silent("deprecated")
 @InternalApi
 private[fcm] object FcmFlows {
 
@@ -53,7 +51,6 @@ private[fcm] object FcmFlows {
       }
       .mapMaterializedValue(_ => NotUsed)
 
-  @silent("deprecated")
   @deprecated("akka.stream.alpakka.google.firebase.fcm.v1.impl.FcmFlows", "3.0.2")
   @Deprecated
   private def resolveSettings(conf: FcmSettings)(mat: Materializer, attr: Attributes): GoogleSettings = {

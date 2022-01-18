@@ -100,7 +100,7 @@ class MqttPerf {
       .run()
     Await.ready(bound, 3.seconds)
 
-    val subscribed = Promise[Done]
+    val subscribed = Promise[Done]()
 
     Source
       .fromGraph(clientSource)

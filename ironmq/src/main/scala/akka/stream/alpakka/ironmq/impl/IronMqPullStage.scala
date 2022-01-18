@@ -50,7 +50,7 @@ private[ironmq] final class IronMqPullStage(queueName: String, settings: IronMqS
   override val shape: SourceShape[CommittableMessage] = SourceShape(out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new TimerGraphStageLogic(shape) {
+    new TimerGraphStageLogic(shape) with StageLogging {
 
       implicit def ec: ExecutionContextExecutor = materializer.executionContext
 
@@ -79,6 +79,8 @@ private[ironmq] final class IronMqPullStage(queueName: String, settings: IronMqS
       override protected def onTimer(timerKey: Any): Unit = timerKey match {
         case FetchMessagesTimerKey =>
           fetchMessages()
+        case other =>
+          log.warning("unexpected timer: [{}]", other)
       }
 
       def fetchMessages(): Unit =

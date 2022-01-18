@@ -24,7 +24,7 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 
 import scala.annotation.tailrec
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.immutable
 import scala.collection.mutable
 import scala.concurrent.Future
@@ -509,6 +509,7 @@ class JmsConnectorsSpec extends JmsSpec {
           .map {
             case textMessage: TextMessage =>
               textMessage.getText
+            case other => fail(s"didn't match `$other`")
           }
           .runWith(Sink.seq)
 

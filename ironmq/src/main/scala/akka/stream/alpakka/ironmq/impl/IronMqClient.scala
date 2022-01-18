@@ -60,7 +60,7 @@ private[ironmq] final class IronMqClient(settings: IronMqSettings)(implicit acto
     .mapAsync(1) {
       case Success(response) if response.status.isSuccess() =>
         FastFuture.successful(response)
-      case Success(response) if !response.status.isSuccess() =>
+      case Success(response) /* if !response.status.isSuccess() */ =>
         FastFuture.failed(new RuntimeException(response.status.reason()))
       case Failure(error) =>
         FastFuture.failed(error)

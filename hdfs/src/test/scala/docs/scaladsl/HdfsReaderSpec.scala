@@ -54,7 +54,7 @@ class HdfsReaderSpec
       val content = generateFakeContent(1, FileUnit.KB.byteCount)
 
       val resF1 = Source
-        .fromIterator(() => content.toIterator)
+        .fromIterator(() => content.iterator)
         .map(HdfsWriteMessage(_))
         .via(flow)
         .runWith(Sink.seq)
@@ -92,7 +92,7 @@ class HdfsReaderSpec
       val content = generateFakeContentWithPartitions(1, FileUnit.MB.byteCount, 30)
 
       val resF1 = Source
-        .fromIterator(() => content.toIterator)
+        .fromIterator(() => content.iterator)
         .map(HdfsWriteMessage(_))
         .via(flow)
         .runWith(Sink.seq)
@@ -128,7 +128,7 @@ class HdfsReaderSpec
       val content = generateFakeContentForSequence(0.5, FileUnit.MB.byteCount)
 
       val resF1 = Source
-        .fromIterator(() => content.toIterator)
+        .fromIterator(() => content.iterator)
         .map(HdfsWriteMessage(_))
         .via(flow)
         .runWith(Sink.seq)

@@ -50,7 +50,7 @@ object ExecutableUtils {
 
   private def readStream(stream: InputStream): ByteString = {
     val reader = new BufferedInputStream(stream)
-    try ByteString(Stream.continually(reader.read).takeWhile(_ != -1).map(_.toByte).toArray)
+    try ByteString(LazyList.continually(reader.read).takeWhile(_ != -1).map(_.toByte).toArray)
     finally reader.close()
   }
 

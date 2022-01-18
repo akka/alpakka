@@ -17,6 +17,7 @@ import akka.{Done, NotUsed}
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.regions.providers._
 
+import scala.annotation.nowarn
 import scala.concurrent.Future
 
 class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
@@ -34,7 +35,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
       S3.download(bucket, bucketKey)
 
     val Some((data: Source[ByteString, _], metadata)) =
-      s3File.runWith(Sink.head).futureValue
+      s3File.runWith(Sink.head).futureValue: @nowarn("msg=match may not be exhaustive")
 
     val result: Future[String] =
       data.map(_.utf8String).runWith(Sink.head)
@@ -46,7 +47,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     HttpResponse(
       entity = HttpEntity(
         metadata.contentType
-          .flatMap(ContentType.parse(_).right.toOption)
+          .flatMap(ContentType.parse(_).toOption)
           .getOrElse(ContentTypes.`application/octet-stream`),
         metadata.contentLength,
         data
@@ -70,7 +71,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
       .download(bucket, bucketKey)
       .withAttributes(S3Attributes.settings(customRegion))
       .runWith(Sink.head)
-      .futureValue
+      .futureValue: @nowarn("msg=match may not be exhaustive")
 
     data.map(_.utf8String).runWith(Sink.head).futureValue shouldBe body
   }
@@ -85,7 +86,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
       S3.getObjectMetadata(bucket, bucketKey)
     //#objectMetadata
 
-    val Some(result) = metadata.runWith(Sink.head).futureValue
+    val Some(result) = metadata.runWith(Sink.head).futureValue: @nowarn("msg=match may not be exhaustive")
 
     result.eTag shouldBe Some(etag)
     result.contentLength shouldBe contentLength
@@ -99,7 +100,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
     val metadata = S3.getObjectMetadata(bucket, bucketKey)
 
-    val Some(result) = metadata.runWith(Sink.head).futureValue
+    val Some(result) = metadata.runWith(Sink.head).futureValue: @nowarn("msg=match may not be exhaustive")
 
     result.eTag shouldBe Some(etag)
     result.contentLength shouldBe contentLength
@@ -113,7 +114,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
     val metadata = S3.getObjectMetadata(bucket, bucketKey, Some(versionId))
 
-    val Some(result) = metadata.runWith(Sink.head).futureValue
+    val Some(result) = metadata.runWith(Sink.head).futureValue: @nowarn("msg=match may not be exhaustive")
 
     result.eTag shouldBe Some(etag)
     result.contentLength shouldBe 8
@@ -128,7 +129,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
     val metadata = S3.getObjectMetadata(bucket, bucketKey, sse = Some(sseCustomerKeys))
 
-    val Some(result) = metadata.runWith(Sink.head).futureValue
+    val Some(result) = metadata.runWith(Sink.head).futureValue: @nowarn("msg=match may not be exhaustive")
 
     result.eTag shouldBe Some(etagSSE)
     result.contentLength shouldBe 8
@@ -142,7 +143,8 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     val downloadResult = S3.download(bucket, bucketKey, Some(ByteRange(bytesRangeStart, bytesRangeEnd)))
     //#rangedDownload
 
-    val Some((s3Source: Source[ByteString, _], _)) = downloadResult.runWith(Sink.head).futureValue
+    val Some((s3Source: Source[ByteString, _], _)) =
+      downloadResult.runWith(Sink.head).futureValue: @nowarn("msg=match may not be exhaustive")
     val result: Future[Array[Byte]] = s3Source.map(_.toArray).runWith(Sink.head)
 
     result.futureValue shouldBe rangeOfBody
@@ -154,7 +156,8 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
     val downloadResult = S3.download(bucket, bucketKey, sse = Some(sseCustomerKeys))
 
-    val Some((s3Source: Source[ByteString, _], _)) = downloadResult.runWith(Sink.head).futureValue
+    val Some((s3Source: Source[ByteString, _], _)) =
+      downloadResult.runWith(Sink.head).futureValue: @nowarn("msg=match may not be exhaustive")
     val result = s3Source.map(_.utf8String).runWith(Sink.head)
 
     result.futureValue shouldBe bodySSE
@@ -167,7 +170,8 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     val downloadResult =
       S3.download(bucket, bucketKey, versionId = Some(versionId), sse = Some(sseCustomerKeys))
 
-    val Some((s3Source: Source[ByteString, _], metadata)) = downloadResult.runWith(Sink.head).futureValue
+    val Some((s3Source: Source[ByteString, _], metadata)) =
+      downloadResult.runWith(Sink.head).futureValue: @nowarn("msg=match may not be exhaustive")
     val result = s3Source.map(_.utf8String).runWith(Sink.head)
 
     result.futureValue shouldBe bodySSE

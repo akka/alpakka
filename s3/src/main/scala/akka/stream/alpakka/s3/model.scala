@@ -9,11 +9,11 @@ import java.util.{Objects, Optional}
 import akka.http.scaladsl.model.{DateTime, HttpHeader, IllegalUriException, Uri}
 import akka.http.scaladsl.model.headers._
 import akka.stream.alpakka.s3.AccessStyle.PathAccessStyle
-import com.github.ghik.silencer.silent
 
+import scala.annotation.nowarn
 import scala.collection.immutable.Seq
 import scala.collection.immutable
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.compat.java8.OptionConverters._
 
 final class MultipartUpload private (val bucket: String, val key: String, val uploadId: String) {
@@ -690,8 +690,8 @@ final class CommonPrefixes private (val prefix: String) {
   def withPrefix(value: String): CommonPrefixes = copy(prefix = value)
 
   // Warning is only being generated here because there is a single argument in the parameter list. If more fields
-  // get added to CommonPrefixes then the `@silent` is no longer needed
-  @silent
+  // get added to CommonPrefixes then the `@nowarn` is no longer needed
+  @nowarn
   private def copy(prefix: String = prefix): CommonPrefixes =
     new CommonPrefixes(prefix)
 
@@ -811,6 +811,7 @@ final class Part(val eTag: String, val partNumber: Int) {
       case that: Part =>
         Objects.equals(this.eTag, that.eTag) &&
         Objects.equals(this.partNumber, that.partNumber)
+      case _ => false
     }
 
   override def hashCode(): Int =

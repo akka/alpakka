@@ -186,7 +186,7 @@ private[hdfs] final class HdfsFlowLogic[W, I, C](
   private def tryPush(messages: Seq[OutgoingMessage[C]]): FlowStep[W, I, Unit] =
     FlowStep[W, I, Unit] { state =>
       if (messages.nonEmpty)
-        emitMultiple(outlet, messages.toIterator)
+        emitMultiple(outlet, messages.iterator)
       (state, ())
     }
 

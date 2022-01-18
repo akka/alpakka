@@ -32,9 +32,7 @@ object Common extends AutoPlugin {
                             url("https://github.com/akka/alpakka/graphs/contributors")),
     licenses := Seq(("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0"))),
     description := "Alpakka is a Reactive Enterprise Integration library for Java and Scala, based on Reactive Streams and Akka.",
-    // TODO https://github.com/akka/alpakka/issues/2456
-    // fatalWarnings := true,
-    fatalWarnings := false,
+    fatalWarnings := true,
     mimaReportSignatureProblems := true,
     // Ignore unused keys which affect documentation
     excludeLintKeys ++= Set(scmInfo, projectInfoVersion, autoAPIMappings)
@@ -44,7 +42,7 @@ object Common extends AutoPlugin {
       projectInfoVersion := (if (isSnapshot.value) "snapshot" else version.value),
       crossVersion := CrossVersion.binary,
       crossScalaVersions := Dependencies.ScalaVersions,
-      scalaVersion := Dependencies.Scala212,
+      scalaVersion := Dependencies.Scala213,
       scalacOptions ++= Seq(
           "-encoding",
           "UTF-8",
@@ -56,13 +54,9 @@ object Common extends AutoPlugin {
           "-target:jvm-1.8"
         ),
       scalacOptions ++= (scalaVersion.value match {
-          case Dependencies.Scala213 => Seq.empty[String]
-          case _ => Seq("-Xfuture", "-Yno-adapted-args")
-        }),
-      scalacOptions ++= (scalaVersion.value match {
-          case Dependencies.Scala212 if insideCI.value && fatalWarnings.value && !Dependencies.CronBuild =>
-            Seq("-Xfatal-warnings")
-          case _ => Seq.empty
+          case Dependencies.Scala213 if insideCI.value && fatalWarnings.value && !Dependencies.CronBuild =>
+            Seq("-Werror")
+          case _ => Seq.empty[String]
         }),
       Compile / doc / scalacOptions := scalacOptions.value ++ Seq(
           "-doc-title",
@@ -87,7 +81,7 @@ object Common extends AutoPlugin {
           "-doc-canonical-base-url",
           "https://doc.akka.io/api/alpakka/current/"
         ),
-      Compile / doc / scalacOptions -= "-Xfatal-warnings",
+      Compile / doc / scalacOptions -= "-Werror",
       compile / javacOptions ++= Seq(
           "-Xlint:cast",
           "-Xlint:deprecation",
@@ -105,9 +99,9 @@ object Common extends AutoPlugin {
           "-Xlint:varargs"
         ),
       compile / javacOptions ++= (scalaVersion.value match {
-          case Dependencies.Scala212 if insideCI.value && fatalWarnings.value && !Dependencies.CronBuild =>
+          case Dependencies.Scala213 if insideCI.value && fatalWarnings.value && !Dependencies.CronBuild =>
             Seq("-Werror")
-          case _ => Seq.empty
+          case _ => Seq.empty[String]
         }),
       autoAPIMappings := true,
       apiURL := Some(url(s"https://doc.akka.io/api/alpakka/${version.value}/akka/stream/alpakka/index.html")),

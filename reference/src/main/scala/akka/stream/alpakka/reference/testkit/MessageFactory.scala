@@ -8,7 +8,7 @@ import akka.stream.alpakka.reference.{ReferenceReadResult, ReferenceWriteMessage
 import akka.util.ByteString
 
 import scala.collection.immutable
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
 @ApiMayChange
@@ -43,6 +43,6 @@ object MessageFactory {
   def createWriteResult(message: ReferenceWriteMessage,
                         metrics: java.util.Map[String, java.lang.Long],
                         status: Int): ReferenceWriteResult =
-    new ReferenceWriteResult(message, metrics.asScala.mapValues(Long.unbox).toMap, status)
+    new ReferenceWriteResult(message, metrics.asScala.view.mapValues(Long.unbox).toMap, status)
 
 }

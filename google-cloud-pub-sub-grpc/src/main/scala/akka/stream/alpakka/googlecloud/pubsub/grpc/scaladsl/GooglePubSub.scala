@@ -47,7 +47,7 @@ object GooglePubSub {
   ): Source[ReceivedMessage, Future[Cancellable]] =
     Source
       .fromMaterializer { (mat, attr) =>
-        val cancellable = Promise[Cancellable]
+        val cancellable = Promise[Cancellable]()
 
         val subsequentRequest = request
           .withSubscription("")
@@ -83,7 +83,7 @@ object GooglePubSub {
   ): Source[ReceivedMessage, Future[Cancellable]] =
     Source
       .fromMaterializer { (mat, attr) =>
-        val cancellable = Promise[Cancellable]
+        val cancellable = Promise[Cancellable]()
         val client = subscriber(mat, attr).client
         Source
           .tick(0.seconds, pollInterval, request)

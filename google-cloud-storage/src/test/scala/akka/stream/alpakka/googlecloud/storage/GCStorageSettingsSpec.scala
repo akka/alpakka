@@ -5,14 +5,13 @@
 package akka.stream.alpakka.googlecloud.storage
 
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
-import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-import scala.collection.JavaConverters._
+import scala.annotation.nowarn
+import scala.jdk.CollectionConverters._
 
-@silent("deprecated")
 class GCStorageSettingsSpec extends AnyFlatSpec with Matchers with LogCapturing {
   "GCStorageSettings" should "create settings from application config" in {
     val projectId = "projectId"
@@ -35,6 +34,7 @@ class GCStorageSettingsSpec extends AnyFlatSpec with Matchers with LogCapturing 
       ).asJava
     )
 
+    @nowarn("msg=deprecated")
     val settings = GCStorageSettings(config)
 
     settings.projectId shouldBe projectId

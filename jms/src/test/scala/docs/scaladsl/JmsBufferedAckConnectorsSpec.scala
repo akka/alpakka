@@ -291,10 +291,7 @@ class JmsBufferedAckConnectorsSpec extends JmsSharedServerSpec {
 
       killSwitch2.shutdown()
 
-      implicit val _ = Ordering.by { s: String =>
-        s.toInt
-      }
-      resultList.toSet should contain theSameElementsAs numsIn.map(_.toString)
+      resultList.toSet should contain.theSameElementsAs(numsIn.map(_.toString))
     }
 
     "ensure no message loss when aborting a stream" in withConnectionFactory() { connectionFactory =>
@@ -377,10 +374,7 @@ class JmsBufferedAckConnectorsSpec extends JmsSharedServerSpec {
 
       killSwitch2.shutdown()
 
-      implicit val _ = Ordering.by { s: String =>
-        s.toInt
-      }
-      resultList.toSet should contain theSameElementsAs numsIn.map(_.toString)
+      resultList.toSet should contain.theSameElementsAs(numsIn.map(_.toString))
     }
 
     "send acknowledgments back to the broker after max.ack.interval" in withConnectionFactory() { connectionFactory =>

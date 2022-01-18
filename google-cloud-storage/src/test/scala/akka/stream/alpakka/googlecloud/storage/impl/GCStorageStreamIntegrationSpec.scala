@@ -19,8 +19,8 @@ import scala.concurrent.duration._
 import scala.util.Random
 import akka.stream.alpakka.googlecloud.storage.GCStorageSettings
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
-import com.github.ghik.silencer.silent
 
+import scala.annotation.nowarn
 import scala.concurrent.Future
 
 /**
@@ -50,7 +50,7 @@ class GCStorageStreamIntegrationSpec
 
   def testFileName(file: String): String = folderName + file
 
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def settings: GCStorageSettings = GCStorageSettings()
 
   def bucket = "alpakka"

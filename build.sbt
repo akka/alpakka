@@ -88,7 +88,9 @@ lazy val alpakka = project
         mqttStreamingBench,
         // googleCloudPubSubGrpc and googleCloudBigQueryStorage contain the same gRPC generated classes
         // don't include ScalaDocs for googleCloudBigQueryStorage to make it work
-        googleCloudBigQueryStorage
+        googleCloudBigQueryStorage,
+        // springWeb triggers an esoteric ScalaDoc bug (from Java code)
+        springWeb
       ),
     crossScalaVersions := List() // workaround for https://github.com/sbt/sbt/issues/3465
   )
@@ -164,28 +166,23 @@ lazy val geode =
     "geode",
     Dependencies.Geode,
     Test / fork := true,
-    Compile / unmanagedSourceDirectories ++= {
-      val sourceDir = (Compile / sourceDirectory).value
-      CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, n)) if n >= 12 => Seq(sourceDir / "scala-2.12+")
-        case _ => Seq.empty
-      }
-    }
+    // https://github.com/scala/bug/issues/12072
+    Test / scalacOptions += "-Xlint:-byname-implicit"
   )
 
 lazy val googleCommon = alpakkaProject(
   "google-common",
   "google.common",
   Dependencies.GoogleCommon,
-  Test / fork := true,
-  fatalWarnings := true
+  Test / fork := true
 )
 
 lazy val googleCloudBigQuery = alpakkaProject(
   "google-cloud-bigquery",
   "google.cloud.bigquery",
   Dependencies.GoogleBigQuery,
-  Test / fork := true
+  Test / fork := true,
+  Compile / scalacOptions += "-Wconf:src=src_managed/.+:s"
 ).dependsOn(googleCommon).enablePlugins(spray.boilerplate.BoilerplatePlugin)
 
 lazy val googleCloudBigQueryStorage = alpakkaProject(
@@ -198,8 +195,8 @@ lazy val googleCloudBigQueryStorage = alpakkaProject(
   Test / akkaGrpcGeneratedSources := Seq(AkkaGrpc.Server),
   akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala, AkkaGrpc.Java),
   Compile / scalacOptions ++= Seq(
-      "-P:silencer:pathFilters=akka-grpc/main",
-      "-P:silencer:pathFilters=akka-grpc/test"
+      "-Wconf:src=.+/akka-grpc/main/.+:s",
+      "-Wconf:src=.+/akka-grpc/test/.+:s"
     ),
   compile / javacOptions := (compile / javacOptions).value.filterNot(_ == "-Xlint:deprecation")
 ).dependsOn(googleCommon).enablePlugins(AkkaGrpcPlugin)
@@ -224,8 +221,8 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
   // for the ExampleApp in the tests
   run / connectInput := true,
   Compile / scalacOptions ++= Seq(
-      "-P:silencer:pathFilters=akka-grpc/main",
-      "-P:silencer:pathFilters=akka-grpc/test"
+      "-Wconf:src=.+/akka-grpc/main/.+:s",
+      "-Wconf:src=.+/akka-grpc/test/.+:s"
     ),
   compile / javacOptions := (compile / javacOptions).value.filterNot(_ == "-Xlint:deprecation")
 ).enablePlugins(AkkaGrpcPlugin).dependsOn(googleCommon)
@@ -247,7 +244,15 @@ lazy val hdfs = alpakkaProject("hdfs", "hdfs", Dependencies.Hdfs)
 lazy val huaweiPushKit =
   alpakkaProject("huawei-push-kit", "huawei.pushkit", Dependencies.HuaweiPushKit)
 
-lazy val influxdb = alpakkaProject("influxdb", "influxdb", Dependencies.InfluxDB)
+lazy val influxdb = alpakkaProject(
+  "influxdb",
+  "influxdb",
+  Dependencies.InfluxDB,
+  Compile / scalacOptions ++= Seq(
+      // JDK 11: method isAccessible in class AccessibleObject is deprecated
+      "-Wconf:cat=deprecation:s"
+    )
+)
 
 lazy val ironmq = alpakkaProject(
   "ironmq",
@@ -420,10 +425,7 @@ lazy val `doc-examples` = project
   .settings(
     name := s"akka-stream-alpakka-doc-examples",
     publish / skip := true,
-    // More projects are not available for Scala 2.13
-    crossScalaVersions -= Dependencies.Scala213,
-    Dependencies.`Doc-examples`,
-    fatalWarnings := true
+    Dependencies.`Doc-examples`
   )
 
 def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sbt.Def.SettingsDefinition*): Project = {
@@ -439,8 +441,7 @@ def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sb
             .getOrElse(throw new Error("Unable to determine previous version"))
         ),
       mimaBinaryIssueFilters += ProblemFilters.exclude[Problem]("*.impl.*"),
-      Test / parallelExecution := false,
-      fatalWarnings := true
+      Test / parallelExecution := false
     )
     .settings(additionalSettings: _*)
     .dependsOn(testkit % Test)
@@ -452,8 +453,7 @@ def internalProject(projectId: String, additionalSettings: sbt.Def.SettingsDefin
     .disablePlugins(SitePlugin, MimaPlugin)
     .settings(
       name := s"akka-stream-alpakka-$projectId",
-      publish / skip := true,
-      fatalWarnings := true
+      publish / skip := true
     )
     .settings(additionalSettings: _*)
 

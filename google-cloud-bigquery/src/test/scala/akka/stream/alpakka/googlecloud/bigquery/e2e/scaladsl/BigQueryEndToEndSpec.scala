@@ -116,6 +116,7 @@ class BigQueryEndToEndSpec
               .map { job =>
                 job.status.flatMap(_.errorResult) shouldBe None
               }
+          case other => fail(s"didn't match `$other`")
         }
     }
 

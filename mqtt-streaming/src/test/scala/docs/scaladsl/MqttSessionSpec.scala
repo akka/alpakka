@@ -469,7 +469,7 @@ class MqttSessionSpec
 
       val connect = Connect("some-client-id", ConnectFlags.None)
 
-      val publishReceived = Promise[Done]
+      val publishReceived = Promise[Done]()
 
       val (client, result) = Source
         .queue(1, OverflowStrategy.fail)
@@ -530,7 +530,7 @@ class MqttSessionSpec
 
       val connect = Connect("some-client-id", ConnectFlags.None)
 
-      val publishReceived = Promise[Done]
+      val publishReceived = Promise[Done]()
 
       val (client, result) = Source
         .queue(1, OverflowStrategy.fail)
@@ -572,14 +572,14 @@ class MqttSessionSpec
 
       publishReceived.future.futureValue shouldBe Done
 
-      val deliverPubAck1 = Promise[Done]
+      val deliverPubAck1 = Promise[Done]()
       client.offer(Command(pubAck, Some(deliverPubAck1), None))
 
       deliverPubAck1.future.futureValue shouldBe Done
       server.expectMsg(pubAckBytes)
       server.reply(ByteString.empty)
 
-      val deliverPubAck2 = Promise[Done]
+      val deliverPubAck2 = Promise[Done]()
       client.offer(Command(pubAck, Some(deliverPubAck2), None))
 
       deliverPubAck2.future.failed.futureValue shouldBe an[Exception]
@@ -602,8 +602,8 @@ class MqttSessionSpec
 
       val connect = Connect("some-client-id", ConnectFlags.None)
 
-      val publish1Received = Promise[Done]
-      val publish2Received = Promise[Done]
+      val publish1Received = Promise[Done]()
+      val publish2Received = Promise[Done]()
 
       val (client, result) = Source
         .queue(1, OverflowStrategy.fail)
@@ -654,7 +654,7 @@ class MqttSessionSpec
 
       server.expectNoMessage(consumerPubAckRecTimeout * 2) // We need some time to pass before trying again
 
-      val deliverPubAck1 = Promise[Done]
+      val deliverPubAck1 = Promise[Done]()
       client.offer(Command(pubAck, Some(deliverPubAck1), None))
       deliverPubAck1.future.failed.futureValue shouldBe an[Exception]
 
@@ -665,7 +665,7 @@ class MqttSessionSpec
 
       publish2Received.future.futureValue shouldBe Done
 
-      val deliverPubAck2 = Promise[Done]
+      val deliverPubAck2 = Promise[Done]()
       client.offer(Command(pubAck, Some(deliverPubAck2), None))
       deliverPubAck2.future.futureValue shouldBe Done
 
@@ -682,7 +682,7 @@ class MqttSessionSpec
 
       val connect = Connect("some-client-id", ConnectFlags.None)
 
-      val publishReceived = Promise[Done]
+      val publishReceived = Promise[Done]()
 
       val client = Source
         .queue(1, OverflowStrategy.fail)
@@ -725,8 +725,8 @@ class MqttSessionSpec
 
       val connect = Connect("some-client-id", ConnectFlags.None)
 
-      val publishReceived = Promise[Done]
-      val pubRelReceived = Promise[Done]
+      val publishReceived = Promise[Done]()
+      val pubRelReceived = Promise[Done]()
 
       val client = Source
         .queue(1, OverflowStrategy.fail)
@@ -1183,7 +1183,7 @@ class MqttSessionSpec
       val pipeToServer = Flow[ByteString].mapAsync(1)(msg => server.ref.ask(msg).mapTo[ByteString])
 
       val unsubAck = UnsubAck(PacketId(1))
-      val unsubAckReceived = Promise[Done]
+      val unsubAckReceived = Promise[Done]()
 
       val (client, result) =
         Source
@@ -1306,16 +1306,16 @@ class MqttSessionSpec
       val pipeToClient = Flow.fromSinkAndSource(toClient, fromClient)
 
       val connect = Connect("some-client-id", ConnectFlags.None)
-      val connectReceived = Promise[Done]
+      val connectReceived = Promise[Done]()
 
       val subscribe = Subscribe("some-topic")
-      val subscribeReceived = Promise[Done]
+      val subscribeReceived = Promise[Done]()
 
       val unsubscribe = Unsubscribe("some-topic")
-      val unsubscribeReceived = Promise[Done]
+      val unsubscribeReceived = Promise[Done]()
 
       val publish = Publish("some-topic", ByteString("some-payload"))
-      val publishReceived = Promise[Done]
+      val publishReceived = Promise[Done]()
 
       val (server, result) =
         Source
@@ -1334,6 +1334,7 @@ class MqttSessionSpec
               publishReceived.success(Done)
             case Right(Event(cp: Unsubscribe, _)) if cp.topicFilters == unsubscribe.topicFilters =>
               unsubscribeReceived.success(Done)
+            case other => fail(s"didn't match `$other`")
           })
           .toMat(Sink.seq)(Keep.both)
           .run()
@@ -1410,11 +1411,11 @@ class MqttSessionSpec
       val pipeToClient = Flow.fromSinkAndSource(toClient, fromClient)
 
       val connect = Connect("some-client-id", ConnectFlags.None)
-      val connectReceived = Promise[Done]
+      val connectReceived = Promise[Done]()
 
       val subscribe = Subscribe("some-topic")
-      val subscribe1Received = Promise[Done]
-      val subscribe2Received = Promise[Done]
+      val subscribe1Received = Promise[Done]()
+      val subscribe2Received = Promise[Done]()
 
       val server =
         Source
@@ -1432,6 +1433,7 @@ class MqttSessionSpec
               subscribe1Received.success(Done)
             case Right(Event(cp: Subscribe, _)) if cp.topicFilters == subscribe.topicFilters =>
               subscribe2Received.success(Done)
+            case other => fail(s"didn't match `$other`")
           })
           .toMat(Sink.ignore)(Keep.left)
           .run()
@@ -1486,13 +1488,13 @@ class MqttSessionSpec
       val pipeToClient = Flow.fromSinkAndSource(toClient, fromClient)
 
       val connect = Connect("some-client-id", ConnectFlags.None)
-      val connectReceived = Promise[Done]
+      val connectReceived = Promise[Done]()
 
       val subscribe = Subscribe("some-topic")
-      val subscribeReceived = Promise[Done]
+      val subscribeReceived = Promise[Done]()
 
       val unsubscribe = Unsubscribe("some-topic")
-      val unsubscribeReceived = Promise[Done]
+      val unsubscribeReceived = Promise[Done]()
 
       val server =
         Source
@@ -1509,6 +1511,7 @@ class MqttSessionSpec
               subscribeReceived.success(Done)
             case Right(Event(cp: Unsubscribe, _)) if cp.topicFilters == unsubscribe.topicFilters =>
               unsubscribeReceived.success(Done)
+            case other => fail(s"didn't match `$other`")
           })
           .toMat(Sink.ignore)(Keep.left)
           .run()
@@ -1571,7 +1574,7 @@ class MqttSessionSpec
       val pipeToClient = Flow.fromSinkAndSource(toClient, fromClient)
 
       val connect = Connect("some-client-id", ConnectFlags.None)
-      val connectReceived = Promise[Done]
+      val connectReceived = Promise[Done]()
 
       val pingReq = PingReq
 
@@ -1635,7 +1638,7 @@ class MqttSessionSpec
       val pipeToClient = Flow.fromSinkAndSource(toClient, fromClient)
 
       val connect = Connect("some-client-id", ConnectFlags.None).copy(keepAlive = 1.second.dilated)
-      val connectReceived = Promise[Done]
+      val connectReceived = Promise[Done]()
 
       val (server, result) =
         Source
@@ -1685,10 +1688,10 @@ class MqttSessionSpec
       val clientId = "some-client-id"
 
       val connect = Connect(clientId, ConnectFlags.None).copy(keepAlive = 1.second.dilated)
-      val connectReceived = Promise[Done]
+      val connectReceived = Promise[Done]()
 
       val disconnect = Disconnect
-      val disconnectReceived = Promise[Done]
+      val disconnectReceived = Promise[Done]()
 
       val server =
         Source
@@ -1738,17 +1741,17 @@ class MqttSessionSpec
       val client = TestProbe()
 
       val connect = Connect("some-client-id", ConnectFlags.None)
-      val firstConnectReceived = Promise[Done]
-      val secondConnectReceived = Promise[Done]
+      val firstConnectReceived = Promise[Done]()
+      val secondConnectReceived = Promise[Done]()
 
       val subscribe = Subscribe("some-topic")
-      val subscribeReceived = Promise[Done]
+      val subscribeReceived = Promise[Done]()
 
       val disconnect = Disconnect
-      val disconnectReceived = Promise[Done]
+      val disconnectReceived = Promise[Done]()
 
       val publish = Publish("some-topic", ByteString("some-payload"))
-      val publishReceived = Promise[Done]
+      val publishReceived = Promise[Done]()
 
       def server(
           connectionId: ByteString
@@ -1779,6 +1782,7 @@ class MqttSessionSpec
               disconnectReceived.success(Done)
             case Right(Event(cp: Publish, _)) if cp.topicName == publish.topicName =>
               publishReceived.success(Done)
+            case other => fail(s"didn't match `$other`")
           })
           .toMat(Sink.ignore)(Keep.left)
           .run()
@@ -1876,11 +1880,11 @@ class MqttSessionSpec
       val pipeToClient = Flow.fromSinkAndSource(toClient, fromClient)
 
       val connect = Connect("some-client-id", ConnectFlags.None)
-      val connectReceived = Promise[Done]
+      val connectReceived = Promise[Done]()
 
       val publish = Publish("some-topic", ByteString("some-payload"))
-      val publishReceived = Promise[Done]
-      val dupPublishReceived = Promise[Done]
+      val publishReceived = Promise[Done]()
+      val dupPublishReceived = Promise[Done]()
 
       val server =
         Source
@@ -1897,6 +1901,7 @@ class MqttSessionSpec
               dupPublishReceived.success(Done)
             case Right(Event(_: Publish, _)) =>
               publishReceived.success(Done)
+            case other => fail(s"didn't match `$other`")
           })
           .toMat(Sink.seq)(Keep.left)
           .run()
@@ -1960,17 +1965,17 @@ class MqttSessionSpec
       val clientId = "some-client-id"
 
       val connect = Connect(clientId, ConnectFlags.None)
-      val connect1Received = Promise[Done]
-      val connect2Received = Promise[Done]
+      val connect1Received = Promise[Done]()
+      val connect2Received = Promise[Done]()
 
       val subscribe = Subscribe("some-topic")
-      val subscribe1Received = Promise[Done]
-      val subscribe2Received = Promise[Done]
+      val subscribe1Received = Promise[Done]()
+      val subscribe2Received = Promise[Done]()
 
-      val pubAckReceived = Promise[Done]
+      val pubAckReceived = Promise[Done]()
 
       val disconnect = Disconnect
-      val disconnectReceived = Promise[Done]
+      val disconnectReceived = Promise[Done]()
 
       val serverConnection1 =
         Source
@@ -1987,6 +1992,7 @@ class MqttSessionSpec
               subscribe1Received.success(Done)
             case Right(Event(`disconnect`, _)) =>
               disconnectReceived.success(Done)
+            case other => fail(s"didn't match `$other`")
           })
           .toMat(Sink.seq)(Keep.left)
           .run()
@@ -2050,6 +2056,7 @@ class MqttSessionSpec
               subscribe2Received.success(Done)
             case Right(Event(_: PubAck, _)) =>
               pubAckReceived.success(Done)
+            case other => fail(s"didn't match `$other`")
           })
           .toMat(Sink.seq)(Keep.left)
           .run()
@@ -2090,6 +2097,6 @@ class MqttSessionSpec
     }
   }
 
-  override def afterAll: Unit =
+  override def afterAll(): Unit =
     TestKit.shutdownActorSystem(system)
 }

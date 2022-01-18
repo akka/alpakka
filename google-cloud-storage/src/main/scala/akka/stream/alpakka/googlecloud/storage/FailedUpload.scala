@@ -5,7 +5,7 @@
 package akka.stream.alpakka.googlecloud.storage
 
 import scala.collection.immutable.Seq
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 final class FailedUpload private (
     val reasons: Seq[Throwable]

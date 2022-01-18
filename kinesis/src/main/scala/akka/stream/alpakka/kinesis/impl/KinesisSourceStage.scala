@@ -15,7 +15,7 @@ import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
 import software.amazon.awssdk.services.kinesis.model._
 
 import scala.collection.mutable
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
 import scala.compat.java8.FutureConverters._
@@ -131,6 +131,8 @@ private[kinesis] class KinesisSourceStage(shardSettings: ShardSettings, amazonKi
 
       override protected def onTimer(timerKey: Any): Unit = timerKey match {
         case GetRecords => requestRecords()
+        case other =>
+          log.warning("unexpected timer [{}]", other)
       }
 
       private[this] val handleGetRecords: Try[GetRecordsResponse] => Unit = {

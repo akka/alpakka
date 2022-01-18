@@ -9,9 +9,10 @@ import akka.annotation.InternalApi
 import akka.grpc.GrpcClientSettings
 import akka.stream.alpakka.google.GoogleSettings
 import akka.stream.alpakka.googlecloud.pubsub.grpc.PubSubSettings
-import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 import io.grpc.auth.MoreCallCredentials
+
+import scala.annotation.nowarn
 
 /**
  * Internal API
@@ -32,7 +33,7 @@ import io.grpc.auth.MoreCallCredentials
         .withFallback(sys.settings.config.getConfig("akka.grpc.client.\"*\""))
     )
 
-    (config.callCredentials: @silent("deprecated")) match {
+    (config.callCredentials: @nowarn("msg=deprecated")) match {
       case None => settings
       case Some(DeprecatedCredentials(_)) => // Deprecated credentials were loaded from config so override them
         sys.log.warning(

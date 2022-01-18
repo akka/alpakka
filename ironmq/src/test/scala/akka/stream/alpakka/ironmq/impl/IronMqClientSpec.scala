@@ -58,7 +58,7 @@ class IronMqClientSpec extends IronMqSpec with Eventually {
           .pullMessages(queue, 20)
           .futureValue
           .map(_.body)
-          .toSeq should contain inOrder ("test-1", "test-2")
+          .toSeq should contain.inOrder("test-1", "test-2")
       }
     }
 
@@ -70,7 +70,7 @@ class IronMqClientSpec extends IronMqSpec with Eventually {
           .pullMessages(queue, 2)
           .futureValue
           .map(_.body)
-          .toSeq should contain inOrder ("test-1", "test-2")
+          .toSeq should contain.inOrder("test-1", "test-2")
         ironMqClient.peekMessages(queue, 20).futureValue.toSeq should be(empty)
       }
     }

@@ -6,14 +6,13 @@ package akka.stream.alpakka.googlecloud.storage
 
 import akka.actor.ActorSystem
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
-import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-import scala.collection.JavaConverters._
+import scala.annotation.nowarn
+import scala.jdk.CollectionConverters._
 
-@silent("deprecated")
 class GCStorageExtSpec extends AnyFlatSpec with Matchers with LogCapturing {
   "GCStorageExt" should "reuse application config from actor system" in {
     val projectId = "projectId"
@@ -36,6 +35,7 @@ class GCStorageExtSpec extends AnyFlatSpec with Matchers with LogCapturing {
       ).asJava
     )
     implicit val system = ActorSystem.create("gcStorage", config)
+    @nowarn("msg=deprecated")
     val ext = GCStorageExt(system)
 
     ext.settings.projectId shouldBe projectId

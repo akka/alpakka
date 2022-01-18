@@ -44,7 +44,7 @@ class ExampleUsage {
   val publishMessageWithContext =
     PublishMessage(new String(Base64.getEncoder.encode("Hello Google!".getBytes)))
   val publishRequestWithContext = PublishRequest(Seq(publishMessage))
-  val resultPromise = Promise[Seq[String]]
+  val resultPromise = Promise[Seq[String]]()
 
   val sourceWithContext: Source[(PublishRequest, Promise[Seq[String]]), NotUsed] =
     Source.single(publishRequest -> resultPromise)

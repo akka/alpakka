@@ -11,7 +11,7 @@ import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import org.influxdb.{InfluxDB, InfluxDBException}
 import org.influxdb.dto.{Query, QueryResult}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * INTERNAL API

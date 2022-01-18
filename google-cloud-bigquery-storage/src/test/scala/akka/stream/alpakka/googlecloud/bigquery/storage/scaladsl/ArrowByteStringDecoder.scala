@@ -15,10 +15,10 @@ import org.apache.arrow.vector.{VectorLoader, VectorSchemaRoot}
 import org.apache.arrow.vector.ipc.message.MessageSerializer
 import org.apache.arrow.vector.util.ByteArrayReadableSeekableByteChannel
 
-import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.CollectionConverters._
 
 class ArrowByteStringDecoder(val schema: ArrowSchema) extends FromByteStringUnmarshaller[List[BigQueryRecord]] {
 

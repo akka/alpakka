@@ -531,7 +531,7 @@ class ElasticsearchV5Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
         )
         .runWith(Sink.seq)
 
-      writes.futureValue.filter(!_.success) shouldBe 'empty
+      writes.futureValue.filter(!_.success) shouldBe empty
       flushAndRefresh(connectionSettings, indexName)
 
       //#custom-search-params

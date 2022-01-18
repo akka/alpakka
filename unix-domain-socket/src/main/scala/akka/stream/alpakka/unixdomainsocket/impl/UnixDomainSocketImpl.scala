@@ -232,6 +232,8 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
                   case _: PendingReceiveAck =>
                 }
               case _: ((Selector, SelectionKey) => Unit) @unchecked =>
+              case other =>
+                log.warning("unexpected receive: [{}]", other)
             }
           }
           if (keySelectable) keys.remove()
@@ -329,7 +331,7 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
         }
         .mapAsync(1) { bytes =>
           // Note - it is an error to get here and not have an AvailableSendContext
-          val sent = Promise[Done]
+          val sent = Promise[Done]()
           val sendBuffer = sendReceiveContext.send.buffer
           sendBuffer.clear()
           val copied = bytes.copyToBuffer(sendBuffer)
@@ -416,7 +418,7 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
           .toMat(Sink.head)(Keep.both)
           .run()
 
-      val serverBinding = Promise[ServerBinding]
+      val serverBinding = Promise[ServerBinding]()
 
       val channel = UnixServerSocketChannel.open()
       channel.configureBlocking(false)
@@ -470,7 +472,7 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
     val connect = { () =>
       val channel = UnixSocketChannel.open()
       channel.configureBlocking(false)
-      val connectionFinished = Promise[Done]
+      val connectionFinished = Promise[Done]()
       val cancellable =
         connectTimeout match {
           case d: FiniteDuration =>

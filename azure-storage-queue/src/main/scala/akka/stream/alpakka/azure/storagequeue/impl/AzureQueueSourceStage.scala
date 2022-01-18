@@ -35,7 +35,7 @@ import scala.collection.mutable.Queue
       retrieveMessages()
 
     def retrieveMessages(): Unit = {
-      import scala.collection.JavaConverters._
+      import scala.jdk.CollectionConverters._
       val res = cloudQueueBuilt
         .retrieveMessages(settings.batchSize, settings.initialVisibilityTimeout, null, null)
         .asScala
@@ -51,7 +51,7 @@ import scala.collection.mutable.Queue
         }
       } else {
         buffer ++= res
-        push(out, buffer.dequeue)
+        push(out, buffer.dequeue())
       }
     }
 
@@ -60,7 +60,7 @@ import scala.collection.mutable.Queue
       new OutHandler {
         override def onPull: Unit =
           if (!buffer.isEmpty) {
-            push(out, buffer.dequeue)
+            push(out, buffer.dequeue())
           } else {
             retrieveMessages()
           }

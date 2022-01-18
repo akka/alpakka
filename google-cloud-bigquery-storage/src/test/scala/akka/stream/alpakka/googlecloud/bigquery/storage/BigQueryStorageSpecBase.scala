@@ -26,7 +26,7 @@ abstract class BigQueryStorageSpecBase(_port: Int) extends BigQueryMockData with
 
   implicit val defaultPatience: PatienceConfig = PatienceConfig(timeout = 15.seconds, interval = 50.millis)
 
-  private val binding: Promise[Http.ServerBinding] = Promise[Http.ServerBinding]
+  private val binding: Promise[Http.ServerBinding] = Promise[Http.ServerBinding]()
 
   def storageAvroSchema = {
     AvroSchema(com.google.cloud.bigquery.storage.v1.avro.AvroSchema.of(FullAvroSchema.toString))

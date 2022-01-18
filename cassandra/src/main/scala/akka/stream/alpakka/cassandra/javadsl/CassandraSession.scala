@@ -10,7 +10,7 @@ import java.util.concurrent.{CompletionStage, Executor}
 import java.util.function.{Function => JFunction}
 
 import scala.annotation.varargs
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.ExecutionContext

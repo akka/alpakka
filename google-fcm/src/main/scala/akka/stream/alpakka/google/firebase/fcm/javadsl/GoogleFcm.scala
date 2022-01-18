@@ -9,11 +9,9 @@ import akka.stream.alpakka.google.firebase.fcm.impl.FcmFlows
 import akka.stream.alpakka.google.firebase.fcm.{FcmNotification, FcmResponse, FcmSettings}
 import akka.stream.{javadsl, scaladsl}
 import akka.{Done, NotUsed}
-import com.github.ghik.silencer.silent
 
 import java.util.concurrent.CompletionStage
 
-@silent("deprecated")
 object GoogleFcm {
 
   /** Use akka.stream.alpakka.google.firebase.fcm.v1.javadsl.GoogleFcm" */

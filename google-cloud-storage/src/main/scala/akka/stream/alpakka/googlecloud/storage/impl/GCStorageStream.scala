@@ -20,13 +20,13 @@ import akka.stream.alpakka.google.implicits._
 import akka.stream.alpakka.google.scaladsl.{`X-Upload-Content-Type`, Paginated}
 import akka.stream.alpakka.googlecloud.storage._
 import akka.stream.alpakka.googlecloud.storage.impl.Formats._
-import akka.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink, Source}
+import akka.stream.scaladsl.{Keep, RunnableGraph, Sink, Source}
 import akka.stream.{Attributes, Materializer}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
-import com.github.ghik.silencer.silent
 import spray.json._
 
+import scala.annotation.nowarn
 import scala.concurrent.Future
 
 @InternalApi private[storage] object GCStorageStream {
@@ -158,14 +158,7 @@ import scala.concurrent.Future
             }: PartialFunction[HttpResponse, Future[StorageObject]]
         }.withDefaultRetry
 
-        // Workaround for https://github.com/akka/akka/issues/30141
-        // Sink.fromGraph(ResumableUpload[StorageObject](request)).addAttributes(GoogleAttributes.settings(settings))
-        Flow
-          .fromSinkAndSourceMat(
-            ResumableUpload[StorageObject](request).addAttributes(GoogleAttributes.settings(settings)),
-            Source.empty[Nothing]
-          )(Keep.left)
-          .to(Sink.ignore)
+        ResumableUpload[StorageObject](request).addAttributes(GoogleAttributes.settings(settings))
       }
       .mapMaterializedValue(_.flatten)
 
@@ -247,9 +240,9 @@ import scala.concurrent.Future
       response match {
         case HttpResponse(status, _, entity, _) if status.isSuccess() && !status.isRedirection() =>
           Unmarshal(entity).to[T]
-        case HttpResponse(status, _, entity, _) =>
-          Unmarshal(entity).to[String].flatMap { err =>
-            Future.failed(new RuntimeException(s"[${status.intValue}] $err"))
+        case response: HttpResponse =>
+          Unmarshal(response.entity).to[String].flatMap { err =>
+            Future.failed(new RuntimeException(s"[${response.status.intValue}] $err"))
           }
       }
     }.withDefaultRetry
@@ -262,9 +255,9 @@ import scala.concurrent.Future
         case HttpResponse(StatusCodes.NotFound, _, entity, _) =>
           entity.discardBytes()
           Future.successful(None)
-        case HttpResponse(status, _, entity, _) =>
-          Unmarshal(entity).to[String].flatMap { err =>
-            Future.failed(new RuntimeException(s"[${status.intValue}] $err"))
+        case response: HttpResponse =>
+          Unmarshal(response.entity).to[String].flatMap { err =>
+            Future.failed(new RuntimeException(s"[${response.status.intValue}] $err"))
           }
       }
     }.withDefaultRetry
@@ -288,7 +281,7 @@ import scala.concurrent.Future
       }
       .mapMaterializedValue(_ => NotUsed)
 
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   private def resolveSettings(mat: Materializer, attr: Attributes) = {
     implicit val sys = mat.system
     val legacySettings = attr

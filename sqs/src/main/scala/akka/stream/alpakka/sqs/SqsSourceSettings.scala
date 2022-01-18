@@ -9,7 +9,7 @@ import java.time.temporal.ChronoUnit
 import software.amazon.awssdk.services.sqs.model
 
 import scala.collection.immutable
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.duration.FiniteDuration
 
 final class SqsSourceSettings private (
@@ -207,7 +207,7 @@ sealed abstract class AttributeName(val name: String)
  * https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_ReceiveMessage.html#API_ReceiveMessage_RequestParameters
  */
 sealed abstract class MessageSystemAttributeName(_name: String) extends AttributeName(_name) {
-  protected def this(messageSystemAttributeName: model.MessageSystemAttributeName) {
+  protected def this(messageSystemAttributeName: model.MessageSystemAttributeName) = {
     this(messageSystemAttributeName.toString)
   }
 }

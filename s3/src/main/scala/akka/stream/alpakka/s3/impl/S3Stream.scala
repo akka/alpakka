@@ -543,9 +543,9 @@ import scala.util.{Failure, Success, Try}
               }
             case HttpResponse(NotFound, _, entity, _) =>
               Source.future(entity.discardBytes().future().map(_ => None)(ExecutionContexts.parasitic))
-            case HttpResponse(code, _, entity, _) =>
+            case response: HttpResponse =>
               Source.future {
-                unmarshalError(code, entity)
+                unmarshalError(response.status, response.entity)
               }
           }
       }
@@ -568,9 +568,9 @@ import scala.util.{Failure, Success, Try}
           .flatMapConcat {
             case HttpResponse(NoContent, _, entity, _) =>
               Source.future(entity.discardBytes().future().map(_ => Done)(ExecutionContexts.parasitic))
-            case HttpResponse(code, _, entity, _) =>
+            case response: HttpResponse =>
               Source.future {
-                unmarshalError(code, entity)
+                unmarshalError(response.status, response.entity)
               }
           }
       }
@@ -633,9 +633,9 @@ import scala.util.{Failure, Success, Try}
                   ObjectMetadata(h :+ `Content-Length`(entity.contentLengthOption.getOrElse(0)))
                 }
               }
-            case HttpResponse(code, _, entity, _) =>
+            case response: HttpResponse =>
               Source.future {
-                unmarshalError(code, entity)
+                unmarshalError(response.status, response.entity)
               }
           }
       }
@@ -792,8 +792,8 @@ import scala.util.{Failure, Success, Try}
     response match {
       case HttpResponse(status, _, entity, _) if status.isSuccess() =>
         entity.discardBytes().future()
-      case HttpResponse(code, _, entity, _) =>
-        unmarshalError(code, entity)
+      case response: HttpResponse =>
+        unmarshalError(response.status, response.entity)
     }
   }
 
@@ -816,8 +816,8 @@ import scala.util.{Failure, Success, Try}
                 case other => throw new IllegalArgumentException(s"received status $other")
               }
           )
-      case HttpResponse(code, _, entity, _) =>
-        unmarshalError(code, entity)
+      case response: HttpResponse =>
+        unmarshalError(response.status, response.entity)
     }
   }
 
@@ -924,9 +924,9 @@ import scala.util.{Failure, Success, Try}
         signAndRequest(req).flatMapConcat {
           case HttpResponse(status, _, entity, _) if status.isSuccess() =>
             Source.future(Unmarshal(entity).to[MultipartUpload])
-          case HttpResponse(code, _, entity, _) =>
+          case response: HttpResponse =>
             Source.future {
-              unmarshalError(code, entity)
+              unmarshalError(response.status, response.entity)
             }
         }
       }
@@ -1016,7 +1016,7 @@ import scala.util.{Failure, Success, Try}
     Source
       .single(s3Location)
       .flatMapConcat(initiateMultipartUpload(_, contentType, s3Headers))
-      .mapConcat(r => Stream.continually(r))
+      .mapConcat(r => LazyList.continually(r))
       .zip(Source.fromIterator(() => Iterator.from(1)))
 
   private def poolSettings(implicit settings: S3Settings, system: ActorSystem) =
@@ -1275,7 +1275,7 @@ import scala.util.{Failure, Success, Try}
         Source
           .single(s3Location)
           .flatMapConcat(_ => Source.single(MultipartUpload(s3Location.bucket, s3Location.key, uploadId)))
-          .mapConcat(r => Stream.continually(r))
+          .mapConcat(r => LazyList.continually(r))
           .zip(Source.fromIterator(() => Iterator.from(initialIndex)))
       case None =>
         // First step of the multi part upload process is made.
@@ -1419,8 +1419,8 @@ import scala.util.{Failure, Success, Try}
     resp match {
       case HttpResponse(status, headers, entity, _) if status.isSuccess() && !status.isRedirection() =>
         Future.successful((entity, headers))
-      case HttpResponse(code, _, entity, _) =>
-        unmarshalError(code, entity)
+      case response: HttpResponse =>
+        unmarshalError(response.status, response.entity)
     }
   }
 

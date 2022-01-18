@@ -61,7 +61,7 @@ class HdfsWriterSpec
 
       val books2 = List(ByteString("all books were stolen"))
       val overwriteF = Source
-        .fromIterator(() => books2.toIterator)
+        .fromIterator(() => books2.iterator)
         .map(byteStr => HdfsWriteMessage(byteStr))
         .via(
           HdfsFlow.data(
@@ -91,7 +91,7 @@ class HdfsWriterSpec
       )
 
       val resF = Source
-        .fromIterator(() => books.toIterator)
+        .fromIterator(() => books.iterator)
         .map(HdfsWriteMessage(_))
         .via(flow)
         .runWith(Sink.seq)
@@ -111,7 +111,7 @@ class HdfsWriterSpec
 
     "use file size rotation and produce exactly two files" in {
       val data = generateFakeContent(1, FileUnit.KB.byteCount)
-      val dataIterator = data.toIterator
+      val dataIterator = data.iterator
 
       val flow = HdfsFlow.data(
         fs,
@@ -140,7 +140,7 @@ class HdfsWriterSpec
     "detect upstream finish and move remaining data to hdfs" in {
       // Use huge rotation
       val data = generateFakeContent(1, FileUnit.KB.byteCount)
-      val dataIterator = data.toIterator
+      val dataIterator = data.iterator
       //#define-data
       val flow = HdfsFlow.data(
         fs,
@@ -173,7 +173,7 @@ class HdfsWriterSpec
       )
 
       val resF = Source
-        .fromIterator(() => books.toIterator)
+        .fromIterator(() => books.iterator)
         .map(HdfsWriteMessage(_))
         .via(flow)
         .runWith(Sink.seq)
@@ -215,7 +215,7 @@ class HdfsWriterSpec
       )
 
       val resF = Source
-        .fromIterator(() => books.toIterator)
+        .fromIterator(() => books.iterator)
         .map(HdfsWriteMessage(_))
         .via(flow)
         .runWith(Sink.seq)
@@ -315,7 +315,7 @@ class HdfsWriterSpec
       val content = generateFakeContentWithPartitions(1, FileUnit.MB.byteCount, 30)
 
       val resF = Source
-        .fromIterator(() => content.toIterator)
+        .fromIterator(() => content.iterator)
         .map(HdfsWriteMessage(_))
         .via(flow)
         .runWith(Sink.seq)
@@ -347,7 +347,7 @@ class HdfsWriterSpec
       )
 
       val resF = Source
-        .fromIterator(() => books.toIterator)
+        .fromIterator(() => books.iterator)
         .map(HdfsWriteMessage(_))
         .via(flow)
         .runWith(Sink.seq)
@@ -380,7 +380,7 @@ class HdfsWriterSpec
       val content = generateFakeContentWithPartitions(1, FileUnit.MB.byteCount, 30)
 
       val resF = Source
-        .fromIterator(() => content.toIterator)
+        .fromIterator(() => content.iterator)
         .map(HdfsWriteMessage(_))
         .via(flow)
         .runWith(Sink.seq)
@@ -412,7 +412,7 @@ class HdfsWriterSpec
       val content = generateFakeContentForSequence(0.5, FileUnit.MB.byteCount)
 
       val resF = Source
-        .fromIterator(() => content.toIterator)
+        .fromIterator(() => content.iterator)
         .map(HdfsWriteMessage(_))
         .via(flow)
         .runWith(Sink.seq)
@@ -444,7 +444,7 @@ class HdfsWriterSpec
       val content = generateFakeContentForSequence(0.5, FileUnit.MB.byteCount)
 
       val resF = Source
-        .fromIterator(() => content.toIterator)
+        .fromIterator(() => content.iterator)
         .map(HdfsWriteMessage(_))
         .via(flow)
         .runWith(Sink.seq)
@@ -468,7 +468,7 @@ class HdfsWriterSpec
       val content = booksForSequenceWriter
 
       val resF = Source
-        .fromIterator(() => content.toIterator)
+        .fromIterator(() => content.iterator)
         .map(HdfsWriteMessage(_))
         .via(flow)
         .runWith(Sink.seq)
@@ -494,7 +494,7 @@ class HdfsWriterSpec
       val content = generateFakeContentForSequence(0.5, FileUnit.MB.byteCount)
 
       val resF = Source
-        .fromIterator(() => content.toIterator)
+        .fromIterator(() => content.iterator)
         .map(HdfsWriteMessage(_))
         .via(flow)
         .runWith(Sink.seq)

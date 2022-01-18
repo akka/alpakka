@@ -31,6 +31,7 @@ final class Credentials private (
     case that: Credentials =>
       java.util.Objects.equals(this.username, that.username) &&
       java.util.Objects.equals(this.password, that.password)
+    case _ => false
   }
 
   override def hashCode(): Int = java.util.Objects.hash(username, password)

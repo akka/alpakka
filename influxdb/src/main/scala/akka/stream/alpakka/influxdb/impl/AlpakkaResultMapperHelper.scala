@@ -9,17 +9,15 @@ import java.time.Instant
 import java.time.format.DateTimeFormatterBuilder
 import java.time.temporal.ChronoField
 import java.util.concurrent.{ConcurrentHashMap, ConcurrentMap}
-
 import org.influxdb.annotation.{Column, Measurement}
 import org.influxdb.dto.QueryResult
-import java.util.concurrent.TimeUnit
 
+import java.util.concurrent.TimeUnit
 import akka.annotation.InternalApi
-import com.github.ghik.silencer.silent
 import org.influxdb.InfluxDBMapperException
 import org.influxdb.dto.Point
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * Internal API.
@@ -64,8 +62,7 @@ private[impl] class AlpakkaResultMapperHelper {
         val columnName: String = column.name()
         val fieldType: Class[_] = field.getType()
 
-        @silent("deprecated")
-        val isAccessible = field.isAccessible()
+        val isAccessible = field.isAccessible() // deprecated in JDK 11+
         if (!isAccessible) {
           field.setAccessible(true);
         }
@@ -175,8 +172,7 @@ private[impl] class AlpakkaResultMapperHelper {
     if (value == null) return
     val fieldType = field.getType
     try {
-      @silent("deprecated")
-      val isAccessible = field.isAccessible()
+      val isAccessible = field.isAccessible() // deprecated in JDK 11+
       if (!isAccessible) field.setAccessible(true)
       if (fieldValueModified(fieldType, field, obj, value, precision) || fieldValueForPrimitivesModified(
             fieldType,

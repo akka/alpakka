@@ -23,7 +23,7 @@ object TestChanged extends AutoPlugin {
       val changedDirectories =
         diffOutput
           .map(l => l.trim)
-          .map(l ⇒ l.takeWhile(_ != '/'))
+          .map(l => l.takeWhile(_ != '/'))
           .map(new File(_))
           .map(file => if (file.isDirectory) file.toString else "")
           .toSet

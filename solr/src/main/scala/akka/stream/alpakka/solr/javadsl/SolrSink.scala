@@ -30,7 +30,7 @@ object SolrSink {
   ): javadsl.Sink[JavaList[WriteMessage[SolrInputDocument, NotUsed]], CompletionStage[Done]] =
     SolrFlow
       .documents(collection, settings, client)
-      .toMat(javadsl.Sink.ignore[java.util.List[WriteResult[SolrInputDocument, NotUsed]]],
+      .toMat(javadsl.Sink.ignore[java.util.List[WriteResult[SolrInputDocument, NotUsed]]](),
              javadsl.Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
@@ -45,7 +45,7 @@ object SolrSink {
   ): Sink[JavaList[WriteMessage[T, NotUsed]], CompletionStage[Done]] =
     SolrFlow
       .beans[T](collection, settings, client, clazz)
-      .toMat(javadsl.Sink.ignore[java.util.List[WriteResult[T, NotUsed]]],
+      .toMat(javadsl.Sink.ignore[java.util.List[WriteResult[T, NotUsed]]](),
              javadsl.Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
@@ -62,6 +62,6 @@ object SolrSink {
   ): javadsl.Sink[JavaList[WriteMessage[T, NotUsed]], CompletionStage[Done]] =
     SolrFlow
       .typeds[T](collection, settings, binder, client, clazz)
-      .toMat(javadsl.Sink.ignore[java.util.List[WriteResult[T, NotUsed]]],
+      .toMat(javadsl.Sink.ignore[java.util.List[WriteResult[T, NotUsed]]](),
              javadsl.Keep.right[NotUsed, CompletionStage[Done]])
 }

@@ -119,7 +119,7 @@ private[orientdb] class OrientDbFlowStage[T, C](
 
     protected def write(messages: immutable.Seq[OrientDbWriteMessage[T, C]]): Unit =
       messages.foreach {
-        case OrientDbWriteMessage(typeRecord: Any, _) =>
+        case OrientDbWriteMessage(typeRecord, _) =>
           oObjectClient.save[Object](typeRecord)
       }
 

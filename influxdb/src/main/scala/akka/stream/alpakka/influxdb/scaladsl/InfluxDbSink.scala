@@ -21,7 +21,7 @@ import scala.collection.immutable
 object InfluxDbSink {
 
   def create()(implicit influxDB: InfluxDB): Sink[immutable.Seq[InfluxDbWriteMessage[Point, NotUsed]], Future[Done]] =
-    InfluxDbFlow.create.toMat(Sink.ignore)(Keep.right)
+    InfluxDbFlow.create().toMat(Sink.ignore)(Keep.right)
 
   def typed[T](
       clazz: Class[T]

@@ -41,7 +41,7 @@ import scala.concurrent.{Future, Promise}
     unbindListener()
 
   private def processIncoming(event: (ActorRef, Any)): Unit = event match {
-    case (sender, Udp.Bound(boundAddress)) ⇒
+    case (sender, Udp.Bound(boundAddress)) =>
       boundPromise.success(boundAddress)
       listener = sender
       pull(in)
@@ -90,7 +90,7 @@ import scala.concurrent.{Future, Promise}
 
   val shape: FlowShape[Datagram, Datagram] = FlowShape.of(in, out)
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
-    val boundPromise = Promise[InetSocketAddress]
+    val boundPromise = Promise[InetSocketAddress]()
     (new UdpBindLogic(localAddress, options, boundPromise)(shape), boundPromise.future)
   }
 }

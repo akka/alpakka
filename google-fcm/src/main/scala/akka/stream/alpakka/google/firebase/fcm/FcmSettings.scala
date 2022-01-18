@@ -7,12 +7,12 @@ package akka.stream.alpakka.google.firebase.fcm
 import akka.actor.ClassicActorSystemProvider
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import akka.stream.alpakka.google.{ForwardProxy => CommonForwardProxy}
-import com.github.ghik.silencer.silent
 
 import java.util.Objects
+import scala.annotation.nowarn
 import scala.compat.java8.OptionConverters._
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 final class FcmSettings private (
     /** Use [[akka.stream.alpakka.google.GoogleSettings]] */ @deprecated(
       "Use akka.stream.alpakka.google.GoogleSettings",
@@ -281,7 +281,7 @@ final class ForwardProxy private (val host: String,
 object FcmSettings {
 
   /** Scala API */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def apply(): FcmSettings = apply("deprecated", "deprecated", "deprecated")
 
   /** Java API */

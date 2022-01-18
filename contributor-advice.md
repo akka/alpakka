@@ -31,15 +31,13 @@ Alpakka, same as Akka, aims to keep 100% feature parity between the various lang
 
 1. Provide factory methods for Sources, Flows and Sinks in the `javadsl` package wrapping all the methods in the Scala API. The Akka Stream Scala instances have a `.asJava` method to convert to the `akka.stream.javadsl` counterparts.
 
-1. When using Scala `object` instances, offer a `getInstance()` method and add a sealed abstract class (to support 2.11) to get the return type.
+1. When using Scala `object` instances, offer a `getInstance()` method.
 
 1. When the Scala API contains an `apply` method, use `create` for Java users.
 
 1. Do not nest Scala `object`s more than two levels (as access from Java becomes weird)
 
 1. Be careful to convert values within data structures (eg. for `scala.Long` vs. `java.lang.Long`, use `scala.Long.box(value)`)
-
-1. When compiling with both Scala 2.11 and 2.12, some methods considered overloads in 2.11, become ambiguous in 2.12 as both may be functional interfaces.
 
 1. Complement any methods with Scala collections with a Java collection version
 

@@ -14,7 +14,6 @@ import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Flow, FlowWithContext, Sink, Source}
 import akka.testkit.TestKit
 import akka.{Done, NotUsed}
-import com.github.ghik.silencer.silent
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
@@ -25,7 +24,6 @@ import org.scalatestplus.mockito.MockitoSugar
 import scala.collection.immutable.Seq
 import scala.concurrent.duration._
 
-@silent("deprecation")
 class GooglePubSubSpec
     extends AnyFlatSpec
     with MockitoSugar

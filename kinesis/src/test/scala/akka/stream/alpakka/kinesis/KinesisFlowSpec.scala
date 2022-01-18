@@ -22,7 +22,7 @@ import org.scalatest.matchers.should.Matchers
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.kinesis.model._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class KinesisFlowSpec extends AnyWordSpec with Matchers with KinesisMock with LogCapturing {
 
@@ -94,7 +94,7 @@ class KinesisFlowSpec extends AnyWordSpec with Matchers with KinesisMock with Lo
 
   trait KinesisFlowWithContextProbe { self: Settings =>
     val streamName = "stream-name"
-    val recordStream = Stream
+    val recordStream = LazyList
       .from(1)
       .map(
         i =>
@@ -105,7 +105,7 @@ class KinesisFlowSpec extends AnyWordSpec with Matchers with KinesisMock with Lo
              .build(),
            i)
       )
-    val resultStream = Stream
+    val resultStream = LazyList
       .from(1)
       .map(i => (PutRecordsResultEntry.builder().build(), i))
 

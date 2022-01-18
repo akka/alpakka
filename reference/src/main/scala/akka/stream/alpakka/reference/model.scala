@@ -10,7 +10,7 @@ import akka.annotation.InternalApi
 import akka.util.ByteString
 
 import scala.collection.immutable
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.compat.java8.OptionConverters._
 import scala.util.{Success, Try}
 
@@ -88,7 +88,7 @@ final class ReferenceWriteMessage private (
    * Java setter needs to take Java Long class and convert to Scala Long.
    */
   def withMetrics(metrics: java.util.Map[String, java.lang.Long]): ReferenceWriteMessage =
-    copy(metrics = metrics.asScala.mapValues(Long.unbox).toMap)
+    copy(metrics = metrics.asScala.view.mapValues(Long.unbox).toMap)
 
   /**
    * Java API

@@ -96,7 +96,7 @@ class GCStorageSinkSpec
 
     // #rewrite
 
-    val result: Future[StorageObject] = GCStorage.rewrite(bucketName, fileName, rewriteBucketName, fileName).run
+    val result: Future[StorageObject] = GCStorage.rewrite(bucketName, fileName, rewriteBucketName, fileName).run()
 
     // #rewrite
 
@@ -114,7 +114,7 @@ class GCStorageSinkSpec
       mockRewriteFailure(rewriteBucketName)
     )
 
-    val result = GCStorage.rewrite(bucketName, fileName, rewriteBucketName, fileName).run
+    val result = GCStorage.rewrite(bucketName, fileName, rewriteBucketName, fileName).run()
 
     result.failed.futureValue.getMessage shouldBe "[400] Rewrite failed"
   }

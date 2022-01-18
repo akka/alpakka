@@ -144,6 +144,8 @@ private[jms] trait JmsConnector[S <: JmsSession] {
       case JmsConnectorConnected(_) | JmsConnectorDisconnected =>
         maybeReconnect(ex, 0, backoffMaxed = false)
       case _: JmsConnectorStopping | _: JmsConnectorStopped => logStoppingException(ex)
+      case other =>
+        log.warning("received [{}] in connectionState={}", ex, connectionState)
     }
   }
 

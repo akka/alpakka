@@ -9,10 +9,10 @@ import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.stream.alpakka.google.GoogleSettings
 import akka.stream.alpakka.google.auth.ServiceAccountCredentials
-import com.github.ghik.silencer.silent
 
+import scala.annotation.nowarn
 import scala.collection.immutable
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * @param projectId (deprecated) the project Id in the google account
@@ -32,7 +32,7 @@ class PubSubConfig private (
 ) {
 
   override def toString: String =
-    s"PubSubConfig(projectId=$projectId)": @silent("deprecated")
+    s"PubSubConfig(projectId=$projectId)": @nowarn("msg=deprecated")
 }
 
 object PubSubConfig {

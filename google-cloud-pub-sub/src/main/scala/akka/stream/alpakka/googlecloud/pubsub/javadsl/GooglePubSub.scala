@@ -12,7 +12,7 @@ import akka.stream.alpakka.googlecloud.pubsub.{AcknowledgeRequest, PubSubConfig,
 import akka.stream.javadsl.{Flow, FlowWithContext, Sink, Source}
 import akka.{Done, NotUsed}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.Future
 

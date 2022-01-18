@@ -6,11 +6,12 @@ package akka.stream.alpakka.googlecloud.bigquery.model
 
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRestJsonProtocol._
 import com.fasterxml.jackson.annotation.{JsonCreator, JsonProperty}
-import com.github.ghik.silencer.silent
 import spray.json.{JsonFormat, RootJsonFormat}
 
 import java.util
-import scala.collection.JavaConverters._
+
+import scala.annotation.nowarn
+import scala.jdk.CollectionConverters._
 import scala.collection.immutable.Seq
 import scala.compat.java8.OptionConverters._
 
@@ -261,7 +262,7 @@ object SourceFormat {
  */
 final case class JobReference private (projectId: Option[String], jobId: Option[String], location: Option[String]) {
 
-  @silent("never used")
+  @nowarn("msg=never used")
   @JsonCreator
   private def this(@JsonProperty("projectId") projectId: String,
                    @JsonProperty("jobId") jobId: String,

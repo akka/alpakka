@@ -19,7 +19,7 @@ import net.schmizz.sshj.userauth.password.{PasswordFinder, PasswordUtils, Resour
 import net.schmizz.sshj.xfer.FilePermission
 import org.apache.commons.net.DefaultSocketFactory
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.immutable
 import scala.util.{Failure, Try}
 

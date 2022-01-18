@@ -5,7 +5,6 @@
 package akka.stream.alpakka.dynamodb
 
 import java.net.URI
-
 import akka.actor.ActorSystem
 import akka.stream.alpakka.dynamodb.scaladsl._
 import akka.stream.scaladsl.Sink
@@ -20,7 +19,8 @@ import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
 import software.amazon.awssdk.services.dynamodb.model.TableStatus
 
-import scala.collection.JavaConverters._
+import scala.annotation.nowarn
+import scala.jdk.CollectionConverters._
 import scala.concurrent.ExecutionContext
 
 class ItemSpec extends TestKit(ActorSystem("ItemSpec")) with AsyncWordSpecLike with Matchers with BeforeAndAfterAll {
@@ -75,7 +75,7 @@ class ItemSpec extends TestKit(ActorSystem("ItemSpec")) with AsyncWordSpecLike w
         .runWith(Sink.seq)
         .map { results =>
           results.size shouldBe 3
-          val Seq(a, b, c) = results
+          val Seq(a, b, c) = results: @nowarn("msg=match may not be exhaustive")
           a.size shouldBe 1
           a.get(0).get(sortCol) shouldBe N(0)
           b.size shouldBe 1

@@ -6,10 +6,11 @@ package akka.stream.alpakka.googlecloud.bigquery.model
 
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRestJsonProtocol._
 import com.fasterxml.jackson.annotation.{JsonCreator, JsonProperty}
-import com.github.ghik.silencer.silent
 import spray.json.JsonFormat
 
 import java.util
+
+import scala.annotation.nowarn
 import scala.compat.java8.OptionConverters._
 
 /**
@@ -22,7 +23,7 @@ import scala.compat.java8.OptionConverters._
  */
 final case class ErrorProto private (reason: Option[String], location: Option[String], message: Option[String]) {
 
-  @silent("never used")
+  @nowarn("msg=never used")
   @JsonCreator
   private def this(@JsonProperty(value = "reason") reason: String,
                    @JsonProperty("location") location: String,

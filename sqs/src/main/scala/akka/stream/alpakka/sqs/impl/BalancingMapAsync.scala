@@ -35,7 +35,7 @@ import scala.util.{Failure, Success}
 @InternalApi private[sqs] final case class BalancingMapAsync[In, Out](
     maxParallelism: Int,
     f: In => Future[Out],
-    balancingF: (Out, Int) ⇒ Int
+    balancingF: (Out, Int) => Int
 ) extends GraphStage[FlowShape[In, Out]] {
 
   import MapAsync._
@@ -124,6 +124,8 @@ import scala.util.{Failure, Success}
                   // try next element
                   pushNextIfPossible()
               }
+
+            case Failure(_) => // fatal
           }
         }
 

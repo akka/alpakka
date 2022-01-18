@@ -18,7 +18,7 @@ import com.google.cloud.bigquery.storage.v1.stream.ReadSession
 
 import java.util.concurrent.CompletionStage
 import scala.compat.java8.FutureConverters.FutureOps
-import collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * Google BigQuery Storage Api Akka Stream operator factory.

@@ -87,7 +87,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
       val input = Vector("one", "two", "three", "four", "five")
       val (rpcQueueF, probe) =
-        Source(input).map(s => ByteString(s)).viaMat(amqpRpcFlow)(Keep.right).toMat(TestSink.probe)(Keep.both).run
+        Source(input).map(s => ByteString(s)).viaMat(amqpRpcFlow)(Keep.right).toMat(TestSink.probe)(Keep.both).run()
       rpcQueueF.futureValue
 
       val amqpSink = AmqpSink.replyTo(
@@ -215,8 +215,8 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
       val publisher = TestPublisher.probe[ByteString]()
       val subscriber = TestSubscriber.probe[ReadResult]()
-      amqpSink.addAttributes(Attributes.inputBuffer(1, 1)).runWith(Source.fromPublisher(publisher))
-      amqpSource.addAttributes(Attributes.inputBuffer(1, 1)).runWith(Sink.fromSubscriber(subscriber))
+      Source.fromPublisher(publisher).to(amqpSink).addAttributes(Attributes.inputBuffer(1, 1)).run()
+      amqpSource.to(Sink.fromSubscriber(subscriber)).addAttributes(Attributes.inputBuffer(1, 1)).run()
 
       // note that this essentially is testing rabbitmq just as much as it tests our sink and source
       publisher.ensureSubscription()
@@ -335,7 +335,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
           .viaMat(amqpRpcFlow)(Keep.right)
           .mapAsync(1)(cm => cm.ack().map(_ => cm.message))
           .toMat(TestSink.probe)(Keep.both)
-          .run
+          .run()
       rpcQueueF.futureValue
 
       val amqpSink = AmqpSink.replyTo(

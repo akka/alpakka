@@ -151,7 +151,7 @@ services:
       - 16201:16201
       - 16301:16301
   ibmmq:
-    image: ibmcom/mq:9.1.1.0
+    image: ibmcom/mq:latest
     environment:
       LICENSE: accept
       MQ_QMGR_NAME: QM1

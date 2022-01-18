@@ -13,7 +13,7 @@ import akka.stream.scaladsl.{Flow, Keep}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.compat.java8.FutureConverters.FutureOps
 
 /**

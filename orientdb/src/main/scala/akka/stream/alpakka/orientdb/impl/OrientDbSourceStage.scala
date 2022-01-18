@@ -14,7 +14,7 @@ import com.orientechnologies.orient.`object`.db.OObjectDatabaseTx
 import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx
 import com.orientechnologies.orient.core.sql.query.OSQLSynchQuery
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * INTERNAL API
@@ -111,7 +111,7 @@ private[orientdb] final class OrientDbSourceStage[T](className: String,
         completeStage()
       else {
         skip += settings.limit
-        emitMultiple(out, data.map(OrientDbReadResult(_)).toIterator)
+        emitMultiple(out, data.map(OrientDbReadResult(_)).iterator)
       }
     }
 

@@ -52,7 +52,7 @@ private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettin
   override protected def initialAttributes: Attributes = Attributes.name("MqttFlow")
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
-    val subscriptionPromise = Promise[Done]
+    val subscriptionPromise = Promise[Done]()
     val logic = new MqttFlowStageLogic[MqttMessage](in,
                                                     out,
                                                     shape,

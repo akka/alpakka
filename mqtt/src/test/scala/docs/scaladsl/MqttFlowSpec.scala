@@ -54,7 +54,7 @@ class MqttFlowSpec extends MqttSpecBase("MqttFlowSpec") {
         )
       //#create-flow-ack
 
-      val acked = Promise[Done]
+      val acked = Promise[Done]()
 
       class MqttMessageWithAckFake extends MqttMessageWithAck {
         override val message: MqttMessage = MqttMessage.create(topic, ByteString.fromString("ohi"))

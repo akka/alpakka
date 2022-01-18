@@ -88,8 +88,8 @@ class RequestStateSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll 
 
     "acquire two packet ids" in {
       val registrant = testKit.createTestProbe[String]()
-      val reply1 = Promise[LocalPacketRouter.Registered]
-      val reply2 = Promise[LocalPacketRouter.Registered]
+      val reply1 = Promise[LocalPacketRouter.Registered]()
+      val reply2 = Promise[LocalPacketRouter.Registered]()
       val router = testKit.spawn(LocalPacketRouter[String])
       router ! LocalPacketRouter.Register(registrant.ref, reply1)
       router ! LocalPacketRouter.Register(registrant.ref, reply2)
@@ -102,10 +102,10 @@ class RequestStateSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll 
       val registrant2 = testKit.createTestProbe[String]()
       val registrant3 = testKit.createTestProbe[String]()
       val registrant4 = testKit.createTestProbe[String]()
-      val reply1 = Promise[LocalPacketRouter.Registered]
-      val reply2 = Promise[LocalPacketRouter.Registered]
-      val reply3 = Promise[LocalPacketRouter.Registered]
-      val reply4 = Promise[LocalPacketRouter.Registered]
+      val reply1 = Promise[LocalPacketRouter.Registered]()
+      val reply2 = Promise[LocalPacketRouter.Registered]()
+      val reply3 = Promise[LocalPacketRouter.Registered]()
+      val reply4 = Promise[LocalPacketRouter.Registered]()
       val router = testKit.spawn(LocalPacketRouter[String])
 
       router ! LocalPacketRouter.Register(registrant1.ref, reply1)
@@ -129,7 +129,7 @@ class RequestStateSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll 
       val router = testKit.spawn(LocalPacketRouter[String])
       router ! LocalPacketRouter.Register(registrant.ref, reply)
       val registered = reply.future.futureValue
-      val failureReply = Promise[String]
+      val failureReply = Promise[String]()
       router ! LocalPacketRouter.Route(registered.packetId, "some-packet", failureReply)
       registrant.expectMessage("some-packet")
       failureReply.future.isCompleted shouldBe false
@@ -169,10 +169,10 @@ class RequestStateSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll 
 
       val registrant = testKit.createTestProbe[String]()
       val registerReply = Promise[RemotePacketRouter.Registered.type]()
-      val failureReply1 = Promise[String]
-      val failureReply2 = Promise[String]
-      val failureReply3 = Promise[String]
-      val failureReply4 = Promise[String]
+      val failureReply1 = Promise[String]()
+      val failureReply2 = Promise[String]()
+      val failureReply3 = Promise[String]()
+      val failureReply4 = Promise[String]()
       val router = testKit.spawn(RemotePacketRouter[String])
 
       router ! RemotePacketRouter.Register(registrant.ref, Some(clientId), packetId, registerReply)

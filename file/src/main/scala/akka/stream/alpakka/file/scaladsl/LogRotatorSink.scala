@@ -161,7 +161,7 @@ final private class LogRotatorSink[T, C, R](triggerGeneratorCreator: () => T => 
     }
 
     override def postStop(): Unit =
-      promise.tryCompleteWith {
+      promise.completeWith {
         implicit val ec = materializer.executionContext
         Future
           .sequence(sinkCompletions)

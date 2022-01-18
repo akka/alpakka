@@ -15,7 +15,7 @@ import com.microsoft.azure.storage._
 import com.microsoft.azure.storage.queue._
 import org.scalatest._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.util.Properties
@@ -45,13 +45,13 @@ class AzureQueueSpec extends TestKit(ActorSystem()) with AsyncFlatSpecLike with 
     test()
   }
 
-  override def beforeAll: Unit =
+  override def beforeAll(): Unit =
     queueOpt.map(_.createIfNotExists)
 
-  override def afterAll: Unit = {
+  override def afterAll(): Unit = {
     queueOpt.map(_.deleteIfExists)
     TestKit.shutdownActorSystem(system)
-    super.afterAll
+    super.afterAll()
   }
 
   private var testMsgCount = 0

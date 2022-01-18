@@ -14,14 +14,14 @@ import akka.stream.alpakka.google.GoogleSettings
 import akka.stream.alpakka.google.firebase.fcm.{FcmErrorResponse, FcmResponse, FcmSuccessResponse}
 import akka.stream.alpakka.google.http.GoogleHttp
 import akka.stream.alpakka.google.implicits._
-import com.github.ghik.silencer.silent
 
+import scala.annotation.nowarn
 import scala.concurrent.Future
 
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 @InternalApi
 private[fcm] class FcmSender {
   import FcmJsonSupport._

@@ -79,6 +79,7 @@ final class GCSSettings private (val endpointUrl: String, val basePath: String) 
     case that: GCSSettings =>
       Objects.equals(this.endpointUrl, that.endpointUrl) &&
       Objects.equals(this.basePath, that.basePath)
+    case _ => false
   }
 
   override def hashCode(): Int =

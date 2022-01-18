@@ -64,7 +64,7 @@ import scala.util.Success
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
     // materialized value created as a new instance on every materialization
-    val startupPromise = Promise[Done]
+    val startupPromise = Promise[Done]()
     val logic = new ReferenceSourceStageLogic(settings, startupPromise, shape)
     (logic, startupPromise.future)
   }

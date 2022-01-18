@@ -55,11 +55,11 @@ object IronMqProducer {
   ): Flow[(PushMessage, ToCommit), (Message.Id, CommitResult), CommitMat] = {
 
     // This graph is used to pass the ToCommit through the producer. It assume a 1-to-1 semantic on the producer
-    val producerGraph = GraphDSL.create(flow(queueName, settings)) { implicit builder => producer =>
+    val producerGraph = GraphDSL.createGraph(flow(queueName, settings)) { implicit builder => producer =>
       import GraphDSL.Implicits._
 
       val broadcast = builder.add(Broadcast[(PushMessage, ToCommit)](2))
-      val zip = builder.add(Zip[Message.Id, ToCommit])
+      val zip = builder.add(Zip[Message.Id, ToCommit]())
       val extractPushMessage = builder.add(Flow[(PushMessage, ToCommit)].map(_._1))
       val extractCommittable = builder.add(Flow[(PushMessage, ToCommit)].map(_._2))
 
@@ -70,18 +70,19 @@ object IronMqProducer {
     }
 
     // This graph is used to pass the ToCommit through the commitFlow. Again it assume the commitFlow to have 1-to-1 semantic
-    Flow.fromGraph(GraphDSL.create(producerGraph, commitFlow)(Keep.right) { implicit builder => (producer, committer) =>
-      import GraphDSL.Implicits._
+    Flow.fromGraph(GraphDSL.createGraph(producerGraph, commitFlow)(Keep.right) {
+      implicit builder => (producer, committer) =>
+        import GraphDSL.Implicits._
 
-      val broadcast = builder.add(Broadcast[(Message.Id, ToCommit)](2))
-      val extractMessageId = builder.add(Flow[(Message.Id, ToCommit)].map(_._1))
-      val extractCommittable = builder.add(Flow[(Message.Id, ToCommit)].map(_._2))
-      val zip = builder.add(Zip[Message.Id, CommitResult])
+        val broadcast = builder.add(Broadcast[(Message.Id, ToCommit)](2))
+        val extractMessageId = builder.add(Flow[(Message.Id, ToCommit)].map(_._1))
+        val extractCommittable = builder.add(Flow[(Message.Id, ToCommit)].map(_._2))
+        val zip = builder.add(Zip[Message.Id, CommitResult]())
 
-      producer ~> broadcast ~> extractMessageId ~> zip.in0
-      broadcast ~> extractCommittable ~> committer ~> zip.in1
+        producer ~> broadcast ~> extractMessageId ~> zip.in0
+        broadcast ~> extractCommittable ~> committer ~> zip.in1
 
-      FlowShape(producer.in, zip.out)
+        FlowShape(producer.in, zip.out)
     })
   }
 
