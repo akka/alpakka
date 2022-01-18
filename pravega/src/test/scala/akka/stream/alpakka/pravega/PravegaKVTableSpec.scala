@@ -40,7 +40,7 @@ class PravegaKVTableSpec extends PravegaBaseSpec with Repeated {
 
       Await.ready(fut, remainingOrDefault)
 
-      val tableSettings = TableReaderSettingsBuilder[Int, Person]
+      val tableSettings = TableReaderSettingsBuilder[Int, Person]()
         .withTableKey(id => new TableKey(intSerializer.serialize(id)))
         .build()
 
