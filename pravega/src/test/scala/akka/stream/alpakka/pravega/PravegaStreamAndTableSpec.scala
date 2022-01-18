@@ -7,69 +7,48 @@ package akka.stream.alpakka.pravega
 import akka.stream.{KillSwitches, SourceShape}
 
 import akka.stream.scaladsl.{Broadcast, GraphDSL, Keep, Sink, Source, Zip}
-import io.pravega.client.stream.impl.UTF8StringSerializer
-import io.pravega.client.stream.Serializer
 
-import java.nio.ByteBuffer
 import akka.stream.alpakka.testkit.scaladsl.Repeated
 import akka.stream.alpakka.pravega.scaladsl.{Pravega, PravegaTable}
 
 import scala.concurrent.{Await, Promise}
 import scala.util.Using
+import io.pravega.client.tables.TableKey
 
-case class Auction(id: Int, description: String)
-trait HasId {
-  def id: Int
-}
-case class Player(id: Int, name: String, auctionId: Option[Int]) extends HasId
-case class Winner(id: Int, name: String, auctionId: Int, description: String) extends HasId
+import docs.scaladsl.Serializers._
 
 class PravegaStreamAndTableSpec extends PravegaBaseSpec with Repeated {
 
-  private val serializer = new UTF8StringSerializer
+  val writterSettings = WriterSettingsBuilder(system).withSerializer(stringSerializer)
 
-  private val intSerializer = new Serializer[Int] {
-    override def serialize(value: Int): ByteBuffer = {
-      val buff = ByteBuffer.allocate(4).putInt(value)
-      buff.position(0)
-      buff
-    }
-
-    override def deserialize(serializedValue: ByteBuffer): Int =
-      serializedValue.getInt
-  }
-
-  implicit val writterSettings = WriterSettingsBuilder(system).withSerializer(serializer)
-
-  private val familyExtractor: String => String =
-    _ => "test"
-
-  implicit val readerSettings = ReaderSettingsBuilder(system)
-    .withSerializer(new UTF8StringSerializer)
+  val readerSettings = ReaderSettingsBuilder(system)
+    .withSerializer(stringSerializer)
 
   def readTableFlow(scope: String, tableName: String) = {
     // #table-reading-flow
-    implicit val tableSettings: TableSettings[String, Int] =
-      TableReaderSettingsBuilder[String, Int](system)
-        .withSerializers(serializer, intSerializer)
+    val tableSettings: TableSettings[String, Int] =
+      TableReaderSettingsBuilder[String, Int]
+        .withTableKey(p => new TableKey(stringSerializer.serialize(p)))
+        .build()
     PravegaTable
       .readFlow[String, Int](
         scope,
         tableName,
-        familyExtractor
+        tableSettings
       )
     // #table-reading-flow
 
   }
 
   def writeTableFlow(scope: String, tableName: String) = {
-    implicit val tableWriteSettings: TableWriterSettings[String, Int] =
-      TableWriterSettingsBuilder[String, Int](system)
-        .withSerializers(serializer, intSerializer)
+    val tableWriterSettings: TableWriterSettings[String, Int] =
+      TableWriterSettingsBuilder[String, Int]
+        .withSerializers(k => new TableKey(stringSerializer.serialize(k)))
+        .build()
     PravegaTable.writeFlow(
       scope,
       tableName,
-      familyExtractor
+      tableWriterSettings
     )
   }
 
@@ -83,12 +62,12 @@ class PravegaStreamAndTableSpec extends PravegaBaseSpec with Repeated {
       val groupName = "my-group"
 
       createStream(scope, stream)
-      createTable(scope, tableName)
+      createTable(scope, tableName, 6)
 
       Using(Pravega.readerGroupManager(scope, readerSettings.clientConfig)) { readerGroupManager =>
         readerGroupManager.createReaderGroup(groupName, stream)
       }.foreach { readerGroup =>
-        val source = Pravega.source(readerGroup).map(_.message)
+        val source = Pravega.source(readerGroup, readerSettings).map(_.message)
 
         val source2 = Source.fromGraph(GraphDSL.create() { implicit builder =>
           import GraphDSL.Implicits._
@@ -116,7 +95,7 @@ class PravegaStreamAndTableSpec extends PravegaBaseSpec with Repeated {
           SourceShape(increment.out)
         })
 
-        val sink1 = Pravega.sink(scope, stream)
+        val sink1 = Pravega.sink(scope, stream, writterSettings)
 
         Source(1 to 100)
           .map(_ % 10)

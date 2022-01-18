@@ -5,10 +5,12 @@
 package akka.stream.alpakka.pravega;
 
 import akka.Done;
+import akka.NotUsed;
 import akka.japi.Pair;
 
 import akka.stream.alpakka.pravega.javadsl.PravegaTable;
 import akka.stream.javadsl.Keep;
+import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import docs.javadsl.PravegaBaseTestCase;
@@ -18,13 +20,16 @@ import io.pravega.client.stream.Serializer;
 import io.pravega.client.stream.impl.UTF8StringSerializer;
 
 import io.pravega.client.tables.KeyValueTableConfiguration;
+import io.pravega.client.tables.TableKey;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import java.util.concurrent.*;
 
@@ -52,8 +57,9 @@ public class PravegaKVTableTestCase extends PravegaBaseTestCase {
       };
 
   TableWriterSettings<Integer, String> tablewriterSettings =
-      TableWriterSettingsBuilder.<Integer, String>create(system)
-          .withSerializers(intSerializer, serializer);
+      TableWriterSettingsBuilder.<Integer, String>create(system, intSerializer, serializer)
+          .withSerializers(id -> new TableKey(intSerializer.serialize(id)))
+          .build();
 
   @Test
   public void writeAndReadInKVTable()
@@ -67,30 +73,52 @@ public class PravegaKVTableTestCase extends PravegaBaseTestCase {
             new Pair<Integer, String>(4, "Four"));
 
     Sink<Pair<Integer, String>, CompletionStage<Done>> sink =
-        PravegaTable.sink(
-            scope, tableName, tablewriterSettings, (Integer k) -> (k % 2 == 0) ? "test" : null);
+        PravegaTable.sink(scope, tableName, tablewriterSettings);
 
     CompletionStage<Done> done = Source.from(events).toMat(sink, Keep.right()).run(system);
 
     done.toCompletableFuture().get(timeoutSeconds, TimeUnit.SECONDS);
 
     TableReaderSettings<Integer, String> tableReaderSettings =
-        TableReaderSettingsBuilder.<Integer, String>create(system)
-            .withSerializers(intSerializer, serializer);
+        TableReaderSettingsBuilder.<Integer, String>create(system, intSerializer, serializer)
+            .withTableKey(id -> new TableKey(intSerializer.serialize(id)))
+            .build();
 
     final CompletionStage<String> readingDone =
-        PravegaTable.source(scope, tableName, "test", tableReaderSettings)
+        PravegaTable.source(scope, tableName, tableReaderSettings)
             .runWith(
                 Sink.fold(
                     "",
                     (acc, p) -> {
-                      if (acc == "") return p.second();
-                      return acc + ", " + p.second();
+                      if (acc == "") return p.value();
+                      return acc + ", " + p.value();
                     }),
                 system);
 
     String result = readingDone.toCompletableFuture().get(timeoutSeconds, TimeUnit.SECONDS);
-    Assert.assertTrue(String.format("Read 2 elements [%s]", result), result.equals("Two, Four"));
+    Assert.assertTrue(
+        String.format("Read 2 elements [%s]", result), result.equals("One, Two, Three, Four"));
+
+    Flow<Integer, Optional<String>, NotUsed> readFlow =
+        PravegaTable.readFlow(scope, tableName, tableReaderSettings);
+
+    List<Integer> ids = Arrays.asList(1, 2, 3, 4);
+
+    CompletionStage<List<String>> readFlowFut =
+        Source.from(ids)
+            .via(readFlow)
+            .runWith(
+                Sink.fold(
+                    new ArrayList<String>(),
+                    (acc, p) -> {
+                      acc.add(p.get());
+                      return acc;
+                    }),
+                system);
+
+    List<String> values = readFlowFut.toCompletableFuture().get(timeoutSeconds, TimeUnit.SECONDS);
+
+    Assert.assertEquals(values, Arrays.asList("One", "Two", "Three", "Four"));
   }
 
   @BeforeClass
@@ -100,7 +128,7 @@ public class PravegaKVTableTestCase extends PravegaBaseTestCase {
     ClientConfig clientConfig = ClientConfig.builder().build();
 
     KeyValueTableConfiguration keyValueTableConfig =
-        KeyValueTableConfiguration.builder().partitionCount(2).build();
+        KeyValueTableConfiguration.builder().partitionCount(2).primaryKeyLength(4).build();
     KeyValueTableManager keyValueTableManager = KeyValueTableManager.create(clientConfig);
 
     if (keyValueTableManager.createKeyValueTable(scope, tableName, keyValueTableConfig))

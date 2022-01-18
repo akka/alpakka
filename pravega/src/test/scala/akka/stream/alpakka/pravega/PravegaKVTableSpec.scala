@@ -5,39 +5,22 @@
 package akka.stream.alpakka.pravega
 
 import akka.stream.scaladsl.{Keep, Sink, Source}
-import io.pravega.client.stream.impl.UTF8StringSerializer
 
 import scala.concurrent.Await
 
-import io.pravega.client.stream.Serializer
-
-import java.nio.ByteBuffer
 import akka.stream.alpakka.testkit.scaladsl.Repeated
 import akka.stream.alpakka.pravega.scaladsl.PravegaTable
+import io.pravega.client.tables.TableKey
 
-case class Person(id: Int, firstname: String)
+import docs.scaladsl.Person
+import docs.scaladsl.Serializers._
 
 class PravegaKVTableSpec extends PravegaBaseSpec with Repeated {
 
-  private val serializer = new UTF8StringSerializer
-
-  private val intSerializer = new Serializer[Int] {
-    override def serialize(value: Int): ByteBuffer = {
-      val buff = ByteBuffer.allocate(4).putInt(value)
-      buff.position(0)
-      buff
-    }
-
-    override def deserialize(serializedValue: ByteBuffer): Int =
-      serializedValue.getInt
-  }
-
-  private implicit val tablewriterSettings: TableWriterSettings[Int, String] =
-    TableWriterSettingsBuilder[Int, String](system)
-      .withSerializers(intSerializer, serializer)
-
-  val familyExtractor: Int => String =
-    k => if (k % 2 == 0) "test" else null
+  private val tablewriterSettings: TableWriterSettings[Int, Person] =
+    TableWriterSettingsBuilder[Int, Person]
+      .withSerializers(id => new TableKey(intSerializer.serialize(id)))
+      .build()
 
   "Pravega connector" should {
 
@@ -47,22 +30,22 @@ class PravegaKVTableSpec extends PravegaBaseSpec with Repeated {
 
       val tableName = "kvp-table-name"
 
-      createTable(scope, tableName)
+      createTable(scope, tableName, 4)
 
-      val sink = PravegaTable.sink(scope, tableName, familyExtractor)
+      val sink = PravegaTable.sink(scope, tableName, tablewriterSettings)
 
       val fut = Source(1 to 100)
-        .map(id => (id, s"name_$id"))
+        .map(id => (id, Person(id, s"name_$id")))
         .runWith(sink)
 
       Await.ready(fut, remainingOrDefault)
 
-      val tableSettings = TableReaderSettingsBuilder
-        .apply[Int, String](system.settings.config.getConfig(TableReaderSettingsBuilder.configPath))
-        .withSerializers(intSerializer, serializer)
+      val tableSettings = TableReaderSettingsBuilder[Int, Person]
+        .withTableKey(id => new TableKey(intSerializer.serialize(id)))
+        .build()
 
       val readingDone = PravegaTable
-        .source(scope, tableName, "test", tableSettings)
+        .source(scope, tableName, tableSettings)
         .toMat(Sink.fold(0) { (sum, value) =>
           sum + 1
         })(Keep.right)
@@ -70,7 +53,7 @@ class PravegaKVTableSpec extends PravegaBaseSpec with Repeated {
 
       whenReady(readingDone) { sum =>
         logger.info(s"Sum: $sum")
-        sum mustEqual 50
+        sum mustEqual 100
       }
 
     }

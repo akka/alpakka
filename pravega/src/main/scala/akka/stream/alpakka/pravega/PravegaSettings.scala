@@ -14,6 +14,7 @@ import io.pravega.client.ClientConfig.ClientConfigBuilder
 import io.pravega.client.stream.EventWriterConfig.EventWriterConfigBuilder
 import io.pravega.client.stream.ReaderConfig.ReaderConfigBuilder
 import io.pravega.client.tables.KeyValueTableClientConfiguration
+import io.pravega.client.tables.TableKey
 
 private[pravega] abstract class WithClientConfig(
     config: Config,
@@ -295,6 +296,9 @@ object WriterSettingsBuilder {
 
 class TableReaderSettingsBuilder[K, V](
     config: Config,
+    keySerializer: Serializer[K],
+    valueSerializer: Serializer[V],
+    tableKeyExtractor: Option[K => TableKey],
     clientConfig: Option[ClientConfig] = None,
     clientConfigModifier: Option[ClientConfigBuilder => ClientConfigBuilder] = None,
     keyValueTableClientConfigurationBuilder: KeyValueTableClientConfiguration.KeyValueTableClientConfigurationBuilder,
@@ -322,6 +326,7 @@ class TableReaderSettingsBuilder[K, V](
 
   private def copy(
       clientConfig: Option[ClientConfig] = clientConfig,
+      tableKeyExtractor: Option[K => TableKey] = tableKeyExtractor,
       clientConfigModifier: Option[ClientConfigBuilder => ClientConfigBuilder] = clientConfigModifier,
       keyValueTableClientConfigurationBuilderCustomizer: Option[
         KeyValueTableClientConfiguration.KeyValueTableClientConfigurationBuilder => KeyValueTableClientConfiguration.KeyValueTableClientConfigurationBuilder
@@ -330,6 +335,9 @@ class TableReaderSettingsBuilder[K, V](
       maxEntriesAtOnce: Int = maxEntriesAtOnce
   ): TableReaderSettingsBuilder[K, V] =
     new TableReaderSettingsBuilder(config,
+                                   keySerializer,
+                                   valueSerializer,
+                                   tableKeyExtractor,
                                    clientConfig,
                                    clientConfigModifier,
                                    keyValueTableClientConfigurationBuilder,
@@ -340,20 +348,24 @@ class TableReaderSettingsBuilder[K, V](
   /**
   Build the settings.
    */
-  def withSerializers(
-      keySerializer: Serializer[K],
-      valueSerializer: Serializer[V]
-  ): TableReaderSettings[K, V] = {
+  def withTableKey(
+      extractor: K => TableKey
+  ): TableReaderSettingsBuilder[K, V] = copy(tableKeyExtractor = Some(extractor))
+
+  def build(): TableReaderSettings[K, V] = {
 
     keyValueTableClientConfigurationBuilderCustomizer.foreach(_(keyValueTableClientConfigurationBuilder))
 
     val clientConfig = keyValueTableClientConfigurationBuilder.build()
-    new TableReaderSettings[K, V](handleClientConfig(),
-                                  clientConfig,
-                                  keySerializer,
-                                  valueSerializer,
-                                  maximumInflightMessages,
-                                  maxEntriesAtOnce)
+    new TableReaderSettings[K, V](
+      handleClientConfig(),
+      clientConfig,
+      keySerializer,
+      valueSerializer,
+      tableKeyExtractor.getOrElse(k => new TableKey(keySerializer.serialize(k))),
+      maximumInflightMessages,
+      maxEntriesAtOnce
+    )
   }
 
 }
@@ -365,22 +377,31 @@ object TableReaderSettingsBuilder {
    * Create reader settings from the default configuration
    * `akka.alpakka.pravega`.
    */
-  def apply[K, V](actorSystem: ActorSystem): TableReaderSettingsBuilder[K, V] =
-    apply(actorSystem.settings.config.getConfig(configPath))
+  def apply[K, V]()(implicit actorSystem: ActorSystem,
+                    keySerializer: Serializer[K],
+                    valueSerializer: Serializer[V]): TableReaderSettingsBuilder[K, V] =
+    apply(actorSystem.settings.config.getConfig(configPath), keySerializer, valueSerializer)
 
   /**
    * Create reader settings from the default configuration
    * `akka.alpakka.pravega`.
    */
-  def create[K, V](actorSystem: ActorSystem): TableReaderSettingsBuilder[K, V] =
-    apply(actorSystem)
+  def create[K, V](actorSystem: ActorSystem,
+                   keySerializer: Serializer[K],
+                   valueSerializer: Serializer[V]): TableReaderSettingsBuilder[K, V] =
+    apply()(actorSystem, keySerializer, valueSerializer)
 
   /**
    * Create settings from a configuration with the same layout as
    * the default configuration `akka.alpakka.pravega`.
    */
-  def apply[K, V](config: Config): TableReaderSettingsBuilder[K, V] =
+  def apply[K, V](config: Config,
+                  keySerializer: Serializer[K],
+                  valueSerializer: Serializer[V]): TableReaderSettingsBuilder[K, V] =
     new TableReaderSettingsBuilder(config,
+                                   keySerializer,
+                                   valueSerializer,
+                                   None,
                                    None,
                                    None,
                                    tableClientConfiguration(config),
@@ -405,6 +426,9 @@ object TableReaderSettingsBuilder {
 
 class TableWriterSettingsBuilder[K, V](
     config: Config,
+    keySerializer: Serializer[K],
+    valueSerializer: Serializer[V],
+    tableKeyExtractor: Option[K => TableKey],
     clientConfig: Option[ClientConfig] = None,
     clientConfigCustomization: Option[ClientConfigBuilder => ClientConfigBuilder] = None,
     keyValueTableClientConfigurationBuilder: KeyValueTableClientConfiguration.KeyValueTableClientConfigurationBuilder,
@@ -432,6 +456,7 @@ class TableWriterSettingsBuilder[K, V](
   def withMaxEntriesAtOnce(i: Int): TableWriterSettingsBuilder[K, V] = copy(maxEntriesAtOnce = i)
 
   private def copy(
+      tableKeyExtractor: Option[K => TableKey] = tableKeyExtractor,
       clientConfig: Option[ClientConfig] = clientConfig,
       clientConfigCustomization: Option[ClientConfigBuilder => ClientConfigBuilder] = clientConfigCustomization,
       keyValueTableClientConfigurationBuilderCustomizer: Option[
@@ -441,6 +466,9 @@ class TableWriterSettingsBuilder[K, V](
       maxEntriesAtOnce: Int = maxEntriesAtOnce
   ): TableWriterSettingsBuilder[K, V] =
     new TableWriterSettingsBuilder(config,
+                                   keySerializer,
+                                   valueSerializer,
+                                   tableKeyExtractor,
                                    clientConfig,
                                    clientConfigCustomization,
                                    keyValueTableClientConfigurationBuilder,
@@ -452,9 +480,10 @@ class TableWriterSettingsBuilder[K, V](
     Build the settings.
    */
   def withSerializers(
-      keySerializer: Serializer[K],
-      valueSerializer: Serializer[V]
-  ): TableWriterSettings[K, V] = {
+      extractor: K => TableKey
+  ): TableWriterSettingsBuilder[K, V] = copy(tableKeyExtractor = Some(extractor))
+
+  def build(): TableWriterSettings[K, V] = {
 
     keyValueTableClientConfigurationBuilderCustomizer.foreach(_(keyValueTableClientConfigurationBuilder))
 
@@ -463,6 +492,7 @@ class TableWriterSettingsBuilder[K, V](
                                   eventWriterConfig,
                                   keySerializer,
                                   valueSerializer,
+                                  tableKeyExtractor.getOrElse(k => new TableKey(keySerializer.serialize(k))),
                                   maximumInflightMessages)
   }
 
@@ -475,22 +505,31 @@ object TableWriterSettingsBuilder {
    * Create writer settings from the default configuration
    * `akka.alpakka.pravega`.
    */
-  def apply[K, V](actorSystem: ActorSystem): TableWriterSettingsBuilder[K, V] =
-    apply(actorSystem.settings.config.getConfig(configPath))
+  def apply[K, V]()(implicit actorSystem: ActorSystem,
+                    keySerializer: Serializer[K],
+                    valueSerializer: Serializer[V]): TableWriterSettingsBuilder[K, V] =
+    apply(actorSystem.settings.config.getConfig(configPath), keySerializer, valueSerializer)
 
   /**
    * Create writer settings from the default configuration
    * `akka.alpakka.pravega`.
    */
-  def create[K, V](actorSystem: ActorSystem): TableWriterSettingsBuilder[K, V] =
-    apply(actorSystem)
+  def create[K, V](actorSystem: ActorSystem,
+                   keySerializer: Serializer[K],
+                   valueSerializer: Serializer[V]): TableWriterSettingsBuilder[K, V] =
+    apply()(actorSystem, keySerializer, valueSerializer)
 
   /**
    * Create settings from a configuration with the same layout as
    * the default configuration `akka.alpakka.pravega`.
    */
-  def apply[K, V](config: Config): TableWriterSettingsBuilder[K, V] =
+  def apply[K, V](config: Config,
+                  keySerializer: Serializer[K],
+                  valueSerializer: Serializer[V]): TableWriterSettingsBuilder[K, V] =
     new TableWriterSettingsBuilder(config,
+                                   keySerializer,
+                                   valueSerializer,
+                                   None,
                                    None,
                                    None,
                                    tableClientConfiguration(config),
@@ -553,11 +592,13 @@ class TableWriterSettings[K, V](
     keyValueTableClientConfiguration: KeyValueTableClientConfiguration,
     keySerializer: Serializer[K],
     valueSerializer: Serializer[V],
+    tableKey: K => TableKey,
     maximumInflightMessages: Int
 ) extends TableSettings(clientConfig,
-                          keyValueTableClientConfiguration,
                           keySerializer,
                           valueSerializer,
+                          tableKey,
+                          keyValueTableClientConfiguration,
                           maximumInflightMessages)
 
 class TableReaderSettings[K, V](
@@ -565,19 +606,22 @@ class TableReaderSettings[K, V](
     keyValueTableClientConfiguration: KeyValueTableClientConfiguration,
     keySerializer: Serializer[K],
     valueSerializer: Serializer[V],
+    tableKey: K => TableKey,
     maximumInflightMessages: Int,
     val maxEntriesAtOnce: Int
 ) extends TableSettings(clientConfig,
-                          keyValueTableClientConfiguration,
                           keySerializer,
                           valueSerializer,
+                          tableKey,
+                          keyValueTableClientConfiguration,
                           maximumInflightMessages)
 
 protected abstract class TableSettings[K, V](
     val clientConfig: ClientConfig,
-    val keyValueTableClientConfiguration: KeyValueTableClientConfiguration,
     val keySerializer: Serializer[K],
     val valueSerializer: Serializer[V],
+    val tableKey: K => TableKey,
+    val keyValueTableClientConfiguration: KeyValueTableClientConfiguration,
     val maximumInflightMessages: Int
 )
 
