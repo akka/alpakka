@@ -27,7 +27,7 @@ class PravegaStreamAndTableSpec extends PravegaBaseSpec with Repeated {
   def readTableFlow(scope: String, tableName: String) = {
     // #table-reading-flow
     val tableSettings: TableSettings[String, Int] =
-      TableReaderSettingsBuilder[String, Int]
+      TableReaderSettingsBuilder[String, Int]()
         .withTableKey(p => new TableKey(stringSerializer.serialize(p)))
         .build()
     PravegaTable
@@ -42,7 +42,7 @@ class PravegaStreamAndTableSpec extends PravegaBaseSpec with Repeated {
 
   def writeTableFlow(scope: String, tableName: String) = {
     val tableWriterSettings: TableWriterSettings[String, Int] =
-      TableWriterSettingsBuilder[String, Int]
+      TableWriterSettingsBuilder[String, Int]()
         .withSerializers(k => new TableKey(stringSerializer.serialize(k)))
         .build()
     PravegaTable.writeFlow(

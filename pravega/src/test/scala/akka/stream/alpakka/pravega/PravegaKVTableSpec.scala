@@ -18,7 +18,7 @@ import docs.scaladsl.Serializers._
 class PravegaKVTableSpec extends PravegaBaseSpec with Repeated {
 
   private val tablewriterSettings: TableWriterSettings[Int, Person] =
-    TableWriterSettingsBuilder[Int, Person]
+    TableWriterSettingsBuilder[Int, Person]()
       .withSerializers(id => new TableKey(intSerializer.serialize(id)))
       .build()
 
@@ -40,7 +40,7 @@ class PravegaKVTableSpec extends PravegaBaseSpec with Repeated {
 
       Await.ready(fut, remainingOrDefault)
 
-      val tableSettings = TableReaderSettingsBuilder[Int, Person]
+      val tableSettings = TableReaderSettingsBuilder[Int, Person]()
         .withTableKey(id => new TableKey(intSerializer.serialize(id)))
         .build()
 
