@@ -1,0 +1,62 @@
+name: Basic Checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - main
+    tags-ignore:
+      - v*
+
+jobs:
+  check-code-style:
+    name: Compile, Code Style, Binary Compatibility
+    runs-on: ubuntu-20.04
+    env:
+      JAVA_OPTS: -Xms2G -Xmx2G -Xss2M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          # MiMa needs the latest tag, fetch the entire history to make `previousStableVersion` succeed
+          fetch-depth: 0
+
+      - name: Set up JDK 11
+        uses: olafurpg/setup-scala@v13
+        with:
+          java-version: adopt@1.11
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.3
+
+      - name: "Code style check and MiMa. Run locally with: sbt verifyCodeStyle; mimaReportBinaryIssues"
+        run: sbt "verifyCodeStyle; mimaReportBinaryIssues"
+
+      - name: "Compile all code with Scala 2.13 and fatal warnings enabled. Run locally with: env CI=true sbt Test/compile"
+        run: sbt "++2.13.8 Test/compile"
+
+  documentation:
+    name: ScalaDoc, Documentation with Paradox
+    runs-on: ubuntu-20.04
+    env:
+      JAVA_OPTS: -Xms2G -Xmx2G -Xss2M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          # MiMa needs the latest tag, fetch the entire history to make `previousStableVersion` succeed
+          fetch-depth: 0
+
+      - name: Set up JDK 11
+        uses: olafurpg/setup-scala@v13
+        with:
+          java-version: adopt@1.11
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.3
+
+      - name: "Create all API docs and create site with Paradox"
+        run: sbt "unidoc; docs/paradox"
