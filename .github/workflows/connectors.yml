@@ -19,6 +19,7 @@ jobs:
     runs-on: ubuntu-20.04
 
     strategy:
+      fail-fast: false
       matrix:
         include:
           - { connector: amqp,                         pre_cmd: 'docker-compose up -d amqp' }
@@ -41,10 +42,8 @@ jobs:
           - { connector: google-cloud-storage }
           - { connector: google-common }
           - { connector: google-fcm }
-#      # hbase disabled until we resolve why new docker image fails our build: https://github.com/akka/alpakka/issues/2185
-#      #    - name: hbase
-#      #      env:
-#      #      - PRE_CMD="docker-compose up -d hbase"
+          # hbase disabled until we resolve why new docker image fails our build: https://github.com/akka/alpakka/issues/2185
+          - { connector: hbase,                        pre_cmd: 'docker-compose up -d hbase' }
           - { connector: hdfs,                         pre_cmd: 'file ${HOME}/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_2.13/2.0.0/cats-kernel_2.13-2.0.0.jar' }
           - { connector:  huawei-push-kit }
           - { connector: influxdb,                     pre_cmd: 'docker-compose up -d influxdb' }
@@ -94,4 +93,4 @@ jobs:
           CONNECTOR: ${{ matrix.connector }}
           PRE_CMD: ${{ matrix.pre_cmd }}
         run: |-
-          ./scripts/gh-test-if-changed.sh "${CONNECTOR}" "${PRE_CMD:=echo NOOP}" "+${CONNECTOR}/test" 
+          ./scripts/gh-test-if-changed.sh "${CONNECTOR}" "${PRE_CMD:=echo NOOP}" "${CONNECTOR}/test"
