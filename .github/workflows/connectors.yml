@@ -14,12 +14,9 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  GH_PULL_REQUEST: ${{github.event.pull_request}}
-
 jobs:
   connector:
-    name: Alpakka AMQP
+    name: Alpakka
     runs-on: ubuntu-20.04
 
     strategy:
@@ -34,9 +31,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        with:
-          # MiMa needs the latest tag, fetch the entire history to make `previousStableVersion` succeed
-          fetch-depth: 0
+        with: # https://github.com/olafurpg/setup-scala#faster-checkout-of-big-repos
+          fetch-depth: 100
+
+      - name: Fetch tags
+        run: git fetch --depth=100 origin +refs/tags/*:refs/tags/*
 
       - name: Set up JDK 11
         uses: olafurpg/setup-scala@v13
@@ -46,7 +45,7 @@ jobs:
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.3
 
-      - name: "amqp"
+      - name: connector
         env:
           CONNECTOR: ${{ matrix.connector }}
           PRE_CMD: ${{ matrix.pre_cmd }}
