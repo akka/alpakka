@@ -1,0 +1,54 @@
+name: Build and test connectors
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - main
+    tags-ignore:
+      - v*
+
+concurrency:
+  # Only run once for latest commit per ref and cancel other (previous) runs.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GH_PULL_REQUEST: ${{github.event.pull_request}}
+
+jobs:
+  connector:
+    name: Alpakka AMQP
+    runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+        include:
+          - { connector: amqp,       pre_cmd: 'docker-compose up -d amqp' }
+          - { connector: avroparquet }
+
+    env:
+      JAVA_OPTS: -Xms2G -Xmx2G -Xss2M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          # MiMa needs the latest tag, fetch the entire history to make `previousStableVersion` succeed
+          fetch-depth: 0
+
+      - name: Set up JDK 11
+        uses: olafurpg/setup-scala@v13
+        with:
+          java-version: adopt@1.8
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.3
+
+      - name: "amqp"
+        env:
+          CONNECTOR: ${{ matrix.connector }}
+          PRE_CMD: ${{ matrix.pre_cmd }}
+        run: |-
+          ./scripts/gh-test-if-changed.sh "${CONNECTOR}" "${PRE_CMD:=echo NOOP}" "+${CONNECTOR}/testChanged" 
