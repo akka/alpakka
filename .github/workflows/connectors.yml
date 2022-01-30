@@ -1,4 +1,4 @@
-name: Connector
+name: Connectors
 
 on:
   pull_request:
@@ -21,8 +21,56 @@ jobs:
     strategy:
       matrix:
         include:
-          - { connector: amqp,       pre_cmd: 'docker-compose up -d amqp' }
+          - { connector: amqp,                         pre_cmd: 'docker-compose up -d amqp' }
           - { connector: avroparquet }
+          - { connector: awslambda }
+          - { connector: aws-event-bridge,             pre_cmd: 'docker-compose up -d amazoneventbridge' }
+          - { connector: azure-storage-queue }
+          - { connector: cassandra,                    pre_cmd: 'docker-compose up -d cassandra' }
+          - { connector: couchbase,                    pre_cmd: 'docker-compose up -d couchbase_prep' }
+          - { connector: csv }
+          - { connector: dynamodb,                     pre_cmd: 'docker-compose up -d dynamodb' }
+          - { connector: elasticsearch,                pre_cmd: 'docker-compose up -d elasticsearch6 elasticsearch7' }
+          - { connector: file }
+          - { connector: ftp,                          pre_cmd: 'docker-compose up -d ftp sftp squid' }
+          - { connector: geode,                        pre_cmd: 'docker-compose up -d geode' }
+          - { connector: google-cloud-bigquery }
+          - { connector: google-cloud-bigquery-storage }
+          - { connector: google-cloud-pub-sub,         pre_cmd: 'docker-compose up -d gcloud-pubsub-emulator_prep' }
+          - { connector: google-cloud-pub-sub-grpc,    pre_cmd: 'docker-compose up -d gcloud-pubsub-emulator_prep' }
+          - { connector: google-cloud-storage }
+          - { connector: google-common }
+          - { connector: google-fcm }
+#      # hbase disabled until we resolve why new docker image fails our build: https://github.com/akka/alpakka/issues/2185
+#      #    - name: hbase
+#      #      env:
+#      #      - PRE_CMD="docker-compose up -d hbase"
+          - { connector: hdfs,                         pre_cmd: 'file ${HOME}/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_2.13/2.0.0/cats-kernel_2.13-2.0.0.jar' }
+          - { connector:  huawei-push-kit }
+          - { connector: influxdb,                     pre_cmd: 'docker-compose up -d influxdb' }
+          - { connector: ironmq,                       pre_cmd: 'docker-compose up -d ironauth ironmq' }
+          - { connector: jms,                          pre_cmd: 'docker-compose up -d ibmmq' }
+          - { connector: json-streaming }
+          - { connector: kinesis }
+          - { connector: kudu,                         pre_cmd: 'docker-compose up -d kudu-master-data kudu-tserver-data kudu-master kudu-tserver' }
+          - { connector: mongodb,                      pre_cmd: 'docker-compose up -d mongo' }
+          - { connector: mqtt,                         pre_cmd: 'docker-compose up -d mqtt' }
+          - { connector: mqtt-streaming,               pre_cmd: 'docker-compose up -d mqtt' }
+          - { connector: orientdb,                     pre_cmd: 'docker-compose up -d orientdb' }
+          - { connector: pravega,                      pre_cmd: 'docker-compose up -d pravega'}
+          - { connector: reference }
+          - { connector: s3,                           pre_cmd: 'docker-compose up -d minio_prep' }
+          - { connector: spring-web }
+          - { connector: simple-codecs }
+          - { connector: slick }
+          - { connector: sns,                          pre_cmd: 'docker-compose up -d amazonsns' }
+          - { connector: solr }
+          - { connector: sqs,                          pre_cmd: 'docker-compose up -d elasticmq' }
+          - { connector: sse }
+          - { connector: text }
+          - { connector: udp }
+          - { connector: unix-domain-socket }
+          - { connector: xml }
 
     env:
       JAVA_OPTS: -Xms2G -Xmx2G -Xss2M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8
@@ -30,7 +78,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        with:
+        with: # test-if-changed compares with master branch
           fetch-depth: 0
 
       - name: Set up JDK 8
@@ -41,7 +89,7 @@ jobs:
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.3
 
-      - name: connector
+      - name: ${{ matrix.connector }}
         env:
           CONNECTOR: ${{ matrix.connector }}
           PRE_CMD: ${{ matrix.pre_cmd }}
