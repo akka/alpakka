@@ -1,4 +1,4 @@
-name: Build and test connectors
+name: Connector
 
 on:
   pull_request:
@@ -16,7 +16,6 @@ concurrency:
 
 jobs:
   connector:
-    name: Alpakka
     runs-on: ubuntu-20.04
 
     strategy:
@@ -31,16 +30,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        with: # https://github.com/olafurpg/setup-scala#faster-checkout-of-big-repos
-          fetch-depth: 100
+        with:
+          fetch-depth: 0
 
-      - name: Fetch tags
-        run: git fetch --depth=100 origin +refs/tags/*:refs/tags/*
-
-      - name: Set up JDK 11
+      - name: Set up JDK 8
         uses: olafurpg/setup-scala@v13
         with:
-          java-version: adopt@1.8
+          java-version: adopt@1.8.0-292
 
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.3
@@ -50,4 +46,4 @@ jobs:
           CONNECTOR: ${{ matrix.connector }}
           PRE_CMD: ${{ matrix.pre_cmd }}
         run: |-
-          ./scripts/gh-test-if-changed.sh "${CONNECTOR}" "${PRE_CMD:=echo NOOP}" "+${CONNECTOR}/testChanged" 
+          ./scripts/gh-test-if-changed.sh "${CONNECTOR}" "${PRE_CMD:=echo NOOP}" "+${CONNECTOR}/test" 
