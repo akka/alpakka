@@ -10,7 +10,7 @@ on:
       - v*
 
 jobs:
-  check-code-style:
+  style-compile-mima:
     name: Compile, Code Style, Binary Compatibility
     runs-on: ubuntu-20.04
     env:
@@ -19,9 +19,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        with:
-          # MiMa needs the latest tag, fetch the entire history to make `previousStableVersion` succeed
-          fetch-depth: 0
+        with: # https://github.com/olafurpg/setup-scala#faster-checkout-of-big-repos
+          fetch-depth: 100
+
+      - name: Fetch tags
+        run: git fetch --depth=100 origin +refs/tags/*:refs/tags/*
 
       - name: Set up JDK 11
         uses: olafurpg/setup-scala@v13
@@ -31,11 +33,8 @@ jobs:
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.3
 
-      - name: "Code style check and MiMa. Run locally with: sbt verifyCodeStyle; mimaReportBinaryIssues"
-        run: sbt "verifyCodeStyle; mimaReportBinaryIssues"
-
-      - name: "Compile all code with Scala 2.13 and fatal warnings enabled. Run locally with: env CI=true sbt Test/compile"
-        run: sbt "++2.13.8 Test/compile"
+      - name: "Code style, compile tests, MiMa. Run locally with: sbt ++2.13.8 verifyCodeStyle; Test/compile; mimaReportBinaryIssues"
+        run: sbt "++2.13.8 verifyCodeStyle; Test/compile; mimaReportBinaryIssues"
 
   documentation:
     name: ScalaDoc, Documentation with Paradox
@@ -46,9 +45,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        with:
-          # MiMa needs the latest tag, fetch the entire history to make `previousStableVersion` succeed
-          fetch-depth: 0
+        with: # https://github.com/olafurpg/setup-scala#faster-checkout-of-big-repos
+          fetch-depth: 100
+
+      - name: Fetch tags
+        run: git fetch --depth=100 origin +refs/tags/*:refs/tags/*
 
       - name: Set up JDK 11
         uses: olafurpg/setup-scala@v13
