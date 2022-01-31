@@ -1,4 +1,4 @@
-name: Connectors
+name: CI
 
 on:
   pull_request:
@@ -15,7 +15,60 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  connector:
+  style-compile-mima:
+    name: Compile, Code Style, Binary Compatibility
+    runs-on: ubuntu-20.04
+    env:
+      JAVA_OPTS: -Xms2G -Xmx2G -Xss2M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with: # https://github.com/olafurpg/setup-scala#faster-checkout-of-big-repos
+          fetch-depth: 100
+
+      - name: Fetch tags
+        run: git fetch --depth=100 origin +refs/tags/*:refs/tags/*
+
+      - name: Set up JDK 11
+        uses: olafurpg/setup-scala@v13
+        with:
+          java-version: adopt@1.8
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.3
+
+      - name: "Code style, compile tests, MiMa. Run locally with: sbt +~2.13 \"verifyCodeStyle; Test/compile; mimaReportBinaryIssues\""
+        run: sbt +~2.13 "verifyCodeStyle; Test/compile; mimaReportBinaryIssues"
+
+  documentation:
+    name: ScalaDoc, Documentation with Paradox
+    runs-on: ubuntu-20.04
+    env:
+      JAVA_OPTS: -Xms2G -Xmx2G -Xss2M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with: # https://github.com/olafurpg/setup-scala#faster-checkout-of-big-repos
+          fetch-depth: 100
+
+      - name: Fetch tags
+        run: git fetch --depth=100 origin +refs/tags/*:refs/tags/*
+
+      - name: Set up JDK 11
+        uses: olafurpg/setup-scala@v13
+        with:
+          java-version: adopt@1.11
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.3
+
+      - name: "Create all API docs and create site with Paradox"
+        run: sbt "unidoc; docs/paradox"
+
+  connectors:
+    needs: [style-compile-mima]
     runs-on: ubuntu-20.04
 
     strategy:
@@ -43,7 +96,7 @@ jobs:
           - { connector: google-common }
           - { connector: google-fcm }
           # hbase disabled until we resolve why new docker image fails our build: https://github.com/akka/alpakka/issues/2185
-          - { connector: hbase,                        pre_cmd: 'docker-compose up -d hbase' }
+          # - { connector: hbase,                        pre_cmd: 'docker-compose up -d hbase' }
           - { connector: hdfs,                         pre_cmd: 'file ${HOME}/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_2.13/2.0.0/cats-kernel_2.13-2.0.0.jar' }
           - { connector:  huawei-push-kit }
           - { connector: influxdb,                     pre_cmd: 'docker-compose up -d influxdb' }
@@ -94,3 +147,7 @@ jobs:
           PRE_CMD: ${{ matrix.pre_cmd }}
         run: |-
           ./scripts/gh-test-if-changed.sh "${CONNECTOR}" "${PRE_CMD:=echo NOOP}" "${CONNECTOR}/test"
+
+      - name: Print logs on failure
+        if: ${{ failure() }}
+        run: find . -name "*.log" -exec ./scripts/cat-log.sh {} \;

@@ -39,104 +39,104 @@ jobs:
         - rm -rf $HOME/.jabba
       name: "drop-travis-caches"
 
-    - stage: test
-      name: amqp
-      env:
-      - PRE_CMD="docker-compose up -d amqp"
-    - name: avroparquet
-    - name: awslambda
-    - name: aws-event-bridge
-      env:
-      - PRE_CMD="docker-compose up -d amazoneventbridge"
-    - name: azure-storage-queue
-    - name: cassandra
-      env:
-      - PRE_CMD="docker-compose up -d cassandra"
-    - name: couchbase
-      env:
-      - PRE_CMD="docker-compose up -d couchbase_prep"
-    - name: csv
-    - name: dynamodb
-      env:
-      - PRE_CMD="docker-compose up -d dynamodb"
-    - name: elasticsearch
-      env:
-      - PRE_CMD="docker-compose up -d elasticsearch6 elasticsearch7"
-    - name: file
-    - name: ftp
-      env:
-      - PRE_CMD="docker-compose up -d ftp sftp squid"
-    - name: geode
-      env:
-      - PRE_CMD="docker-compose up -d geode"
-    - name: google-cloud-bigquery
-    - name: google-cloud-bigquery-storage
-    - name: google-cloud-pub-sub
-      env:
-        - PRE_CMD="docker-compose up -d gcloud-pubsub-emulator_prep"
-    - name: google-cloud-pub-sub-grpc
-      env:
-      - PRE_CMD="docker-compose up -d gcloud-pubsub-emulator_prep"
-    - name: google-cloud-storage
-    - name: google-common
-    - name: google-fcm
-# hbase disabled until we resolve why new docker image fails our build: https://github.com/akka/alpakka/issues/2185
-#    - name: hbase
+#    - stage: test
+#      name: amqp
 #      env:
-#      - PRE_CMD="docker-compose up -d hbase"
-    - name: hdfs
-      env:
-      - PRE_CMD="file /home/travis/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_2.13/2.0.0/cats-kernel_2.13-2.0.0.jar"
-    - name: huawei-push-kit
-    - name: influxdb
-      env:
-      - PRE_CMD="docker-compose up -d influxdb"
-    - name: ironmq
-      env:
-      - PRE_CMD="docker-compose up -d ironauth ironmq"
-    - name: jms
-      env:
-      - PRE_CMD="docker-compose up -d ibmmq"
-    - name: json-streaming
-    - name: kinesis
-    - name: kudu
-      env:
-      - PRE_CMD="docker-compose up -d kudu-master-data kudu-tserver-data kudu-master kudu-tserver"
-    - name: mongodb
-      env:
-      - PRE_CMD="docker-compose up -d mongo"
-    - name: mqtt
-      env:
-      - PRE_CMD="docker-compose up -d mqtt"
-    - name: mqtt-streaming
-      env:
-      - PRE_CMD="docker-compose up -d mqtt"
-    - name: orientdb
-      env:
-      - PRE_CMD="docker-compose up -d orientdb"
-    - name: pravega
-      env:
-        - PRE_CMD="docker-compose up -d pravega"
-    - name: reference
-    - name: s3
-      env:
-      - PRE_CMD="docker-compose up -d minio_prep"
-    - name: spring-web
-    - name: simple-codecs
-    - name: slick
-    - name: sns
-      env:
-      - PRE_CMD="docker-compose up -d amazonsns"
-    - name: solr
-    - name: sqs
-      env:
-      - PRE_CMD="docker-compose up -d elasticmq"
-    - name: sse
-    - name: text
-    - name: udp
-    - name: unix-domain-socket
-    - name: xml
-
+#      - PRE_CMD="docker-compose up -d amqp"
+#    - name: avroparquet
+#    - name: awslambda
+#    - name: aws-event-bridge
+#      env:
+#      - PRE_CMD="docker-compose up -d amazoneventbridge"
+#    - name: azure-storage-queue
+#    - name: cassandra
+#      env:
+#      - PRE_CMD="docker-compose up -d cassandra"
+#    - name: couchbase
+#      env:
+#      - PRE_CMD="docker-compose up -d couchbase_prep"
+#    - name: csv
+#    - name: dynamodb
+#      env:
+#      - PRE_CMD="docker-compose up -d dynamodb"
+#    - name: elasticsearch
+#      env:
+#      - PRE_CMD="docker-compose up -d elasticsearch6 elasticsearch7"
+#    - name: file
+#    - name: ftp
+#      env:
+#      - PRE_CMD="docker-compose up -d ftp sftp squid"
+#    - name: geode
+#      env:
+#      - PRE_CMD="docker-compose up -d geode"
+#    - name: google-cloud-bigquery
+#    - name: google-cloud-bigquery-storage
+#    - name: google-cloud-pub-sub
+#      env:
+#        - PRE_CMD="docker-compose up -d gcloud-pubsub-emulator_prep"
+#    - name: google-cloud-pub-sub-grpc
+#      env:
+#      - PRE_CMD="docker-compose up -d gcloud-pubsub-emulator_prep"
+#    - name: google-cloud-storage
+#    - name: google-common
+#    - name: google-fcm
+## hbase disabled until we resolve why new docker image fails our build: https://github.com/akka/alpakka/issues/2185
+##    - name: hbase
+##      env:
+##      - PRE_CMD="docker-compose up -d hbase"
+#    - name: hdfs
+#      env:
+#      - PRE_CMD="file /home/travis/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_2.13/2.0.0/cats-kernel_2.13-2.0.0.jar"
+#    - name: huawei-push-kit
+#    - name: influxdb
+#      env:
+#      - PRE_CMD="docker-compose up -d influxdb"
+#    - name: ironmq
+#      env:
+#      - PRE_CMD="docker-compose up -d ironauth ironmq"
+#    - name: jms
+#      env:
+#      - PRE_CMD="docker-compose up -d ibmmq"
+#    - name: json-streaming
+#    - name: kinesis
+#    - name: kudu
+#      env:
+#      - PRE_CMD="docker-compose up -d kudu-master-data kudu-tserver-data kudu-master kudu-tserver"
+#    - name: mongodb
+#      env:
+#      - PRE_CMD="docker-compose up -d mongo"
+#    - name: mqtt
+#      env:
+#      - PRE_CMD="docker-compose up -d mqtt"
+#    - name: mqtt-streaming
+#      env:
+#      - PRE_CMD="docker-compose up -d mqtt"
+#    - name: orientdb
+#      env:
+#      - PRE_CMD="docker-compose up -d orientdb"
+#    - name: pravega
+#      env:
+#        - PRE_CMD="docker-compose up -d pravega"
+#    - name: reference
+#    - name: s3
+#      env:
+#      - PRE_CMD="docker-compose up -d minio_prep"
+#    - name: spring-web
+#    - name: simple-codecs
+#    - name: slick
+#    - name: sns
+#      env:
+#      - PRE_CMD="docker-compose up -d amazonsns"
+#    - name: solr
+#    - name: sqs
+#      env:
+#      - PRE_CMD="docker-compose up -d elasticmq"
+#    - name: sse
+#    - name: text
+#    - name: udp
+#    - name: unix-domain-socket
+#    - name: xml
+#
     - stage: licenses
       script: echo "License checking is temporarily disabled"
 
