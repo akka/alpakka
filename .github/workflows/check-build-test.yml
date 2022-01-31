@@ -30,10 +30,10 @@ jobs:
       - name: Fetch tags
         run: git fetch --depth=100 origin +refs/tags/*:refs/tags/*
 
-      - name: Set up JDK 11
-        uses: olafurpg/setup-scala@v13
+      - name: Set up JDK 8
+        uses: coursier/setup-action@v1
         with:
-          java-version: adopt@1.8
+          jvm: adopt:8
 
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.3
@@ -57,15 +57,18 @@ jobs:
         run: git fetch --depth=100 origin +refs/tags/*:refs/tags/*
 
       - name: Set up JDK 11
-        uses: olafurpg/setup-scala@v13
+        uses: coursier/setup-action@v1
         with:
-          java-version: adopt@1.11
+          jvm: adopt:11
 
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.3
 
       - name: "Create all API docs and create site with Paradox"
-        run: sbt "unidoc; docs/paradox"
+        run: sbt docs/makeSite
+
+      - name: Run Link Validator
+        run: cs launch net.runne::site-link-validator:0.2.2 -- scripts/link-validator.conf
 
   connectors:
     needs: [style-compile-mima]
@@ -134,9 +137,9 @@ jobs:
           fetch-depth: 0
 
       - name: Set up JDK 8
-        uses: olafurpg/setup-scala@v13
+        uses: coursier/setup-action@v1
         with:
-          java-version: adopt@1.8.0-292
+          jvm: adopt:8
 
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.3
