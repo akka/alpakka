@@ -115,7 +115,9 @@ Batching has a drawback: message order cannot be guaranteed, as some records wit
 More information can be found in the [AWS documentation](https://docs.aws.amazon.com/streams/latest/dev/developing-producers-with-sdk.html#kinesis-using-sdk-java-putrecords) and the [AWS API reference](https://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecords.html).
 @@@
 
-In order to correlate the results with the original message, an optional user context object of arbitrary type can be associated with every message and will be returned with the corresponding result. This allows keeping track of which messages have been successfully sent to Kinesis even if the message order gets mixed up.
+In order to correlate the results with the original message, an optional user context object of arbitrary type can be associated with every message and will be returned with the corresponding result. This allows keeping track of which messages have been successfully sent to Kinesis even if the message order gets mixed up. 
+
+In cases with context flows, sometimes contexts need to be handled if a batch of messages sent to be published fails. A function for cleanup, `cleanUpContextOnFailure`, can then be added as an argument to the KinesisFlow. This function will then be applied to all messages in the failed batch before an exception is thrown.
 
 Publishing to a Kinesis stream requires an instance of `KinesisFlowSettings`, although a default instance with sane values and a method that returns settings based on the stream shard number are also available:
 

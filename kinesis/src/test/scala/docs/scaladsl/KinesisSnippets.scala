@@ -82,10 +82,13 @@ object KinesisSnippets {
   val flow4: FlowWithContext[PutRecordsRequestEntry, String, PutRecordsResultEntry, String, NotUsed] =
     KinesisFlow.withContext("myStreamName", flowSettings)
 
-  val flow5: Flow[(String, ByteString), PutRecordsResultEntry, NotUsed] =
+  val flow5: FlowWithContext[PutRecordsRequestEntry, String, PutRecordsResultEntry, String, NotUsed] =
+    KinesisFlow.withContext("myStreamName", flowSettings, str => println(s"cleaning up $str"))
+
+  val flow6: Flow[(String, ByteString), PutRecordsResultEntry, NotUsed] =
     KinesisFlow.byPartitionAndBytes("myStreamName")
 
-  val flow6: Flow[(String, ByteBuffer), PutRecordsResultEntry, NotUsed] =
+  val flow7: Flow[(String, ByteBuffer), PutRecordsResultEntry, NotUsed] =
     KinesisFlow.byPartitionAndData("myStreamName")
 
   val sink1: Sink[PutRecordsRequestEntry, NotUsed] = KinesisSink("myStreamName")
