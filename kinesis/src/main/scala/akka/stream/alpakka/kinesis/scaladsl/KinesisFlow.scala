@@ -39,9 +39,12 @@ object KinesisFlow {
 
   val NoCleanup: Any => Unit = _ => ()
 
-  def withContext[T](streamName: String,
-                     settings: KinesisFlowSettings = KinesisFlowSettings.Defaults,
-                     cleanUpContextOnFailure: T => Unit = NoCleanup)(
+  def withContext[T](streamName: String, settings: KinesisFlowSettings = KinesisFlowSettings.Defaults)(
+      implicit kinesisClient: KinesisAsyncClient
+  ): FlowWithContext[PutRecordsRequestEntry, T, PutRecordsResultEntry, T, NotUsed] =
+    withContext(streamName, NoCleanup, settings)
+
+  def withContext[T](streamName: String, cleanUpContextOnFailure: T => Unit, settings: KinesisFlowSettings)(
       implicit kinesisClient: KinesisAsyncClient
   ): FlowWithContext[PutRecordsRequestEntry, T, PutRecordsResultEntry, T, NotUsed] = {
     checkClient(kinesisClient)

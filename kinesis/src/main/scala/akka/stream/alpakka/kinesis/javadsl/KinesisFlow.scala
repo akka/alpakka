@@ -48,6 +48,6 @@ object KinesisFlow {
   ): FlowWithContext[PutRecordsRequestEntry, T, PutRecordsResultEntry, T, NotUsed] =
     akka.stream.scaladsl
       .FlowWithContext[PutRecordsRequestEntry, T]
-      .via(scaladsl.KinesisFlow.withContext[T](streamName, settings, cleanUpContextOnFailure.accept)(kinesisClient))
+      .via(scaladsl.KinesisFlow.withContext[T](streamName, cleanUpContextOnFailure.accept _, settings)(kinesisClient))
       .asJava
 }
