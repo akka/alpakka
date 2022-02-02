@@ -39,7 +39,7 @@ jobs:
         - rm -rf $HOME/.jabba
       name: "drop-travis-caches"
 
-#    - stage: test
+    - stage: test
 #      name: amqp
 #      env:
 #      - PRE_CMD="docker-compose up -d amqp"
@@ -63,9 +63,9 @@ jobs:
 #      env:
 #      - PRE_CMD="docker-compose up -d elasticsearch6 elasticsearch7"
 #    - name: file
-#    - name: ftp
-#      env:
-#      - PRE_CMD="docker-compose up -d ftp sftp squid"
+    - name: ftp
+      env:
+      - PRE_CMD="docker-compose up -d ftp sftp squid"
 #    - name: geode
 #      env:
 #      - PRE_CMD="docker-compose up -d geode"
