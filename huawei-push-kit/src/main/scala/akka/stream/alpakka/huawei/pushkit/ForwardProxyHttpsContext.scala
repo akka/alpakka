@@ -6,7 +6,7 @@ package akka.stream.alpakka.huawei.pushkit
 
 import akka.actor.ActorSystem
 import akka.annotation.InternalApi
-import akka.http.scaladsl.{Http, HttpsConnectionContext}
+import akka.http.scaladsl.{ConnectionContext, Http, HttpsConnectionContext}
 
 import java.io.FileInputStream
 import java.security.KeyStore
@@ -24,16 +24,12 @@ private[pushkit] object ForwardProxyHttpsContext {
 
   implicit class ForwardProxyHttpsContext(forwardProxy: ForwardProxy) {
 
-    def httpsContext(system: ActorSystem) = {
+    def httpsContext(system: ActorSystem): HttpsConnectionContext = {
       forwardProxy.trustPem match {
         case Some(trustPem) => createHttpsContext(trustPem)
-        case None => defaultHttpsContext(system)
+        case None => Http()(system).defaultClientHttpsContext
       }
     }
-  }
-
-  private def defaultHttpsContext(implicit system: ActorSystem) = {
-    Http().createDefaultClientHttpsContext()
   }
 
   private def createHttpsContext(trustPem: ForwardProxyTrustPem) = {
@@ -49,7 +45,7 @@ private[pushkit] object ForwardProxyHttpsContext {
     tmf.init(trustStore)
     val trustManagers = tmf.getTrustManagers
     sslContext.init(null, trustManagers, null)
-    new HttpsConnectionContext(sslContext)
+    ConnectionContext.httpsClient(sslContext)
   }
 
   private def x509Certificate(trustPem: ForwardProxyTrustPem) = {
