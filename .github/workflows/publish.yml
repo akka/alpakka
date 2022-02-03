@@ -1,0 +1,50 @@
+name: Publish
+
+on:
+  push:
+    branches:
+      - master
+      - main
+      - release-*
+    tags: ["v*"]
+  release:
+    types: [published]
+
+jobs:
+  release:
+    # runs on main repo only
+    if: github.repository == 'akka/alpakka'
+    name: Release
+    environment: release
+    runs-on: ubuntu-20.04
+    env:
+      JAVA_OPTS: -Xms2G -Xmx2G -Xss2M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
+          fetch-depth: 0
+
+      - name: Set up JDK 8
+        uses: coursier/setup-action@v1.1.2
+        with:
+          jvm: adopt:8
+
+      - name: Publish artifacts for all Scala versions
+        env:
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+        run: sbt ci-release
+
+#      - name: Publish API and reference documentation
+#        env:
+#          GUSTAV_KEY: ${{ secrets.GUSTAV_KEY }}
+#        run: |+
+#          eval "$(ssh-agent -s)"
+#          echo $GUSTAV_KEY | base64 -di > .github/id_rsa
+#          chmod 600 .github/id_rsa
+#          ssh-add .github/id_rsa
+#          sbt +~2.13 docs/publishRsync

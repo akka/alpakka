@@ -137,14 +137,14 @@ jobs:
 #    - name: unix-domain-socket
 #    - name: xml
 #
-    - stage: licenses
-      script: echo "License checking is temporarily disabled"
-
-    - name: "Publish artifacts for Scala 2.13"
-      env: CMD="ci-release"
-      script: openssl aes-256-cbc -K $encrypted_74014e1c3c6a_key -iv $encrypted_74014e1c3c6a_iv -in .travis/travis_gpg_secret.enc -out .travis/travis_gpg_secret.gpg -d && export PGP_SECRET=$(cat .travis/travis_gpg_secret.gpg) && ./scripts/travis.sh
-    - script: openssl aes-256-cbc -K $encrypted_bbf1dc4f2a07_key -iv $encrypted_bbf1dc4f2a07_iv -in .travis/travis_alpakka_rsa.enc -out .travis/id_rsa -d && eval "$(ssh-agent -s)" && chmod 600 .travis/id_rsa && ssh-add .travis/id_rsa && sbt -jvm-opts .jvmopts-travis docs/publishRsync
-      name: "Publish API and reference documentation"
+#    - stage: licenses
+#      script: echo "License checking is temporarily disabled"
+#
+#    - name: "Publish artifacts for Scala 2.13"
+#      env: CMD="ci-release"
+#      script: openssl aes-256-cbc -K $encrypted_74014e1c3c6a_key -iv $encrypted_74014e1c3c6a_iv -in .travis/travis_gpg_secret.enc -out .travis/travis_gpg_secret.gpg -d && export PGP_SECRET=$(cat .travis/travis_gpg_secret.gpg) && ./scripts/travis.sh
+#    - script: openssl aes-256-cbc -K $encrypted_bbf1dc4f2a07_key -iv $encrypted_bbf1dc4f2a07_iv -in .travis/travis_alpakka_rsa.enc -out .travis/id_rsa -d && eval "$(ssh-agent -s)" && chmod 600 .travis/id_rsa && ssh-add .travis/id_rsa && sbt -jvm-opts .jvmopts-travis docs/publishRsync
+#      name: "Publish API and reference documentation"
 
 stages:
   - name: drop-travis-caches
@@ -162,13 +162,13 @@ stages:
   - name: test
     if: NOT tag =~ ^v
 
-  # runs on main repo master commits or version-tagged commits
-  - name: licenses
-    if: repo = akka/alpakka AND ( ( branch = master AND type = push ) OR tag =~ ^v )
-
-  # runs on main repo master commits or version-tagged commits
-  - name: publish
-    if: repo = akka/alpakka AND ( ( branch = master AND type = push ) OR tag =~ ^v )
+#  # runs on main repo master commits or version-tagged commits
+#  - name: licenses
+#    if: repo = akka/alpakka AND ( ( branch = master AND type = push ) OR tag =~ ^v )
+#
+#  # runs on main repo master commits or version-tagged commits
+#  - name: publish
+#    if: repo = akka/alpakka AND ( ( branch = master AND type = push ) OR tag =~ ^v )
 
 after_failure:
   - docker-compose logs
