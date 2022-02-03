@@ -40,111 +40,14 @@ jobs:
       name: "drop-travis-caches"
 
     - stage: test
-#      name: amqp
-#      env:
-#      - PRE_CMD="docker-compose up -d amqp"
-#    - name: avroparquet
-#    - name: awslambda
-#    - name: aws-event-bridge
-#      env:
-#      - PRE_CMD="docker-compose up -d amazoneventbridge"
-#    - name: azure-storage-queue
-#    - name: cassandra
-#      env:
-#      - PRE_CMD="docker-compose up -d cassandra"
-#    - name: couchbase
-#      env:
-#      - PRE_CMD="docker-compose up -d couchbase_prep"
-#    - name: csv
-#    - name: dynamodb
-#      env:
-#      - PRE_CMD="docker-compose up -d dynamodb"
-#    - name: elasticsearch
-#      env:
-#      - PRE_CMD="docker-compose up -d elasticsearch6 elasticsearch7"
-#    - name: file
-    - name: ftp
+      name: ftp
       env:
       - PRE_CMD="docker-compose up -d ftp sftp squid"
-#    - name: geode
-#      env:
-#      - PRE_CMD="docker-compose up -d geode"
-#    - name: google-cloud-bigquery
-#    - name: google-cloud-bigquery-storage
-#    - name: google-cloud-pub-sub
-#      env:
-#        - PRE_CMD="docker-compose up -d gcloud-pubsub-emulator_prep"
-#    - name: google-cloud-pub-sub-grpc
-#      env:
-#      - PRE_CMD="docker-compose up -d gcloud-pubsub-emulator_prep"
-#    - name: google-cloud-storage
-#    - name: google-common
-#    - name: google-fcm
-## hbase disabled until we resolve why new docker image fails our build: https://github.com/akka/alpakka/issues/2185
-##    - name: hbase
-##      env:
-##      - PRE_CMD="docker-compose up -d hbase"
-#    - name: hdfs
-#      env:
-#      - PRE_CMD="file /home/travis/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_2.13/2.0.0/cats-kernel_2.13-2.0.0.jar"
-#    - name: huawei-push-kit
-#    - name: influxdb
-#      env:
-#      - PRE_CMD="docker-compose up -d influxdb"
-#    - name: ironmq
-#      env:
-#      - PRE_CMD="docker-compose up -d ironauth ironmq"
-#    - name: jms
-#      env:
-#      - PRE_CMD="docker-compose up -d ibmmq"
-#    - name: json-streaming
-#    - name: kinesis
-#    - name: kudu
-#      env:
-#      - PRE_CMD="docker-compose up -d kudu-master-data kudu-tserver-data kudu-master kudu-tserver"
-#    - name: mongodb
-#      env:
-#      - PRE_CMD="docker-compose up -d mongo"
-#    - name: mqtt
-#      env:
-#      - PRE_CMD="docker-compose up -d mqtt"
-#    - name: mqtt-streaming
-#      env:
-#      - PRE_CMD="docker-compose up -d mqtt"
-#    - name: orientdb
-#      env:
-#      - PRE_CMD="docker-compose up -d orientdb"
-#    - name: pravega
-#      env:
-#        - PRE_CMD="docker-compose up -d pravega"
-#    - name: reference
-#    - name: s3
-#      env:
-#      - PRE_CMD="docker-compose up -d minio_prep"
-#    - name: spring-web
-#    - name: simple-codecs
-#    - name: slick
-#    - name: sns
-#      env:
-#      - PRE_CMD="docker-compose up -d amazonsns"
-#    - name: solr
-#    - name: sqs
-#      env:
-#      - PRE_CMD="docker-compose up -d elasticmq"
-#    - name: sse
-#    - name: text
-#    - name: udp
-#    - name: unix-domain-socket
-#    - name: xml
-#
-    - stage: licenses
-      script: echo "License checking is temporarily disabled"
-
-    - name: "Publish artifacts for Scala 2.13"
-      env: CMD="ci-release"
-      script: openssl aes-256-cbc -K $encrypted_74014e1c3c6a_key -iv $encrypted_74014e1c3c6a_iv -in .travis/travis_gpg_secret.enc -out .travis/travis_gpg_secret.gpg -d && export PGP_SECRET=$(cat .travis/travis_gpg_secret.gpg) && ./scripts/travis.sh
-    - script: openssl aes-256-cbc -K $encrypted_bbf1dc4f2a07_key -iv $encrypted_bbf1dc4f2a07_iv -in .travis/travis_alpakka_rsa.enc -out .travis/id_rsa -d && eval "$(ssh-agent -s)" && chmod 600 .travis/id_rsa && ssh-add .travis/id_rsa && sbt -jvm-opts .jvmopts-travis docs/publishRsync
-      name: "Publish API and reference documentation"
+#    - name: "Publish artifacts for Scala 2.13"
+#      env: CMD="ci-release"
+#      script: openssl aes-256-cbc -K $encrypted_74014e1c3c6a_key -iv $encrypted_74014e1c3c6a_iv -in .travis/travis_gpg_secret.enc -out .travis/travis_gpg_secret.gpg -d && export PGP_SECRET=$(cat .travis/travis_gpg_secret.gpg) && ./scripts/travis.sh
+#    - script: openssl aes-256-cbc -K $encrypted_bbf1dc4f2a07_key -iv $encrypted_bbf1dc4f2a07_iv -in .travis/travis_alpakka_rsa.enc -out .travis/id_rsa -d && eval "$(ssh-agent -s)" && chmod 600 .travis/id_rsa && ssh-add .travis/id_rsa && sbt -jvm-opts .jvmopts-travis docs/publishRsync
+#      name: "Publish API and reference documentation"
 
 stages:
   - name: drop-travis-caches
@@ -162,13 +65,9 @@ stages:
   - name: test
     if: NOT tag =~ ^v
 
-  # runs on main repo master commits or version-tagged commits
-  - name: licenses
-    if: repo = akka/alpakka AND ( ( branch = master AND type = push ) OR tag =~ ^v )
-
-  # runs on main repo master commits or version-tagged commits
-  - name: publish
-    if: repo = akka/alpakka AND ( ( branch = master AND type = push ) OR tag =~ ^v )
+#  # runs on main repo master commits or version-tagged commits
+#  - name: publish
+#    if: repo = akka/alpakka AND ( ( branch = master AND type = push ) OR tag =~ ^v )
 
 after_failure:
   - docker-compose logs
@@ -189,12 +88,6 @@ cache:
 env:
   global:
     - RUN_DROP_TRAVIS_CACHES_STAGE=true
-    # encrypt with: travis encrypt SONATYPE_USERNAME=...
-    - secure: "b2zZTu9oo5fpP9GFDBzR/kpFEvTJW7GfSpu4ceqEEB2/Cr3npSPfHCplsYCmI8nXCg+XHkcd1pE3/K7z7DQtg9rHqR7mGBdOn2/YQ+myOZhZdUceomg11tFNZZW91qDRo1vWqZ7GSgkkDIuK42JCOhDaUBOdCN6LVQZypHvzL2VIkXemRgedmBS+2GEkAofIyi4Ny8ZiCtkUb+H7XSdvxyG76/XfPXAdNZuI0sEGByEGeTgEQzgmOxjgA+qsiyzPJXDz0A7qWRGlMlqJ2UQS4OVP0Stsc+c/fd15qA9LIprot2ujmwuY3athvxqeag0OorI7CnMeLJyao1ZnljUEAyPW4irWGe/z1yByOfpu7TPOJh55GJTqAoD1IPpsAfOuNCgJ2R6+TIUx8H90TTsLonRDps575D/W/psp3L4kZGYfry4FNGbPbyNPndUOuAY1f7P7Lpzx6d7RHdtI5SvGOskSWvJ3v5rUjiRdGfXfvsugSyCOfnAY4mK/wYbGlfS2Hxi/58wZOGo7HkUnaj4akOeRcqEn552s6GpE5X9bqO4EZf6BCRrcStFTm0V7wk7zYtQwc2qpy0evcFpV59R2yPPvx1HUF0GbVR0jbxeTcwpzHwJSRsHg6W2YTJG+RwDs6FU1HsnXFSJcB7o0UotHk2qZwUbTfQHozpOBBHoVQp4="
-    # encrypt with: travis encrypt SONATYPE_PASSWORD=...
-    - secure: "BZu3r19aSY/AiHpeu1Plw4Ryt1NIWRa1kJ4AZPMVNKste0AHkYh6NgiIdCFzX3OKdtUbW7z1uxvZqukGhjDM6fBnybVux/GA/pxHJuKkj/A4pZx9ZAS9CXzth9FfsF3bN212fvbDUsn8B9gYyf97oPLk88MGqVpHKQHKOa/HTYD+FEBOzSbqLw9UxnZMyDRpDFymZ8oAaCARmetsdmZpp7JB6bZHdhZr8+ObH8dT/6k/weW++2SxwRoNUFKuZ0GAg+aCBzEQjOBglOhZUi6vKlp96KnOpzclnpWhvuIe8YM6ZwckBtKsw7e13+U6XJ/IlvxRLZxqxMWsJ1N30/NzbqbLqNwS28/K6k5lYF77tUUbtUr5llGPEgXcf+T+/HWtwfoEY5Djh2tqe63Zuj0Pi4uGC1TSAe4uZcEx6r+/qMz54KbH3kxt5j8KaClkzVesrS6hScQu6ORlNgr67gr5k6OA07kSiRACo4dszvzNcVx5UGxRUq1nRvK3tfYOgeKvn8F99NmhmRF14oaEchv5nuOs40qvN2RPwS6dzKNK0+ipqo+3VyilPc+dZyAYx1pNWoZRZWXoPT/L3MWWDX6bLqnpREaYyCZYQLcDjk90KjWqjOsXLi5yy2E0EV6XA/mFDjGcBGEFkDAWjenfNiYvM74JGnEGLbiMIOBlcEdrplA="
-    # encrypt with: travis encrypt PGP_PASSPHRASE=...
-    - secure: "e1D9Y8Q1BzOTgfC1aF6zYZeSLfFb9HW9iv/4svsmGhM5uEu0PNTMFXLZ/S+vM/hzLA58bmhvRfiPqbN1isy476/qDkt78WpZPLLSbXM06jUlhD1a6VseqZj/Y7VVg7/ON9oJ3DVbA8nmnaiV6OcWgn0fk1M8JTfACuWKVvoMt3EKdI3EE1gMZqaD8ZIF5s4xE+L5fxbuhP72u3H0lxZCIcJ3YeRcApMbrpvnr8xT3LSVyqEze2XxiOeZupqhG/V2Iazp+VnmgIwgUsa5BLixyb+8/rugKb9Gj1C0Op9GxwhoLkyhIIeOX9/SSKS6S4kPNWTTwL1f3WqlCjbhKO4ScIizwn1RUnmTCDdReZ81rv4h953LzjAt4T2KEhNWlxglwYFz4opTJTPWwGqX48H7qgDS10taIfm4HyKC+Nf1hYho5uFoWuqvg0Q90VEkHbcvvvUqwygVJisQC7HcRFYE9XBk1RozF3QaNY6M/ZN0Qt8l8O6GpLj4GfDw+ySyIYPUUFy6388AtH6ziXzpCgVynC0eqymfLlNSslF/uhMIiY5ASVFVbXKQs3W2Rsg3FqX06U48Ln7lBsbELD1tOm6YbYB1ix+/iqkkrkhhO4z1nBPNrYhBv1RYjnx5F/RiWiJzElTyurv3fkyPKzcmM1emRbcy1RG1zVi7xVUu6zLqIm4="
 
 branches:
   only:
