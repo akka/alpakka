@@ -5,7 +5,6 @@
 package akka.stream.alpakka.kinesis.scaladsl
 
 import java.nio.ByteBuffer
-
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts.parasitic
@@ -38,7 +37,14 @@ object KinesisFlow {
       .via(withContext(streamName, settings))
       .map(_._1)
 
+  val NoCleanup: Any => Unit = _ => ()
+
   def withContext[T](streamName: String, settings: KinesisFlowSettings = KinesisFlowSettings.Defaults)(
+      implicit kinesisClient: KinesisAsyncClient
+  ): FlowWithContext[PutRecordsRequestEntry, T, PutRecordsResultEntry, T, NotUsed] =
+    withContext(streamName, NoCleanup, settings)
+
+  def withContext[T](streamName: String, cleanUpContextOnFailure: T => Unit, settings: KinesisFlowSettings)(
       implicit kinesisClient: KinesisAsyncClient
   ): FlowWithContext[PutRecordsRequestEntry, T, PutRecordsResultEntry, T, NotUsed] = {
     checkClient(kinesisClient)
@@ -58,7 +64,10 @@ object KinesisFlow {
                 PutRecordsRequest.builder().streamName(streamName).records(entries.map(_._1).asJavaCollection).build
               )
               .toScala
-              .transform(handlePutRecordsSuccess(entries), FailurePublishingRecords(_))(parasitic)
+              .transform(handlePutRecordsSuccess(entries), throwable => {
+                entries.foreach(t => cleanUpContextOnFailure(t._2))
+                FailurePublishingRecords(throwable)
+              })(parasitic)
         )
         .mapConcat(identity)
     )
