@@ -100,8 +100,8 @@ object Dependencies {
   )
 
   val CassandraVersionInDocs = "4.0"
-  val CassandraDriverVersion = "4.10.0"
-  val CassandraDriverVersionInDocs = "4.10"
+  val CassandraDriverVersion = "4.13.0"
+  val CassandraDriverVersionInDocs = "4.13"
 
   val Cassandra = Seq(
     libraryDependencies ++= Seq(
@@ -110,7 +110,7 @@ object Dependencies {
           .exclude("org.apache.tinkerpop", "*") //https://github.com/akka/alpakka/issues/2200
           .exclude("com.esri.geometry", "esri-geometry-api"), //https://github.com/akka/alpakka/issues/2225
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion % Provided
-      ) ++ JacksonDatabindDependencies
+      )
   )
 
   val Couchbase = Seq(
