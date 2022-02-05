@@ -19,6 +19,7 @@ import java.net.InetAddress;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
+@Ignore
 public class FtpsStageTest extends BaseFtpSupport implements CommonFtpStageTest {
 
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();

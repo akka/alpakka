@@ -4,83 +4,87 @@
 
 package akka.stream.alpakka.ftp
 
-import java.io.IOException
-import java.net.InetAddress
-import java.nio.file.attribute.PosixFilePermission
-import java.nio.file.{Files, Paths}
+import java.io.{File, IOException}
+//import java.net.InetAddress
+//import java.nio.file.attribute.PosixFilePermission
+//import java.nio.file.{Files, Paths}
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 import akka.stream.{IOOperationIncompleteException, IOResult}
-import BaseSftpSupport.{CLIENT_PRIVATE_KEY_PASSPHRASE => ClientPrivateKeyPassphrase}
+//import BaseSftpSupport.{CLIENT_PRIVATE_KEY_PASSPHRASE => ClientPrivateKeyPassphrase}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Millis, Seconds, Span}
+import org.slf4j.LoggerFactory
 
 import scala.collection.immutable
 import scala.concurrent.{Await, ExecutionContextExecutor}
 import scala.concurrent.duration._
 import scala.util.Random
 
-final class FtpStageSpec extends BaseFtpSpec with CommonFtpStageSpec
-final class FtpsStageSpec extends BaseFtpsSpec with CommonFtpStageSpec
-final class SftpStageSpec extends BaseSftpSpec with CommonFtpStageSpec
-
-final class RawKeySftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
-  override val settings = SftpSettings(
-    InetAddress.getByName(HOSTNAME)
-  ).withPort(PORT)
-    .withCredentials(FtpCredentials.create("username", "wrong password"))
-    .withStrictHostKeyChecking(false)
-    .withSftpIdentity(
-      SftpIdentity.createRawSftpIdentity(
-        Files.readAllBytes(Paths.get(getClientPrivateKeyFile.getPath)),
-        ClientPrivateKeyPassphrase
-      )
-    )
+final class FtpStageSpec extends BaseFtpSpec with CommonFtpStageSpec {
+  private val logger = LoggerFactory.getLogger(this.getClass)
+  logger.warn(s"pwd ${new File(".").getAbsoluteFile.getPath}")
 }
+//final class FtpsStageSpec extends BaseFtpsSpec with CommonFtpStageSpec
+//final class SftpStageSpec extends BaseSftpSpec with CommonFtpStageSpec
 
-final class KeyFileSftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
+//final class RawKeySftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
+//  override val settings = SftpSettings(
+//    InetAddress.getByName(HOSTNAME)
+//  ).withPort(PORT)
+//    .withCredentials(FtpCredentials.create("username", "wrong password"))
+//    .withStrictHostKeyChecking(false)
+//    .withSftpIdentity(
+//      SftpIdentity.createRawSftpIdentity(
+//        Files.readAllBytes(Paths.get(getClientPrivateKeyFile.getPath)),
+//        ClientPrivateKeyPassphrase
+//      )
+//    )
+//}
 
-  override val settings = SftpSettings(
-    InetAddress.getByName(HOSTNAME)
-  ).withPort(PORT)
-    .withCredentials(FtpCredentials.create("username", "wrong password"))
-    .withStrictHostKeyChecking(false)
-    .withSftpIdentity(
-      SftpIdentity
-        .createFileSftpIdentity(getClientPrivateKeyFile.getPath, ClientPrivateKeyPassphrase)
-    )
-}
+//final class KeyFileSftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
+//
+//  override val settings = SftpSettings(
+//    InetAddress.getByName(HOSTNAME)
+//  ).withPort(PORT)
+//    .withCredentials(FtpCredentials.create("username", "wrong password"))
+//    .withStrictHostKeyChecking(false)
+//    .withSftpIdentity(
+//      SftpIdentity
+//        .createFileSftpIdentity(getClientPrivateKeyFile.getPath, ClientPrivateKeyPassphrase)
+//    )
+//}
 
-final class StrictHostCheckingSftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
-  override val settings = SftpSettings(
-    InetAddress.getByName(HOSTNAME)
-  ).withPort(PORT)
-    .withCredentials(FtpCredentials.create("username", "wrong password"))
-    .withStrictHostKeyChecking(true)
-    .withKnownHosts(getKnownHostsFile.getPath)
-    .withSftpIdentity(
-      SftpIdentity
-        .createFileSftpIdentity(getClientPrivateKeyFile.getPath, ClientPrivateKeyPassphrase)
-    )
-}
+//final class StrictHostCheckingSftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
+//  override val settings = SftpSettings(
+//    InetAddress.getByName(HOSTNAME)
+//  ).withPort(PORT)
+//    .withCredentials(FtpCredentials.create("username", "wrong password"))
+//    .withStrictHostKeyChecking(true)
+//    .withKnownHosts(getKnownHostsFile.getPath)
+//    .withSftpIdentity(
+//      SftpIdentity
+//        .createFileSftpIdentity(getClientPrivateKeyFile.getPath, ClientPrivateKeyPassphrase)
+//    )
+//}
 
-final class UnconfirmedReadsSftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
-  override val settings = SftpSettings(
-    InetAddress.getByName(HOSTNAME)
-  ).withPort(PORT)
-    .withCredentials(FtpCredentials.create("username", "wrong password"))
-    .withStrictHostKeyChecking(true)
-    .withKnownHosts(getKnownHostsFile.getPath)
-    .withSftpIdentity(
-      SftpIdentity
-        .createFileSftpIdentity(getClientPrivateKeyFile.getPath, ClientPrivateKeyPassphrase)
-    )
-    .withMaxUnconfirmedReads(8)
-}
+//final class UnconfirmedReadsSftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
+//  override val settings = SftpSettings(
+//    InetAddress.getByName(HOSTNAME)
+//  ).withPort(PORT)
+//    .withCredentials(FtpCredentials.create("username", "wrong password"))
+//    .withStrictHostKeyChecking(true)
+//    .withKnownHosts(getKnownHostsFile.getPath)
+//    .withSftpIdentity(
+//      SftpIdentity
+//        .createFileSftpIdentity(getClientPrivateKeyFile.getPath, ClientPrivateKeyPassphrase)
+//    )
+//    .withMaxUnconfirmedReads(8)
+//}
 
 trait CommonFtpStageSpec extends BaseSpec with Eventually {
 
@@ -159,27 +163,27 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       probe.expectComplete()
     }
 
-    "retrieve relevant file attributes" in assertAllStagesStopped {
-      val fileName = "sample"
-      val basePath = "/"
-
-      putFileOnFtp(fileName)
-
-      val timestamp = System.currentTimeMillis().millis
-
-      val files = listFiles(basePath).runWith(Sink.seq).futureValue
-
-      files should have size 1
-      inside(files.head) {
-        case FtpFile(actualFileName, actualPath, isDirectory, size, lastModified, perms) =>
-          actualFileName shouldBe fileName
-          // actualPath shouldBe s"/$basePath$fileName"
-          isDirectory shouldBe false
-          size shouldBe getDefaultContent.length
-          timestamp - lastModified.millis should be < 1.minute
-          perms should contain.allOf(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE)
-      }
-    }
+//    "retrieve relevant file attributes" in assertAllStagesStopped {
+//      val fileName = "sample"
+//      val basePath = "/"
+//
+//      putFileOnFtp(fileName)
+//
+//      val timestamp = System.currentTimeMillis().millis
+//
+//      val files = listFiles(basePath).runWith(Sink.seq).futureValue
+//
+//      files should have size 1
+//      inside(files.head) {
+//        case FtpFile(actualFileName, actualPath, isDirectory, size, lastModified, perms) =>
+//          actualFileName shouldBe fileName
+//          // actualPath shouldBe s"/$basePath$fileName"
+//          isDirectory shouldBe false
+//          size shouldBe getDefaultContent.length
+//          timestamp - lastModified.millis should be < 1.minute
+//          perms should contain.allOf(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE)
+//      }
+//    }
   }
 
   "FtpIOSource" should {

@@ -21,6 +21,7 @@ import java.net.Proxy;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
+@Ignore
 public class SftpWithProxyStageTest extends BaseSftpSupport implements CommonFtpStageTest {
 
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
