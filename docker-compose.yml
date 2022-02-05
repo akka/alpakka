@@ -66,7 +66,7 @@ services:
           cbq -c Administrator:password -e http://couchbase:8093
       "
   elasticmq:
-    image: softwaremill/elasticmq-native:0.14.7
+    image: softwaremill/elasticmq-native:1.3.4
     ports:
       - "9324:9324"
   dynamodb:
@@ -74,13 +74,13 @@ services:
     ports:
       - "8001:8000"
   elasticsearch6:
-    image: docker.elastic.co/elasticsearch/elasticsearch:6.8.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.8.23
     ports:
       - "9201:9200"
     environment:
       - "discovery.type=single-node"
   elasticsearch7:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.6.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.0
     ports:
       - "9202:9200"
     environment:
