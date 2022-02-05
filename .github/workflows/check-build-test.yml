@@ -134,7 +134,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        with: # test-if-changed compares with master branch
+        with: # gh-detect-changes.sh compares with the target branch
           fetch-depth: 0
 
       - name: Detect changes in ${{ matrix.connector }}
@@ -143,17 +143,17 @@ jobs:
         run: ./scripts/gh-detect-changes.sh "${CONNECTOR}"
 
       - name: Set up JDK 8
-        if: env.execute_build == true
+        if: env.execute_build == "true"
         uses: coursier/setup-action@v1.1.2
         with:
           jvm: adopt:8
 
       - name: Cache Coursier cache
-        if: env.execute_build == true
+        if: env.execute_build == "true"
         uses: coursier/cache-action@v6.3
 
       - name: ${{ matrix.connector }}
-        if: env.execute_build == true
+        if: env.execute_build == "true"
         env:
           CONNECTOR: ${{ matrix.connector }}
           PRE_CMD: ${{ matrix.pre_cmd }}

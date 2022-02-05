@@ -6,7 +6,7 @@ CONNECTOR=$1
 
 if [ "$GITHUB_EVENT_NAME" == "pull_request" ]
 then
-  COMPARE_TO="origin/master"
+  COMPARE_TO="origin/${GITHUB_BASE_REF}"
 else
   # for non-pr (master) builds, comparison for changes is made against the previous commit,
   # which might be:
