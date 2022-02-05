@@ -1,8 +1,8 @@
 #!/bin/bash
 
-set -x
+# set -x
 
-DIR=$1
+CONNECTOR=$1
 
 if [ "$GITHUB_EVENT_NAME" == "pull_request" ]
 then
@@ -15,19 +15,19 @@ else
   COMPARE_TO="HEAD^"
 fi
 
-git diff "$COMPARE_TO" --exit-code --quiet "$DIR" build.sbt project/
-#git diff "$COMPARE_TO" --exit-code --quiet "$DIR" build.sbt project/ .github/workflows/
+git diff "$COMPARE_TO" --exit-code --quiet "${CONNECTOR}" build.sbt project/
+# git diff "$COMPARE_TO" --exit-code --quiet "${CONNECTOR}" build.sbt project/ .github/workflows/
 DIFF_EXIT_CODE=$?
 
 if [ "$GITHUB_EVENT_NAME" == "schedule" ]
 then
-  echo "Building everything because nightly"
+  echo "Building everything as it is a scheduled build"
   echo "execute_build=true" >> $GITHUB_ENV
 elif [ "$DIFF_EXIT_CODE" -eq 1 ]
 then
-  echo "Changes in ${DIR}"
+  echo "Changes in ${CONNECTOR}"
   echo "execute_build=true" >> $GITHUB_ENV
 else
-  echo "No changes in $DIR"
+  echo "No changes in ${CONNECTOR}"
   echo "execute_build=false" >> $GITHUB_ENV
 fi

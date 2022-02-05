@@ -158,7 +158,6 @@ jobs:
           CONNECTOR: ${{ matrix.connector }}
           PRE_CMD: ${{ matrix.pre_cmd }}
         run: |-
-          PRE_CMD:=echo NOOP
           $PRE_CMD
           sbt "${CONNECTOR}/test"
 
