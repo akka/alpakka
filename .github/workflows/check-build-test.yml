@@ -137,21 +137,31 @@ jobs:
         with: # test-if-changed compares with master branch
           fetch-depth: 0
 
+      - name: Detect changes in ${{ matrix.connector }}
+        env:
+          CONNECTOR: ${{ matrix.connector }}
+        run: ./scripts/gh-detect-changes.sh "${CONNECTOR}"
+
       - name: Set up JDK 8
+        if: env.execute_build == true
         uses: coursier/setup-action@v1.1.2
         with:
           jvm: adopt:8
 
       - name: Cache Coursier cache
+        if: env.execute_build == true
         uses: coursier/cache-action@v6.3
 
       - name: ${{ matrix.connector }}
+        if: env.execute_build == true
         env:
           CONNECTOR: ${{ matrix.connector }}
           PRE_CMD: ${{ matrix.pre_cmd }}
         run: |-
-          ./scripts/gh-test-if-changed.sh "${CONNECTOR}" "${PRE_CMD:=echo NOOP}" "${CONNECTOR}/test"
+          PRE_CMD:=echo NOOP
+          $PRE_CMD
+          sbt "${CONNECTOR}/test"
 
       - name: Print logs on failure
-        if: ${{ failure() }}
+        if: failure()
         run: find . -name "*.log" -exec ./scripts/cat-log.sh {} \;
