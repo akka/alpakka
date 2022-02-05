@@ -10,7 +10,6 @@ import akka.actor.ActorSystem;
 import akka.japi.Pair;
 
 // #init-client
-import akka.stream.SystemMaterializer;
 import akka.stream.alpakka.dynamodb.DynamoDbOp;
 import akka.stream.alpakka.dynamodb.javadsl.DynamoDb;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
@@ -18,7 +17,6 @@ import akka.stream.javadsl.FlowWithContext;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.SourceWithContext;
-import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
 import org.junit.*;
 // #init-client
@@ -81,11 +79,6 @@ public class ExampleTest {
   public static void tearDown() {
     client.close();
     TestKit.shutdownActorSystem(system);
-  }
-
-  @After
-  public void checkForStageLeaks() {
-    StreamTestKit.assertAllStagesStopped(SystemMaterializer.get(system).materializer());
   }
 
   @Test
