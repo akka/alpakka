@@ -48,7 +48,11 @@ public abstract class BaseSupportImpl implements BaseSupport, AkkaSupport {
                 try {
                   Files.delete(dir);
                 } catch (IOException e) {
-                  System.err.println("cleanFiles() failed to delete " + dir.toAbsolutePath() + " owner " + Files.getOwner(dir).toString());
+                  System.err.println(
+                      "cleanFiles() failed to delete "
+                          + dir.toAbsolutePath()
+                          + " owner "
+                          + Files.getOwner(dir).toString());
                   throw e;
                 }
               return FileVisitResult.CONTINUE;
@@ -60,7 +64,11 @@ public abstract class BaseSupportImpl implements BaseSupport, AkkaSupport {
               try {
                 Files.deleteIfExists(file);
               } catch (IOException e) {
-                System.err.println("cleanFiles() failed to delete " + file.toAbsolutePath() + " owner " + Files.getOwner(file).toString());
+                System.err.println(
+                    "cleanFiles() failed to delete "
+                        + file.toAbsolutePath()
+                        + " owner "
+                        + Files.getOwner(file).toString());
                 throw e;
               }
               return FileVisitResult.CONTINUE;
