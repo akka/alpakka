@@ -1,4 +1,4 @@
-/*
+  /*
  * Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>
  */
 
@@ -44,14 +44,25 @@ public abstract class BaseSupportImpl implements BaseSupport, AkkaSupport {
             @Override
             public FileVisitResult postVisitDirectory(Path dir, IOException exc)
                 throws IOException {
-              if (!dir.equals(getRootDir())) Files.delete(dir);
+              if (!dir.equals(getRootDir()))
+                try {
+                  Files.delete(dir);
+                } catch (IOException e) {
+                  System.err.println("cleanFiles() failed to delete " + dir.toAbsolutePath() + " owner " + Files.getOwner(dir).toString());
+                  throw e;
+                }
               return FileVisitResult.CONTINUE;
             }
 
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
                 throws IOException {
-              Files.deleteIfExists(file);
+              try {
+                Files.deleteIfExists(file);
+              } catch (IOException e) {
+                System.err.println("cleanFiles() failed to delete " + file.toAbsolutePath() + " owner " + Files.getOwner(file).toString());
+                throw e;
+              }
               return FileVisitResult.CONTINUE;
             }
           });
