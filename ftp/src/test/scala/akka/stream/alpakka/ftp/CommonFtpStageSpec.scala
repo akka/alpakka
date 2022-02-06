@@ -4,26 +4,26 @@
 
 package akka.stream.alpakka.ftp
 
-import java.io.{File, IOException}
+import java.io.File
 //import java.net.InetAddress
 //import java.nio.file.attribute.PosixFilePermission
 //import java.nio.file.{Files, Paths}
-import java.time.Instant
-import java.util.concurrent.TimeUnit
-import akka.stream.{IOOperationIncompleteException, IOResult}
+//import java.time.Instant
+//import java.util.concurrent.TimeUnit
+//import akka.stream.{IOOperationIncompleteException, IOResult}
 //import BaseSftpSupport.{CLIENT_PRIVATE_KEY_PASSPHRASE => ClientPrivateKeyPassphrase}
-import akka.stream.scaladsl.{Keep, Sink, Source}
+import akka.stream.scaladsl.{Keep, Sink}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSink
-import akka.util.ByteString
+//import akka.util.ByteString
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Millis, Seconds, Span}
 import org.slf4j.LoggerFactory
 
-import scala.collection.immutable
-import scala.concurrent.{Await, ExecutionContextExecutor}
-import scala.concurrent.duration._
-import scala.util.Random
+//import scala.collection.immutable
+//import scala.concurrent.{Await, ExecutionContextExecutor}
+//import scala.concurrent.duration._
+//import scala.util.Random
 
 final class FtpStageSpec extends BaseFtpSpec with CommonFtpStageSpec {
   private val logger = LoggerFactory.getLogger(this.getClass)
