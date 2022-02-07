@@ -71,7 +71,6 @@ jobs:
         run: cs launch net.runne::site-link-validator:0.2.2 -- scripts/link-validator.conf
 
   connectors:
-    needs: [style-compile-mima]
     runs-on: ubuntu-20.04
 
     strategy:
@@ -137,7 +136,7 @@ jobs:
         with: # gh-detect-changes.sh compares with the target branch
           fetch-depth: 0
 
-      - name: Detect changes in ${{ matrix.connector }}
+      - name: Detect changes in Alpakka ${{ matrix.connector }}
         env:
           CONNECTOR: ${{ matrix.connector }}
         run: ./scripts/gh-detect-changes.sh "${CONNECTOR}"
