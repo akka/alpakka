@@ -3,9 +3,9 @@ import Keys._
 
 object Dependencies {
 
-  val CronBuild = sys.env.get("TRAVIS_EVENT_TYPE").contains("cron")
+  val CronBuild = sys.env.get("GITHUB_EVENT_NAME").contains("schedule")
 
-  val Scala213 = "2.13.8" // update even 2 places in .travis.yml and in link-validator.conf
+  val Scala213 = "2.13.8" // update even in link-validator.conf
   val ScalaVersions = Seq(Scala213)
 
   val AkkaVersion = "2.6.18"
