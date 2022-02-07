@@ -14,7 +14,6 @@ import akka.stream.alpakka.googlecloud.pubsub.scaladsl.GooglePubSub
 import akka.stream.alpakka.googlecloud.pubsub._
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Keep, Sink, Source}
-import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestKit
 import org.scalatest.concurrent.{Eventually, IntegrationPatience, ScalaFutures}
@@ -59,7 +58,7 @@ class IntegrationSpec
     val SampleText = s"Hello Google! ${Instant.now.toString}"
     val SampleMessage = new String(Base64.getEncoder.encode(SampleText.getBytes))
 
-    "publish a message and receive it again" in assertAllStagesStopped {
+    "publish a message and receive it again" in {
       // acknowledge any messages left on the subscription from earlier runs
       val cleanup = GooglePubSub
         .subscribe(topic1subscription, config)
@@ -93,7 +92,7 @@ class IntegrationSpec
       readable(received) shouldBe SampleText
     }
 
-    "receive a published message and acknowledge it" in assertAllStagesStopped {
+    "receive a published message and acknowledge it" in {
       val result = GooglePubSub
         .subscribe(topic2subscription, config)
         .map { message =>
