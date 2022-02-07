@@ -117,7 +117,6 @@ More information can be found in the [AWS documentation](https://docs.aws.amazon
 
 In order to correlate the results with the original message, an optional user context object of arbitrary type can be associated with every message and will be returned with the corresponding result. This allows keeping track of which messages have been successfully sent to Kinesis even if the message order gets mixed up. 
 
-In cases with context flows, sometimes contexts need to be handled if a batch of messages sent to be published fails. A function for cleanup, `cleanUpContextOnFailure`, can then be added as an argument to the KinesisFlow. This function will then be applied to all messages in the failed batch before an exception is thrown.
 
 Publishing to a Kinesis stream requires an instance of `KinesisFlowSettings`, although a default instance with sane values and a method that returns settings based on the stream shard number are also available:
 
@@ -147,6 +146,10 @@ Scala
 
 Java
 : @@snip [snip](/kinesis/src/test/java/docs/javadsl/KinesisSnippets.java) { #error-handling }
+@@@
+
+@@@ note
+The default behavior of the `KinesisFlow` and `KinesisSink` is to batch according to the `KinesisFlowSettings` provided and to throw any error the Kinesis client throws. If it is necessary to have special handling for batching or of errors and successful results the methods `KinesisFlow.batchingFlow` & `KinesisFlow.batchWritingFlow` can be used and combined in other ways than the default.
 @@@
 
 # AWS KCL Scheduler Source & checkpointer
