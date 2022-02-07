@@ -15,8 +15,7 @@ else
   COMPARE_TO="HEAD^"
 fi
 
-git diff "$COMPARE_TO" --exit-code --quiet "${CONNECTOR}" build.sbt project/
-# git diff "$COMPARE_TO" --exit-code --quiet "${CONNECTOR}" build.sbt project/ .github/workflows/
+git diff "$COMPARE_TO" --exit-code --quiet "${CONNECTOR}" build.sbt project/ .github/workflows/
 DIFF_EXIT_CODE=$?
 
 # Setting the `execute_build` env variable for other job steps to use
