@@ -14,7 +14,6 @@ import akka.stream.alpakka.sqs.SqsAckResult._
 import akka.stream.alpakka.sqs.SqsAckResultEntry._
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
-import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{spy, times, verify, when}
 import org.scalatest.flatspec.AnyFlatSpec
@@ -103,7 +102,7 @@ class SqsAckSpec extends AnyFlatSpec with Matchers with DefaultTestContext with 
     batchSettings.maxBatchSize should be(10)
   }
 
-  "AckSink" should "pull and delete message" taggedAs Integration in assertAllStagesStopped {
+  "AckSink" should "pull and delete message" taggedAs Integration in {
     new IntegrationFixture {
       sendMessage("alpakka-2")
 
@@ -122,7 +121,7 @@ class SqsAckSpec extends AnyFlatSpec with Matchers with DefaultTestContext with 
     }
   }
 
-  it should "pull and delay a message" taggedAs Integration in assertAllStagesStopped {
+  it should "pull and delay a message" taggedAs Integration in {
     new IntegrationFixture {
       sendMessage("alpakka-3")
 
@@ -141,7 +140,7 @@ class SqsAckSpec extends AnyFlatSpec with Matchers with DefaultTestContext with 
     }
   }
 
-  it should "pull and ignore a message" taggedAs Integration in assertAllStagesStopped {
+  it should "pull and ignore a message" taggedAs Integration in {
     new IntegrationFixture {
       sendMessage("alpakka-flow-ack")
 
@@ -157,7 +156,7 @@ class SqsAckSpec extends AnyFlatSpec with Matchers with DefaultTestContext with 
     }
   }
 
-  "AckFlow" should "pull and delete message via flow" taggedAs Integration in assertAllStagesStopped {
+  "AckFlow" should "pull and delete message via flow" taggedAs Integration in {
     new IntegrationFixture {
       sendMessage("alpakka-flow-ack")
 
@@ -177,7 +176,7 @@ class SqsAckSpec extends AnyFlatSpec with Matchers with DefaultTestContext with 
     }
   }
 
-  it should "pull and ignore a message" taggedAs Integration in assertAllStagesStopped {
+  it should "pull and ignore a message" taggedAs Integration in {
     new IntegrationFixture {
       sendMessage("alpakka-flow-ack")
 
@@ -194,7 +193,7 @@ class SqsAckSpec extends AnyFlatSpec with Matchers with DefaultTestContext with 
     }
   }
 
-  it should "delete batch of messages" taggedAs Integration in assertAllStagesStopped {
+  it should "delete batch of messages" taggedAs Integration in {
     new IntegrationFixture {
       val messages = for (i <- 0 until 10) yield s"Message - $i"
       sendMessages(messages)
@@ -261,7 +260,7 @@ class SqsAckSpec extends AnyFlatSpec with Matchers with DefaultTestContext with 
     future.failed.futureValue shouldBe a[SqsBatchException]
   }
 
-  it should "fail if the batch request failed" in assertAllStagesStopped {
+  it should "fail if the batch request failed" in {
     val messages = for (i <- 0 until 10) yield Message.builder().body(s"Message - $i").build()
 
     implicit val mockAwsSqsClient = mock[SqsAsyncClient]
@@ -282,7 +281,7 @@ class SqsAckSpec extends AnyFlatSpec with Matchers with DefaultTestContext with 
     future.failed.futureValue shouldBe a[SqsBatchException]
   }
 
-  it should "fail if the client invocation failed" in assertAllStagesStopped {
+  it should "fail if the client invocation failed" in {
     val messages = for (i <- 0 until 10) yield Message.builder().body(s"Message - $i").build()
 
     implicit val mockAwsSqsClient = mock[SqsAsyncClient]
@@ -300,7 +299,7 @@ class SqsAckSpec extends AnyFlatSpec with Matchers with DefaultTestContext with 
     future.failed.futureValue shouldBe a[RuntimeException]
   }
 
-  it should "delete, delay & ignore all messages in batches of given size" taggedAs Integration in assertAllStagesStopped {
+  it should "delete, delay & ignore all messages in batches of given size" taggedAs Integration in {
     new IntegrationFixture {
       val messages = for (i <- 0 until 10) yield s"Message - $i"
       sendMessages(messages)
@@ -326,7 +325,7 @@ class SqsAckSpec extends AnyFlatSpec with Matchers with DefaultTestContext with 
     }
   }
 
-  it should "delay batch of messages" taggedAs Integration in assertAllStagesStopped {
+  it should "delay batch of messages" taggedAs Integration in {
     new IntegrationFixture {
       val messages = for (i <- 0 until 10) yield s"Message - $i"
       sendMessages(messages)
@@ -352,7 +351,7 @@ class SqsAckSpec extends AnyFlatSpec with Matchers with DefaultTestContext with 
     }
   }
 
-  it should "ignore batch of messages" in assertAllStagesStopped {
+  it should "ignore batch of messages" in {
     val messages = for (i <- 0 until 10) yield Message.builder().body(s"Message - $i").build()
 
     implicit val mockAwsSqsClient = mock[SqsAsyncClient]

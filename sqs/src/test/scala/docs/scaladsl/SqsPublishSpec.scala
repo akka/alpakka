@@ -11,7 +11,6 @@ import akka.stream.alpakka.sqs._
 import akka.stream.alpakka.sqs.scaladsl._
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
-import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
@@ -88,7 +87,7 @@ class SqsPublishSpec extends AnyFlatSpec with Matchers with DefaultTestContext w
     batchSettings.concurrentRequests shouldBe 1
   }
 
-  "PublishSink" should "publish and pull a message" taggedAs Integration in assertAllStagesStopped {
+  "PublishSink" should "publish and pull a message" taggedAs Integration in {
     new IntegrationFixture {
       val future =
         //#run-string
@@ -102,7 +101,7 @@ class SqsPublishSpec extends AnyFlatSpec with Matchers with DefaultTestContext w
     }
   }
 
-  it should "publish and pull a message provided as a SendMessageRequest" taggedAs Integration in assertAllStagesStopped {
+  it should "publish and pull a message provided as a SendMessageRequest" taggedAs Integration in {
     new IntegrationFixture {
       val future =
         //#run-send-request
@@ -119,7 +118,7 @@ class SqsPublishSpec extends AnyFlatSpec with Matchers with DefaultTestContext w
     }
   }
 
-  it should "publish and pull a message provided as a SendMessageRequest with dynamic queue" taggedAs Integration in assertAllStagesStopped {
+  it should "publish and pull a message provided as a SendMessageRequest with dynamic queue" taggedAs Integration in {
     new IntegrationFixture {
       val future =
         //#run-send-request
@@ -135,7 +134,7 @@ class SqsPublishSpec extends AnyFlatSpec with Matchers with DefaultTestContext w
     }
   }
 
-  it should "publish messages by grouping and pull them" taggedAs Integration in assertAllStagesStopped {
+  it should "publish messages by grouping and pull them" taggedAs Integration in {
     new IntegrationFixture {
       //#group
       val messages = for (i <- 0 until 10) yield s"Message - $i"
@@ -150,7 +149,7 @@ class SqsPublishSpec extends AnyFlatSpec with Matchers with DefaultTestContext w
     }
   }
 
-  it should "publish batch of messages and pull them" taggedAs Integration in assertAllStagesStopped {
+  it should "publish batch of messages and pull them" taggedAs Integration in {
     new IntegrationFixture {
       //#batch-string
       val messages = for (i <- 0 until 10) yield s"Message - $i"
@@ -166,7 +165,7 @@ class SqsPublishSpec extends AnyFlatSpec with Matchers with DefaultTestContext w
     }
   }
 
-  it should "publish batch of SendMessageRequests and pull them" taggedAs Integration in assertAllStagesStopped {
+  it should "publish batch of SendMessageRequests and pull them" taggedAs Integration in {
     new IntegrationFixture {
       //#batch-send-request
       val messages = for (i <- 0 until 10) yield SendMessageRequest.builder().messageBody(s"Message - $i").build()
@@ -182,7 +181,7 @@ class SqsPublishSpec extends AnyFlatSpec with Matchers with DefaultTestContext w
     }
   }
 
-  "PublishFlow" should "put message in a flow, then pass the result further" taggedAs Integration in assertAllStagesStopped {
+  "PublishFlow" should "put message in a flow, then pass the result further" taggedAs Integration in {
     new IntegrationFixture {
       val future =
         //#flow
@@ -202,7 +201,7 @@ class SqsPublishSpec extends AnyFlatSpec with Matchers with DefaultTestContext w
     }
   }
 
-  it should "put message in a flow, then pass the result further with dynamic queue" taggedAs Integration in assertAllStagesStopped {
+  it should "put message in a flow, then pass the result further with dynamic queue" taggedAs Integration in {
     new IntegrationFixture {
       val future =
         //#flow
