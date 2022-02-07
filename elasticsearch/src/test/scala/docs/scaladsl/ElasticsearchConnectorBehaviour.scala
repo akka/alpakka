@@ -13,7 +13,6 @@ import akka.http.scaladsl.model.{ContentTypes, HttpMethods, HttpRequest, Uri}
 import akka.stream.alpakka.elasticsearch._
 import akka.stream.alpakka.elasticsearch.scaladsl._
 import akka.stream.scaladsl.{Sink, Source}
-import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.{Done, NotUsed}
 import org.scalatest.Inspectors
 import org.scalatest.concurrent.ScalaFutures
@@ -125,7 +124,7 @@ trait ElasticsearchConnectorBehaviour {
     }
 
     "ElasticsearchFlow" should {
-      "pass through data in `withContext`" in assertAllStagesStopped {
+      "pass through data in `withContext`" in {
         val books = immutable.Seq(
           "Akka in Action",
           "Alpakka Patterns"
@@ -152,7 +151,7 @@ trait ElasticsearchConnectorBehaviour {
         }
       }
 
-      "not post invalid encoded JSON" in assertAllStagesStopped {
+      "not post invalid encoded JSON" in {
         val books = immutable.Seq(
           "Akka in Action",
           "Akka \u00DF Concurrency"
@@ -181,7 +180,7 @@ trait ElasticsearchConnectorBehaviour {
         )
       }
 
-      "retry a failed document and pass retried documents to downstream (create)" in assertAllStagesStopped {
+      "retry a failed document and pass retried documents to downstream (create)" in {
         val indexName = "sink5"
 
         // Create strict mapping to prevent invalid documents
@@ -229,7 +228,7 @@ trait ElasticsearchConnectorBehaviour {
         )
       }
 
-      "retry ALL failed document and pass retried documents to downstream (createWithPassThrough)" in assertAllStagesStopped {
+      "retry ALL failed document and pass retried documents to downstream (createWithPassThrough)" in {
         val indexName = "sink5_1"
 
         val bookNr = 100
@@ -273,7 +272,7 @@ trait ElasticsearchConnectorBehaviour {
         readTitlesFrom(apiVersion, baseSourceSettings, indexName).futureValue should contain theSameElementsAs expectedBookTitles
       }
 
-      "retry a failed document and pass retried documents to downstream (createWithContext)" in assertAllStagesStopped {
+      "retry a failed document and pass retried documents to downstream (createWithContext)" in {
         val indexName = "sink5b"
 
         // Create strict mapping to prevent invalid documents
@@ -327,7 +326,7 @@ trait ElasticsearchConnectorBehaviour {
         )
       }
 
-      "retry ALL failed document and pass retried documents to downstream (createWithContext)" in assertAllStagesStopped {
+      "retry ALL failed document and pass retried documents to downstream (createWithContext)" in {
         val indexName = "sink5_1b"
 
         val bookNr = 100
@@ -370,7 +369,7 @@ trait ElasticsearchConnectorBehaviour {
         readTitlesFrom(apiVersion, baseSourceSettings, indexName).futureValue should contain theSameElementsAs expectedBookTitles
       }
 
-      "store new documents using upsert method and partially update existing ones" in assertAllStagesStopped {
+      "store new documents using upsert method and partially update existing ones" in {
         val books = List(
           ("00001", Book("Book 1")),
           ("00002", Book("Book 2")),
@@ -481,7 +480,7 @@ trait ElasticsearchConnectorBehaviour {
         errorMessages.head should include("version conflict, document already exists (current version [1])")
       }
 
-      "read and write document-version if configured to do so" in assertAllStagesStopped {
+      "read and write document-version if configured to do so" in {
 
         case class VersionTestDoc(id: String, name: String, value: Int)
         implicit val formatVersionTestDoc: JsonFormat[VersionTestDoc] = jsonFormat3(VersionTestDoc)
@@ -580,7 +579,7 @@ trait ElasticsearchConnectorBehaviour {
         result5.head.success shouldBe false
       }
 
-      "allow read and write using configured version type" in assertAllStagesStopped {
+      "allow read and write using configured version type" in {
 
         val indexName = "book-test-version-type"
         val typeName = "_doc"
@@ -624,7 +623,7 @@ trait ElasticsearchConnectorBehaviour {
     "ElasticsearchSource" should {
       insertTestData(connectionSettings)
 
-      "allow search without specifying typeName" in assertAllStagesStopped {
+      "allow search without specifying typeName" in {
         val readWithoutTypeName = ElasticsearchSource
           .typed[Book](
             constructElasticsearchParams("source", "_doc", apiVersion),
@@ -646,7 +645,7 @@ trait ElasticsearchConnectorBehaviour {
         )
       }
 
-      "allow search on index pattern with no matching index" in assertAllStagesStopped {
+      "allow search on index pattern with no matching index" in {
         val readWithoutTypeName = ElasticsearchSource
           .typed[Book](
             constructElasticsearchParams("missing-*", "_doc", apiVersion),
@@ -660,7 +659,7 @@ trait ElasticsearchConnectorBehaviour {
         result shouldEqual Seq()
       }
 
-      "sort by _doc by default" in assertAllStagesStopped {
+      "sort by _doc by default" in {
         val read = ElasticsearchSource
           .typed[Book](
             constructElasticsearchParams("source", "_doc", apiVersion),
@@ -683,7 +682,7 @@ trait ElasticsearchConnectorBehaviour {
                                                       "Akka Concurrency"))
       }
 
-      "sort by user defined field" in assertAllStagesStopped {
+      "sort by user defined field" in {
         val read = ElasticsearchSource
           .typed[Book](
             constructElasticsearchParams("source", "_doc", apiVersion),
@@ -701,7 +700,7 @@ trait ElasticsearchConnectorBehaviour {
 
       }
 
-      "sort by user defined field desc" in assertAllStagesStopped {
+      "sort by user defined field desc" in {
         val read = ElasticsearchSource
           .typed[Book](
             constructElasticsearchParams("source", "_doc", apiVersion),
