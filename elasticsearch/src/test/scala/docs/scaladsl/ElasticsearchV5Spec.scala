@@ -18,7 +18,6 @@ import akka.stream.alpakka.elasticsearch.{
   WriteResult
 }
 import akka.stream.scaladsl.{Sink, Source}
-import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
 import akka.{Done, NotUsed}
 import spray.json.jsonReader
@@ -48,7 +47,7 @@ class ElasticsearchV5Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
   }
 
   "Un-typed Elasticsearch connector" should {
-    "consume and publish Json documents" in assertAllStagesStopped {
+    "consume and publish Json documents" in {
       val indexName = "sink2"
       //#run-jsobject
       val copy = ElasticsearchSource
@@ -85,7 +84,7 @@ class ElasticsearchV5Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
   }
 
   "Typed Elasticsearch connector" should {
-    "consume and publish documents as specific type" in assertAllStagesStopped {
+    "consume and publish documents as specific type" in {
       val indexName = "sink2"
       //#run-typed
       val copy = ElasticsearchSource
@@ -121,7 +120,7 @@ class ElasticsearchV5Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
   }
 
   "ElasticsearchFlow" should {
-    "store documents and pass failed documents to downstream" in assertAllStagesStopped {
+    "store documents and pass failed documents to downstream" in {
       val indexName = "sink3"
       //#run-flow
       val copy = ElasticsearchSource
@@ -157,7 +156,7 @@ class ElasticsearchV5Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
       )
     }
 
-    "store properly formatted JSON from Strings" in assertAllStagesStopped {
+    "store properly formatted JSON from Strings" in {
       val indexName = "sink3-0"
       // #string
       val write: Future[immutable.Seq[WriteResult[String, NotUsed]]] = Source(
@@ -187,7 +186,7 @@ class ElasticsearchV5Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
       )
     }
 
-    "kafka-example - store documents and pass Responses with passThrough" in assertAllStagesStopped {
+    "kafka-example - store documents and pass Responses with passThrough" in {
 
       //#kafka-example
       // We're going to pretend we got messages from kafka.
@@ -240,7 +239,7 @@ class ElasticsearchV5Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
         .map(_.book.title)
     }
 
-    "kafka-example - store documents and pass Responses with passThrough in bulk" in assertAllStagesStopped {
+    "kafka-example - store documents and pass Responses with passThrough in bulk" in {
 
       //#kafka-example
       // We're going to pretend we got messages from kafka.
@@ -294,7 +293,7 @@ class ElasticsearchV5Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
         .map(_.book.title)
     }
 
-    "kafka-example - store documents and pass Responses with passThrough skipping some w/ NOP" in assertAllStagesStopped {
+    "kafka-example - store documents and pass Responses with passThrough skipping some w/ NOP" in {
 
       //#kafka-example
       // We're going to pretend we got messages from kafka.
@@ -354,7 +353,7 @@ class ElasticsearchV5Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
         .map(_.book.title)
     }
 
-    "kafka-example - skip all NOP documents and pass Responses with passThrough" in assertAllStagesStopped {
+    "kafka-example - skip all NOP documents and pass Responses with passThrough" in {
 
       //#kafka-example
       // We're going to pretend we got messages from kafka.
@@ -411,7 +410,7 @@ class ElasticsearchV5Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
       readTitlesFrom(ApiVersion.V5, baseSourceSettings, indexName).futureValue.toList shouldBe List("dummy")
     }
 
-    "handle multiple types of operations correctly" in assertAllStagesStopped {
+    "handle multiple types of operations correctly" in {
       val indexName = "sink8"
       //#multiple-operations
       val requests = List[WriteMessage[Book, NotUsed]](
@@ -459,7 +458,7 @@ class ElasticsearchV5Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
       )
     }
 
-    "use indexName supplied in message if present" in assertAllStagesStopped {
+    "use indexName supplied in message if present" in {
       // Copy source/_doc to sink2/_doc through typed stream
 
       //#custom-index-name-example
@@ -499,7 +498,7 @@ class ElasticsearchV5Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
   }
 
   "ElasticsearchSource" should {
-    "be able to use custom searchParams" in assertAllStagesStopped {
+    "be able to use custom searchParams" in {
       import spray.json._
       import DefaultJsonProtocol._
 
