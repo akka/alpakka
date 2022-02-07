@@ -71,7 +71,6 @@ jobs:
         run: cs launch net.runne::site-link-validator:0.2.2 -- scripts/link-validator.conf
 
   connectors:
-    needs: [style-compile-mima]
     runs-on: ubuntu-20.04
 
     strategy:
@@ -134,24 +133,33 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        with: # test-if-changed compares with master branch
+        with: # gh-detect-changes.sh compares with the target branch
           fetch-depth: 0
 
+      - name: Detect changes in Alpakka ${{ matrix.connector }}
+        env:
+          CONNECTOR: ${{ matrix.connector }}
+        run: ./scripts/gh-detect-changes.sh "${CONNECTOR}"
+
       - name: Set up JDK 8
+        if: env.execute_build == 'true'
         uses: coursier/setup-action@v1.1.2
         with:
           jvm: adopt:8
 
       - name: Cache Coursier cache
+        if: env.execute_build == 'true'
         uses: coursier/cache-action@v6.3
 
       - name: ${{ matrix.connector }}
+        if: env.execute_build == 'true'
         env:
           CONNECTOR: ${{ matrix.connector }}
           PRE_CMD: ${{ matrix.pre_cmd }}
         run: |-
-          ./scripts/gh-test-if-changed.sh "${CONNECTOR}" "${PRE_CMD:=echo NOOP}" "${CONNECTOR}/test"
+          $PRE_CMD
+          sbt "${CONNECTOR}/test"
 
       - name: Print logs on failure
-        if: ${{ failure() }}
+        if: failure()
         run: find . -name "*.log" -exec ./scripts/cat-log.sh {} \;
