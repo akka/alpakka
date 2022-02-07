@@ -2,7 +2,7 @@
 # To start all docker containers required to execute the tests locally run:
 # docker-compose up
 
-version: '2'
+version: '2.2'
 services:
   amazoneventbridge:
     image: localstack/localstack:0.10.6
@@ -98,8 +98,9 @@ services:
       FTP_USER_NAME: username
       FTP_USER_PASS: userpass
       FTP_USER_HOME: /home/username
-      FTP_USER_UID: 2000
-      FTP_USER_GID: 2000
+      # https://docs.docker.com/compose/environment-variables/
+      FTP_USER_UID: ${FTP_USER_UID:-2000}
+      FTP_USER_GID: ${FTP_USER_GID:-2000}
       ADDED_FLAGS: "--tls=1"
   geode:
     container_name: geode
@@ -177,13 +178,13 @@ services:
   kudu-tserver-data:
     image: kunickiaj/kudu
     volumes:
-      - /var/lib/kudu/tserver
+      - kudu-tserver-data:/var/lib/kudu/tserver
   kudu-master:
     image: kunickiaj/kudu
     ports:
       - 7051:7051
-    volumes_from:
-      - kudu-master-data
+    volumes:
+      - kudu-tserver-data:/var/lib/kudu/tserver
     command: master
   kudu-tserver:
     image: kunickiaj/kudu
@@ -191,8 +192,8 @@ services:
       - KUDU_MASTER=kudu-master
     ports:
       - 7050:7050
-    volumes_from:
-      - kudu-tserver-data
+    volumes:
+      - kudu-tserver-data:/var/lib/kudu/tserver
     command: tserver
     links:
       - kudu-master
@@ -252,7 +253,7 @@ services:
       - ./ftp/src/test/resources/sftpd/init.sh:/etc/sftp.d/init.sh
     ports:
       - "2222:22"
-    command: username:userpass:2000:2000
+    command: username:userpass:${FTP_USER_UID:-2000}:${FTP_USER_GID:-2000}
   squid:
     network_mode: host # required for route back to localhost
     image: datadog/squid
@@ -264,3 +265,6 @@ services:
       - 9090:9090
       - 12345:12345
     command: standalone
+
+volumes:
+  kudu-tserver-data:
