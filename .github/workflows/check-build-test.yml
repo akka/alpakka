@@ -88,8 +88,7 @@ jobs:
           - { connector: dynamodb,                     pre_cmd: 'docker-compose up -d dynamodb' }
           - { connector: elasticsearch,                pre_cmd: 'docker-compose up -d elasticsearch6 elasticsearch7' }
           - { connector: file }
-          # ftp tests fail consistently, needs work in a separate PR
-#          - { connector: ftp,                          pre_cmd: 'docker-compose up -d ftp sftp squid' }
+          - { connector: ftp,                          pre_cmd: './scripts/ftp-servers.sh' }
           - { connector: geode,                        pre_cmd: 'docker-compose up -d geode' }
           - { connector: google-cloud-bigquery }
           - { connector: google-cloud-bigquery-storage }

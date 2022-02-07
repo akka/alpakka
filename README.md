@@ -1,14 +1,10 @@
-Alpakka [![scaladex-badge][]][scaladex] [![maven-central-badge][]][maven-central] [![travis-badge][]][travis] [![gitter-badge][]][gitter]
+Alpakka [![scaladex-badge][]][scaladex] [![maven-central-badge][]][maven-central] [![CI on GitHub actions](https://github.com/akka/alpakka/actions/workflows/check-build-test.yml/badge.svg)](https://github.com/akka/alpakka/actions/workflows/check-build-test.yml)
 =======
 
 [scaladex]:              https://index.scala-lang.org/akka/alpakka
 [scaladex-badge]:        https://index.scala-lang.org/akka/alpakka/latest.svg
 [maven-central]:         https://search.maven.org/#search%7Cga%7C1%7Cakka-stream-alpakka
 [maven-central-badge]:   https://maven-badges.herokuapp.com/maven-central/com.lightbend.akka/akka-stream-alpakka-file_2.12/badge.svg
-[travis]:                https://travis-ci.com/akka/alpakka
-[travis-badge]:          https://travis-ci.com/akka/alpakka.svg?branch=master
-[gitter]:                https://gitter.im/akka/akka
-[gitter-badge]:          https://badges.gitter.im/akka/akka.svg
 
 Systems don't come alone. In the modern world of microservices and cloud deployment, new components must interact with legacy systems, making integration an important key to success. Reactive Streams give us a technology-independent tool to let these heterogeneous systems communicate without overwhelming each other.
 
