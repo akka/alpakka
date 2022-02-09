@@ -1,0 +1,26 @@
+name: License and vulnerabilties scanning
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - main
+    tags-ignore:
+      - v*
+
+jobs:
+  license-and-vulnerabilities-scanning:
+    name: Analyse
+    if: github.repository == 'akka/alpakka'
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Fossa CLI
+        run: |-
+          curl -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/fossas/fossa-cli/master/install-latest.sh | bash
+      - name: Analyse
+        # The FOSSA_API_KEY is configured on Akka organisation level
+        run: fossa analyze
