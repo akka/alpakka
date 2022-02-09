@@ -22,5 +22,7 @@ jobs:
         run: |-
           curl -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/fossas/fossa-cli/master/install-latest.sh | bash
       - name: Analyse
-        # The FOSSA_API_KEY is configured on Akka organisation level
+        env:
+          # The FOSSA_API_KEY is configured on Akka organisation level
+          FOSSA_API_KEY: ${{ secrets.FOSSA_API_KEY }}
         run: fossa analyze
