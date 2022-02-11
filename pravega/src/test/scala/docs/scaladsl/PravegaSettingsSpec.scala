@@ -81,7 +81,7 @@ class PravegaSettingsSpec extends PravegaBaseSpec with Matchers {
       val tableWriterSettings = TableWriterSettingsBuilder[Int, String]()
         .clientConfigBuilder(_.enableTlsToController(true)) // ClientConfig customization
         .withMaximumInflightMessages(5)
-        .withSerializers(str => new TableKey(intSerializer.serialize(str.hashCode())))
+        .withKeyExtractor(str => new TableKey(intSerializer.serialize(str.hashCode())))
         .build()
       //#table-writer-settings
 
@@ -94,7 +94,7 @@ class PravegaSettingsSpec extends PravegaBaseSpec with Matchers {
         .clientConfigBuilder(_.enableTlsToController(true)) // ClientConfig customization
         .withMaximumInflightMessages(5)
         .withMaxEntriesAtOnce(100)
-        .withTableKey(str => new TableKey(intSerializer.serialize(str.hashCode())))
+        .withKeyExtractor(str => new TableKey(intSerializer.serialize(str.hashCode())))
         .build()
       //#table-reader-settings
 

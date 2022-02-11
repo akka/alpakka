@@ -348,7 +348,7 @@ class TableReaderSettingsBuilder[K, V](
   /**
   Build the settings.
    */
-  def withTableKey(
+  def withKeyExtractor(
       extractor: K => TableKey
   ): TableReaderSettingsBuilder[K, V] = copy(tableKeyExtractor = Some(extractor))
 
@@ -479,7 +479,7 @@ class TableWriterSettingsBuilder[K, V](
   /**
     Build the settings.
    */
-  def withSerializers(
+  def withKeyExtractor(
       extractor: K => TableKey
   ): TableWriterSettingsBuilder[K, V] = copy(tableKeyExtractor = Some(extractor))
 

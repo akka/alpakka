@@ -90,7 +90,7 @@ class PravegaReadWriteDocs {
     }
 
   implicit val tablewriterSettings = TableWriterSettingsBuilder[Int, Person]()
-    .withSerializers(id => new TableKey(intSerializer.serialize(id)))
+    .withKeyExtractor(id => new TableKey(intSerializer.serialize(id)))
     .build()
 
   // #table-writing
@@ -111,7 +111,7 @@ class PravegaReadWriteDocs {
   val clientConfig = ClientConfig.builder().build()
 
   val tableSettings = TableReaderSettingsBuilder[Int, Person]()
-    .withTableKey(id => new TableKey(intSerializer.serialize(id)))
+    .withKeyExtractor(id => new TableKey(intSerializer.serialize(id)))
     .build()
 
   // #table-reading
