@@ -348,6 +348,9 @@ class TableReaderSettingsBuilder[K, V](
   /**
   Build the settings.
    */
+  @deprecated("Use withKeyExtractor instead", "4.0.0")
+  def withTableKey(extractor: K => TableKey): TableReaderSettingsBuilder[K, V] = withKeyExtractor(extractor)
+
   def withKeyExtractor(
       extractor: K => TableKey
   ): TableReaderSettingsBuilder[K, V] = copy(tableKeyExtractor = Some(extractor))
