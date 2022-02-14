@@ -58,7 +58,7 @@ public class PravegaKVTableTestCase extends PravegaBaseTestCase {
 
   TableWriterSettings<Integer, String> tablewriterSettings =
       TableWriterSettingsBuilder.<Integer, String>create(system, intSerializer, serializer)
-          .withSerializers(id -> new TableKey(intSerializer.serialize(id)))
+          .withKeyExtractor(id -> new TableKey(intSerializer.serialize(id)))
           .build();
 
   @Test
@@ -81,7 +81,7 @@ public class PravegaKVTableTestCase extends PravegaBaseTestCase {
 
     TableReaderSettings<Integer, String> tableReaderSettings =
         TableReaderSettingsBuilder.<Integer, String>create(system, intSerializer, serializer)
-            .withTableKey(id -> new TableKey(intSerializer.serialize(id)))
+            .withKeyExtractor(id -> new TableKey(intSerializer.serialize(id)))
             .build();
 
     final CompletionStage<String> readingDone =

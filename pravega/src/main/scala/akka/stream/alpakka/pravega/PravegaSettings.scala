@@ -96,7 +96,6 @@ class ReaderSettingsBuilder(config: Config,
  *
  * @param clientConfig
  * @param readerConfig
- * @param groupName
  * @param timeout
  * @param serializer
  * @param readerId
@@ -214,9 +213,6 @@ class WriterSettingsBuilder[Message](
                               maximumInflightMessages,
                               keyExtractor)
 
-  /**
-    Build the settings.
-   */
   def withSerializer(serializer: Serializer[Message]): WriterSettings[Message] = {
 
     eventWriterConfigCustomizer.foreach(_(eventWriterConfigBuilder))
@@ -345,10 +341,10 @@ class TableReaderSettingsBuilder[K, V](
                                    maximumInflightMessages,
                                    maxEntriesAtOnce)
 
-  /**
-  Build the settings.
-   */
-  def withTableKey(
+  @deprecated("Use withKeyExtractor instead", "4.0.0")
+  def withTableKey(extractor: K => TableKey): TableReaderSettingsBuilder[K, V] = withKeyExtractor(extractor)
+
+  def withKeyExtractor(
       extractor: K => TableKey
   ): TableReaderSettingsBuilder[K, V] = copy(tableKeyExtractor = Some(extractor))
 
@@ -476,10 +472,7 @@ class TableWriterSettingsBuilder[K, V](
                                    maximumInflightMessages,
                                    maxEntriesAtOnce)
 
-  /**
-    Build the settings.
-   */
-  def withSerializers(
+  def withKeyExtractor(
       extractor: K => TableKey
   ): TableWriterSettingsBuilder[K, V] = copy(tableKeyExtractor = Some(extractor))
 

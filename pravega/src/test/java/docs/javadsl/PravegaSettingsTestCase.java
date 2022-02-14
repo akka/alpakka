@@ -85,7 +85,7 @@ public class PravegaSettingsTestCase {
     TableWriterSettings<Integer, String> tableWriterSettings =
         TableWriterSettingsBuilder.<Integer, String>create(
                 system, intSerializer, new UTF8StringSerializer())
-            .withSerializers(id -> new TableKey(intSerializer.serialize(id)))
+            .withKeyExtractor(id -> new TableKey(intSerializer.serialize(id)))
             .build();
 
     // #table-writer-settings
@@ -94,7 +94,7 @@ public class PravegaSettingsTestCase {
     TableReaderSettings<Integer, String> tableReaderSettings =
         TableReaderSettingsBuilder.<Integer, String>create(
                 system, intSerializer, new UTF8StringSerializer())
-            .withTableKey(id -> new TableKey(intSerializer.serialize(id)))
+            .withKeyExtractor(id -> new TableKey(intSerializer.serialize(id)))
             .build();
 
     // #table-reader-settings

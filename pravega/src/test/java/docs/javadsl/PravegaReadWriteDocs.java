@@ -79,7 +79,7 @@ public class PravegaReadWriteDocs extends PravegaAkkaTestCaseSupport {
 
     TableWriterSettings<Integer, String> tablewriterSettings =
         TableWriterSettingsBuilder.<Integer, String>create(system, intSerializer, serializer)
-            .withSerializers(id -> new TableKey(intSerializer.serialize(id)))
+            .withKeyExtractor(id -> new TableKey(intSerializer.serialize(id)))
             .build();
 
     // #table-writing
@@ -99,7 +99,7 @@ public class PravegaReadWriteDocs extends PravegaAkkaTestCaseSupport {
 
     TableReaderSettings<Integer, String> tableReaderSettings =
         TableReaderSettingsBuilder.<Integer, String>create(system, intSerializer, serializer)
-            .withTableKey(id -> new TableKey(intSerializer.serialize(id)))
+            .withKeyExtractor(id -> new TableKey(intSerializer.serialize(id)))
             .build();
 
     // #table-reading

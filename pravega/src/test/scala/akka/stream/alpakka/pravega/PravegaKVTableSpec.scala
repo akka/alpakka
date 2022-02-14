@@ -19,7 +19,7 @@ class PravegaKVTableSpec extends PravegaBaseSpec with Repeated {
 
   private val tablewriterSettings: TableWriterSettings[Int, Person] =
     TableWriterSettingsBuilder[Int, Person]()
-      .withSerializers(id => new TableKey(intSerializer.serialize(id)))
+      .withKeyExtractor(id => new TableKey(intSerializer.serialize(id)))
       .build()
 
   "Pravega connector" should {
@@ -41,7 +41,7 @@ class PravegaKVTableSpec extends PravegaBaseSpec with Repeated {
       Await.ready(fut, remainingOrDefault)
 
       val tableSettings = TableReaderSettingsBuilder[Int, Person]()
-        .withTableKey(id => new TableKey(intSerializer.serialize(id)))
+        .withKeyExtractor(id => new TableKey(intSerializer.serialize(id)))
         .build()
 
       val readingDone = PravegaTable
