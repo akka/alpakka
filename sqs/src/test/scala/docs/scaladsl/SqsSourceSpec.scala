@@ -139,7 +139,7 @@ class SqsSourceSpec extends AnyFlatSpec with ScalaFutures with Matchers with Def
 
   it should "ask for multiple attributes set in the settings" taggedAs Integration in {
     new IntegrationFixture {
-      val attributes = allAvailableAttributes.filterNot(_ == All)
+      val attributes = allAvailableAttributes.filterNot(attr => attr == All || attr == MessageGroupId)
       val settings = sqsSourceSettings.withAttributes(attributes)
 
       val sendMessageRequest =
@@ -343,9 +343,9 @@ object SqsSourceSpec {
     ApproximateFirstReceiveTimestamp,
     ApproximateReceiveCount,
     SenderId,
-    SentTimestamp,
-    MessageDeduplicationId,
-    MessageGroupId
+    SentTimestamp
+    // MessageDeduplicationId, removed from ElasticMq 1.3.4
+    // MessageGroupId, removed from ElasticMq 1.3.4
     // SequenceNumber, not supported by elasticmq
   )
 }
