@@ -75,6 +75,13 @@ class JsonReaderTest extends AnyWordSpec with Matchers with BeforeAndAfterAll wi
       streamed shouldBe Seq("1", "2", "3").map(ByteString.fromString)
     }
 
+    "properly parse stream and stream multiple json array's as the top-level element" in {
+      val content = "[1, 2, 3]"
+
+      val streamed = collect(Source(List.fill(3)(ByteString.fromString(content))).via(JsonReader.select("$[*]")))
+      streamed shouldBe Seq("1", "2", "3", "1", "2", "3", "1", "2", "3").map(ByteString.fromString)
+    }
+
     "accept a pre-compiled json path rather than a string as a parameter" in {
       val path = JsonPathCompiler.compile("$.rows[*].doc")
 
