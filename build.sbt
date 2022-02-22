@@ -345,10 +345,7 @@ lazy val docs = project
         ("http://www\\.eclipse\\.org/".r, _ => "https://www\\.eclipse\\.org/"),
         ("http://pravega\\.io/".r, _ => "https://pravega\\.io/"),
         ("http://www\\.scala-lang\\.org/".r, _ => "https://www\\.scala-lang\\.org/"),
-        ("https://javadoc\\.io/page/".r, _ => "https://javadoc\\.io/static/"),
-        // Add Java module name https://github.com/ThoughtWorksInc/sbt-api-mappings/issues/58
-        ("https://docs\\.oracle\\.com/en/java/javase/11/docs/api/".r,
-         _ => "https://docs\\.oracle\\.com/en/java/javase/11/docs/api/java.base/")
+        ("https://javadoc\\.io/page/".r, _ => "https://javadoc\\.io/static/")
       ),
     Paradox / siteSubdirName := s"docs/alpakka/${projectInfoVersion.value}",
     paradoxProperties ++= Map(
