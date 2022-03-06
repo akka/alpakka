@@ -32,6 +32,9 @@ object Mqtt {
       .atop(scaladsl.Mqtt.clientSessionFlow[A](session.underlying, connectionId))
       .asJava
 
+
+  // TODO
+  /*
   /**
    * Create a bidirectional flow that maintains server session state with an MQTT endpoint.
    * The bidirectional flow can be joined with an endpoint flow that receives
@@ -50,6 +53,8 @@ object Mqtt {
     inputOutputConverter
       .atop(scaladsl.Mqtt.serverSessionFlow[A](session.underlying, connectionId))
       .asJava
+
+   */
 
   /*
    * Converts Java inputs to Scala, and vice-versa.

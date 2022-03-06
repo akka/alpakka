@@ -36,6 +36,8 @@ object Mqtt {
         )
       )
 
+  // TODO
+  /*
   /**
    * Create a bidirectional flow that maintains server session state with an MQTT endpoint.
    * The bidirectional flow can be joined with an endpoint flow that receives
@@ -58,6 +60,7 @@ object Mqtt {
           new CoupledTerminationBidi
         )
       )
+  */
 }
 
 /** INTERNAL API - taken from Akka streams - perhaps it should be made public */
