@@ -24,10 +24,10 @@ import scala.collection.immutable
 
     val i = bytesReceived.iterator
     val _ = i.drop(1) // Length starts at offset 1
-    i.decodeRemainingLength() match {
+    i.decodeVariableByteInteger() match {
       case Right(remainingLength) =>
         val headerSize = bytesReceived.size - i.len
-        val packetSize = remainingLength + headerSize
+        val packetSize = remainingLength.underlying + headerSize
         if (packetSize <= maxPacketSize) {
           if (bytesReceived.size >= packetSize) {
             val (b0, b1) = bytesReceived.splitAt(packetSize)
@@ -38,7 +38,7 @@ import scala.collection.immutable
         } else {
           Left(new IllegalStateException(s"Max packet size of $maxPacketSize exceeded with $packetSize"))
         }
-      case _: Left[BufferUnderflow.type, Int] @unchecked =>
+      case _: Left[BufferUnderflow.type, VariableByteInteger] @unchecked =>
         Right((bytesToEmit, bytesReceived))
     }
   }
@@ -53,7 +53,7 @@ import scala.collection.immutable
  * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
 @InternalApi private[streaming] final class MqttFrameStage(maxPacketSize: Int)
-    extends GraphStage[FlowShape[ByteString, ByteString]] {
+  extends GraphStage[FlowShape[ByteString, ByteString]] {
 
   import MqttFrameStage._
 

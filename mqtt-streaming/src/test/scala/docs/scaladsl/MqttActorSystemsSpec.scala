@@ -6,7 +6,9 @@ package docs.scaladsl
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.stream.alpakka.mqtt.streaming.MqttSessionSettings
-import akka.stream.alpakka.mqtt.streaming.scaladsl.{ActorMqttClientSession, ActorMqttServerSession}
+import akka.stream.alpakka.mqtt.streaming.scaladsl.ActorMqttClientSession
+// TODO
+// import akka.stream.alpakka.mqtt.streaming.scaladsl.{ActorMqttClientSession, ActorMqttServerSession}
 import org.scalatest.wordspec.AnyWordSpec
 
 class MqttTypedActorSystemSpec extends AnyWordSpec {
@@ -20,11 +22,14 @@ class MqttTypedActorSystemSpec extends AnyWordSpec {
       session.shutdown()
     }
 
+    // TODO
+    /*
     "allow server creation" in {
       val settings = MqttSessionSettings()
       val session = ActorMqttServerSession(settings)
       session.shutdown()
     }
+    */
   }
 
 }
@@ -40,11 +45,14 @@ class MqttClassicActorSystemSpec extends AnyWordSpec {
       session.shutdown()
     }
 
+    // TODO
+    /*
     "allow server creation" in {
       val settings = MqttSessionSettings()
       val session = ActorMqttServerSession(settings)
       session.shutdown()
     }
+    */
   }
 
 }
