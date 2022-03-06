@@ -9,7 +9,7 @@ import akka.NotUsed
 import akka.actor.ClassicActorSystemProvider
 import akka.stream.alpakka.mqtt.streaming.scaladsl.{
   ActorMqttClientSession => ScalaActorMqttClientSession,
-  ActorMqttServerSession => ScalaActorMqttServerSession,
+  // ActorMqttServerSession => ScalaActorMqttServerSession, TODO
   MqttClientSession => ScalaMqttClientSession,
   MqttServerSession => ScalaMqttServerSession
 }
@@ -74,6 +74,8 @@ object MqttServerSession {
   final case class ClientSessionTerminated(clientId: String)
 }
 
+// TODO
+/*
 /**
  * Represents server-only sessions
  */
@@ -116,3 +118,4 @@ final class ActorMqttServerSession(settings: MqttSessionSettings, system: Classi
       case ScalaMqttServerSession.ClientSessionTerminated(clientId) => ClientSessionTerminated(clientId)
     }.asJava
 }
+*/

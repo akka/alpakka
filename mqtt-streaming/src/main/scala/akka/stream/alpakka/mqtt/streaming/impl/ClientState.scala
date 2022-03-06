@@ -12,7 +12,6 @@ import akka.annotation.InternalApi
 import akka.stream.{Materializer, OverflowStrategy, QueueOfferResult}
 import akka.stream.scaladsl.{BroadcastHub, Keep, Source, SourceQueueWithComplete}
 import akka.util.ByteString
-
 import scala.collection.immutable.Seq
 import scala.concurrent.Promise
 import scala.concurrent.duration.FiniteDuration
@@ -40,6 +39,11 @@ import scala.util.{Either, Failure, Success}
    * 3.1.2.10 Keep Alive
    */
   case object PingFailed extends Exception with NoStackTrace
+
+  /*
+   * A Disconnect message has been received. Close connection.
+   */
+  final case class ReceivedDisconnect(reasonCode: DisconnectReasonCode) extends Exception with NoStackTrace
 
   /*
    * Construct with the starting state
@@ -127,6 +131,7 @@ import scala.util.{Either, Failure, Success}
         settings
       )
   final case class ConnAckReceived(
+      protocolLevel: Connect.ProtocolLevel,
       connectionId: ByteString,
       connectFlags: ConnectFlags,
       keepAlive: FiniteDuration,
@@ -159,6 +164,9 @@ import scala.util.{Either, Failure, Success}
 
   sealed abstract class Event(val connectionId: ByteString)
 
+  final case class GetProtocolVersion(remote: Promise[Connect.ProtocolLevel], override val connectionId: ByteString)
+    extends Event(connectionId)
+
   final case class ConnectReceivedLocally(override val connectionId: ByteString,
                                           connect: Connect,
                                           connectData: ConnectData,
@@ -174,24 +182,28 @@ import scala.util.{Either, Failure, Success}
   case class ConnectionLost(override val connectionId: ByteString) extends Event(connectionId)
 
   final case class DisconnectReceivedLocally(override val connectionId: ByteString,
-                                             remote: Promise[ForwardDisconnect.type])
-      extends Event(connectionId)
+                                             remote: Promise[ForwardDisconnect])
+    extends Event(connectionId)
 
   final case class SubscribeReceivedLocally(override val connectionId: ByteString,
                                             subscribe: Subscribe,
                                             subscribeData: Subscriber.SubscribeData,
                                             remote: Promise[Subscriber.ForwardSubscribe])
-      extends Event(connectionId)
+    extends Event(connectionId)
+
+  final case class AuthReceivedLocally(override val connectionId: ByteString,
+                                       auth: Auth)
+    extends Event(connectionId)
 
   final case class PublishReceivedFromRemote(override val connectionId: ByteString,
                                              publish: Publish,
                                              local: Promise[Consumer.ForwardPublish.type])
-      extends Event(connectionId)
+    extends Event(connectionId)
 
   final case class ConsumerFree(topicName: String) extends Event(ByteString.empty)
 
   final case class PublishReceivedLocally(publish: Publish, publishData: Producer.PublishData)
-      extends Event(ByteString.empty)
+    extends Event(ByteString.empty)
 
   final case class ProducerFree(topicName: String) extends Event(ByteString.empty)
 
@@ -199,20 +211,24 @@ import scala.util.{Either, Failure, Success}
 
   final case class PingRespReceivedFromRemote(override val connectionId: ByteString,
                                               local: Promise[ForwardPingResp.type])
-      extends Event(connectionId)
+    extends Event(connectionId)
 
   final case class ReceivedProducerPublishingCommand(command: Producer.ForwardPublishingCommand)
-      extends Event(ByteString.empty)
+    extends Event(ByteString.empty)
 
   final case class UnsubscribeReceivedLocally(override val connectionId: ByteString,
                                               unsubscribe: Unsubscribe,
                                               unsubscribeData: Unsubscriber.UnsubscribeData,
                                               remote: Promise[Unsubscriber.ForwardUnsubscribe])
-      extends Event(connectionId)
+    extends Event(connectionId)
+
+  final case class DisconnectReceivedFromRemote(override val connectionId: ByteString,
+                                                disconnect: Disconnect)
+    extends Event(connectionId)
 
   final case class QueueOfferCompleted(override val connectionId: ByteString,
                                        result: Either[Throwable, QueueOfferResult])
-      extends Event(connectionId)
+    extends Event(connectionId)
       with QueueOfferState.QueueOfferCompleted
 
   sealed abstract class Command
@@ -221,8 +237,9 @@ import scala.util.{Either, Failure, Success}
   case object ForwardPingReq extends ForwardConnectCommand
   final case class ForwardPublish(publish: Publish, packetId: Option[PacketId]) extends ForwardConnectCommand
   final case class ForwardPubRel(packetId: PacketId) extends ForwardConnectCommand
+  final case class ForwardAuth(protocolLevel: Connect.ProtocolLevel, auth: Auth) extends ForwardConnectCommand
   final case class ForwardConnAck(connectData: ConnectData) extends Command
-  case object ForwardDisconnect extends Command
+  case class ForwardDisconnect(protocolLevel: Connect.ProtocolLevel) extends Command
   case object ForwardPingResp extends Command
 
   // State event handling
@@ -242,7 +259,7 @@ import scala.util.{Either, Failure, Success}
           remote.success(source)
 
           val nextState =
-            if (connect.connectFlags.contains(ConnectFlags.CleanSession)) {
+            if (connect.connectFlags.contains(ConnectFlags.CleanStart)) {
               context.children.foreach(context.stop)
 
               serverConnect(
@@ -340,14 +357,17 @@ import scala.util.{Either, Failure, Success}
                                data.settings.receiveConnAckTimeout)
       Behaviors
         .receivePartial[Event] {
+          case (_, GetProtocolVersion(reply, connectionId)) =>
+            reply.success(data.connect.protocolVersion)
+            Behaviors.same
           case (context, connect @ ConnectReceivedLocally(connectionId, _, _, _))
-              if connectionId != data.connectionId =>
+            if connectionId != data.connectionId =>
             context.self ! connect
             disconnect(context, data.remote, data)
           case (_, event) if event.connectionId.nonEmpty && event.connectionId != data.connectionId =>
             Behaviors.same
           case (context, ConnAckReceivedFromRemote(_, connAck, local))
-              if connAck.returnCode.contains(ConnAckReturnCode.ConnectionAccepted) =>
+            if connAck.reasonCode == ConnAckReasonCode.Success =>
             local.success(ForwardConnAck(data.connectData))
 
             timer.cancel(ReceiveConnAck)
@@ -355,6 +375,7 @@ import scala.util.{Either, Failure, Success}
             BehaviorRunner.run(
               serverConnected(
                 ConnAckReceived(
+                  data.connect.protocolVersion,
                   data.connectionId,
                   data.connect.connectFlags,
                   data.connect.keepAlive,
@@ -409,8 +430,11 @@ import scala.util.{Either, Failure, Success}
 
       Behaviors
         .receivePartial[Event] {
+          case (_, GetProtocolVersion(reply, connectionId)) =>
+            reply.success(data.protocolLevel)
+            Behaviors.same
           case (context, connect @ ConnectReceivedLocally(connectionId, _, _, _))
-              if connectionId != data.connectionId =>
+            if connectionId != data.connectionId =>
             context.self ! connect
             disconnect(context, data.remote, data)
 
@@ -422,39 +446,39 @@ import scala.util.{Either, Failure, Success}
             disconnect(context, data.remote, data)
 
           case (context, DisconnectReceivedLocally(_, remote)) =>
-            remote.success(ForwardDisconnect)
+            remote.success(ForwardDisconnect(protocolLevel = data.protocolLevel))
             timer.cancel(SendPingreq)
             disconnect(context, data.remote, data)
 
           case (context, SubscribeReceivedLocally(_, _, subscribeData, remote)) =>
             context.watch(
-              context.spawnAnonymous(Subscriber(subscribeData, remote, data.subscriberPacketRouter, data.settings))
+              context.spawnAnonymous(Subscriber(data.protocolLevel, subscribeData, remote, data.subscriberPacketRouter, data.settings))
             )
-            serverConnected(data, resetPingReqTimer = true)
+            serverConnected(data)
 
           case (context, UnsubscribeReceivedLocally(_, _, unsubscribeData, remote)) =>
             context.watch(
               context
-                .spawnAnonymous(Unsubscriber(unsubscribeData, remote, data.unsubscriberPacketRouter, data.settings))
+                .spawnAnonymous(Unsubscriber(data.protocolLevel, unsubscribeData, remote, data.unsubscriberPacketRouter, data.settings))
             )
-            serverConnected(data, resetPingReqTimer = true)
+            serverConnected(data)
 
           case (_, PublishReceivedFromRemote(_, publish, local))
-              if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 =>
+            if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 =>
             local.success(Consumer.ForwardPublish)
             serverConnected(data, resetPingReqTimer = false)
 
           case (context,
-                prfr @ PublishReceivedFromRemote(_, publish @ Publish(_, topicName, Some(packetId), _), local)) =>
+          prfr @ PublishReceivedFromRemote(_, publish @ Publish(_, topicName, Some(packetId), _, _), local)) =>
             data.activeConsumers.get(topicName) match {
               case None =>
                 val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName + "-" + context.children.size)
                 val consumer =
-                  context.spawn(Consumer(publish, None, packetId, local, data.consumerPacketRouter, data.settings),
-                                consumerName)
+                  context.spawn(Consumer(data.protocolLevel, publish, None, packetId, local, data.consumerPacketRouter, data.settings),
+                    consumerName)
                 context.watch(consumer)
                 serverConnected(data.copy(activeConsumers = data.activeConsumers + (publish.topicName -> consumer)),
-                                resetPingReqTimer = false)
+                  resetPingReqTimer = false)
 
               case Some(consumer) if publish.flags.contains(ControlPacketFlags.DUP) =>
                 consumer ! Consumer.DupPublishReceivedFromRemote(local)
@@ -473,7 +497,8 @@ import scala.util.{Either, Failure, Success}
               val prfr = data.pendingRemotePublications(i)._2
               val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName + "-" + context.children.size)
               val consumer = context.spawn(
-                Consumer(prfr.publish,
+                Consumer(data.protocolLevel,
+                         prfr.publish,
                          None,
                          prfr.publish.packetId.get,
                          prfr.local,
@@ -631,25 +656,28 @@ import scala.util.{Either, Failure, Success}
   /*
    * Construct with the starting state
    */
-  def apply(subscribeData: SubscribeData,
+  def apply(protocolLevel: Connect.ProtocolLevel,
+            subscribeData: SubscribeData,
             remote: Promise[ForwardSubscribe],
             packetRouter: ActorRef[LocalPacketRouter.Request[Event]],
             settings: MqttSessionSettings): Behavior[Event] =
-    prepareServerSubscribe(Start(subscribeData, remote, packetRouter, settings))
+    prepareServerSubscribe(Start(protocolLevel, subscribeData, remote, packetRouter, settings))
 
   // Our FSM data, FSM events and commands emitted by the FSM
 
   sealed abstract class Data(val settings: MqttSessionSettings)
-  final case class Start(subscribeData: SubscribeData,
+  final case class Start(protocolLevel: Connect.ProtocolLevel,
+                         subscribeData: SubscribeData,
                          remote: Promise[ForwardSubscribe],
                          packetRouter: ActorRef[LocalPacketRouter.Request[Event]],
                          override val settings: MqttSessionSettings)
-      extends Data(settings)
-  final case class ServerSubscribe(packetId: PacketId,
+    extends Data(settings)
+  final case class ServerSubscribe(protocolLevel: Connect.ProtocolLevel,
+                                   packetId: PacketId,
                                    subscribeData: SubscribeData,
                                    packetRouter: ActorRef[LocalPacketRouter.Request[Event]],
                                    override val settings: MqttSessionSettings)
-      extends Data(settings)
+    extends Data(settings)
 
   sealed abstract class Event
   final case class AcquiredPacketId(packetId: PacketId) extends Event
@@ -658,13 +686,13 @@ import scala.util.{Either, Failure, Success}
   case object ReceiveSubAckTimeout extends Event
 
   sealed abstract class Command
-  final case class ForwardSubscribe(packetId: PacketId) extends Command
+  final case class ForwardSubscribe(protocolLevel: Connect.ProtocolLevel, packetId: PacketId) extends Command
   final case class ForwardSubAck(connectData: SubscribeData) extends Command
 
   // State event handling
 
   def prepareServerSubscribe(data: Start): Behavior[Event] = Behaviors.setup { context =>
-    val reply = Promise[LocalPacketRouter.Registered]()
+    val reply = Promise[LocalPacketRouter.Registered]
     data.packetRouter ! LocalPacketRouter.Register(context.self, reply)
     import context.executionContext
     reply.future.onComplete {
@@ -674,9 +702,9 @@ import scala.util.{Either, Failure, Success}
 
     Behaviors.receiveMessagePartial[Event] {
       case AcquiredPacketId(packetId) =>
-        data.remote.success(ForwardSubscribe(packetId))
+        data.remote.success(ForwardSubscribe(data.protocolLevel, packetId))
         serverSubscribe(
-          ServerSubscribe(packetId, data.subscribeData, data.packetRouter, data.settings)
+          ServerSubscribe(data.protocolLevel, packetId, data.subscribeData, data.packetRouter, data.settings)
         )
       case UnobtainablePacketId =>
         data.remote.failure(SubscribeFailed)
@@ -715,25 +743,28 @@ import scala.util.{Either, Failure, Success}
   /*
    * Construct with the starting state
    */
-  def apply(unsubscribeData: UnsubscribeData,
+  def apply(protocolLevel: Connect.ProtocolLevel,
+            unsubscribeData: UnsubscribeData,
             remote: Promise[ForwardUnsubscribe],
             packetRouter: ActorRef[LocalPacketRouter.Request[Event]],
             settings: MqttSessionSettings): Behavior[Event] =
-    prepareServerUnsubscribe(Start(unsubscribeData, remote, packetRouter, settings))
+    prepareServerUnsubscribe(Start(protocolLevel, unsubscribeData, remote, packetRouter, settings))
 
   // Our FSM data, FSM events and commands emitted by the FSM
 
   sealed abstract class Data(val settings: MqttSessionSettings)
-  final case class Start(unsubscribeData: UnsubscribeData,
+  final case class Start(protocolLevel: Connect.ProtocolLevel,
+                         unsubscribeData: UnsubscribeData,
                          remote: Promise[ForwardUnsubscribe],
                          packetRouter: ActorRef[LocalPacketRouter.Request[Event]],
                          override val settings: MqttSessionSettings)
-      extends Data(settings)
-  final case class ServerUnsubscribe(packetId: PacketId,
+    extends Data(settings)
+  final case class ServerUnsubscribe(protocolLevel: Connect.ProtocolLevel,
+                                     packetId: PacketId,
                                      unsubscribeData: UnsubscribeData,
                                      packetRouter: ActorRef[LocalPacketRouter.Request[Event]],
                                      override val settings: MqttSessionSettings)
-      extends Data(settings)
+    extends Data(settings)
 
   sealed abstract class Event
   final case class AcquiredPacketId(packetId: PacketId) extends Event
@@ -742,13 +773,13 @@ import scala.util.{Either, Failure, Success}
   case object ReceiveUnsubAckTimeout extends Event
 
   sealed abstract class Command
-  final case class ForwardUnsubscribe(packetId: PacketId) extends Command
+  final case class ForwardUnsubscribe(packetId: PacketId, protocolLevel: Connect.ProtocolLevel) extends Command
   final case class ForwardUnsubAck(connectData: UnsubscribeData) extends Command
 
   // State event handling
 
   def prepareServerUnsubscribe(data: Start): Behavior[Event] = Behaviors.setup { context =>
-    val reply = Promise[LocalPacketRouter.Registered]()
+    val reply = Promise[LocalPacketRouter.Registered]
     data.packetRouter ! LocalPacketRouter.Register(context.self, reply)
     import context.executionContext
     reply.future.onComplete {
@@ -758,9 +789,9 @@ import scala.util.{Either, Failure, Success}
 
     Behaviors.receiveMessagePartial[Event] {
       case AcquiredPacketId(packetId) =>
-        data.remote.success(ForwardUnsubscribe(packetId))
+        data.remote.success(ForwardUnsubscribe(packetId, data.protocolLevel))
         serverUnsubscribe(
-          ServerUnsubscribe(packetId, data.unsubscribeData, data.packetRouter, data.settings)
+          ServerUnsubscribe(data.protocolLevel, packetId, data.unsubscribeData, data.packetRouter, data.settings)
         )
       case UnobtainablePacketId =>
         data.remote.failure(UnsubscribeFailed)
