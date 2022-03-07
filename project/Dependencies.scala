@@ -17,7 +17,7 @@ object Dependencies {
   val AwsSpiAkkaHttpVersion = "0.0.11"
   // Sync with plugins.sbt
   val AkkaGrpcBinaryVersion = "1.0"
-  val AkkaHttpVersion = "10.2.7"
+  val AkkaHttpVersion = "10.2.9"
   val AkkaHttpBinaryVersion = "10.2"
   val ScalaTestVersion = "3.2.2"
   val mockitoVersion = "3.4.6" // check even https://github.com/scalatest/scalatestplus-mockito/releases
