@@ -48,7 +48,7 @@ public class RetryTest {
                         RetryPolicy.builder()
                             .backoffStrategy(BackoffStrategy.defaultStrategy())
                             .throttlingBackoffStrategy(BackoffStrategy.defaultThrottlingStrategy())
-                            .numRetries(SdkDefaultRetrySetting.DEFAULT_MAX_RETRIES)
+                            .numRetries(SdkDefaultRetrySetting.defaultMaxAttempts())
                             .retryCondition(RetryCondition.defaultRetryCondition())
                             .build())
                     .build())

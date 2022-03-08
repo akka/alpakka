@@ -13,7 +13,7 @@ object Dependencies {
 
   val InfluxDBJavaVersion = "2.15"
 
-  val AwsSdk2Version = "2.11.14"
+  val AwsSdk2Version = "2.17.113"
   val AwsSpiAkkaHttpVersion = "0.0.11"
   // Sync with plugins.sbt
   val AkkaGrpcBinaryVersion = "1.0"
@@ -89,8 +89,7 @@ object Dependencies {
           ExclusionRule("software.amazon.awssdk", "apache-client"),
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         )
-      ) ++ JacksonDatabindDependencies
-      ++ Mockito
+      ) ++ Mockito
   )
 
   val AzureStorageQueue = Seq(
@@ -145,7 +144,7 @@ object Dependencies {
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         ),
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion // ApacheV2
-      ) ++ JacksonDatabindDependencies
+      )
   )
 
   val Elasticsearch = Seq(
@@ -345,8 +344,7 @@ object Dependencies {
           ExclusionRule("software.amazon.awssdk", "apache-client"),
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         )
-      ) ++ JacksonDatabindDependencies
-      ++ Mockito
+      ) ++ Mockito
   )
 
   val KuduVersion = "1.7.1"
@@ -412,7 +410,7 @@ object Dependencies {
         // in-memory filesystem for file related tests
         "com.google.jimfs" % "jimfs" % "1.1" % Test, // ApacheV2
         "com.github.tomakehurst" % "wiremock-jre8" % "2.26.3" % Test // ApacheV2
-      ) ++ JacksonDatabindDependencies
+      )
   )
 
   val SpringWeb = {
@@ -450,8 +448,7 @@ object Dependencies {
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         ),
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion // ApacheV2
-      ) ++ JacksonDatabindDependencies
-      ++ Mockito
+      ) ++ Mockito
   )
 
   val Sns = Seq(
@@ -466,8 +463,7 @@ object Dependencies {
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         ),
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion // ApacheV2
-      ) ++ JacksonDatabindDependencies
-      ++ Mockito
+      ) ++ Mockito
   )
 
   val SolrjVersion = "7.7.3"
@@ -495,8 +491,7 @@ object Dependencies {
         ),
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
         "org.mockito" % "mockito-inline" % mockitoVersion % Test // MIT
-      ) ++ JacksonDatabindDependencies
-      ++ Mockito
+      ) ++ Mockito
   )
 
   val Sse = Seq(
