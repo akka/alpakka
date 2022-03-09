@@ -39,15 +39,4 @@ object KinesisFlow {
       .FlowWithContext[PutRecordsRequestEntry, T]
       .via(scaladsl.KinesisFlow.withContext[T](streamName, settings)(kinesisClient))
       .asJava
-
-  def createWithContext[T](
-      streamName: String,
-      settings: KinesisFlowSettings,
-      cleanUpContextOnFailure: java.util.function.Consumer[T],
-      kinesisClient: KinesisAsyncClient
-  ): FlowWithContext[PutRecordsRequestEntry, T, PutRecordsResultEntry, T, NotUsed] =
-    akka.stream.scaladsl
-      .FlowWithContext[PutRecordsRequestEntry, T]
-      .via(scaladsl.KinesisFlow.withContext[T](streamName, cleanUpContextOnFailure.accept _, settings)(kinesisClient))
-      .asJava
 }

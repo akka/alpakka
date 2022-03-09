@@ -69,16 +69,6 @@ class KinesisFlowSpec extends AnyWordSpec with Matchers with KinesisMock with Lo
         sinkProbe.expectComplete()
       }
     }
-
-    "fail when request returns an error, but first do cleanup of contexts" in assertAllStagesStopped {
-      new Settings with KinesisFlowWithContextProbe with WithPutRecordsFailure {
-        sourceProbe.sendNext(recordStream.head)
-
-        sinkProbe.request(1)
-        sinkProbe.expectError(FailurePublishingRecords(requestError))
-        cleanupContextFunction.isInvoked shouldBe true
-      }
-    }
   }
 
   sealed trait Settings {
@@ -98,7 +88,7 @@ class KinesisFlowSpec extends AnyWordSpec with Matchers with KinesisMock with Lo
       TestSource
         .probe[PutRecordsRequestEntry]
         .via(KinesisFlow(streamName, settings))
-        .toMat(TestSink.probe)(Keep.both)
+        .toMat(TestSink.probe[PutRecordsResultEntry])(Keep.both)
         .run()
   }
 
@@ -119,17 +109,10 @@ class KinesisFlowSpec extends AnyWordSpec with Matchers with KinesisMock with Lo
       .from(1)
       .map(i => (PutRecordsResultEntry.builder().build(), i))
 
-    class TestFunction extends (Int => Unit) {
-      private var invoked = false
-      def isInvoked: Boolean = invoked
-      override def apply(v1: Int): Unit = invoked = true
-    }
-    val cleanupContextFunction = new TestFunction
-
     val (sourceProbe, sinkProbe) =
       TestSource
         .probe[(PutRecordsRequestEntry, Int)]
-        .via(KinesisFlow.withContext(streamName, cleanupContextFunction, settings))
+        .via(KinesisFlow.withContext(streamName, settings))
         .toMat(TestSink.probe)(Keep.both)
         .run()
   }
