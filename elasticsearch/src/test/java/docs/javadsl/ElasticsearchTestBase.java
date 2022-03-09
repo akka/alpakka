@@ -8,14 +8,11 @@ import akka.actor.ActorSystem;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.model.ContentTypes;
 import akka.http.javadsl.model.HttpRequest;
-import akka.stream.Materializer;
 import akka.stream.alpakka.elasticsearch.ApiVersion;
 import akka.stream.alpakka.elasticsearch.ElasticsearchConnectionSettings;
 import akka.stream.alpakka.elasticsearch.ElasticsearchParams;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
-import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -53,11 +50,6 @@ public class ElasticsearchTestBase {
   @AfterClass
   public static void teardown() {
     TestKit.shutdownActorSystem(system);
-  }
-
-  @After
-  public void checkForStageLeaks() {
-    StreamTestKit.assertAllStagesStopped(Materializer.matFromSystem(system));
   }
 
   protected static void prepareIndex(int port, ApiVersion esApiVersion) throws IOException {

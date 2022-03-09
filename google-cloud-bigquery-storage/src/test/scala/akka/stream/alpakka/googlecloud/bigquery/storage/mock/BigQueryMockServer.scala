@@ -9,7 +9,7 @@ import akka.actor.ActorSystem
 import akka.grpc.GrpcServiceException
 import akka.grpc.scaladsl.Metadata
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
-import akka.http.scaladsl.{Http, HttpConnectionContext}
+import akka.http.scaladsl.Http
 import akka.stream.scaladsl.Source
 import com.google.cloud.bigquery.storage.v1.arrow.{ArrowRecordBatch, ArrowSchema}
 import com.google.cloud.bigquery.storage.v1.avro.AvroSchema
@@ -115,6 +115,8 @@ class BigQueryMockServer(port: Int) extends BigQueryMockData {
           ???
       })
 
-    Http().bindAndHandleAsync(service, interface = "0.0.0.0", port = port, connectionContext = HttpConnectionContext())
+    Http()
+      .newServerAt("0.0.0.0", port)
+      .bind(service)
   }
 }

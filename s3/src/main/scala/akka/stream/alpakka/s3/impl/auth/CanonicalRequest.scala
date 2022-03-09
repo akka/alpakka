@@ -6,7 +6,7 @@ package akka.stream.alpakka.s3.impl.auth
 
 import akka.annotation.InternalApi
 import akka.http.scaladsl.model.Uri.{Path, Query}
-import akka.http.scaladsl.model.headers.{`Raw-Request-URI`, `Remote-Address`, `Timeout-Access`, `Tls-Session-Info`}
+import akka.http.scaladsl.model.headers.{`Raw-Request-URI`, `Timeout-Access`, `Tls-Session-Info`, `X-Forwarded-For`}
 import akka.http.scaladsl.model.{HttpHeader, HttpRequest}
 
 // Documentation: http://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
@@ -25,7 +25,7 @@ import akka.http.scaladsl.model.{HttpHeader, HttpRequest}
 @InternalApi private[impl] object CanonicalRequest {
   private val akkaSyntheticHeaderNames = List(
     `Raw-Request-URI`.lowercaseName,
-    `Remote-Address`.lowercaseName,
+    `X-Forwarded-For`.lowercaseName,
     `Timeout-Access`.lowercaseName,
     `Tls-Session-Info`.lowercaseName
   )

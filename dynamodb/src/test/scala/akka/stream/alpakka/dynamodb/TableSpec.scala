@@ -8,7 +8,6 @@ import java.net.URI
 
 import akka.actor.ActorSystem
 import akka.stream.alpakka.dynamodb.scaladsl.DynamoDb
-import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
 import com.github.matsluni.akkahttpspi.AkkaHttpClient
 import org.scalatest.BeforeAndAfterAll
@@ -44,19 +43,19 @@ class TableSpec extends TestKit(ActorSystem("TableSpec")) with AsyncWordSpecLike
 
     import TableSpecOps._
 
-    "1) create table" in assertAllStagesStopped {
+    "1) create table" in {
       DynamoDb.single(createTableRequest).map(_.tableDescription.tableName shouldBe tableName)
     }
 
-    "2) list tables" in assertAllStagesStopped {
+    "2) list tables" in {
       DynamoDb.single(listTablesRequest).map(_.tableNames.asScala should contain(tableName))
     }
 
-    "3) describe table" in assertAllStagesStopped {
+    "3) describe table" in {
       DynamoDb.single(describeTableRequest).map(_.table.tableName shouldBe tableName)
     }
 
-    "4) update table" in assertAllStagesStopped {
+    "4) update table" in {
       for {
         describe <- DynamoDb.single(describeTableRequest)
         update <- DynamoDb.single(updateTableRequest)
@@ -67,7 +66,7 @@ class TableSpec extends TestKit(ActorSystem("TableSpec")) with AsyncWordSpecLike
     }
 
     // TODO: Enable this test when DynamoDB Local supports TTLs
-    "5) update time to live" ignore assertAllStagesStopped {
+    "5) update time to live" ignore {
       for {
         describe <- DynamoDb.single(describeTimeToLiveRequest)
         update <- DynamoDb.single(updateTimeToLiveRequest)
@@ -77,7 +76,7 @@ class TableSpec extends TestKit(ActorSystem("TableSpec")) with AsyncWordSpecLike
       }
     }
 
-    "6) delete table" in assertAllStagesStopped {
+    "6) delete table" in {
       for {
         _ <- DynamoDb.single(deleteTableRequest)
         list <- DynamoDb.single(listTablesRequest)

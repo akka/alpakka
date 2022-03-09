@@ -18,7 +18,6 @@ import akka.actor.ActorSystem
 import akka.stream.alpakka.dynamodb.DynamoDbOp._
 import akka.stream.alpakka.dynamodb.scaladsl._
 import akka.stream.scaladsl.{Sink, Source}
-import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.BeforeAndAfterAll
@@ -87,7 +86,7 @@ class ExampleSpec
       listTablesResult.futureValue
     }
 
-    "allow multiple requests" in assertAllStagesStopped {
+    "allow multiple requests" in {
       // #flow
       val source: Source[DescribeTableResponse, NotUsed] = Source
         .single(CreateTableRequest.builder().tableName("testTable").build())
@@ -99,7 +98,7 @@ class ExampleSpec
       source.runWith(Sink.ignore).failed.futureValue
     }
 
-    "flow with context" in assertAllStagesStopped {
+    "flow with context" in {
       case class SomeContext()
 
       // #withContext
@@ -125,7 +124,7 @@ class ExampleSpec
       writtenSource.runWith(Sink.ignore).failed.futureValue
     }
 
-    "allow multiple requests - single source" in assertAllStagesStopped {
+    "allow multiple requests - single source" in {
       (for {
         create <- DynamoDb.single(CreateTableRequest.builder().tableName("testTable").build())
         describe <- DynamoDb.single(
@@ -134,7 +133,7 @@ class ExampleSpec
       } yield describe.table.itemCount).failed.futureValue
     }
 
-    "provide a paginated requests source" in assertAllStagesStopped {
+    "provide a paginated requests source" in {
       // #paginated
       val scanRequest = ScanRequest.builder().tableName("testTable").build()
 
@@ -145,7 +144,7 @@ class ExampleSpec
       scanPages.runWith(Sink.ignore).failed.futureValue
     }
 
-    "provide a paginated flow" in assertAllStagesStopped {
+    "provide a paginated flow" in {
       val scanRequest = ScanRequest.builder().tableName("testTable").build()
       // #paginated
       val scanPageInFlow: Source[ScanResponse, NotUsed] =

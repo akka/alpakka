@@ -4,12 +4,13 @@
 
 package akka.stream.alpakka.elasticsearch
 
-import akka.http.scaladsl.HttpsConnectionContext
+import akka.http.scaladsl.{ConnectionContext, HttpsConnectionContext}
 import akka.http.scaladsl.model.HttpHeader
 import akka.http.scaladsl.model.HttpHeader.ParsingResult
 import akka.japi.Util
 
 import scala.jdk.CollectionConverters._
+import javax.net.ssl.SSLContext
 import scala.compat.java8.OptionConverters
 
 final class ElasticsearchConnectionSettings private (
@@ -47,10 +48,14 @@ final class ElasticsearchConnectionSettings private (
   }
 
   /** Scala API */
+  @deprecated("prefer ElasticsearchConnectionSettings.withSSLContext", "3.1.0")
+  @Deprecated
   def withConnectionContext(connectionContext: HttpsConnectionContext): ElasticsearchConnectionSettings =
     copy(connectionContext = Option(connectionContext))
 
   /** Java API */
+  @deprecated("prefer ElasticsearchConnectionSettings.withSSLContext", "3.1.0")
+  @Deprecated
   def withConnectionContext(
       connectionContext: akka.http.javadsl.HttpsConnectionContext
   ): ElasticsearchConnectionSettings = {
@@ -64,6 +69,12 @@ final class ElasticsearchConnectionSettings private (
     )
 
     copy(connectionContext = Option(scalaContext))
+  }
+
+  def withSSLContext(
+      sslContext: SSLContext
+  ): ElasticsearchConnectionSettings = {
+    copy(connectionContext = Option(ConnectionContext.httpsClient(sslContext)))
   }
 
   def hasConnectionContextDefined: Boolean = connectionContext.isDefined

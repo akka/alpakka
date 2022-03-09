@@ -13,7 +13,6 @@ import akka.stream.alpakka.sqs._
 import akka.stream.alpakka.sqs.scaladsl.{DefaultTestContext, SqsSource}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Keep, Sink}
-import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import com.github.matsluni.akkahttpspi.AkkaHttpClient
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.flatspec.AnyFlatSpec
@@ -62,7 +61,7 @@ class SqsSourceSpec extends AnyFlatSpec with ScalaFutures with Matchers with Def
     future.futureValue.body() shouldBe "alpakka"
   }
 
-  it should "continue streaming if receives an empty response" taggedAs Integration in assertAllStagesStopped {
+  it should "continue streaming if receives an empty response" taggedAs Integration in {
     new IntegrationFixture {
       val (switch, source) = SqsSource(queueUrl, SqsSourceSettings().withWaitTimeSeconds(0))
         .viaMat(KillSwitches.single)(Keep.right)
@@ -77,7 +76,7 @@ class SqsSourceSpec extends AnyFlatSpec with ScalaFutures with Matchers with Def
     }
   }
 
-  it should "terminate on an empty response if requested" taggedAs Integration in assertAllStagesStopped {
+  it should "terminate on an empty response if requested" taggedAs Integration in {
     new IntegrationFixture {
       val future = SqsSource(queueUrl, sqsSourceSettings.withCloseOnEmptyReceive(true))
         .runWith(Sink.ignore)
@@ -94,7 +93,7 @@ class SqsSourceSpec extends AnyFlatSpec with ScalaFutures with Matchers with Def
     future.failed.futureValue.getCause shouldBe a[QueueDoesNotExistException]
   }
 
-  "SqsSource" should "ask for 'All' attributes set in the settings" taggedAs Integration in assertAllStagesStopped {
+  "SqsSource" should "ask for 'All' attributes set in the settings" taggedAs Integration in {
     new IntegrationFixture {
       val attribute = All
       val settings = sqsSourceSettings.withAttribute(attribute)
@@ -117,7 +116,7 @@ class SqsSourceSpec extends AnyFlatSpec with ScalaFutures with Matchers with Def
   }
 
   allAvailableAttributes foreach { attribute =>
-    it should s"ask for '${attribute.name}' set in the settings" taggedAs Integration in assertAllStagesStopped {
+    it should s"ask for '${attribute.name}' set in the settings" taggedAs Integration in {
       new IntegrationFixture {
         val settings = sqsSourceSettings.withAttribute(attribute)
 
@@ -138,9 +137,9 @@ class SqsSourceSpec extends AnyFlatSpec with ScalaFutures with Matchers with Def
     }
   }
 
-  it should "ask for multiple attributes set in the settings" taggedAs Integration in assertAllStagesStopped {
+  it should "ask for multiple attributes set in the settings" taggedAs Integration in {
     new IntegrationFixture {
-      val attributes = allAvailableAttributes.filterNot(_ == All)
+      val attributes = allAvailableAttributes.filterNot(attr => attr == All || attr == MessageGroupId)
       val settings = sqsSourceSettings.withAttributes(attributes)
 
       val sendMessageRequest =
@@ -161,7 +160,7 @@ class SqsSourceSpec extends AnyFlatSpec with ScalaFutures with Matchers with Def
     }
   }
 
-  it should "ask for all the message attributes set in the settings" taggedAs Integration in assertAllStagesStopped {
+  it should "ask for all the message attributes set in the settings" taggedAs Integration in {
     new IntegrationFixture {
       val messageAttributes = Map(
         "attribute-1" -> MessageAttributeValue.builder().stringValue("v1").dataType("String").build(),
@@ -237,7 +236,7 @@ class SqsSourceSpec extends AnyFlatSpec with ScalaFutures with Matchers with Def
     }
   }
 
-  "SqsSource" should "stream a single batch from the queue with custom client" taggedAs Integration in assertAllStagesStopped {
+  "SqsSource" should "stream a single batch from the queue with custom client" taggedAs Integration in {
     new IntegrationFixture {
       /*
     // #init-custom-client
@@ -276,7 +275,7 @@ class SqsSourceSpec extends AnyFlatSpec with ScalaFutures with Matchers with Def
     }
   }
 
-  it should "stream multiple batches from the queue" taggedAs Integration in assertAllStagesStopped {
+  it should "stream multiple batches from the queue" taggedAs Integration in {
     new IntegrationFixture {
       val input =
         for (i <- 1 to 100)
@@ -300,7 +299,7 @@ class SqsSourceSpec extends AnyFlatSpec with ScalaFutures with Matchers with Def
     }
   }
 
-  it should "stream single message at least twice from the queue when visibility timeout passed" taggedAs Integration in assertAllStagesStopped {
+  it should "stream single message at least twice from the queue when visibility timeout passed" taggedAs Integration in {
     new IntegrationFixture {
       val sendMessageRequest =
         SendMessageRequest
@@ -319,7 +318,7 @@ class SqsSourceSpec extends AnyFlatSpec with ScalaFutures with Matchers with Def
     }
   }
 
-  it should "stream single message once from the queue when visibility timeout did not pass" taggedAs Integration in assertAllStagesStopped {
+  it should "stream single message once from the queue when visibility timeout did not pass" taggedAs Integration in {
     new IntegrationFixture {
       val sendMessageRequest =
         SendMessageRequest
@@ -344,9 +343,9 @@ object SqsSourceSpec {
     ApproximateFirstReceiveTimestamp,
     ApproximateReceiveCount,
     SenderId,
-    SentTimestamp,
-    MessageDeduplicationId,
-    MessageGroupId
+    SentTimestamp
+    // MessageDeduplicationId, removed from ElasticMq 1.3.4
+    // MessageGroupId, removed from ElasticMq 1.3.4
     // SequenceNumber, not supported by elasticmq
   )
 }
