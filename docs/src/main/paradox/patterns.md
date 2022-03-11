@@ -3,38 +3,6 @@
 Many [Enterprise Integration Patterns](https://www.enterpriseintegrationpatterns.com/patterns/messaging/toc.html) can be implemented with Akka Streams 
 (see @extref:[Akka Streams documentation](akka:stream/index.html)).
 
-
-# Splitter
-
-You can achieve a [Splitter](https://www.enterpriseintegrationpatterns.com/patterns/messaging/Sequencer.html) as described in  [EIP](https://www.enterpriseintegrationpatterns.com) using out of the box Akka Streams dsl.
-
-![Splitter](img/Sequencer.gif)
-
-## Simple Splitter
-
-Let's say that we have a stream containing strings. Each string contains a few numbers separated by "-". We want to create out of this a stream that only contains the numbers. 
-
-Scala
-: @@snip [snip](/doc-examples/src/test/scala/akka/stream/alpakka/eip/scaladsl/SplitterExamples.scala) { #Simple-Split }
-
-Java
-: @@snip [snip](/doc-examples/src/test/java/akka/stream/alpakka/eip/javadsl/SplitterExamples.java) { #Simple-Split }
-
-## Splitter + Aggregator
-
-Sometimes it's very useful to split a message and aggregate it's "sub-messages" into a new message (A combination of [Splitter](https://www.enterpriseintegrationpatterns.com/patterns/messaging/Sequencer.html) and [Aggregator](https://www.enterpriseintegrationpatterns.com/patterns/messaging/Aggregator.html)) 
-
-Let's say that now we want to create a new stream containing the sums of the numbers in each original string. 
-
-
-Scala
-: @@snip [snip](/doc-examples/src/test/scala/akka/stream/alpakka/eip/scaladsl/SplitterExamples.scala) { #Aggregate-Split }
-
-Java
-: @@snip [snip](/doc-examples/src/test/java/akka/stream/alpakka/eip/javadsl/SplitterExamples.java) { #Aggregate-Split }
-
-While in real life this solution if overkill for such a simple problem (you can just do everything in a map), more complex scenarios, involving in particular I/O, will benefit from the fact that you can paralelize sub-streams and get back-pressure for "free".
-
 # PassThrough
 
 Use PassThroughFlow when you have a message that should be used in a 
