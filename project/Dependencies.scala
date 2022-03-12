@@ -19,18 +19,18 @@ object Dependencies {
   val AkkaGrpcBinaryVersion = "1.0"
   val AkkaHttpVersion = "10.2.9"
   val AkkaHttpBinaryVersion = "10.2"
-  val ScalaTestVersion = "3.2.2"
+  val ScalaTestVersion = "3.2.11"
   val TestContainersScalaTestVersion = "0.40.3"
-  val mockitoVersion = "3.4.6" // check even https://github.com/scalatest/scalatestplus-mockito/releases
-  val hoverflyVersion = "0.13.1"
+  val mockitoVersion = "4.2.0" // check even https://github.com/scalatest/scalatestplus-mockito/releases
+  val hoverflyVersion = "0.14.1"
 
   val CouchbaseVersion = "2.7.16"
   val CouchbaseVersionForDocs = "2.7"
 
   val JwtCoreVersion = "3.0.1"
 
-  val log4jOverSlf4jVersion = "1.7.30"
-  val jclOverSlf4jVersion = "1.7.30"
+  val log4jOverSlf4jVersion = "1.7.36"
+  val jclOverSlf4jVersion = "1.7.36"
 
   val Common = Seq(
     // These libraries are added to all modules via the `Common` AutoPlugin
@@ -57,7 +57,7 @@ object Dependencies {
   val Mockito = Seq(
     "org.mockito" % "mockito-core" % mockitoVersion % Test,
     // https://github.com/scalatest/scalatestplus-mockito/releases
-    "org.scalatestplus" %% "mockito-3-4" % (ScalaTestVersion + ".0") % Test
+    "org.scalatestplus" %% "mockito-4-2" % (ScalaTestVersion + ".0") % Test
   )
 
   // Releases https://github.com/FasterXML/jackson-databind/releases
@@ -72,7 +72,7 @@ object Dependencies {
 
   val Amqp = Seq(
     libraryDependencies ++= Seq(
-        "com.rabbitmq" % "amqp-client" % "5.14.0" // APLv2
+        "com.rabbitmq" % "amqp-client" % "5.14.2" // APLv2
       ) ++ Mockito
   )
 
@@ -116,7 +116,7 @@ object Dependencies {
         "com.couchbase.client" % "java-client" % CouchbaseVersion, // ApacheV2
         "io.reactivex" % "rxjava-reactive-streams" % "1.2.1", //ApacheV2
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion % Provided, // Apache V2
-        "com.typesafe.play" %% "play-json" % "2.7.4" % Test, // Apache V2
+        "com.typesafe.play" %% "play-json" % "2.9.2" % Test, // Apache V2
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion % Test // Apache V2
       )
   )
@@ -126,8 +126,8 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
         "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test,
         "com.typesafe.akka" %% "akka-stream-kafka" % "3.0.0" % Test,
-        "junit" % "junit" % "4.13" % Test, // Eclipse Public License 1.0
-        "org.scalatest" %% "scalatest" % "3.1.4" % Test // ApacheV2
+        "junit" % "junit" % "4.13.2" % Test, // Eclipse Public License 1.0
+        "org.scalatest" %% "scalatest" % "3.2.11" % Test // ApacheV2
       )
   )
 
@@ -156,7 +156,7 @@ object Dependencies {
 
   val File = Seq(
     libraryDependencies ++= Seq(
-        "com.google.jimfs" % "jimfs" % "1.1" % Test // ApacheV2
+        "com.google.jimfs" % "jimfs" % "1.2" % Test // ApacheV2
       )
   )
 
@@ -166,7 +166,7 @@ object Dependencies {
         "org.apache.hadoop" % "hadoop-client" % "3.2.1" % Test exclude ("log4j", "log4j"), //Apache2
         "org.apache.hadoop" % "hadoop-common" % "3.2.1" % Test exclude ("log4j", "log4j"), //Apache2
         "com.sksamuel.avro4s" %% "avro4s-core" % "3.0.9" % Test,
-        "org.scalacheck" %% "scalacheck" % "1.14.3" % Test,
+        "org.scalacheck" %% "scalacheck" % "1.15.4" % Test,
         "org.specs2" %% "specs2-core" % "4.8.3" % Test, //MIT like: https://github.com/etorreborre/specs2/blob/master/LICENSE.txt
         "org.slf4j" % "log4j-over-slf4j" % log4jOverSlf4jVersion % Test // MIT like: http://www.slf4j.org/license.html
       )
@@ -196,7 +196,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-        "com.github.jwt-scala" %% "jwt-spray-json" % "7.1.0", // ApacheV2
+        "com.github.jwt-scala" %% "jwt-spray-json" % "7.1.4", // ApacheV2
         "com.google.auth" % "google-auth-library-credentials" % "0.24.1", // BSD 3-clause
         "io.specto" % "hoverfly-java" % hoverflyVersion % Test // ApacheV2
       ) ++ Mockito
@@ -223,7 +223,7 @@ object Dependencies {
         "io.grpc" % "grpc-auth" % akka.grpc.gen.BuildInfo.grpcVersion, // ApacheV2
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http2-support" % AkkaHttpVersion,
-        "org.apache.arrow" % "arrow-memory-netty" % "4.0.0" % Test,
+        "org.apache.arrow" % "arrow-memory-netty" % "4.0.1" % Test,
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion
       ) ++ Mockito
   )
@@ -232,7 +232,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-        "com.github.tomakehurst" % "wiremock" % "2.25.1" % Test // ApacheV2
+        "com.github.tomakehurst" % "wiremock" % "2.27.2" % Test // ApacheV2
       ) ++ Mockito
   )
 
@@ -293,7 +293,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-        "com.github.jwt-scala" %% "jwt-spray-json" % "7.1.0" // ApacheV2
+        "com.github.jwt-scala" %% "jwt-spray-json" % "7.1.4" // ApacheV2
       ) ++ Mockito
   )
 
@@ -313,10 +313,10 @@ object Dependencies {
   val Jms = Seq(
     libraryDependencies ++= Seq(
         "javax.jms" % "jms" % "1.1" % Provided, // CDDL + GPLv2
-        "com.ibm.mq" % "com.ibm.mq.allclient" % "9.2.0.0" % Test, // IBM International Program License Agreement https://public.dhe.ibm.com/ibmdl/export/pub/software/websphere/messaging/mqdev/maven/licenses/L-APIG-AZYF2E/LI_en.html
-        "org.apache.activemq" % "activemq-broker" % "5.16.0" % Test, // ApacheV2
-        "org.apache.activemq" % "activemq-client" % "5.16.0" % Test, // ApacheV2
-        "io.github.sullis" %% "jms-testkit" % "1.0.1" % Test // ApacheV2
+        "com.ibm.mq" % "com.ibm.mq.allclient" % "9.2.5.0" % Test, // IBM International Program License Agreement https://public.dhe.ibm.com/ibmdl/export/pub/software/websphere/messaging/mqdev/maven/licenses/L-APIG-AZYF2E/LI_en.html
+        "org.apache.activemq" % "activemq-broker" % "5.16.4" % Test, // ApacheV2
+        "org.apache.activemq" % "activemq-client" % "5.16.4" % Test, // ApacheV2
+        "io.github.sullis" %% "jms-testkit" % "1.0.4" % Test // ApacheV2
       ) ++ Mockito,
     // Having JBoss as a first resolver is a workaround for https://github.com/coursier/coursier/issues/200
     externalResolvers := ("jboss" at "https://repository.jboss.org/nexus/content/groups/public") +: externalResolvers.value
@@ -407,8 +407,8 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http-xml" % AkkaHttpVersion,
         "software.amazon.awssdk" % "auth" % AwsSdk2Version,
         // in-memory filesystem for file related tests
-        "com.google.jimfs" % "jimfs" % "1.1" % Test, // ApacheV2
-        "com.github.tomakehurst" % "wiremock-jre8" % "2.26.3" % Test // ApacheV2
+        "com.google.jimfs" % "jimfs" % "1.2" % Test, // ApacheV2
+        "com.github.tomakehurst" % "wiremock-jre8" % "2.32.0" % Test // ApacheV2
       )
   )
 
@@ -432,7 +432,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.slick" %% "slick" % SlickVersion, // BSD 2-clause "Simplified" License
         "com.typesafe.slick" %% "slick-hikaricp" % SlickVersion, // BSD 2-clause "Simplified" License
-        "com.h2database" % "h2" % "1.4.200" % Test // Eclipse Public License 1.0
+        "com.h2database" % "h2" % "2.1.210" % Test // Eclipse Public License 1.0
       )
   )
   val Eventbridge = Seq(
