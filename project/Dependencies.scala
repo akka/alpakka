@@ -8,7 +8,7 @@ object Dependencies {
   val Scala213 = "2.13.8" // update even in link-validator.conf
   val ScalaVersions = Seq(Scala213)
 
-  val AkkaVersion = "2.6.18"
+  val AkkaVersion = "2.6.19"
   val AkkaBinaryVersion = "2.6"
 
   val InfluxDBJavaVersion = "2.15"
