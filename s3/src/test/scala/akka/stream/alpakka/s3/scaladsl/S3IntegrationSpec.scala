@@ -5,18 +5,17 @@
 package akka.stream.alpakka.s3.scaladsl
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.stream.{Attributes, KillSwitches, SharedKillSwitch}
-import akka.stream.alpakka.s3.AccessStyle.PathAccessStyle
+import akka.stream.alpakka.s3.AccessStyle.{PathAccessStyle, VirtualHostAccessStyle}
 import akka.stream.alpakka.s3.BucketAccess.{AccessGranted, NotExists}
 import akka.stream.alpakka.s3._
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Keep, Sink, Source}
-import akka.testkit.TestKit
+import akka.testkit.{TestKit, TestKitBase}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
-import com.typesafe.config.ConfigFactory
 import org.scalatest.Inspectors.forEvery
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
@@ -30,22 +29,19 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import scala.annotation.{nowarn, tailrec}
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
 
 trait S3IntegrationSpec
     extends AnyFlatSpecLike
+    with TestKitBase
     with BeforeAndAfterAll
     with Matchers
     with ScalaFutures
     with OptionValues
     with LogCapturing {
 
-  implicit val actorSystem: ActorSystem = ActorSystem(
-    "S3IntegrationSpec",
-    config().withFallback(ConfigFactory.load())
-  )
-  implicit val ec: ExecutionContext = actorSystem.dispatcher
+  implicit val ec: ExecutionContext = system.dispatcher
 
   implicit val defaultPatience: PatienceConfig = PatienceConfig(3.minutes, 100.millis)
 
@@ -63,32 +59,41 @@ trait S3IntegrationSpec
   val metaHeaders: Map[String, String] = Map("location" -> "Africa", "datatype" -> "image")
 
   override protected def afterAll(): Unit =
-    Http(actorSystem)
+    Http(system)
       .shutdownAllConnectionPools()
-      .foreach(_ => TestKit.shutdownActorSystem(actorSystem))
+      .foreach(_ => TestKit.shutdownActorSystem(system))
 
-  def config() = ConfigFactory.parseString("""
-      |alpakka.s3.aws.region {
-      |  provider = static
-      |  default-region = "us-east-1"
-      |}
-    """.stripMargin)
+  lazy val defaultS3Settings: S3Settings =
+    S3Settings()
+      .withS3RegionProvider(
+        new AwsRegionProvider {
+          val getRegion: Region = Region.US_EAST_1
+        }
+      )
+      .withAccessStyle(PathAccessStyle)
 
-  /** Hooks for Minio tests to overwrite the HTTP transport */
-  def attributes: Attributes = Attributes.none
+  def attributes: Attributes =
+    S3Attributes.settings(defaultS3Settings)
 
-  /** Hooks for Minio tests to overwrite the HTTP transport */
-  def attributes(s3Settings: S3Settings): Attributes = Attributes.none
+  def attributes(block: S3Settings => S3Settings): Attributes =
+    S3Attributes.settings(
+      block(defaultS3Settings)
+    )
 
   def otherRegionSettingsPathStyleAccess =
-    S3Settings()
-      .withAccessStyle(PathAccessStyle)
-      .withS3RegionProvider(new AwsRegionProvider {
-        val getRegion: Region = Region.EU_CENTRAL_1
-      })
+    attributes(
+      _.withAccessStyle(PathAccessStyle)
+        .withS3RegionProvider(new AwsRegionProvider {
+          val getRegion: Region = Region.EU_CENTRAL_1
+        })
+    )
 
-  /** Empty settings to be override in MinioSpec  */
-  def invalidCredentials = S3Settings()
+  def invalidCredentials: Attributes =
+    attributes(
+      _.withCredentialsProvider(
+        StaticCredentialsProvider.create(AwsBasicCredentials.create("invalid", "invalid"))
+      )
+    )
 
   def defaultRegionContentCount = 4
   def otherRegionContentCount = 5
@@ -106,7 +111,7 @@ trait S3IntegrationSpec
   it should "list with real credentials using the Version 1 API" in {
     val result = S3
       .listBucket(defaultBucket, None)
-      .withAttributes(attributes(S3Settings().withListBucketApiVersion(ApiVersion.ListBucketVersion1)))
+      .withAttributes(attributes(_.withListBucketApiVersion(ApiVersion.ListBucketVersion1)))
       .runWith(Sink.seq)
 
     val listingResult = result.futureValue
@@ -116,7 +121,7 @@ trait S3IntegrationSpec
   it should "list with real credentials in non us-east-1 zone" in {
     val result = S3
       .listBucket(bucketWithDots, None)
-      .withAttributes(attributes(otherRegionSettingsPathStyleAccess))
+      .withAttributes(otherRegionSettingsPathStyleAccess)
       .runWith(Sink.seq)
 
     result.futureValue.size shouldBe otherRegionContentCount
@@ -846,15 +851,15 @@ trait S3IntegrationSpec
     val request = for {
       _ <- S3
         .makeBucketSource(bucketName)
-        .withAttributes(S3Attributes.settings(otherRegionSettingsPathStyleAccess))
+        .withAttributes(otherRegionSettingsPathStyleAccess)
         .runWith(Sink.head)
       result <- S3
         .checkIfBucketExistsSource(bucketName)
-        .withAttributes(S3Attributes.settings(otherRegionSettingsPathStyleAccess))
+        .withAttributes(otherRegionSettingsPathStyleAccess)
         .runWith(Sink.head)
       _ <- S3
         .deleteBucketSource(bucketName)
-        .withAttributes(S3Attributes.settings(otherRegionSettingsPathStyleAccess))
+        .withAttributes(otherRegionSettingsPathStyleAccess)
         .runWith(Sink.head)
     } yield result
 
@@ -887,7 +892,7 @@ trait S3IntegrationSpec
   it should "contain error code even if exception in empty" in {
     val exception =
       S3.getObjectMetadata(defaultBucket, "sample")
-        .withAttributes(attributes(invalidCredentials))
+        .withAttributes(invalidCredentials)
         .runWith(Sink.head)
         .failed
         .mapTo[S3Exception]
@@ -956,11 +961,11 @@ trait S3IntegrationSpec
       upload <- source
         .runWith(
           S3.multipartUpload(bucketWithDots, objectKey, metaHeaders = MetaHeaders(metaHeaders))
-            .withAttributes(S3Attributes.settings(otherRegionSettingsPathStyleAccess))
+            .withAttributes(otherRegionSettingsPathStyleAccess)
         )
       download <- S3
         .download(bucketWithDots, objectKey)
-        .withAttributes(S3Attributes.settings(otherRegionSettingsPathStyleAccess))
+        .withAttributes(otherRegionSettingsPathStyleAccess)
         .runWith(Sink.head)
         .flatMap {
           case Some((downloadSource, _)) =>
@@ -978,7 +983,7 @@ trait S3IntegrationSpec
     downloaded shouldBe objectValue
 
     S3.deleteObject(bucketWithDots, objectKey)
-      .withAttributes(S3Attributes.settings(otherRegionSettingsPathStyleAccess))
+      .withAttributes(otherRegionSettingsPathStyleAccess)
       .runWith(Sink.head)
       .futureValue shouldEqual akka.Done
   }
@@ -1040,75 +1045,62 @@ trait S3IntegrationSpec
  *
  */
 @Ignore
-class AWSS3IntegrationSpec extends S3IntegrationSpec
+class AWSS3IntegrationSpec extends TestKit(ActorSystem("AWSS3IntegrationSpec")) with S3IntegrationSpec
 
 /*
- * For this test, you need a local s3 mirror, for instance minio (https://github.com/minio/minio).
- * With docker and the aws cli installed, you could run something like this:
- *
- * docker run -e MINIO_ACCESS_KEY=TESTKEY -e MINIO_SECRET_KEY=TESTSECRET -e MINIO_DOMAIN=s3minio.alpakka -p 9000:9000 minio/minio server /data
- * AWS_ACCESS_KEY_ID=TESTKEY AWS_SECRET_ACCESS_KEY=TESTSECRET aws --endpoint-url http://localhost:9000 s3api create-bucket --bucket my-test-us-east-1
- * AWS_ACCESS_KEY_ID=TESTKEY AWS_SECRET_ACCESS_KEY=TESTSECRET aws --endpoint-url http://localhost:9000 s3api create-bucket --bucket my.test.frankfurt
-
- * NOTE: Ideally you would run the following commands to create a versioned bucket in Minio however its not working, see https://github.com/akka/alpakka/issues/2750
- * AWS_ACCESS_KEY_ID=TESTKEY AWS_SECRET_ACCESS_KEY=TESTSECRET aws --endpoint-url http://localhost:9000 s3api create-bucket --bucket my-bucket-with-versioning
- * AWS_ACCESS_KEY_ID=TESTKEY AWS_SECRET_ACCESS_KEY=TESTSECRET aws --endpoint-url http://localhost:9000 s3api put-bucket-versioning --bucket my-bucket-with-versioning --versioning-configuration Status=Enabled
+ * For this test, you need a have docker installed and running.
  *
  * Run the tests from inside sbt:
  * s3/testOnly *.MinioS3IntegrationSpec
  */
-class MinioS3IntegrationSpec extends S3IntegrationSpec {
-  import MinioS3IntegrationSpec._
+
+class MinioS3IntegrationSpec
+    extends TestKit(ActorSystem("MinioS3IntegrationSpec"))
+    with S3IntegrationSpec
+    with MinioS3Test {
 
   override val defaultRegionContentCount = 0
   override val otherRegionContentCount = 0
 
-  override def config() =
-    ConfigFactory.parseString(s"""
-                                 |alpakka.s3 {
-                                 |  aws {
-                                 |    credentials {
-                                 |      provider = static
-                                 |      access-key-id = $accessKey
-                                 |      secret-access-key = $secret
-                                 |    }
-                                 |  }
-                                 |  endpoint-url = "$endpointUrlVirtualHostStyle"
-                                 |}
-    """.stripMargin).withFallback(super.config())
-
-  override def otherRegionSettingsPathStyleAccess =
-    S3Settings()
-      .withCredentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secret)))
-      .withEndpointUrl(endpointUrlPathStyle)
-      .withAccessStyle(PathAccessStyle)
-
-  override def invalidCredentials: S3Settings =
-    S3Settings()
-      .withCredentialsProvider(
-        StaticCredentialsProvider.create(AwsBasicCredentials.create("invalid", "invalid"))
-      )
-
-  override def attributes: Attributes = attributes(S3Settings()(actorSystem))
-
-  override def attributes(s3Settings: S3Settings): Attributes = {
-    S3Attributes.settings(
-      s3Settings
-        .withForwardProxy(
-          ForwardProxy.http("localhost", 9000)
-        )
+  override lazy val defaultS3Settings: S3Settings = s3Settings
+    .withS3RegionProvider(
+      new AwsRegionProvider {
+        val getRegion: Region = Region.US_EAST_1
+      }
     )
+    .withAccessStyle(PathAccessStyle)
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+
+    val makeBuckets = for {
+      _ <- S3.makeBucket(bucketWithDots)(
+        system,
+        attributes(
+          _.withS3RegionProvider(
+            new AwsRegionProvider {
+              val getRegion: Region = Region.EU_CENTRAL_1
+            }
+          )
+        )
+      )
+      _ <- S3.makeBucket(defaultBucket)(
+        system,
+        attributes
+      )
+      _ <- S3.makeBucket(bucketWithVersioning)(
+        system,
+        attributes
+      )
+    } yield ()
+    Await.result(makeBuckets, 10.seconds)
   }
 
-  it should "properly set the endpointUrl" in {
-    S3Settings().endpointUrl.value shouldEqual endpointUrlVirtualHostStyle
+  it should "properly set the endpointUrl using VirtualHostAccessStyle" in {
+    s3Settings
+      .withAccessStyle(VirtualHostAccessStyle)
+      .withEndpointUrl(container.getVirtualHost)
+      .endpointUrl
+      .value shouldEqual container.getVirtualHost
   }
-}
-
-object MinioS3IntegrationSpec {
-  val accessKey = "TESTKEY"
-  val secret = "TESTSECRET"
-  val endpointUrlPathStyle = "http://localhost:9000"
-  val localMinioDomain = "s3minio.alpakka"
-  val endpointUrlVirtualHostStyle = s"http://{bucket}.$localMinioDomain:9000"
 }

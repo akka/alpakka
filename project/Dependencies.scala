@@ -20,6 +20,7 @@ object Dependencies {
   val AkkaHttpVersion = "10.2.9"
   val AkkaHttpBinaryVersion = "10.2"
   val ScalaTestVersion = "3.2.2"
+  val TestContainersScalaTestVersion = "0.40.3"
   val mockitoVersion = "3.4.6" // check even https://github.com/scalatest/scalatestplus-mockito/releases
   val hoverflyVersion = "0.13.1"
 
@@ -46,6 +47,7 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
         "ch.qos.logback" % "logback-classic" % "1.2.3", // Eclipse Public License 1.0
         "org.scalatest" %% "scalatest" % ScalaTestVersion,
+        "com.dimafeng" %% "testcontainers-scala-scalatest" % TestContainersScalaTestVersion,
         "com.novocode" % "junit-interface" % "0.11", // BSD-style
         "ch.qos.logback" % "logback-classic" % "1.2.3", // Eclipse Public License 1.0
         "junit" % "junit" % "4.13" // Eclipse Public License 1.0
