@@ -19,7 +19,6 @@ import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
 import akka.http.scaladsl.{ClientTransport, Http}
 import akka.stream.alpakka.s3.BucketAccess.{AccessDenied, AccessGranted, NotExists}
 import akka.stream.alpakka.s3._
-import akka.stream.alpakka.s3.headers.ServerSideEncryption
 import akka.stream.alpakka.s3.impl.auth.{CredentialScope, Signer, SigningKey}
 import akka.stream.scaladsl.{Flow, Keep, RetryFlow, RunnableGraph, Sink, Source, Tcp}
 import akka.stream.{Attributes, Materializer}
@@ -832,7 +831,7 @@ import scala.util.{Failure, Success, Try}
       chunkingParallelism: Int = 4
   ): Sink[ByteString, Future[MultipartUploadResult]] =
     chunkAndRequest(s3Location, contentType, s3Headers, chunkSize)(chunkingParallelism)
-      .toMat(completionSink(s3Location, s3Headers.serverSideEncryption))(Keep.right)
+      .toMat(completionSink(s3Location, s3Headers))(Keep.right)
 
   /**
    * Uploads a stream of ByteStrings along with a context to a specified location as a multipart upload. The
@@ -847,7 +846,7 @@ import scala.util.{Failure, Success, Try}
       chunkingParallelism: Int = 4
   ): Sink[(ByteString, C), Future[MultipartUploadResult]] =
     chunkAndRequestWithContext[C](s3Location, contentType, s3Headers, chunkSize, chunkUploadSink)(chunkingParallelism)
-      .toMat(completionSink(s3Location, s3Headers.serverSideEncryption))(Keep.right)
+      .toMat(completionSink(s3Location, s3Headers))(Keep.right)
 
   /**
    * Resumes a previously created a multipart upload by uploading a stream of ByteStrings to a specified location
@@ -866,7 +865,7 @@ import scala.util.{Failure, Success, Try}
     }
     chunkAndRequest(s3Location, contentType, s3Headers, chunkSize, initialUpload)(chunkingParallelism)
       .prepend(Source(successfulParts))
-      .toMat(completionSink(s3Location, s3Headers.serverSideEncryption))(Keep.right)
+      .toMat(completionSink(s3Location, s3Headers))(Keep.right)
   }
 
   /**
@@ -891,7 +890,7 @@ import scala.util.{Failure, Success, Try}
     chunkAndRequestWithContext[C](s3Location, contentType, s3Headers, chunkSize, chunkUploadSink, initialUpload)(
       chunkingParallelism
     ).prepend(Source(successfulParts))
-      .toMat(completionSink(s3Location, s3Headers.serverSideEncryption))(Keep.right)
+      .toMat(completionSink(s3Location, s3Headers))(Keep.right)
   }
 
   def completeMultipartUpload(
@@ -904,7 +903,7 @@ import scala.util.{Failure, Success, Try}
       SuccessfulUploadPart(MultipartUpload(s3Location.bucket, s3Location.key, uploadId), part.partNumber, part.eTag)
     }
     Source(successfulParts)
-      .toMat(completionSink(s3Location, s3Headers.serverSideEncryption).withAttributes(attr))(Keep.right)
+      .toMat(completionSink(s3Location, s3Headers).withAttributes(attr))(Keep.right)
       .run()
   }
 
@@ -957,7 +956,7 @@ import scala.util.{Failure, Success, Try}
 
     // The individual copy upload part requests are processed here
     processUploadCopyPartRequests(copyRequests)(chunkingParallelism)
-      .toMat(completionSink(targetLocation, s3Headers.serverSideEncryption))(Keep.right)
+      .toMat(completionSink(targetLocation, s3Headers))(Keep.right)
   }
 
   private def computeMetaData(headers: Seq[HttpHeader], entity: ResponseEntity): ObjectMetadata =
@@ -984,7 +983,7 @@ import scala.util.{Failure, Success, Try}
 
   private def completeMultipartUpload(s3Location: S3Location,
                                       parts: Seq[SuccessfulUploadPart],
-                                      sse: Option[ServerSideEncryption])(
+                                      s3Headers: S3Headers)(
       implicit mat: Materializer,
       attr: Attributes
   ): Future[CompleteMultipartUploadResult] = {
@@ -997,7 +996,7 @@ import scala.util.{Failure, Success, Try}
     import mat.executionContext
     implicit val conf: S3Settings = resolveSettings(attr, mat.system)
 
-    val headers = sse.toIndexedSeq.flatMap(_.headersFor(UploadPart))
+    val headers = s3Headers.headersFor(UploadPart)
 
     Source
       .future(
@@ -1327,7 +1326,7 @@ import scala.util.{Failure, Success, Try}
 
   private def completionSink(
       s3Location: S3Location,
-      sse: Option[ServerSideEncryption]
+      s3Headers: S3Headers
   ): Sink[UploadPartResponse, Future[MultipartUploadResult]] =
     Sink
       .fromMaterializer { (mat, attr) =>
@@ -1349,7 +1348,7 @@ import scala.util.{Failure, Success, Try}
                   Future.failed(FailedUpload(failures.map(_.exception)))
                 }
               }
-              .flatMap(completeMultipartUpload(s3Location, _, sse))
+              .flatMap(completeMultipartUpload(s3Location, _, s3Headers))
           }
           .mapMaterializedValue(_.map(r => MultipartUploadResult(r.location, r.bucket, r.key, r.eTag, r.versionId)))
       }
@@ -1447,7 +1446,7 @@ import scala.util.{Failure, Success, Try}
     val requestInfo: Source[(MultipartUpload, Int), NotUsed] =
       initiateUpload(location, contentType, s3Headers.headersFor(InitiateMultipartUpload))
 
-    val headers = s3Headers.serverSideEncryption.toIndexedSeq.flatMap(_.headersFor(CopyPart))
+    val headers = s3Headers.headersFor(CopyPart)
 
     Source
       .fromMaterializer { (mat, attr) =>

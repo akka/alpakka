@@ -5,14 +5,15 @@
 package docs.scaladsl
 
 import java.nio.file.Paths
-
 import akka.NotUsed
 import akka.stream.alpakka.s3.headers.{CannedAcl, ServerSideEncryption}
 import akka.stream.alpakka.s3.scaladsl.{S3, S3ClientIntegrationSpec, S3WireMockBase}
 import akka.stream.alpakka.s3._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
+import com.github.tomakehurst.wiremock.client.WireMock.{headRequestedFor, postRequestedFor, putRequestedFor, urlEqualTo}
 import com.github.tomakehurst.wiremock.http.Fault
+import com.github.tomakehurst.wiremock.matching.EqualToPattern
 import org.scalatest.OptionValues
 import org.scalatest.exceptions.TestFailedException
 
@@ -223,16 +224,62 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec with Option
   }
 
   it should "copy a file from source bucket to target bucket with custom header" in {
-    mockCopy()
+    mockCopySSE()
+
+    val requestPayerHeader = "x-amz-request-payer"
+    val requestPayerHeaderValue = "requester"
+
+    val keys = ServerSideEncryption
+      .customerKeys(sseCustomerKey)
+      .withMd5(sseCustomerMd5Key)
+    val sseCAlgorithmHeader = "x-amz-server-side-encryption-customer-algorithm"
+    val sseCAlgorithmHeaderValue = "AES256"
+    val sseCKeyHeader = "x-amz-server-side-encryption-customer-key"
+    val sseCKeyHeaderValue = sseCustomerKey
+    val sseCSourceAlgorithmHeader = "x-amz-copy-source-server-side-encryption-customer-algorithm"
+    val sseCSourceAlgorithmHeaderValue = "AES256"
+    val sseCSourceKeyHeader = "x-amz-copy-source-server-side-encryption-customer-key"
+    val sseCSourceKeyHeaderValue = sseCustomerKey
 
     val result =
-      S3.multipartCopy(bucket,
-                       bucketKey,
-                       targetBucket,
-                       targetBucketKey,
-                       s3Headers = S3Headers().withServerSideEncryption(ServerSideEncryption.aes256()))
+      S3.multipartCopy(
+          bucket,
+          bucketKey,
+          targetBucket,
+          targetBucketKey,
+          s3Headers = S3Headers()
+            .withServerSideEncryption(keys)
+            .withCustomHeaders(Map(requestPayerHeader -> requestPayerHeaderValue))
+        )
         .run()
+
     result.futureValue shouldBe MultipartUploadResult(targetUrl, targetBucket, targetBucketKey, etag, None)
+
+    mock verifyThat
+    headRequestedFor(urlEqualTo(s"/$bucketKey"))
+      .withHeader(sseCAlgorithmHeader, new EqualToPattern(sseCAlgorithmHeaderValue))
+      .withHeader(sseCKeyHeader, new EqualToPattern(sseCKeyHeaderValue))
+      .withHeader(requestPayerHeader, new EqualToPattern(requestPayerHeaderValue))
+
+    mock verifyThat
+    postRequestedFor(urlEqualTo(s"/$targetBucketKey?uploads"))
+      .withHeader(sseCAlgorithmHeader, new EqualToPattern(sseCAlgorithmHeaderValue))
+      .withHeader(sseCKeyHeader, new EqualToPattern(sseCKeyHeaderValue))
+      .withHeader(requestPayerHeader, new EqualToPattern(requestPayerHeaderValue))
+
+    mock verifyThat
+    putRequestedFor(urlEqualTo(s"/$targetBucketKey?partNumber=1&uploadId=$uploadId"))
+      .withHeader(sseCAlgorithmHeader, new EqualToPattern(sseCAlgorithmHeaderValue))
+      .withHeader(sseCKeyHeader, new EqualToPattern(sseCKeyHeaderValue))
+      .withHeader(sseCSourceAlgorithmHeader, new EqualToPattern(sseCSourceAlgorithmHeaderValue))
+      .withHeader(sseCSourceKeyHeader, new EqualToPattern(sseCSourceKeyHeaderValue))
+      .withHeader(requestPayerHeader, new EqualToPattern(requestPayerHeaderValue))
+
+    // No SSE-C headers required for CompleteMultipartUpload
+    mock verifyThat
+    postRequestedFor(urlEqualTo(s"/$targetBucketKey?uploadId=$uploadId"))
+      .withHeader(requestPayerHeader, new EqualToPattern(requestPayerHeaderValue))
+
   }
 
   it should "copy a file from source bucket to target bucket when expected content length is greater then chunk size" in {
