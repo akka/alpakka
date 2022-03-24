@@ -113,7 +113,7 @@ jobs:
           - { connector: orientdb,                     pre_cmd: 'docker-compose up -d orientdb' }
           - { connector: pravega,                      pre_cmd: 'docker-compose up -d pravega'}
           - { connector: reference }
-          - { connector: s3,                           pre_cmd: 'docker-compose up -d minio_prep' }
+          - { connector: s3 }
           - { connector: spring-web }
           - { connector: simple-codecs }
           - { connector: slick }
