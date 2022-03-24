@@ -981,9 +981,7 @@ import scala.util.{Failure, Success, Try}
     override def renderInResponses(): Boolean = true
   }
 
-  private def completeMultipartUpload(s3Location: S3Location,
-                                      parts: Seq[SuccessfulUploadPart],
-                                      s3Headers: S3Headers)(
+  private def completeMultipartUpload(s3Location: S3Location, parts: Seq[SuccessfulUploadPart], s3Headers: S3Headers)(
       implicit mat: Materializer,
       attr: Attributes
   ): Future[CompleteMultipartUploadResult] = {
