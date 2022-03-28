@@ -937,6 +937,7 @@ object S3WireMockBase {
         .dynamicHttpsPort()
         .keystorePath("./s3/src/test/resources/keystore.jks")
         .keystorePassword("abcdefg")
+        .keyManagerPassword("abcdefg")
     )
     server.start()
     server
