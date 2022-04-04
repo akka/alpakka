@@ -1,0 +1,31 @@
+name: License and vulnerabilty scanning
+
+on:
+  push:
+    branches:
+      - master
+      - main
+    tags-ignore:
+      - v*
+
+jobs:
+  license-and-vulnerabilities-scanning:
+    name: Analyse
+    if: github.repository == 'akka/alpakka'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with: # https://github.com/olafurpg/setup-scala#faster-checkout-of-big-repos
+          fetch-depth: 100
+      - name: Fetch tags
+        run: git fetch --depth=100 origin +refs/tags/*:refs/tags/*
+      - name: FOSSA policy check
+        if: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == 'akka/alpakka' }}
+        run: |-
+          curl -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/fossas/spectrometer/master/install.sh | bash
+          fossa analyze && fossa test
+        env:
+          # The FOSSA_API_KEY is configured on Akka organisation level
+          FOSSA_API_KEY: "${{secrets.FOSSA_API_KEY}}"
