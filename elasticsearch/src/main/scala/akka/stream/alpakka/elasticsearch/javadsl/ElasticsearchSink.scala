@@ -6,6 +6,7 @@ package akka.stream.alpakka.elasticsearch.javadsl
 
 import java.util.concurrent.CompletionStage
 
+import akka.stream.alpakka.common.WriteSettings
 import akka.stream.alpakka.elasticsearch._
 import akka.stream.javadsl._
 import akka.{Done, NotUsed}
@@ -21,7 +22,7 @@ object ElasticsearchSink {
    */
   def create[T](
       elasticsearchParams: ElasticsearchParams,
-      settings: ElasticsearchWriteSettings,
+      settings: WriteSettings[_, _],
       objectMapper: ObjectMapper
   ): akka.stream.javadsl.Sink[WriteMessage[T, NotUsed], CompletionStage[Done]] =
     ElasticsearchFlow

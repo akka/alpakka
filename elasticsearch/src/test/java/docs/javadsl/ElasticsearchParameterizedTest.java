@@ -27,6 +27,7 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(value = Parameterized.class)
 public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {
+  private final ApiVersion apiVersion;
 
   @Parameterized.Parameters(name = "{index}: port={0} api={1}")
   public static Iterable<Object[]> data() {
@@ -37,10 +38,12 @@ public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {
         });
   }
 
-  public ElasticsearchParameterizedTest(int port, ApiVersion apiVersion) {}
+  public ElasticsearchParameterizedTest(int port, ApiVersion apiVersion) {
+      this.apiVersion = apiVersion;
+  }
 
   @Parameterized.BeforeParam
-  public static void beforeParam(int port, ApiVersion esApiVersion) throws IOException {
+  public static void beforeParam(int port, akka.stream.alpakka.common.ApiVersion esApiVersion) throws IOException {
     prepareIndex(port, esApiVersion);
   }
 

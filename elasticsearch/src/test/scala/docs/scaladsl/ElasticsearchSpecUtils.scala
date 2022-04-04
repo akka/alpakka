@@ -8,13 +8,14 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.{ContentTypes, HttpMethods, HttpRequest, Uri}
+import akka.stream.alpakka.common.ApiVersion
+import akka.stream.alpakka.common.SourceSettings
 import akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSource
-import akka.stream.alpakka.elasticsearch.{
-  ApiVersion,
+import akka.stream.alpakka.elasticsearch.{  
   ElasticsearchConnectionSettings,
-  ElasticsearchParams,
-  ElasticsearchSourceSettings
+  ElasticsearchParams
 }
+import akka.stream.alpakka.opensearch.OpensearchParams
 import akka.stream.scaladsl.Sink
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.wordspec.AnyWordSpec
@@ -57,7 +58,7 @@ trait ElasticsearchSpecUtils { this: AnyWordSpec with ScalaFutures =>
   }
 
   def readTitlesFrom(apiVersion: ApiVersion,
-                     sourceSettings: ElasticsearchSourceSettings,
+                     sourceSettings: SourceSettings[_, _],
                      indexName: String): Future[immutable.Seq[String]] =
     ElasticsearchSource
       .typed[Book](
@@ -82,10 +83,14 @@ trait ElasticsearchSpecUtils { this: AnyWordSpec with ScalaFutures =>
   }
 
   def constructElasticsearchParams(indexName: String, typeName: String, apiVersion: ApiVersion): ElasticsearchParams = {
-    if (apiVersion == ApiVersion.V5) {
+    if (apiVersion == akka.stream.alpakka.elasticsearch.ApiVersion.V5) {
       ElasticsearchParams.V5(indexName, typeName)
-    } else {
+    } else if (apiVersion == akka.stream.alpakka.elasticsearch.ApiVersion.V7) {
       ElasticsearchParams.V7(indexName)
+    } else if (apiVersion == akka.stream.alpakka.opensearch.ApiVersion.V1) {
+      OpensearchParams.V1(indexName)
+    } else {
+      throw new IllegalArgumentException(s"API version $apiVersion is not supported")
     }
   }
 }

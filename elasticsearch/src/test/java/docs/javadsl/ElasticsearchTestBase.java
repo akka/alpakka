@@ -11,6 +11,7 @@ import akka.http.javadsl.model.HttpRequest;
 import akka.stream.alpakka.elasticsearch.ApiVersion;
 import akka.stream.alpakka.elasticsearch.ElasticsearchConnectionSettings;
 import akka.stream.alpakka.elasticsearch.ElasticsearchParams;
+import akka.stream.alpakka.opensearch.OpensearchParams;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
@@ -24,7 +25,6 @@ import java.util.List;
 public class ElasticsearchTestBase {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
-  protected static ApiVersion apiVersion;
   protected static ElasticsearchConnectionSettings connectionSettings;
   protected static ActorSystem system;
   protected static Http http;
@@ -52,9 +52,7 @@ public class ElasticsearchTestBase {
     TestKit.shutdownActorSystem(system);
   }
 
-  protected static void prepareIndex(int port, ApiVersion esApiVersion) throws IOException {
-    apiVersion = esApiVersion;
-
+  protected static void prepareIndex(int port, akka.stream.alpakka.common.ApiVersion version) throws IOException {
     connectionSettings =
         ElasticsearchConnectionSettings.create(String.format("http://localhost:%d", port));
 
@@ -141,11 +139,15 @@ public class ElasticsearchTestBase {
   }
 
   protected ElasticsearchParams constructElasticsearchParams(
-      String indexName, String typeName, ApiVersion apiVersion) {
+      String indexName, String typeName, akka.stream.alpakka.common.ApiVersion apiVersion) {
     if (apiVersion == ApiVersion.V5) {
       return ElasticsearchParams.V5(indexName, typeName);
-    } else {
+    } else if (apiVersion == ApiVersion.V7) {
       return ElasticsearchParams.V7(indexName);
+    } else if (apiVersion == akka.stream.alpakka.opensearch.ApiVersion.V1) {
+      return OpensearchParams.V1(indexName);
+    } else {
+      throw new IllegalArgumentException("API version " + apiVersion + " is not supported");
     }
   }
 }
