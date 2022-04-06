@@ -9,8 +9,7 @@ import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.alpakka.common.SourceSettings
-import akka.stream.alpakka.elasticsearch.{ApiVersion, ElasticsearchParams, ReadResult}
+import akka.stream.alpakka.elasticsearch.{ApiVersion, ElasticsearchParams, ReadResult, SourceSettingsBase}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler, StageLogging}
 import akka.stream.{Attributes, Materializer, Outlet, SourceShape}
 import spray.json.DefaultJsonProtocol._
@@ -46,7 +45,7 @@ private[elasticsearch] trait MessageReader[T] {
 private[elasticsearch] final class ElasticsearchSourceStage[T](
     elasticsearchParams: ElasticsearchParams,
     searchParams: Map[String, String],
-    settings: SourceSettings[_, _],
+    settings: SourceSettingsBase[_, _],
     reader: MessageReader[T]
 )(implicit http: HttpExt, mat: Materializer, ec: ExecutionContext)
     extends GraphStage[SourceShape[ReadResult[T]]] {
@@ -72,7 +71,7 @@ object ElasticsearchSourceStage {
 private[elasticsearch] final class ElasticsearchSourceLogic[T](
     elasticsearchParams: ElasticsearchParams,
     searchParams: Map[String, String],
-    settings: SourceSettings[_, _],
+    settings: SourceSettingsBase[_, _],
     out: Outlet[ReadResult[T]],
     shape: SourceShape[ReadResult[T]],
     reader: MessageReader[T]

@@ -8,12 +8,12 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.{ContentTypes, HttpMethods, HttpRequest, Uri}
-import akka.stream.alpakka.common.ApiVersion
-import akka.stream.alpakka.common.SourceSettings
 import akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSource
 import akka.stream.alpakka.elasticsearch.{  
+  ApiVersionBase,
   ElasticsearchConnectionSettings,
-  ElasticsearchParams
+  ElasticsearchParams,
+  SourceSettingsBase
 }
 import akka.stream.alpakka.opensearch.OpensearchParams
 import akka.stream.scaladsl.Sink
@@ -57,8 +57,8 @@ trait ElasticsearchSpecUtils { this: AnyWordSpec with ScalaFutures =>
     http.singleRequest(refreshRequest).futureValue
   }
 
-  def readTitlesFrom(apiVersion: ApiVersion,
-                     sourceSettings: SourceSettings[_, _],
+  def readTitlesFrom(apiVersion: ApiVersionBase,
+                     sourceSettings: SourceSettingsBase[_, _],
                      indexName: String): Future[immutable.Seq[String]] =
     ElasticsearchSource
       .typed[Book](
@@ -82,7 +82,7 @@ trait ElasticsearchSpecUtils { this: AnyWordSpec with ScalaFutures =>
     flushAndRefresh(connectionSettings, "source")
   }
 
-  def constructElasticsearchParams(indexName: String, typeName: String, apiVersion: ApiVersion): ElasticsearchParams = {
+  def constructElasticsearchParams(indexName: String, typeName: String, apiVersion: ApiVersionBase): ElasticsearchParams = {
     if (apiVersion == akka.stream.alpakka.elasticsearch.ApiVersion.V5) {
       ElasticsearchParams.V5(indexName, typeName)
     } else if (apiVersion == akka.stream.alpakka.elasticsearch.ApiVersion.V7) {

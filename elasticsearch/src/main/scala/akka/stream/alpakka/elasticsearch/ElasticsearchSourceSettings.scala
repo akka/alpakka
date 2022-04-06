@@ -6,8 +6,6 @@ package akka.stream.alpakka.elasticsearch
 
 import java.util.concurrent.TimeUnit
 
-import akka.stream.alpakka.common.SourceSettings
-
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -18,14 +16,18 @@ final class ElasticsearchSourceSettings private (connection: ElasticsearchConnec
                                                  bufferSize: Int,
                                                  includeDocumentVersion: Boolean,
                                                  scrollDuration: FiniteDuration,
-                                                 apiVersion: ApiVersion) 
-                                        extends SourceSettings[ApiVersion, ElasticsearchSourceSettings](connection, bufferSize, includeDocumentVersion, scrollDuration, apiVersion)  {
+                                                 apiVersion: ApiVersion)
+    extends SourceSettingsBase[ApiVersion, ElasticsearchSourceSettings](connection,
+                                                                        bufferSize,
+                                                                        includeDocumentVersion,
+                                                                        scrollDuration,
+                                                                        apiVersion) {
 
   protected override def copy(connection: ElasticsearchConnectionSettings,
-                   bufferSize: Int,
-                   includeDocumentVersion: Boolean,
-                   scrollDuration: FiniteDuration,
-                   apiVersion: ApiVersion): ElasticsearchSourceSettings =
+                              bufferSize: Int,
+                              includeDocumentVersion: Boolean,
+                              scrollDuration: FiniteDuration,
+                              apiVersion: ApiVersion): ElasticsearchSourceSettings =
     new ElasticsearchSourceSettings(connection = connection,
                                     bufferSize = bufferSize,
                                     includeDocumentVersion = includeDocumentVersion,

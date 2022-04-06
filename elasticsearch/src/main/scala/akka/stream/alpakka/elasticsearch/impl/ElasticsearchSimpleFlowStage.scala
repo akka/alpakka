@@ -9,7 +9,6 @@ import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.alpakka.common.WriteSettings
 import akka.stream.alpakka.elasticsearch._
 import akka.stream.stage._
 import akka.stream._
@@ -25,7 +24,7 @@ import scala.concurrent.{ExecutionContext, Future}
 @InternalApi
 private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
     elasticsearchParams: ElasticsearchParams,
-    settings: WriteSettings[_, _],
+    settings: WriteSettingsBase[_, _],
     writer: MessageWriter[T]
 )(implicit http: HttpExt, mat: Materializer, ec: ExecutionContext)
     extends GraphStage[

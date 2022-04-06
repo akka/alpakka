@@ -6,8 +6,8 @@ package akka.stream.alpakka.opensearch
 
 import java.util.concurrent.TimeUnit
 
-import akka.stream.alpakka.common.SourceSettings
 import akka.stream.alpakka.elasticsearch.ElasticsearchConnectionSettings
+import akka.stream.alpakka.elasticsearch.SourceSettingsBase
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -16,21 +16,25 @@ import scala.concurrent.duration.FiniteDuration
  *
  */
 final class OpensearchSourceSettings private (connection: ElasticsearchConnectionSettings,
-                                                 bufferSize: Int,
-                                                 includeDocumentVersion: Boolean,
-                                                 scrollDuration: FiniteDuration,
-                                                 apiVersion: ApiVersion) 
-                                     extends SourceSettings[ApiVersion, OpensearchSourceSettings](connection, bufferSize, includeDocumentVersion, scrollDuration, apiVersion)  {
+                                              bufferSize: Int,
+                                              includeDocumentVersion: Boolean,
+                                              scrollDuration: FiniteDuration,
+                                              apiVersion: ApiVersion)
+    extends SourceSettingsBase[ApiVersion, OpensearchSourceSettings](connection,
+                                                                     bufferSize,
+                                                                     includeDocumentVersion,
+                                                                     scrollDuration,
+                                                                     apiVersion) {
   protected override def copy(connection: ElasticsearchConnectionSettings,
-                   bufferSize: Int,
-                   includeDocumentVersion: Boolean,
-                   scrollDuration: FiniteDuration,
-                   apiVersion: ApiVersion): OpensearchSourceSettings =
+                              bufferSize: Int,
+                              includeDocumentVersion: Boolean,
+                              scrollDuration: FiniteDuration,
+                              apiVersion: ApiVersion): OpensearchSourceSettings =
     new OpensearchSourceSettings(connection = connection,
-                                    bufferSize = bufferSize,
-                                    includeDocumentVersion = includeDocumentVersion,
-                                    scrollDuration = scrollDuration,
-                                    apiVersion = apiVersion)
+                                 bufferSize = bufferSize,
+                                 includeDocumentVersion = includeDocumentVersion,
+                                 scrollDuration = scrollDuration,
+                                 apiVersion = apiVersion)
 
   override def toString =
     s"""OpensearchSourceSettings(connection=$connection,bufferSize=$bufferSize,includeDocumentVersion=$includeDocumentVersion,scrollDuration=$scrollDuration,apiVersion=$apiVersion)"""
@@ -38,19 +42,20 @@ final class OpensearchSourceSettings private (connection: ElasticsearchConnectio
 }
 
 object OpensearchSourceSettings {
+
   /** Scala API */
   def apply(connection: ElasticsearchConnectionSettings): OpensearchSourceSettings =
     new OpensearchSourceSettings(connection,
-                                    10,
-                                    includeDocumentVersion = false,
-                                    FiniteDuration(5, TimeUnit.MINUTES),
-                                    ApiVersion.V1)
+                                 10,
+                                 includeDocumentVersion = false,
+                                 FiniteDuration(5, TimeUnit.MINUTES),
+                                 ApiVersion.V1)
 
   /** Java API */
   def create(connection: ElasticsearchConnectionSettings): OpensearchSourceSettings =
     new OpensearchSourceSettings(connection,
-                                    10,
-                                    includeDocumentVersion = false,
-                                    FiniteDuration(5, TimeUnit.MINUTES),
-                                    ApiVersion.V1)
+                                 10,
+                                 includeDocumentVersion = false,
+                                 FiniteDuration(5, TimeUnit.MINUTES),
+                                 ApiVersion.V1)
 }

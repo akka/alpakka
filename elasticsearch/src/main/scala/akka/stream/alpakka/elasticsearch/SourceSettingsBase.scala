@@ -2,7 +2,7 @@
  * Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.stream.alpakka.common
+package akka.stream.alpakka.elasticsearch
 
 import akka.util.JavaDurationConverters._
 import java.util.concurrent.TimeUnit
@@ -15,12 +15,13 @@ import scala.concurrent.duration.FiniteDuration
  * Configure Elastiscsearch/Opensearch sources.
  *
  */
-abstract class SourceSettings[Version <: ApiVersion, S <: SourceSettings[Version, S]] private[alpakka] (
-                                                 val connection: ElasticsearchConnectionSettings,
-                                                 val bufferSize: Int,
-                                                 val includeDocumentVersion: Boolean,
-                                                 val scrollDuration: FiniteDuration,
-                                                 val apiVersion: Version) { this: S =>
+abstract class SourceSettingsBase[Version <: ApiVersionBase, S <: SourceSettingsBase[Version, S]] private[alpakka] (
+    val connection: ElasticsearchConnectionSettings,
+    val bufferSize: Int,
+    val includeDocumentVersion: Boolean,
+    val scrollDuration: FiniteDuration,
+    val apiVersion: Version
+) { this: S =>
   def withConnection(value: ElasticsearchConnectionSettings): S = copy(connection = value)
 
   def withBufferSize(value: Int): S = copy(bufferSize = value)
@@ -55,9 +56,9 @@ abstract class SourceSettings[Version <: ApiVersion, S <: SourceSettings[Version
   }
 
   protected def copy(connection: ElasticsearchConnectionSettings = connection,
-                   bufferSize: Int = bufferSize,
-                   includeDocumentVersion: Boolean = includeDocumentVersion,
-                   scrollDuration: FiniteDuration = scrollDuration,
-                   apiVersion: Version = apiVersion): S;
+                     bufferSize: Int = bufferSize,
+                     includeDocumentVersion: Boolean = includeDocumentVersion,
+                     scrollDuration: FiniteDuration = scrollDuration,
+                     apiVersion: Version = apiVersion): S;
 
 }

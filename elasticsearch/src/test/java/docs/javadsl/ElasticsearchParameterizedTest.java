@@ -43,7 +43,7 @@ public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {
   }
 
   @Parameterized.BeforeParam
-  public static void beforeParam(int port, akka.stream.alpakka.common.ApiVersion esApiVersion) throws IOException {
+  public static void beforeParam(int port, akka.stream.alpakka.elasticsearch.ApiVersionBase esApiVersion) throws IOException {
     prepareIndex(port, esApiVersion);
   }
 

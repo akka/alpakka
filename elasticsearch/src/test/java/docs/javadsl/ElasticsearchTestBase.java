@@ -52,7 +52,7 @@ public class ElasticsearchTestBase {
     TestKit.shutdownActorSystem(system);
   }
 
-  protected static void prepareIndex(int port, akka.stream.alpakka.common.ApiVersion version) throws IOException {
+  protected static void prepareIndex(int port, akka.stream.alpakka.elasticsearch.ApiVersionBase version) throws IOException {
     connectionSettings =
         ElasticsearchConnectionSettings.create(String.format("http://localhost:%d", port));
 
@@ -139,7 +139,7 @@ public class ElasticsearchTestBase {
   }
 
   protected ElasticsearchParams constructElasticsearchParams(
-      String indexName, String typeName, akka.stream.alpakka.common.ApiVersion apiVersion) {
+      String indexName, String typeName, akka.stream.alpakka.elasticsearch.ApiVersionBase apiVersion) {
     if (apiVersion == ApiVersion.V5) {
       return ElasticsearchParams.V5(indexName, typeName);
     } else if (apiVersion == ApiVersion.V7) {

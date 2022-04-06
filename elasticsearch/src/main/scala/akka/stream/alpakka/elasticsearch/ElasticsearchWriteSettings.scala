@@ -4,8 +4,6 @@
 
 package akka.stream.alpakka.elasticsearch
 
-import akka.stream.alpakka.common.WriteSettings
-
 import akka.util.JavaDurationConverters._
 
 import scala.concurrent.duration._
@@ -66,15 +64,20 @@ final class ElasticsearchWriteSettings private (connection: ElasticsearchConnect
                                                 retryLogic: RetryLogic,
                                                 versionType: Option[String],
                                                 apiVersion: ApiVersion,
-                                                allowExplicitIndex: Boolean) 
-                                       extends WriteSettings[ApiVersion, ElasticsearchWriteSettings](connection, bufferSize, retryLogic, versionType, apiVersion, allowExplicitIndex) {
+                                                allowExplicitIndex: Boolean)
+    extends WriteSettingsBase[ApiVersion, ElasticsearchWriteSettings](connection,
+                                                                      bufferSize,
+                                                                      retryLogic,
+                                                                      versionType,
+                                                                      apiVersion,
+                                                                      allowExplicitIndex) {
 
   protected override def copy(connection: ElasticsearchConnectionSettings,
-                   bufferSize: Int,
-                   retryLogic: RetryLogic,
-                   versionType: Option[String],
-                   apiVersion: ApiVersion,
-                   allowExplicitIndex: Boolean): ElasticsearchWriteSettings =
+                              bufferSize: Int,
+                              retryLogic: RetryLogic,
+                              versionType: Option[String],
+                              apiVersion: ApiVersion,
+                              allowExplicitIndex: Boolean): ElasticsearchWriteSettings =
     new ElasticsearchWriteSettings(connection, bufferSize, retryLogic, versionType, apiVersion, allowExplicitIndex)
 
   override def toString: String =
@@ -89,6 +92,7 @@ final class ElasticsearchWriteSettings private (connection: ElasticsearchConnect
 }
 
 object ElasticsearchWriteSettings {
+
   /** Scala API */
   def apply(connection: ElasticsearchConnectionSettings): ElasticsearchWriteSettings =
     new ElasticsearchWriteSettings(connection, 10, RetryNever, None, ApiVersion.V7, allowExplicitIndex = true)

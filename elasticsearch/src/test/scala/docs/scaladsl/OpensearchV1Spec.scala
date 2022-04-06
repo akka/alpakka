@@ -39,7 +39,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
     TestKit.shutdownActorSystem(system)
   }
 
-  "Un-typed Elasticsearch connector" should {
+  "Un-typed Opensearch connector" should {
     "consume and publish Json documents" in {
       val indexName = "sink2"
 
@@ -75,7 +75,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
     }
   }
 
-  "Typed Elasticsearch connector" should {
+  "Typed Opensearch connector" should {
     "consume and publish documents as specific type" in {
       val indexName = "sink2"
 

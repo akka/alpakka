@@ -4,7 +4,6 @@
 
 package akka.stream.alpakka.elasticsearch.scaladsl
 
-import akka.stream.alpakka.common.WriteSettings
 import akka.stream.alpakka.elasticsearch._
 import akka.stream.scaladsl.{Keep, Sink}
 import akka.{Done, NotUsed}
@@ -20,7 +19,7 @@ object ElasticsearchSink {
   /**
    * Create a sink to update Elasticsearch with [[akka.stream.alpakka.elasticsearch.WriteMessage WriteMessage]]s containing type `T`.
    */
-  def create[T](elasticsearchParams: ElasticsearchParams, settings: WriteSettings[_, _])(
+  def create[T](elasticsearchParams: ElasticsearchParams, settings: WriteSettingsBase[_, _])(
       implicit sprayJsonWriter: JsonWriter[T]
   ): Sink[WriteMessage[T, NotUsed], Future[Done]] =
     ElasticsearchFlow.create[T](elasticsearchParams, settings).toMat(Sink.ignore)(Keep.right)

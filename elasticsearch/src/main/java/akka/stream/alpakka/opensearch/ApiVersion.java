@@ -4,6 +4,6 @@
 
 package akka.stream.alpakka.opensearch;
 
-public enum ApiVersion implements akka.stream.alpakka.common.ApiVersion {
+public enum ApiVersion implements akka.stream.alpakka.elasticsearch.ApiVersionBase {
   V1
 }
