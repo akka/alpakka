@@ -426,7 +426,7 @@ lazy val `doc-examples` = project
   )
 
 def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sbt.Def.SettingsDefinition*): Project = {
-  import com.typesafe.tools.mima.core.{Problem, ProblemFilters}
+  import com.typesafe.tools.mima.core._
   Project(id = projectId, base = file(projectId))
     .enablePlugins(AutomateHeaderPlugin)
     .disablePlugins(SitePlugin)
@@ -437,7 +437,11 @@ def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sb
           organization.value %% name.value % previousStableVersion.value
             .getOrElse(throw new Error("Unable to determine previous version"))
         ),
-      mimaBinaryIssueFilters += ProblemFilters.exclude[Problem]("*.impl.*"),
+      mimaBinaryIssueFilters ++= Seq(
+          ProblemFilters.exclude[Problem]("*.impl.*"),
+          // generated code
+          ProblemFilters.exclude[Problem]("com.google.*")
+        ),
       Test / parallelExecution := false
     )
     .settings(additionalSettings: _*)
