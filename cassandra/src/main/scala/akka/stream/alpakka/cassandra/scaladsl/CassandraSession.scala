@@ -20,6 +20,7 @@ import scala.collection.immutable
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
+import scala.util.{Either, Left, Right}
 
 /**
  * Data Access Object for Cassandra. The statements are expressed in
@@ -182,6 +183,44 @@ final class CassandraSession(system: akka.actor.ActorSystem,
   }
 
   /**
+   * Execute one statement. First you must `prepare` the
+   * statement and bind its parameters.
+   *
+   * See <a href="https://docs.datastax.com/en/dse/6.7/cql/cql/cql_using/useInsertDataTOC.html">Inserting and updating data</a>.
+   *
+   * The configured write consistency level is used if a specific consistency
+   * level has not been set on the `Statement`.
+   *
+   * The returned `Future` is completed with a `Left(Done)` if the query was applied and with
+   * query-dependent results if the query succeeded but was not applied (e.g. for an
+   * INSERT ... IF NOT EXISTS query, the result would contain the already existing row)
+   */
+  def executeConditionalWrite(stmt: Statement[_]): Future[Either[Done, AsyncResultSet]] = {
+    underlying().flatMap { cqlSession =>
+      cqlSession.executeAsync(stmt).toScala
+        .map { ars =>
+          if (ars.wasApplied) CassandraSession.LeftDone
+          else Right(ars)
+        }
+    }
+  }
+
+  /**
+   * Prepare, bind and execute one statement in one go.
+   *
+   * See <a href="https://docs.datastax.com/en/dse/6.7/cql/cql/cql_using/useInsertDataTOC.html">Inserting and updating data</a>.
+   *
+   * The configured write consistency level is used.
+   *
+   * The returned `Future` is completed with a `Left(Done)` if the query was applied and with
+   * query-dependent results if the query succeeded but was not applied (e.g. for an
+   * INSERT ... IF NOT EXISTS query, the result would contain the already existing row)
+   */
+  def executeConditionalWrite(stmt: String, bindValues: AnyRef*): Future[Either[Done, AsyncResultSet]] = {
+    bind(stmt, bindValues).flatMap(b => executeConditionalWrite(b))
+  }
+
+  /**
    * INTERNAL API
    */
   @InternalApi private[akka] def selectResultSet(stmt: Statement[_]): Future[AsyncResultSet] = {
@@ -312,5 +351,8 @@ final class CassandraSession(system: akka.actor.ActorSystem,
       else ps.bind(bindValues: _*)
     }
   }
+}
 
+object CassandraSession {
+  val LeftDone = Left(Done)
 }

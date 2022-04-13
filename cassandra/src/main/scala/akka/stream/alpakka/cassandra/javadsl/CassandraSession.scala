@@ -18,6 +18,7 @@ import akka.Done
 import akka.NotUsed
 import akka.actor.{ActorSystem, ClassicActorSystemProvider}
 import akka.annotation.InternalApi
+import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
 import akka.stream.alpakka.cassandra.CassandraServerMetaData
 import akka.stream.alpakka.cassandra.{scaladsl, CqlSessionProvider}
@@ -156,6 +157,17 @@ final class CassandraSession(@InternalApi private[akka] val delegate: scaladsl.C
   @varargs
   def executeWrite(stmt: String, bindValues: AnyRef*): CompletionStage[Done] =
     delegate.executeWrite(stmt, bindValues: _*).toJava
+
+  def executeConditionalWrite(stmt: Statement[_]): CompletionStage[ConditionalWriteResult[Done]] =
+    delegate.executeConditionalWrite(stmt)
+      .map(ConditionalWriteResultBuilder.fromEither)(ExecutionContexts.parasitic)
+      .toJava
+
+  @varargs
+  def executeConditionalWrite(stmt: String, bindValues: AnyRef*): CompletionStage[ConditionalWriteResult[Done]] =
+    delegate.executeConditionalWrite(stmt, bindValues: _*)
+      .map(ConditionalWriteResultBuilder.fromEither)(ExecutionContexts.parasitic)
+      .toJava
 
   /**
    * Execute a select statement. First you must `prepare` the
