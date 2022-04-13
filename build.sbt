@@ -191,8 +191,9 @@ lazy val googleCloudBigQueryStorage = alpakkaProject(
   Dependencies.GoogleBigQueryStorage,
   akkaGrpcCodeGeneratorSettings ~= { _.filterNot(_ == "flat_package") },
   akkaGrpcCodeGeneratorSettings += "server_power_apis",
-  akkaGrpcGeneratedSources := Seq(AkkaGrpc.Client),
-  Test / akkaGrpcGeneratedSources := Seq(AkkaGrpc.Server),
+  // FIXME only generate the server for the tests again
+  akkaGrpcGeneratedSources := Seq(AkkaGrpc.Client, AkkaGrpc.Server),
+  // Test / akkaGrpcGeneratedSources := Seq(AkkaGrpc.Server),
   akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala, AkkaGrpc.Java),
   Compile / scalacOptions ++= Seq(
       "-Wconf:src=.+/akka-grpc/main/.+:s",
@@ -217,7 +218,6 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
   akkaGrpcCodeGeneratorSettings ~= { _.filterNot(_ == "flat_package") },
   akkaGrpcGeneratedSources := Seq(AkkaGrpc.Client),
   akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala, AkkaGrpc.Java),
-  Compile / PB.protoSources += (Compile / PB.externalIncludePath).value,
   // for the ExampleApp in the tests
   run / connectInput := true,
   Compile / scalacOptions ++= Seq(
@@ -426,7 +426,7 @@ lazy val `doc-examples` = project
   )
 
 def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sbt.Def.SettingsDefinition*): Project = {
-  import com.typesafe.tools.mima.core.{Problem, ProblemFilters}
+  import com.typesafe.tools.mima.core._
   Project(id = projectId, base = file(projectId))
     .enablePlugins(AutomateHeaderPlugin)
     .disablePlugins(SitePlugin)
@@ -437,7 +437,11 @@ def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sb
           organization.value %% name.value % previousStableVersion.value
             .getOrElse(throw new Error("Unable to determine previous version"))
         ),
-      mimaBinaryIssueFilters += ProblemFilters.exclude[Problem]("*.impl.*"),
+      mimaBinaryIssueFilters ++= Seq(
+          ProblemFilters.exclude[Problem]("*.impl.*"),
+          // generated code
+          ProblemFilters.exclude[Problem]("com.google.*")
+        ),
       Test / parallelExecution := false
     )
     .settings(additionalSettings: _*)

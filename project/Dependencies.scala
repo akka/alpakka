@@ -16,7 +16,7 @@ object Dependencies {
   val AwsSdk2Version = "2.17.113"
   val AwsSpiAkkaHttpVersion = "0.0.11"
   // Sync with plugins.sbt
-  val AkkaGrpcBinaryVersion = "1.0"
+  val AkkaGrpcBinaryVersion = "2.1"
   val AkkaHttpVersion = "10.2.9"
   val AkkaHttpBinaryVersion = "10.2"
   val ScalaTestVersion = "3.2.11"
@@ -240,9 +240,9 @@ object Dependencies {
     // see Akka gRPC version in plugins.sbt
     libraryDependencies ++= Seq(
         // https://github.com/googleapis/java-pubsub/tree/master/proto-google-cloud-pubsub-v1/
-        "com.google.api.grpc" % "grpc-google-cloud-pubsub-v1" % "1.85.1" % "protobuf-src", // ApacheV2
+        "com.google.cloud" % "google-cloud-pubsub" % "1.112.5" % "protobuf-src", // ApacheV2
         "io.grpc" % "grpc-auth" % akka.grpc.gen.BuildInfo.grpcVersion, // ApacheV2
-        "com.google.auth" % "google-auth-library-oauth2-http" % "0.20.0", // BSD 3-clause
+        "com.google.auth" % "google-auth-library-oauth2-http" % "0.22.2", // BSD 3-clause
         // pull in Akka Discovery for our Akka version
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion
       )
