@@ -285,8 +285,7 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
         ElasticsearchSource.typed(
                 constructElasticsearchParams("sink8", "_doc", ApiVersion.V1),
                 "{\"match_all\": {}}",
-                OpensearchSourceSettings.create(connectionSettings)
-                    .withApiVersion(ApiVersion.V1),
+                OpensearchSourceSettings.create(connectionSettings).withApiVersion(ApiVersion.V1),
                 Book.class)
             .map(m -> m.source().title)
             .runWith(Sink.seq(), system);
@@ -351,8 +350,7 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
         ElasticsearchSource.typed(
                 constructElasticsearchParams("sink6", "_doc", ApiVersion.V1),
                 "{\"match_all\": {}}",
-                OpensearchSourceSettings.create(connectionSettings)
-                    .withApiVersion(ApiVersion.V1),
+                OpensearchSourceSettings.create(connectionSettings).withApiVersion(ApiVersion.V1),
                 Book.class)
             .map(m -> m.source().title)
             .runWith(Sink.seq(), system) // Run it
@@ -402,8 +400,7 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
         ElasticsearchSource.<TestDoc>typed(
                 constructElasticsearchParams(indexName, typeName, ApiVersion.V1),
                 searchParams, // <-- Using searchParams
-                OpensearchSourceSettings.create(connectionSettings)
-                    .withApiVersion(ApiVersion.V1),
+                OpensearchSourceSettings.create(connectionSettings).withApiVersion(ApiVersion.V1),
                 TestDoc.class,
                 new ObjectMapper())
             .map(

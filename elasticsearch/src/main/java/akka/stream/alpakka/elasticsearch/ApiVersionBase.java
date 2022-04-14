@@ -4,9 +4,5 @@
 
 package akka.stream.alpakka.elasticsearch;
 
-/**
- * Common interface to represent Opensearch / Elasticsearch versions. 
- */
-public interface ApiVersionBase {
-
-}
+/** Common interface to represent Opensearch / Elasticsearch versions. */
+public interface ApiVersionBase {}

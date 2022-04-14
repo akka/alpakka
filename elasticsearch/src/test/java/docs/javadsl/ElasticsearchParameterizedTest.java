@@ -39,11 +39,12 @@ public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {
   }
 
   public ElasticsearchParameterizedTest(int port, ApiVersion apiVersion) {
-      this.apiVersion = apiVersion;
+    this.apiVersion = apiVersion;
   }
 
   @Parameterized.BeforeParam
-  public static void beforeParam(int port, akka.stream.alpakka.elasticsearch.ApiVersionBase esApiVersion) throws IOException {
+  public static void beforeParam(
+      int port, akka.stream.alpakka.elasticsearch.ApiVersionBase esApiVersion) throws IOException {
     prepareIndex(port, esApiVersion);
   }
 
