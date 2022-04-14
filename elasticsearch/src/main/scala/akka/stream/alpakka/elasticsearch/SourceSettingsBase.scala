@@ -12,7 +12,7 @@ import akka.stream.alpakka.elasticsearch.ElasticsearchConnectionSettings
 import scala.concurrent.duration.FiniteDuration
 
 /**
- * Configure Elastiscsearch/Opensearch sources.
+ * Configure Elastiscsearch/OpenSearch sources.
  *
  */
 abstract class SourceSettingsBase[Version <: ApiVersionBase, S <: SourceSettingsBase[Version, S]] private[alpakka] (
@@ -32,7 +32,7 @@ abstract class SourceSettingsBase[Version <: ApiVersionBase, S <: SourceSettings
 
   /**
    * If includeDocumentVersion is true, '_version' is returned with the search-results
-   *  * http://nocf-www.elastic.co/guide/en/elasticsearch/reference/current/search-request-version.html
+   *  * https://www.elastic.co/guide/en/elasticsearch/reference/6.8/search-request-version.html
    *  * https://www.elastic.co/guide/en/elasticsearch/guide/current/optimistic-concurrency-control.html
    */
   def withIncludeDocumentVersion(value: Boolean): S =

@@ -8,7 +8,7 @@ import akka.stream.alpakka.elasticsearch.ElasticsearchConnectionSettings
 import akka.stream.alpakka.elasticsearch.RetryLogic
 
 /**
- * Configure Elasticsearch/Opensearch sinks and flows.
+ * Configure Elasticsearch/OpenSearch sinks and flows.
  */
 abstract class WriteSettingsBase[Version <: ApiVersionBase, W <: WriteSettingsBase[Version, W]] private[alpakka] (
     val connection: ElasticsearchConnectionSettings,
