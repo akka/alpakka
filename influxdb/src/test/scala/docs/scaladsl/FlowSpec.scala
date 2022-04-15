@@ -6,45 +6,39 @@ package docs.scaladsl
 
 import java.time.Instant
 import java.util.concurrent.TimeUnit
-
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.alpakka.influxdb.{InfluxDbReadSettings, InfluxDbWriteMessage, InfluxDbWriteResult}
 import akka.stream.alpakka.influxdb.scaladsl.{InfluxDbFlow, InfluxDbSource}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
-import akka.testkit.TestKit
 import org.influxdb.InfluxDB
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.ScalaFutures
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
+import akka.testkit.TestKit
 import org.influxdb.dto.{Point, Query}
 
 import scala.concurrent.duration._
 import org.scalatest.matchers.must.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class FlowSpec
-    extends AnyWordSpec
+    extends TestKit(ActorSystem("FlowSpec"))
+    with AnyWordSpecLike
     with InfluxDbTest
     with Matchers
     with BeforeAndAfterEach
-    with BeforeAndAfterAll
     with ScalaFutures
     with LogCapturing {
-
-  implicit val system = ActorSystem()
 
   final val DatabaseName = this.getClass.getSimpleName
 
   implicit var influxDB: InfluxDB = _
 
-  override def afterStart(): Unit =
+  override def afterStart(): Unit = {
     influxDB = setupConnection(DatabaseName)
-
-  override protected def afterAll(): Unit = {
-    super.afterAll()
-    TestKit.shutdownActorSystem(system)
+    super.afterStart()
   }
 
   "mixed model" in assertAllStagesStopped {

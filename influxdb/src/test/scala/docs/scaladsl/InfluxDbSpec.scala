@@ -5,9 +5,9 @@
 package docs.scaladsl
 
 import akka.actor.ActorSystem
-import org.influxdb.{InfluxDB, InfluxDBFactory}
+import org.influxdb.InfluxDB
 import org.influxdb.dto.{Point, Query, QueryResult}
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.ScalaFutures
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.{Done, NotUsed}
@@ -20,18 +20,16 @@ import akka.stream.scaladsl.Sink
 
 import scala.jdk.CollectionConverters._
 import org.scalatest.matchers.must.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class InfluxDbSpec
-    extends AnyWordSpec
+    extends TestKit(ActorSystem("InfluxDbSpec"))
+    with AnyWordSpecLike
     with InfluxDbTest
     with Matchers
     with BeforeAndAfterEach
-    with BeforeAndAfterAll
     with ScalaFutures
     with LogCapturing {
-
-  implicit val system = ActorSystem()
 
   final val DatabaseName = this.getClass.getSimpleName
 
@@ -39,22 +37,14 @@ class InfluxDbSpec
 
   //#define-class
   override def afterStart(): Unit = {
-    //#init-client
-    influxDB = InfluxDBFactory.connect(InfluxDbUrl, UserName, Password)
-    influxDB.setDatabase(DatabaseName)
-    influxDB.query(new Query("CREATE DATABASE " + DatabaseName, DatabaseName))
-    //#init-client
-  }
-
-  override protected def afterAll(): Unit = {
-    super.afterAll()
-    TestKit.shutdownActorSystem(system)
+    influxDB = setupConnection(DatabaseName)
+    super.afterStart()
   }
 
   override def beforeEach(): Unit =
     populateDatabase(influxDB, classOf[InfluxDbSpecCpu])
 
-  override def afterEach() =
+  override def afterEach(): Unit =
     cleanDatabase(influxDB, DatabaseName)
 
   "support typed source" in assertAllStagesStopped {
@@ -112,9 +102,7 @@ class InfluxDbSpec
         results <- queryResult.getResults.asScala
         series <- results.getSeries.asScala
         values <- series.getValues.asScala
-      } yield (
-        InfluxDbWriteMessage(resultToPoint(series, values))
-      )
+      } yield InfluxDbWriteMessage(resultToPoint(series, values))
       points.toList
     }
 

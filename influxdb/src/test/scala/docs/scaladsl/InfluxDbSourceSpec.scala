@@ -11,41 +11,36 @@ import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Sink
 import akka.testkit.TestKit
 import org.influxdb.{InfluxDB, InfluxDBException}
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.ScalaFutures
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import docs.javadsl.TestUtils.{cleanDatabase, populateDatabase}
 import org.influxdb.dto.Query
 import org.scalatest.matchers.must.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class InfluxDbSourceSpec
-    extends AnyWordSpec
+    extends TestKit(ActorSystem("InfluxDbSourceSpec"))
+    with AnyWordSpecLike
     with InfluxDbTest
     with Matchers
     with BeforeAndAfterEach
-    with BeforeAndAfterAll
     with ScalaFutures
     with LogCapturing {
 
   final val DatabaseName = "InfluxDbSourceSpec"
 
-  implicit val system = ActorSystem()
-
   implicit var influxDB: InfluxDB = _
 
-  override def afterStart(): Unit =
+  override def afterStart(): Unit = {
     influxDB = setupConnection(DatabaseName)
-
-  override protected def afterAll(): Unit = {
-    super.afterAll()
-    TestKit.shutdownActorSystem(system)
+    super.afterStart()
   }
 
   override def beforeEach(): Unit =
     populateDatabase(influxDB, classOf[InfluxDbSourceCpu])
 
-  override def afterEach() =
+  override def afterEach(): Unit =
     cleanDatabase(influxDB, DatabaseName)
 
   "support source" in assertAllStagesStopped {
