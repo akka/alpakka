@@ -14,13 +14,14 @@ import org.influxdb.{InfluxDB, InfluxDBException}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.concurrent.ScalaFutures
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
-import docs.javadsl.TestUtils._
+import docs.javadsl.TestUtils.{cleanDatabase, populateDatabase}
 import org.influxdb.dto.Query
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class InfluxDbSourceSpec
     extends AnyWordSpec
+    with InfluxDbTest
     with Matchers
     with BeforeAndAfterEach
     with BeforeAndAfterAll
@@ -33,11 +34,13 @@ class InfluxDbSourceSpec
 
   implicit var influxDB: InfluxDB = _
 
-  override protected def beforeAll(): Unit =
+  override def afterStart(): Unit =
     influxDB = setupConnection(DatabaseName)
 
-  override protected def afterAll(): Unit =
+  override protected def afterAll(): Unit = {
+    super.afterAll()
     TestKit.shutdownActorSystem(system)
+  }
 
   override def beforeEach(): Unit =
     populateDatabase(influxDB, classOf[InfluxDbSourceCpu])

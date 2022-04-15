@@ -10,27 +10,14 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.influxdb.InfluxDB;
-import org.influxdb.InfluxDBFactory;
 import org.influxdb.dto.Point;
 import org.influxdb.dto.Query;
 import org.influxdb.dto.QueryResult;
 import org.influxdb.impl.InfluxDBMapper;
 
-import static docs.javadsl.TestConstants.INFLUXDB_URL;
-import static docs.javadsl.TestConstants.PASSWORD;
-import static docs.javadsl.TestConstants.USERNAME;
-
 public class TestUtils {
 
   // #define-class
-  public static InfluxDB setupConnection(final String databaseName) {
-    // #init-client
-    final InfluxDB influxDB = InfluxDBFactory.connect(INFLUXDB_URL, USERNAME, PASSWORD);
-    influxDB.setDatabase(databaseName);
-    influxDB.query(new Query("CREATE DATABASE " + databaseName, databaseName));
-    return influxDB;
-    // #init-client
-  }
 
   public static void populateDatabase(InfluxDB influxDB, Class<?> clazz) throws Exception {
     InfluxDBMapper influxDBMapper = new InfluxDBMapper(influxDB);

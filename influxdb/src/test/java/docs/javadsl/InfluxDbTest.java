@@ -42,10 +42,9 @@ import static docs.javadsl.TestUtils.cleanDatabase;
 import static docs.javadsl.TestUtils.dropDatabase;
 import static docs.javadsl.TestUtils.populateDatabase;
 import static docs.javadsl.TestUtils.resultToPoint;
-import static docs.javadsl.TestUtils.setupConnection;
 import static org.junit.Assert.assertEquals;
 
-public class InfluxDbTest {
+public class InfluxDbTest extends InfluxDbJUnitTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static ActorSystem system;

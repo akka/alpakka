@@ -23,9 +23,8 @@ import akka.testkit.javadsl.TestKit;
 import static docs.javadsl.TestUtils.cleanDatabase;
 import static docs.javadsl.TestUtils.dropDatabase;
 import static docs.javadsl.TestUtils.populateDatabase;
-import static docs.javadsl.TestUtils.setupConnection;
 
-public class InfluxDbSourceTest {
+public class InfluxDbSourceTest extends InfluxDbJUnitTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static ActorSystem system;

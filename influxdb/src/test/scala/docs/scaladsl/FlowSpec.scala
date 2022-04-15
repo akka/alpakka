@@ -17,7 +17,6 @@ import akka.testkit.TestKit
 import org.influxdb.InfluxDB
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.concurrent.ScalaFutures
-import docs.javadsl.TestUtils._
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import org.influxdb.dto.{Point, Query}
 
@@ -27,6 +26,7 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class FlowSpec
     extends AnyWordSpec
+    with InfluxDbTest
     with Matchers
     with BeforeAndAfterEach
     with BeforeAndAfterAll
@@ -39,11 +39,11 @@ class FlowSpec
 
   implicit var influxDB: InfluxDB = _
 
-  override protected def beforeAll(): Unit =
+  override def afterStart(): Unit =
     influxDB = setupConnection(DatabaseName)
 
   override protected def afterAll(): Unit = {
-    dropDatabase(influxDB, DatabaseName)
+    super.afterAll()
     TestKit.shutdownActorSystem(system)
   }
 

@@ -19,12 +19,12 @@ import docs.javadsl.TestUtils._
 import akka.stream.scaladsl.Sink
 
 import scala.jdk.CollectionConverters._
-import docs.javadsl.TestConstants.{INFLUXDB_URL, PASSWORD, USERNAME}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class InfluxDbSpec
     extends AnyWordSpec
+    with InfluxDbTest
     with Matchers
     with BeforeAndAfterEach
     with BeforeAndAfterAll
@@ -38,16 +38,18 @@ class InfluxDbSpec
   implicit var influxDB: InfluxDB = _
 
   //#define-class
-  override protected def beforeAll(): Unit = {
+  override def afterStart(): Unit = {
     //#init-client
-    influxDB = InfluxDBFactory.connect(INFLUXDB_URL, USERNAME, PASSWORD);
-    influxDB.setDatabase(DatabaseName);
-    influxDB.query(new Query("CREATE DATABASE " + DatabaseName, DatabaseName));
+    influxDB = InfluxDBFactory.connect(InfluxDbUrl, UserName, Password)
+    influxDB.setDatabase(DatabaseName)
+    influxDB.query(new Query("CREATE DATABASE " + DatabaseName, DatabaseName))
     //#init-client
   }
 
-  override protected def afterAll(): Unit =
+  override protected def afterAll(): Unit = {
+    super.afterAll()
     TestKit.shutdownActorSystem(system)
+  }
 
   override def beforeEach(): Unit =
     populateDatabase(influxDB, classOf[InfluxDbSpecCpu])

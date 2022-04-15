@@ -299,7 +299,8 @@ object Dependencies {
 
   val InfluxDB = Seq(
     libraryDependencies ++= Seq(
-        "org.influxdb" % "influxdb-java" % InfluxDBJavaVersion // MIT
+        "org.influxdb" % "influxdb-java" % InfluxDBJavaVersion, // MIT
+        "com.dimafeng" %% "testcontainers-scala-influxdb" % TestContainersScalaTestVersion % Test
       )
   )
 

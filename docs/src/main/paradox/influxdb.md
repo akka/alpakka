@@ -52,7 +52,7 @@ Scala
 : @@snip [snip](/influxdb/src/test/scala/docs/scaladsl/InfluxDbSpec.scala) { #init-client }
 
 Java
-: @@snip [snip](/influxdb/src/test/java/docs/javadsl/TestUtils.java) { #init-client }
+: @@snip [snip](/influxdb/src/test/java/docs/javadsl/InfluxDbJUnitTest.java) { #init-client }
 
 ## InfluxDB as Source and Sink
 
