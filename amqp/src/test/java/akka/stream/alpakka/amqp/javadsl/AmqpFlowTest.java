@@ -32,8 +32,7 @@ import akka.stream.testkit.javadsl.TestSink;
 import akka.util.ByteString;
 import scala.collection.JavaConverters;
 
-/** Needs a local running AMQP server on the default port with no password. */
-public class AmqpFlowTest {
+public class AmqpFlowTest extends RabbitMQJUnitTest {
 
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 

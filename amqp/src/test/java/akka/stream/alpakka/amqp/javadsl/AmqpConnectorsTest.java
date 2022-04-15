@@ -39,8 +39,7 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-/** Needs a local running AMQP server on the default port with no password. */
-public class AmqpConnectorsTest {
+public class AmqpConnectorsTest extends RabbitMQJUnitTest {
 
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 

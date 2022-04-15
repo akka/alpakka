@@ -20,8 +20,7 @@ import org.junit.Test;
 
 import java.net.ConnectException;
 
-public class AmqpConnectionProvidersTest {
-
+public class AmqpConnectionProvidersTest extends RabbitMQJUnitTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   @Test

@@ -16,6 +16,7 @@ import akka.stream.alpakka.amqp.javadsl.AmqpFlow;
 import akka.stream.alpakka.amqp.javadsl.AmqpRpcFlow;
 import akka.stream.alpakka.amqp.javadsl.AmqpSink;
 import akka.stream.alpakka.amqp.javadsl.AmqpSource;
+import akka.stream.alpakka.amqp.javadsl.RabbitMQJUnitTest;
 import akka.stream.alpakka.amqp.javadsl.CommittableReadResult;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Flow;
@@ -39,8 +40,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 
-/** Needs a local running AMQP server on the default port with no password. */
-public class AmqpDocsTest {
+public class AmqpDocsTest extends RabbitMQJUnitTest {
 
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 

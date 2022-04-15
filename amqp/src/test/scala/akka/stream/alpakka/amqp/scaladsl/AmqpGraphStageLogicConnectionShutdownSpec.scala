@@ -14,7 +14,8 @@ import akka.stream.alpakka.amqp.{
   AmqpConnectionFactoryConnectionProvider,
   AmqpProxyConnection,
   AmqpWriteSettings,
-  QueueDeclaration
+  QueueDeclaration,
+  RabbitMQTest
 }
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Source
@@ -35,6 +36,7 @@ import org.scalatest.wordspec.AnyWordSpec
  */
 class AmqpGraphStageLogicConnectionShutdownSpec
     extends AnyWordSpec
+    with RabbitMQTest
     with Matchers
     with ScalaFutures
     with BeforeAndAfterEach

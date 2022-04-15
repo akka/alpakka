@@ -12,7 +12,13 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-abstract class AmqpSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with ScalaFutures with LogCapturing {
+abstract class AmqpSpec
+    extends AnyWordSpec
+    with RabbitMQTest
+    with Matchers
+    with BeforeAndAfterAll
+    with ScalaFutures
+    with LogCapturing {
 
   implicit val system = ActorSystem(this.getClass.getSimpleName)
   implicit val executionContext = ExecutionContexts.parasitic

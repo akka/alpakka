@@ -21,9 +21,6 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.collection.immutable
 
-/**
- * Needs a local running AMQP server on the default port with no password.
- */
 class AmqpConnectorsSpec extends AmqpSpec {
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(10.seconds)
