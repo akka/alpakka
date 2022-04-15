@@ -10,34 +10,28 @@ import akka.stream.alpakka.mongodb.scaladsl.MongoSource
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
+import akka.testkit.TestKit
 import com.mongodb.reactivestreams.client.MongoClients
 import org.bson.Document
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.jdk.CollectionConverters._
-import scala.collection.immutable.Seq
 import scala.concurrent._
 import scala.concurrent.duration._
 import org.scalatest.matchers.must.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.annotation.nowarn
 
 class MongoSourceSpec
-    extends AnyWordSpec
+    extends TestKit(ActorSystem("MongoSourceSpec"))
+    with AnyWordSpecLike
+    with MongoTest
     with ScalaFutures
     with BeforeAndAfterEach
-    with BeforeAndAfterAll
     with Matchers
     with LogCapturing {
-
-  // #init-system
-  implicit val system = ActorSystem()
-  // #init-system
-
-  override protected def beforeAll(): Unit =
-    Source.fromPublisher(db.drop()).runWith(Sink.headOption).futureValue
 
   java.util.logging.Logger.getLogger("org.mongodb.driver").setLevel(java.util.logging.Level.SEVERE)
 
@@ -55,23 +49,22 @@ class MongoSourceSpec
   // #codecs
 
   // #init-connection
-  private val client = MongoClients.create("mongodb://localhost:27017")
-  private val db = client.getDatabase("MongoSourceSpec")
-  private val numbersColl = db
+  private lazy val client = MongoClients.create(ConnectionString)
+  private lazy val db = client.getDatabase("MongoSourceSpec")
+  private lazy val numbersColl = db
     .getCollection("numbers", classOf[Number])
     .withCodecRegistry(codecRegistry)
   // #init-connection
 
-  private val numbersDocumentColl = db.getCollection("numbers")
+  private lazy val numbersDocumentColl = db.getCollection("numbers")
 
-  implicit val defaultPatience =
+  implicit val defaultPatience: PatienceConfig =
     PatienceConfig(timeout = 5.seconds, interval = 50.millis)
 
-  override def afterEach(): Unit =
+  override def afterEach(): Unit = {
     Source.fromPublisher(numbersDocumentColl.deleteMany(new Document())).runWith(Sink.head).futureValue
-
-  override def afterAll(): Unit =
-    system.terminate().futureValue
+    super.afterEach()
+  }
 
   private def seed() = {
     val numbers = 1 until 10

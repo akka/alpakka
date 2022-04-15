@@ -107,7 +107,7 @@ jobs:
           - { connector: json-streaming }
           - { connector: kinesis }
           - { connector: kudu,                         pre_cmd: 'docker-compose up -d kudu-master-data kudu-tserver-data kudu-master kudu-tserver' }
-          - { connector: mongodb,                      pre_cmd: 'docker-compose up -d mongo' }
+          - { connector: mongodb }
           - { connector: mqtt,                         pre_cmd: 'docker-compose up -d mqtt' }
           - { connector: mqtt-streaming,               pre_cmd: 'docker-compose up -d mqtt' }
           - { connector: orientdb,                     pre_cmd: 'docker-compose up -d orientdb' }

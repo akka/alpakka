@@ -12,6 +12,7 @@ import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.Sink;
 import akka.stream.testkit.javadsl.StreamTestKit;
+import akka.testkit.javadsl.TestKit;
 import com.mongodb.client.result.InsertManyResult;
 import com.mongodb.reactivestreams.client.*;
 import org.bson.Document;
@@ -29,7 +30,7 @@ import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertEquals;
 
-public class MongoSourceTest {
+public class MongoSourceTest extends MongoJUnitTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static ActorSystem system;
@@ -40,9 +41,7 @@ public class MongoSourceTest {
   private final MongoCollection<Number> numbersColl;
 
   public MongoSourceTest() {
-    // #init-system
     system = ActorSystem.create();
-    // #init-system
 
     // #codecs
     PojoCodecProvider codecProvider = PojoCodecProvider.builder().register(Number.class).build();
@@ -50,8 +49,10 @@ public class MongoSourceTest {
         CodecRegistries.fromProviders(codecProvider, new ValueCodecProvider());
     // #codecs
 
+    final String CONNECTION_STRING = getConnectionString();
+
     // #init-connection
-    client = MongoClients.create("mongodb://localhost:27017");
+    client = MongoClients.create(CONNECTION_STRING);
     db = client.getDatabase("MongoSourceTest");
     numbersColl = db.getCollection("numbers", Number.class).withCodecRegistry(codecRegistry);
     // #init-connection
@@ -78,7 +79,7 @@ public class MongoSourceTest {
 
   @AfterClass
   public static void terminateActorSystem() {
-    system.terminate();
+    TestKit.shutdownActorSystem(system);
   }
 
   @Test

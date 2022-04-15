@@ -197,10 +197,6 @@ services:
     command: tserver
     links:
       - kudu-master
-  mongo:
-    image: mongo
-    ports:
-      - "27017:27017"
   influxdb:
     image: influxdb:1.8-alpine
     ports:

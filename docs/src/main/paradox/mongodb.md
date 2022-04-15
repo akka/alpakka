@@ -38,7 +38,8 @@ The table below shows direct dependencies of this module and the second tab show
 
 In the code examples below we will be using Mongo's support for automatic codec derivation for POJOs.
 For Scala we will be using a case class and a macro based codec derivation.
-For Java a codec for POJO is derived using reflection.
+For Java a codec for POJO is derived using reflection. We assume that you already have an 
+@apidoc[akka.actor.ActorSystem] set up.
 
 Scala
 : @@snip [snip](/mongodb/src/test/scala/docs/scaladsl/MongoSourceSpec.scala) { #pojo }
@@ -62,15 +63,6 @@ Scala
 
 Java
 : @@snip [snip](/mongodb/src/test/java/docs/javadsl/MongoSourceTest.java) { #init-connection }
-
-We will also need an @apidoc[akka.actor.ActorSystem].
-
-Scala
-: @@snip [snip](/mongodb/src/test/scala/docs/scaladsl/MongoSourceSpec.scala) { #init-system }
-
-Java
-: @@snip [snip](/mongodb/src/test/java/docs/javadsl/MongoSourceTest.java) { #init-system }
-
 
 ## Source
 

@@ -16,6 +16,7 @@ import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.javadsl.StreamTestKit;
+import akka.testkit.javadsl.TestKit;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.InsertManyOptions;
 import com.mongodb.client.model.Updates;
@@ -42,7 +43,7 @@ import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class MongoSinkTest {
+public class MongoSinkTest extends MongoJUnitTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static ActorSystem system;
@@ -64,7 +65,7 @@ public class MongoSinkTest {
     CodecRegistry codecRegistry =
         fromRegistries(fromProviders(codecProvider, new ValueCodecProvider()));
 
-    client = MongoClients.create("mongodb://localhost:27017");
+    client = MongoClients.create(getConnectionString());
     db = client.getDatabase("MongoSinkTest");
     numbersColl = db.getCollection("numbers", Number.class).withCodecRegistry(codecRegistry);
     numbersDocumentColl = db.getCollection("numbers");
@@ -127,7 +128,7 @@ public class MongoSinkTest {
 
   @AfterClass
   public static void terminateActorSystem() {
-    system.terminate();
+    TestKit.shutdownActorSystem(system);
   }
 
   @Test

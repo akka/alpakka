@@ -10,6 +10,7 @@ import akka.stream.alpakka.mongodb.scaladsl.MongoSink
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
+import akka.testkit.TestKit
 import com.mongodb.client.model.{Filters, InsertManyOptions, Updates}
 import com.mongodb.reactivestreams.client.{MongoClients, MongoCollection}
 import org.bson.Document
@@ -22,15 +23,16 @@ import org.scalatest.concurrent.ScalaFutures
 import scala.jdk.CollectionConverters._
 import scala.concurrent.duration._
 import org.scalatest.matchers.must.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.annotation.nowarn
 
 class MongoSinkSpec
-    extends AnyWordSpec
+    extends TestKit(ActorSystem("MongoSinkSpec"))
+    with AnyWordSpecLike
+    with MongoTest
     with ScalaFutures
     with BeforeAndAfterEach
-    with BeforeAndAfterAll
     with Matchers
     with LogCapturing {
 
@@ -43,30 +45,23 @@ class MongoSinkSpec
       "msg=match may not be exhaustive"
     )
 
-  implicit val system = ActorSystem()
-
-  override protected def beforeAll(): Unit =
-    Source.fromPublisher(db.drop()).runWith(Sink.headOption).futureValue
-
-  private val client = MongoClients.create(s"mongodb://localhost:27017")
-  private val db = client.getDatabase("MongoSinkSpec").withCodecRegistry(codecRegistry)
-  private val numbersColl: MongoCollection[Number] =
+  private lazy val client = MongoClients.create(ConnectionString)
+  private lazy val db = client.getDatabase("MongoSinkSpec").withCodecRegistry(codecRegistry)
+  private lazy val numbersColl: MongoCollection[Number] =
     db.getCollection("numbersSink", classOf[Number]).withCodecRegistry(codecRegistry)
-  private val numbersDocumentColl = db.getCollection("numbersSink")
-  private val domainObjectsColl: MongoCollection[DomainObject] =
+  private lazy val numbersDocumentColl = db.getCollection("numbersSink")
+  private lazy val domainObjectsColl: MongoCollection[DomainObject] =
     db.getCollection("domainObjectsSink", classOf[DomainObject]).withCodecRegistry(codecRegistry)
-  private val domainObjectsDocumentColl = db.getCollection("domainObjectsSink")
+  private lazy val domainObjectsDocumentColl = db.getCollection("domainObjectsSink")
 
-  implicit val defaultPatience =
+  implicit val defaultPatience: PatienceConfig =
     PatienceConfig(timeout = 5.seconds, interval = 50.millis)
 
   override def afterEach(): Unit = {
     Source.fromPublisher(numbersDocumentColl.deleteMany(new Document())).runWith(Sink.head).futureValue
     Source.fromPublisher(domainObjectsDocumentColl.deleteMany(new Document())).runWith(Sink.head).futureValue
+    super.afterEach()
   }
-
-  override def afterAll(): Unit =
-    system.terminate().futureValue
 
   val testRange = 0 until 10
 
