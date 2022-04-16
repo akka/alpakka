@@ -42,22 +42,13 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 
-public class OrientDbTest {
+public class OrientDbBaseTest extends OrientDbJUnitTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static OServerAdmin oServerAdmin;
   private static OPartitionedDatabasePool oDatabase;
   private static ODatabaseDocumentTx client;
   private static ActorSystem system;
-
-  // #init-settings
-
-  private static String url = "remote:127.0.0.1:2424/";
-  private static String dbName = "GratefulDeadConcertsJava";
-  private static String dbUrl = url + dbName;
-  private static String username = "root";
-  private static String password = "root";
-  // #init-settings
 
   private static String sourceClass = "source1";
   private static String sinkClass1 = "sink1";
@@ -140,18 +131,23 @@ public class OrientDbTest {
 
   @BeforeClass
   public static void setup() throws Exception {
+
     system = ActorSystem.create();
-
-    oServerAdmin = new OServerAdmin(url).connect(username, password);
-    if (!oServerAdmin.existsDatabase(dbName, "plocal")) {
-      oServerAdmin.createDatabase(dbName, "document", "plocal");
-    }
-
+    String ORIENTDB_URL = CONTAINER.url();
     // #init-settings
+    String DB_NAME = "GratefulDeadConcertsJava";
+    String DB_URL = ORIENTDB_URL + DB_NAME;
+    String USERNAME = "root";
+    String PASSWORD = "root";
+
+    oServerAdmin = new OServerAdmin(ORIENTDB_URL).connect(USERNAME, PASSWORD);
+    if (!oServerAdmin.existsDatabase(DB_NAME, "plocal")) {
+      oServerAdmin.createDatabase(DB_NAME, "document", "plocal");
+    }
 
     oDatabase =
         new OPartitionedDatabasePool(
-            dbUrl, username, password, Runtime.getRuntime().availableProcessors(), 10);
+            DB_URL, USERNAME, PASSWORD, Runtime.getRuntime().availableProcessors(), 10);
 
     system.registerOnTermination(() -> oDatabase.close());
     // #init-settings
@@ -176,13 +172,9 @@ public class OrientDbTest {
     unregister(sink3);
     unregister(sink6);
 
-    if (oServerAdmin.existsDatabase(dbName, "plocal")) {
-      oServerAdmin.dropDatabase(dbName, "plocal");
-    }
     oServerAdmin.close();
 
     client.close();
-    oDatabase.close();
     TestKit.shutdownActorSystem(system);
   }
 

@@ -211,13 +211,6 @@ services:
       - "1883:1883"
     volumes:
       - ./mqtt/src/test/travis:/mqtt/config/conf.d
-  orientdb:
-    image: orientdb:3.1.9
-    ports:
-      - "2424:2424"
-    environment:
-      - "ORIENTDB_ROOT_PASSWORD=root"
-    command: /orientdb/bin/server.sh -Dmemory.chunk.size=268435456
   sftp:
     image: atmoz/sftp
     volumes:

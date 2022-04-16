@@ -16,7 +16,6 @@ import akka.stream.alpakka.orientdb.{
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
-import akka.testkit.TestKit
 import com.orientechnologies.orient.`object`.db.OObjectDatabaseTx
 import com.orientechnologies.orient.client.remote.OServerAdmin
 import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx
@@ -25,9 +24,8 @@ import com.orientechnologies.orient.core.db.OPartitionedDatabasePool
 //#init-settings
 import com.orientechnologies.orient.core.db.ODatabaseRecordThreadLocal
 import com.orientechnologies.orient.core.record.impl.ODocument
-import docs.javadsl.OrientDbTest
+import docs.javadsl.OrientDbBaseTest
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.BeforeAndAfterAll
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -35,20 +33,11 @@ import scala.concurrent.duration._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class OrientDbSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with ScalaFutures with LogCapturing {
+class OrientDbBaseSpec extends AnyWordSpec with OrientDbTest with Matchers with ScalaFutures with LogCapturing {
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 100.millis)
 
   implicit val system: ActorSystem = ActorSystem()
-
-  //#init-settings
-
-  val url = "remote:127.0.0.1:2424/"
-  val dbName = "GratefulDeadConcertsScala"
-  val dbUrl = s"$url$dbName"
-  val username = "root"
-  val password = "root"
-  //#init-settings
 
   val sourceClass = "source1"
   val sinkClass2 = "sink2"
@@ -64,13 +53,18 @@ class OrientDbSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with
   var oDatabase: OPartitionedDatabasePool = _
   var client: ODatabaseDocumentTx = _
 
-  override def beforeAll() = {
-    oServerAdmin = new OServerAdmin(url).connect(username, password)
+  override def afterStart(): Unit = {
+    val OrientDbUrl = container.url
+    //#init-settings
+    val dbName = "GratefulDeadConcertsScala"
+    val dbUrl = s"$OrientDbUrl$dbName"
+    val username = "root"
+    val password = "root"
+
+    oServerAdmin = new OServerAdmin(OrientDbUrl).connect(username, password)
     if (!oServerAdmin.existsDatabase(dbName, "plocal")) {
       oServerAdmin.createDatabase(dbName, "document", "plocal")
     }
-
-    //#init-settings
 
     val oDatabase: OPartitionedDatabasePool =
       new OPartitionedDatabasePool(dbUrl, username, password, Runtime.getRuntime.availableProcessors(), 10)
@@ -89,22 +83,19 @@ class OrientDbSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with
     flush(sourceClass, "book_title", "Scala Puzzlers")
     flush(sourceClass, "book_title", "Effective Akka")
     flush(sourceClass, "book_title", "Akka Concurrency")
+    super.afterStart()
   }
 
-  override def afterAll() = {
+  override def beforeStop(): Unit = {
     unregister(sourceClass)
     unregister(sink4)
     unregister(sink5)
     unregister(sink7)
 
-    if (oServerAdmin.existsDatabase(dbName, "plocal")) {
-      oServerAdmin.dropDatabase(dbName, "plocal")
-    }
     oServerAdmin.close()
 
     client.close()
-    oDatabase.close()
-    TestKit.shutdownActorSystem(system)
+    super.beforeStop()
   }
 
   private def register(className: String): Unit =
@@ -230,17 +221,19 @@ class OrientDbSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with
     "support typed source and sink" in assertAllStagesStopped {
       // #run-typed
       val streamCompletion: Future[Done] = OrientDbSource
-        .typed(sourceClass, OrientDbSourceSettings(oDatabase), classOf[OrientDbTest.source1])
-        .map { m: OrientDbReadResult[OrientDbTest.source1] =>
+        .typed(sourceClass, OrientDbSourceSettings(oDatabase), classOf[OrientDbBaseTest.source1])
+        .map { m: OrientDbReadResult[OrientDbBaseTest.source1] =>
           val db: ODatabaseDocumentTx = oDatabase.acquire
           db.setDatabaseOwner(new OObjectDatabaseTx(db))
           ODatabaseRecordThreadLocal.instance.set(db)
-          val sink: OrientDbTest.sink2 = new OrientDbTest.sink2
+          val sink: OrientDbBaseTest.sink2 = new OrientDbBaseTest.sink2
           sink.setBook_title(m.oDocument.getBook_title)
           OrientDbWriteMessage(sink)
         }
         .groupedWithin(10, 10.millis)
-        .runWith(OrientDbSink.typed(sinkClass2, OrientDbWriteSettings.create(oDatabase), classOf[OrientDbTest.sink2]))
+        .runWith(
+          OrientDbSink.typed(sinkClass2, OrientDbWriteSettings.create(oDatabase), classOf[OrientDbBaseTest.sink2])
+        )
       // #run-typed
 
       streamCompletion.futureValue shouldBe Done

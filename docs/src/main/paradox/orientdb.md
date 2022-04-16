@@ -36,10 +36,10 @@ The table below shows direct dependencies of this module and the second tab show
 Sources, Flows and Sinks provided by this connector need a `OPartitionedDatabasePool` to access to OrientDB. It is your responsibility to close the database connection eg. at actor system termination. **This API has become deprecated in OrientDB, please suggest a Pull Request to use the latest APIs instead.**
 
 Scala
-: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDbSpec.scala) { #init-settings }
+: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDbBaseSpec.scala) { #init-settings }
 
 Java
-: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDbTest.java) { #init-settings }
+: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDbBaseTest.java) { #init-settings }
 
 
 ## Reading `ODocument` from OrientDB
@@ -48,10 +48,10 @@ Now we can stream messages which contain OrientDB's `ODocument` (in Scala or Jav
 @scala[@scaladoc[OrientDbSource](akka.stream.alpakka.orientdb.scaladsl.OrientDbSource$)]@java[@scaladoc[OrientDbSource](akka.stream.alpakka.orientdb.javadsl.OrientDbSource$)].
 
 Scala
-: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDbSpec.scala) { #run-odocument }
+: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDbBaseSpec.scala) { #run-odocument }
 
 Java
-: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDbTest.java) { #run-odocument }
+: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDbBaseTest.java) { #run-odocument }
 
 
 ## Typed messages
@@ -59,16 +59,16 @@ Java
 Also, it's possible to stream messages which contains any classes. 
 
 Java
-: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDbTest.java) { #define-class }
+: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDbBaseTest.java) { #define-class }
 
 
 Use `OrientDbSource.typed` and `OrientDbSink.typed` to create source and sink instead.
 
 Scala
-: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDbSpec.scala) { #run-typed }
+: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDbBaseSpec.scala) { #run-typed }
 
 Java
-: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDbTest.java) { #run-typed }
+: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDbBaseTest.java) { #run-typed }
 
 
 ## Source configuration
@@ -76,10 +76,10 @@ Java
 We can configure the source by `OrientDbSourceSettings`.
 
 Scala
-: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDbSpec.scala) { #source-settings }
+: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDbBaseSpec.scala) { #source-settings }
 
 Java
-: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDbTest.java) { #source-settings }
+: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDbBaseTest.java) { #source-settings }
 
 
 | Parameter        | Default | Description |
@@ -94,10 +94,10 @@ Java
 You can also build flow stages. The API is similar to creating Sinks.
 
 Scala
-: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDbSpec.scala) { #run-flow }
+: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDbBaseSpec.scala) { #run-flow }
 
 Java
-: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDbTest.java) { #run-flow }
+: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDbBaseTest.java) { #run-flow }
 
 
 ### Passing data through OrientDBFlow
@@ -105,7 +105,7 @@ Java
 When streaming documents from Kafka, you might want to commit to Kafka **AFTER** the document has been written to OrientDB.
 
 Scala
-: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDbSpec.scala) { #kafka-example }
+: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDbBaseSpec.scala) { #kafka-example }
 
 Java
-: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDbTest.java) { #kafka-example } 
+: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDbBaseTest.java) { #kafka-example } 
