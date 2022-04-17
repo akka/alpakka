@@ -10,6 +10,7 @@ import akka.actor.ActorSystem;
 import akka.japi.Pair;
 
 // #init-client
+import akka.http.javadsl.Http;
 import akka.stream.alpakka.dynamodb.DynamoDbOp;
 import akka.stream.alpakka.dynamodb.javadsl.DynamoDb;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
@@ -30,7 +31,6 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 // #init-client
 import software.amazon.awssdk.services.dynamodb.model.*;
 
-import java.net.URI;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertNotNull;
 
-public class ExampleTest {
+public class ExampleTest extends DynamoDbJUnitTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   static ActorSystem system;
@@ -63,7 +63,7 @@ public class ExampleTest {
             // see https://doc.akka.io/docs/alpakka/current/aws-shared-configuration.html
             // .overrideConfiguration(...)
             // #init-client
-            .endpointOverride(new URI("http://localhost:8001/"))
+            .endpointOverride(CONTAINER.uri())
             // #init-client
             .build();
 
@@ -76,9 +76,12 @@ public class ExampleTest {
   }
 
   @AfterClass
-  public static void tearDown() {
-    client.close();
-    TestKit.shutdownActorSystem(system);
+  public static void tearDown() throws ExecutionException, InterruptedException {
+    Http.get(system)
+        .shutdownAllConnectionPools()
+        .whenComplete((s, f) -> TestKit.shutdownActorSystem(system))
+        .toCompletableFuture()
+        .get();
   }
 
   @Test

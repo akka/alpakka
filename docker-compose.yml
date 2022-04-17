@@ -69,10 +69,6 @@ services:
     image: softwaremill/elasticmq-native:1.3.4
     ports:
       - "9324:9324"
-  dynamodb:
-    image: deangiberson/aws-dynamodb-local
-    ports:
-      - "8001:8000"
   elasticsearch6:
     image: docker.elastic.co/elasticsearch/elasticsearch:6.8.23
     ports:

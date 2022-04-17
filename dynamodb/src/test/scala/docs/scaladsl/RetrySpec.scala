@@ -5,10 +5,10 @@
 package docs.scaladsl
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.testkit.TestKit
 import com.github.matsluni.akkahttpspi.AkkaHttpClient
-import org.scalatest.BeforeAndAfterAll
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
 // #awsRetryConfiguration
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration
@@ -22,17 +22,15 @@ import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class RetrySpec
-    extends TestKit(ActorSystem("RetrySpec"))
-    with AnyWordSpecLike
-    with BeforeAndAfterAll
-    with LogCapturing {
+class RetrySpec extends TestKit(ActorSystem("RetrySpec")) with AnyWordSpecLike with LogCapturing {
+
+  private val credentialsProvider = StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x"))
 
   // #clientRetryConfig
   implicit val client: DynamoDbAsyncClient = DynamoDbAsyncClient
     .builder()
     .region(Region.AWS_GLOBAL)
-    .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
+    .credentialsProvider(credentialsProvider)
     .httpClient(AkkaHttpClient.builder().withActorSystem(system).build())
     // #awsRetryConfiguration
     .overrideConfiguration(
@@ -56,7 +54,12 @@ class RetrySpec
 
   override def afterAll(): Unit = {
     client.close()
-    shutdown();
+    Http(system)
+      .shutdownAllConnectionPools()
+      .foreach { _ =>
+        shutdown()
+      }(system.dispatcher)
+    super.afterAll()
   }
 
 }

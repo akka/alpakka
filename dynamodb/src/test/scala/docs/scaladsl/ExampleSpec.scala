@@ -4,74 +4,42 @@
 
 package docs.scaladsl
 
-import java.net.URI
-
 import akka.NotUsed
+import akka.stream.alpakka.dynamodb.{DynamoDbTest, ForAllAnyWordSpecContainer}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{FlowWithContext, SourceWithContext}
 
 import scala.util.{Failure, Success, Try}
-//#init-client
 import akka.actor.ActorSystem
 
-//#init-client
 import akka.stream.alpakka.dynamodb.DynamoDbOp._
 import akka.stream.alpakka.dynamodb.scaladsl._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.BeforeAndAfterAll
-//#init-client
-import com.github.matsluni.akkahttpspi.AkkaHttpClient
-import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
-import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
-
-//#init-client
 import software.amazon.awssdk.services.dynamodb.model._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 class ExampleSpec
     extends TestKit(ActorSystem("ExampleSpec"))
-    with AnyWordSpecLike
+    with ForAllAnyWordSpecContainer
+    with DynamoDbTest
     with Matchers
-    with BeforeAndAfterAll
     with ScalaFutures
     with LogCapturing {
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 100.millis)
 
-  //#init-client
+  implicit var client: DynamoDbAsyncClient = _
 
-  // Don't encode credentials in your source code!
-  // see https://doc.akka.io/docs/alpakka/current/aws-shared-configuration.html
-  private val credentialsProvider = StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x"))
-  implicit val client: DynamoDbAsyncClient = DynamoDbAsyncClient
-    .builder()
-    .region(Region.AWS_GLOBAL)
-    .credentialsProvider(credentialsProvider)
-    .httpClient(AkkaHttpClient.builder().withActorSystem(system).build())
-    // Possibility to configure the retry policy
-    // see https://doc.akka.io/docs/alpakka/current/aws-shared-configuration.html
-    // .overrideConfiguration(...)
-    //#init-client
-    .endpointOverride(new URI("http://localhost:8001/"))
-    //#init-client
-    .build()
-
-  system.registerOnTermination(client.close())
-
-  //#init-client
-
-  override def afterAll(): Unit = {
-    client.close();
-    shutdown()
-    super.afterAll()
+  override def afterStart(): Unit = {
+    client = dynamoDbAsyncClient
+    super.afterStart()
   }
 
   "DynamoDB" should {

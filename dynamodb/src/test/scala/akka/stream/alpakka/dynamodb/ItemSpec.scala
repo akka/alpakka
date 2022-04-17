@@ -4,40 +4,31 @@
 
 package akka.stream.alpakka.dynamodb
 
-import java.net.URI
 import akka.actor.ActorSystem
 import akka.stream.alpakka.dynamodb.scaladsl._
 import akka.stream.scaladsl.Sink
 import akka.testkit.TestKit
-import com.github.matsluni.akkahttpspi.AkkaHttpClient
-import org.scalatest._
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AsyncWordSpecLike
-import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
-import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
 import software.amazon.awssdk.services.dynamodb.model.TableStatus
 
 import scala.annotation.nowarn
-import scala.jdk.CollectionConverters._
 import scala.concurrent.ExecutionContext
+import scala.jdk.CollectionConverters._
 
-class ItemSpec extends TestKit(ActorSystem("ItemSpec")) with AsyncWordSpecLike with Matchers with BeforeAndAfterAll {
+class ItemSpec
+    extends TestKit(ActorSystem("ItemSpec"))
+    with ForAllAsyncWordSpecContainer
+    with DynamoDbTest
+    with Matchers {
 
   implicit val ec: ExecutionContext = system.dispatcher
 
-  implicit val client: DynamoDbAsyncClient = DynamoDbAsyncClient
-    .builder()
-    .region(Region.AWS_GLOBAL)
-    .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
-    .httpClient(AkkaHttpClient.builder().withActorSystem(system).build())
-    .endpointOverride(new URI("http://localhost:8001/"))
-    .build()
+  implicit var client: DynamoDbAsyncClient = _
 
-  override def afterAll(): Unit = {
-    client.close()
-    shutdown()
-    super.afterAll()
+  override def afterStart(): Unit = {
+    client = dynamoDbAsyncClient
+    super.afterStart()
   }
 
   "DynamoDB" should {

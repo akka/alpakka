@@ -34,7 +34,7 @@ This connector requires a @javadoc[DynamoDbAsyncClient](software.amazon.awssdk.s
 It is your code's responsibility to call `close` to free any resources held by the client. In this example it will be called when the actor system is terminated.
 
 Scala
-: @@snip [snip](/dynamodb/src/test/scala/docs/scaladsl/ExampleSpec.scala) { #init-client }
+: @@snip [snip](/dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/DynamoDbTest.scala) { #init-client }
 
 Java
 : @@snip [snip](/dynamodb/src/test/java/docs/javadsl/ExampleTest.java) { #init-client }
