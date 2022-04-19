@@ -117,28 +117,37 @@ object PubSubConfig {
     apply(projectId, clientEmail, privateKey, pullReturnImmediately, pullMaxMessagesPerInternalBatch)(actorSystem)
 }
 
-final class PublishMessage private (val data: String, val attributes: Option[immutable.Map[String, String]]) {
-  override def toString: String = "PublishMessage(data=" + data + ",attributes=" + attributes.toString + ")"
+final class PublishMessage private (val data: String,
+                                    val attributes: Option[immutable.Map[String, String]],
+                                    val orderingKey: Option[String]) {
+  override def toString: String =
+    "PublishMessage(data=" + data + ",attributes=" + attributes.toString + ",orderingKey=" + orderingKey + ")"
 
   override def equals(other: Any): Boolean = other match {
-    case that: PublishMessage => data == that.data && attributes == that.attributes
+    case that: PublishMessage => data == that.data && attributes == that.attributes && orderingKey == that.orderingKey
     case _ => false
   }
 
-  override def hashCode: Int = java.util.Objects.hash(data, attributes)
+  override def hashCode: Int = java.util.Objects.hash(data, attributes, orderingKey)
 }
 
 object PublishMessage {
-  def apply(data: String, attributes: immutable.Map[String, String]) = new PublishMessage(data, Some(attributes))
-  def apply(data: String, attributes: Option[immutable.Map[String, String]]) = new PublishMessage(data, attributes)
-  def apply(data: String) = new PublishMessage(data, None)
-  def create(data: String) = new PublishMessage(data, None)
+  def apply(data: String, attributes: immutable.Map[String, String], orderingKey: Option[String] = None) = new PublishMessage(data, Some(attributes), orderingKey)
+  def apply(data: String, attributes: Option[immutable.Map[String, String]], orderingKey: Option[String]) = new PublishMessage(data, attributes, orderingKey)
+  def apply(data: String) = new PublishMessage(data, None, None)
+  def create(data: String) = new PublishMessage(data, None, None)
 
   /**
    * Java API
    */
   def create(data: String, attributes: java.util.Map[String, String]) =
-    new PublishMessage(data, Some(attributes.asScala.toMap))
+    new PublishMessage(data, Some(attributes.asScala.toMap), None)
+
+  /**
+   * Java API with ordering key
+   */
+  def create(data: String, attributes: java.util.Map[String, String], orderingKey: java.util.Optional[String]) =
+    new PublishMessage(data, Some(attributes.asScala.toMap), Option(orderingKey.orElse(null)))
 }
 
 /**
@@ -147,28 +156,33 @@ object PublishMessage {
  * @param attributes attributes for this message, if not present, data can't be empty
  * @param messageId the message id given by server.
  * @param publishTime the time the message was published.
+ * @param orderingKey if non-empty, identifies related messages for which publish order should be respected
  */
 final class PubSubMessage private (val data: Option[String],
                                    val attributes: Option[immutable.Map[String, String]],
                                    val messageId: String,
-                                   val publishTime: Instant) {
+                                   val publishTime: Instant,
+                                   val orderingKey: Option[String]) {
 
   def withAttributes(attributes: java.util.Map[String, String]): PubSubMessage =
-    new PubSubMessage(data, Some(attributes.asScala.toMap), messageId, publishTime)
+    new PubSubMessage(data, Some(attributes.asScala.toMap), messageId, publishTime, orderingKey)
 
   def withData(data: String): PubSubMessage =
-    new PubSubMessage(Some(data), attributes, messageId, publishTime)
+    new PubSubMessage(Some(data), attributes, messageId, publishTime, orderingKey)
+
+  def withOrderingKey(orderingKey: String): PubSubMessage =
+    new PubSubMessage(data, attributes, messageId, publishTime, Some(orderingKey))
 
   override def equals(other: Any): Boolean = other match {
     case that: PubSubMessage =>
-      data == that.data && attributes == that.attributes && messageId == that.messageId && publishTime == that.publishTime
+      data == that.data && attributes == that.attributes && messageId == that.messageId && publishTime == that.publishTime && orderingKey == that.orderingKey
     case _ => false
   }
 
-  override def hashCode: Int = java.util.Objects.hash(data, attributes, messageId, publishTime)
+  override def hashCode: Int = java.util.Objects.hash(data, attributes, messageId, publishTime, orderingKey)
 
   override def toString: String =
-    "PubSubMessage(data=" + data + ",attributes=" + attributes + ",messageId=" + messageId + ",publishTime=" + publishTime + ")"
+    "PubSubMessage(data=" + data + ",attributes=" + attributes + ",messageId=" + messageId + ",publishTime=" + publishTime + ",orderingKey=" + orderingKey + ")"
 }
 
 object PubSubMessage {
@@ -176,7 +190,9 @@ object PubSubMessage {
   def apply(data: Option[String] = None,
             attributes: Option[immutable.Map[String, String]] = None,
             messageId: String,
-            publishTime: Instant) = new PubSubMessage(data, attributes, messageId, publishTime)
+            publishTime: Instant,
+            orderingKey: Option[String] = None) =
+    new PubSubMessage(data, attributes, messageId, publishTime, orderingKey)
 
   /**
    * Java API
@@ -184,11 +200,13 @@ object PubSubMessage {
   def create(data: java.util.Optional[String],
              attributes: java.util.Optional[java.util.Map[String, String]],
              messageId: String,
-             publishTime: Instant) =
+             publishTime: Instant,
+             orderingKey: java.util.Optional[String]) =
     new PubSubMessage(Option(data.orElse(null)),
                       Option(attributes.orElse(null)).map(_.asScala.toMap),
                       messageId,
-                      publishTime)
+                      publishTime,
+                      Option(orderingKey.orElse(null)))
 
 }
 
