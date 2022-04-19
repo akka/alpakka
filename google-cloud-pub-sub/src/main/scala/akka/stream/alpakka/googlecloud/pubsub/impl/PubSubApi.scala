@@ -75,7 +75,8 @@ private[pubsub] trait PubSubApi {
           fields.get("data").map(_.convertTo[String]),
           fields.get("attributes").map(_.convertTo[Map[String, String]]),
           fields("messageId").convertTo[String],
-          fields("publishTime").convertTo[Instant]
+          fields("publishTime").convertTo[Instant],
+          fields.get("orderingKey").map(_.convertTo[String])
         )
       }
       override def write(m: PubSubMessage): JsValue =
@@ -85,6 +86,7 @@ private[pubsub] trait PubSubApi {
             "publishTime" -> m.publishTime.toJson
           )
           ++ m.data.map(data => "data" -> data.toJson)
+          ++ m.orderingKey.map(orderingKey => "orderingKey" -> orderingKey.toJson)
           ++ m.attributes.map(attributes => "attributes" -> attributes.toJson): _*
         )
     }
@@ -93,10 +95,15 @@ private[pubsub] trait PubSubApi {
     def read(json: JsValue): PublishMessage = {
       val data = json.asJsObject.fields("data").convertTo[String]
       val attributes = json.asJsObject.fields("attributes").convertTo[immutable.Map[String, String]]
-      PublishMessage(data, attributes)
+      val orderingKey = json.asJsObject.fields.get("orderingKey").map(_.convertTo[String])
+      PublishMessage(data, attributes, orderingKey)
     }
     def write(m: PublishMessage): JsValue =
-      JsObject(Seq("data" -> JsString(m.data)) ++ m.attributes.map(a => "attributes" -> a.toJson): _*)
+      JsObject(
+        Seq("data" -> JsString(m.data)) ++
+          m.orderingKey.map(orderingKey => "orderingKey" -> orderingKey.toJson) ++
+          m.attributes.map(a => "attributes" -> a.toJson): _*
+      )
   }
 
   private implicit val pubSubRequestFormat = new RootJsonFormat[PublishRequest] {

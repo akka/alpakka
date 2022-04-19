@@ -18,23 +18,32 @@ class ModelSpec extends AnyFunSuite with Matchers with LogCapturing {
   val publishMessage3 = PublishMessage("abcde")
   val publishMessage4 = PublishMessage("abcd", Map("k1" -> "v1", "k2" -> "v2"))
   val publishMessage5 = PublishMessage("abcde", Map("k1" -> "v1", "k2" -> "v2"))
+  val publishMessage6 = PublishMessage("abcde", Map("k1" -> "v1", "k2" -> "v2"), Some("qwe"))
+  val publishMessage7 = PublishMessage("abcde", Map("k1" -> "v1", "k2" -> "v2"), None)
 
   test("PublishMessage equals, hashCode") {
 
     publishMessage1 shouldNot be(publishMessage2)
     publishMessage1 shouldNot be(publishMessage3)
     publishMessage1 shouldNot be(publishMessage4)
+    publishMessage1 shouldNot be(publishMessage6)
     publishMessage1 shouldBe publishMessage5
+    publishMessage1 shouldBe publishMessage7
 
     publishMessage1.hashCode shouldNot be(publishMessage2.hashCode)
     publishMessage1.hashCode shouldNot be(publishMessage3.hashCode)
     publishMessage1.hashCode shouldNot be(publishMessage4.hashCode)
+    publishMessage1.hashCode shouldNot be(publishMessage6.hashCode)
     publishMessage1.hashCode shouldBe publishMessage5.hashCode
+    publishMessage1.hashCode shouldBe publishMessage7.hashCode
   }
 
   test("PublishMessage toString") {
     publishMessage1.toString shouldBe
-    "PublishMessage(data=abcde,attributes=Some(Map(k1 -> v1, k2 -> v2)))"
+    "PublishMessage(data=abcde,attributes=Some(Map(k1 -> v1, k2 -> v2)),orderingKey=None)"
+
+    publishMessage6.toString shouldBe
+      "PublishMessage(data=abcde,attributes=Some(Map(k1 -> v1, k2 -> v2)),orderingKey=Some(qwe))"
   }
 
   val pubSubMessage1 = PubSubMessage(Some("data"), Some(Map("k1" -> "v1")), "Id-1", Instant.ofEpochMilli(0L))
@@ -43,43 +52,53 @@ class ModelSpec extends AnyFunSuite with Matchers with LogCapturing {
   val pubSubMessage4 = PubSubMessage(Some("data"), Some(Map("k1" -> "v1")), "Id-2", Instant.ofEpochMilli(0L))
   val pubSubMessage5 = PubSubMessage(Some("data"), Some(Map("k1" -> "v1")), "Id-1", Instant.ofEpochMilli(1L))
   val pubSubMessage6 = PubSubMessage(Some("data"), Some(Map("k1" -> "v1")), "Id-1", Instant.ofEpochMilli(0L))
+  val pubSubMessage7 = PubSubMessage(Some("data"), Some(Map("k1" -> "v1")), "Id-1", Instant.ofEpochMilli(0L), Some("qwe"))
 
   test("PubSubMessage equals, hashCode") {
     pubSubMessage1 shouldNot be(pubSubMessage2)
     pubSubMessage1 shouldNot be(pubSubMessage3)
     pubSubMessage1 shouldNot be(pubSubMessage4)
     pubSubMessage1 shouldNot be(pubSubMessage5)
+    pubSubMessage1 shouldNot be(pubSubMessage7)
     pubSubMessage1 shouldBe pubSubMessage6
 
     pubSubMessage1.hashCode shouldNot be(pubSubMessage2.hashCode)
     pubSubMessage1.hashCode shouldNot be(pubSubMessage3.hashCode)
     pubSubMessage1.hashCode shouldNot be(pubSubMessage4.hashCode)
     pubSubMessage1.hashCode shouldNot be(pubSubMessage5.hashCode)
+    pubSubMessage1.hashCode shouldNot be(pubSubMessage7.hashCode)
     pubSubMessage1.hashCode shouldBe pubSubMessage6.hashCode
   }
 
   test("PubSubMessage toString") {
-    pubSubMessage1.toString shouldBe ("PubSubMessage(data=Some(data),attributes=Some(Map(k1 -> v1)),messageId=Id-1,publishTime=1970-01-01T00:00:00Z)")
+    pubSubMessage1.toString shouldBe "PubSubMessage(data=Some(data),attributes=Some(Map(k1 -> v1)),messageId=Id-1,publishTime=1970-01-01T00:00:00Z,orderingKey=None)"
+    pubSubMessage7.toString shouldBe "PubSubMessage(data=Some(data),attributes=Some(Map(k1 -> v1)),messageId=Id-1,publishTime=1970-01-01T00:00:00Z,orderingKey=Some(qwe))"
   }
 
   val receivedMessage1 = ReceivedMessage("1", pubSubMessage1)
   val receivedMessage2 = ReceivedMessage("2", pubSubMessage1)
   val receivedMessage3 = ReceivedMessage("1", pubSubMessage2)
   val receivedMessage4 = ReceivedMessage("1", pubSubMessage1)
+  val receivedMessage5 = ReceivedMessage("2", pubSubMessage7)
 
   test("ReceivedMessage equals, hashCode") {
     receivedMessage1 shouldNot be(receivedMessage2)
     receivedMessage1 shouldNot be(receivedMessage3)
+    receivedMessage1 shouldNot be(receivedMessage5)
     receivedMessage1 shouldBe receivedMessage4
 
     receivedMessage1.hashCode shouldNot be(receivedMessage2.hashCode)
     receivedMessage1.hashCode shouldNot be(receivedMessage3.hashCode)
+    receivedMessage1.hashCode shouldNot be(receivedMessage5.hashCode)
     receivedMessage1.hashCode shouldBe receivedMessage4.hashCode
   }
 
   test("ReceivedMessage toString") {
     receivedMessage1.toString shouldBe
-    "ReceivedMessage(ackId=1,message=PubSubMessage(data=Some(data),attributes=Some(Map(k1 -> v1)),messageId=Id-1,publishTime=1970-01-01T00:00:00Z))"
+    "ReceivedMessage(ackId=1,message=PubSubMessage(data=Some(data),attributes=Some(Map(k1 -> v1)),messageId=Id-1,publishTime=1970-01-01T00:00:00Z,orderingKey=None))"
+
+    receivedMessage5.toString shouldBe
+    "ReceivedMessage(ackId=2,message=PubSubMessage(data=Some(data),attributes=Some(Map(k1 -> v1)),messageId=Id-1,publishTime=1970-01-01T00:00:00Z,orderingKey=Some(qwe)))"
   }
 
   val acknowledgeRequest1 = AcknowledgeRequest()
@@ -107,17 +126,21 @@ class ModelSpec extends AnyFunSuite with Matchers with LogCapturing {
   val publishRequest1 = PublishRequest(Seq(publishMessage1))
   val publishRequest2 = PublishRequest(Seq(publishMessage2))
   val publishRequest3 = PublishRequest(Seq(publishMessage1))
+  val publishRequest4 = PublishRequest(Seq(publishMessage6))
 
   test("PublishRequest equals, hashCode") {
     publishRequest1 shouldNot be(publishRequest2)
+    publishRequest1 shouldNot be(publishRequest4)
     publishRequest1 shouldBe publishRequest3
 
     publishRequest1.hashCode shouldNot be(publishRequest2.hashCode)
+    publishRequest1.hashCode shouldNot be(publishRequest4.hashCode)
     publishRequest1.hashCode shouldBe publishRequest3.hashCode
   }
 
   test("PublishRequest toString") {
-    publishRequest1.toString shouldBe "PublishRequest([PublishMessage(data=abcde,attributes=Some(Map(k1 -> v1, k2 -> v2)))])"
+    publishRequest1.toString shouldBe "PublishRequest([PublishMessage(data=abcde,attributes=Some(Map(k1 -> v1, k2 -> v2)),orderingKey=None)])"
+    publishRequest4.toString shouldBe "PublishRequest([PublishMessage(data=abcde,attributes=Some(Map(k1 -> v1, k2 -> v2)),orderingKey=Some(qwe))])"
   }
 
   private val publishResponse1 = PublishResponse(Seq.empty[String])
@@ -145,6 +168,7 @@ class ModelSpec extends AnyFunSuite with Matchers with LogCapturing {
   private val pullResponse1 = PullResponse(Some(Seq(receivedMessage1)))
   private val pullResponse2 = PullResponse(None)
   private val pullResponse3 = PullResponse(Some(Seq(receivedMessage1)))
+  private val pullResponse4 = PullResponse(Some(Seq(receivedMessage5)))
 
   test("PullResponse equals, hashCode") {
     pullResponse1 shouldNot be(pullResponse2)
@@ -155,6 +179,7 @@ class ModelSpec extends AnyFunSuite with Matchers with LogCapturing {
   }
 
   test("PullResponse toString") {
-    pullResponse1.toString shouldBe "PullResponse(Some([ReceivedMessage(ackId=1,message=PubSubMessage(data=Some(data),attributes=Some(Map(k1 -> v1)),messageId=Id-1,publishTime=1970-01-01T00:00:00Z))]))"
+    pullResponse1.toString shouldBe "PullResponse(Some([ReceivedMessage(ackId=1,message=PubSubMessage(data=Some(data),attributes=Some(Map(k1 -> v1)),messageId=Id-1,publishTime=1970-01-01T00:00:00Z,orderingKey=None))]))"
+    pullResponse4.toString shouldBe "PullResponse(Some([ReceivedMessage(ackId=2,message=PubSubMessage(data=Some(data),attributes=Some(Map(k1 -> v1)),messageId=Id-1,publishTime=1970-01-01T00:00:00Z,orderingKey=Some(qwe)))]))"
   }
 }
