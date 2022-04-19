@@ -9,7 +9,7 @@ import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.{ContentTypes, HttpMethods, HttpRequest, Uri}
 import akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSource
-import akka.stream.alpakka.elasticsearch.{  
+import akka.stream.alpakka.elasticsearch.{
   ApiVersionBase,
   ElasticsearchConnectionSettings,
   ElasticsearchParams,
@@ -82,7 +82,9 @@ trait ElasticsearchSpecUtils { this: AnyWordSpec with ScalaFutures =>
     flushAndRefresh(connectionSettings, "source")
   }
 
-  def constructElasticsearchParams(indexName: String, typeName: String, apiVersion: ApiVersionBase): ElasticsearchParams = {
+  def constructElasticsearchParams(indexName: String,
+                                   typeName: String,
+                                   apiVersion: ApiVersionBase): ElasticsearchParams = {
     if (apiVersion == akka.stream.alpakka.elasticsearch.ApiVersion.V5) {
       ElasticsearchParams.V5(indexName, typeName)
     } else if (apiVersion == akka.stream.alpakka.elasticsearch.ApiVersion.V7) {

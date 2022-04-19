@@ -6,7 +6,13 @@ package docs.scaladsl
 
 import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest, Uri}
-import akka.stream.alpakka.elasticsearch.{ElasticsearchConnectionSettings, StringMessageWriter, WriteMessage, WriteResult, ReadResult}
+import akka.stream.alpakka.elasticsearch.{
+  ElasticsearchConnectionSettings,
+  ReadResult,
+  StringMessageWriter,
+  WriteMessage,
+  WriteResult
+}
 import akka.stream.alpakka.elasticsearch.scaladsl.{ElasticsearchFlow, ElasticsearchSink, ElasticsearchSource}
 import akka.stream.alpakka.opensearch._
 import akka.stream.scaladsl.{Sink, Source}
