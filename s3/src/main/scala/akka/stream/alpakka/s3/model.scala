@@ -195,10 +195,6 @@ final class MultipartUploadResult private (
     val versionId: Option[String]
 ) {
 
-  /** Scala API */
-  @deprecated("Use eTag", "3.0.3")
-  val etag: String = eTag
-
   /** Java API */
   def getLocation: akka.http.javadsl.model.Uri = akka.http.javadsl.model.Uri.create(location)
 
@@ -212,18 +208,12 @@ final class MultipartUploadResult private (
   def getETag: String = eTag
 
   /** Java API */
-  @deprecated("Use getETag", "3.0.3")
-  def getEtag: String = eTag
-
-  /** Java API */
   def getVersionId: Optional[String] = versionId.asJava
 
   def withLocation(value: Uri): MultipartUploadResult = copy(location = value)
   def withBucket(value: String): MultipartUploadResult = copy(bucket = value)
   def withKey(value: String): MultipartUploadResult = copy(key = value)
   def withETag(value: String): MultipartUploadResult = copy(eTag = value)
-  @deprecated("Use withETag", "3.0.3")
-  def withEtag(value: String): MultipartUploadResult = copy(eTag = value)
   def withVersionId(value: String): MultipartUploadResult =
     // See https://docs.aws.amazon.com/AmazonS3/latest/userguide/AddingObjectstoVersionSuspendedBuckets.html for more
     // info.
