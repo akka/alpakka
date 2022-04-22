@@ -140,13 +140,13 @@ object PublishMessage {
   /**
    * Java API
    */
-  def create(data: String, attributes: java.util.Map[String, String]) =
-    new PublishMessage(data, Some(attributes.asScala.toMap), None)
+  def create(data: String, attributes: java.util.Map[String, String]): PublishMessage =
+    create(data, attributes, java.util.Optional.empty())
 
   /**
    * Java API with ordering key
    */
-  def create(data: String, attributes: java.util.Map[String, String], orderingKey: java.util.Optional[String]) =
+  def create(data: String, attributes: java.util.Map[String, String], orderingKey: java.util.Optional[String]): PublishMessage =
     new PublishMessage(data, Some(attributes.asScala.toMap), Option(orderingKey.orElse(null)))
 }
 
@@ -200,13 +200,22 @@ object PubSubMessage {
   def create(data: java.util.Optional[String],
              attributes: java.util.Optional[java.util.Map[String, String]],
              messageId: String,
+             publishTime: Instant): PubSubMessage =
+      create(data, attributes, messageId, publishTime, java.util.Optional.empty())
+
+  /**
+   * Java API with ordering key
+   */
+  def create(data: java.util.Optional[String],
+             attributes: java.util.Optional[java.util.Map[String, String]],
+             messageId: String,
              publishTime: Instant,
-             orderingKey: java.util.Optional[String]) =
+             orderingKey: java.util.Optional[String]): PubSubMessage =
     new PubSubMessage(Option(data.orElse(null)),
-                      Option(attributes.orElse(null)).map(_.asScala.toMap),
-                      messageId,
-                      publishTime,
-                      Option(orderingKey.orElse(null)))
+      Option(attributes.orElse(null)).map(_.asScala.toMap),
+      messageId,
+      publishTime,
+      Option(orderingKey.orElse(null)))
 
 }
 
