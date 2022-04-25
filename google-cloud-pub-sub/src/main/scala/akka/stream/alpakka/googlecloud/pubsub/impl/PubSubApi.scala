@@ -96,7 +96,7 @@ private[pubsub] trait PubSubApi {
       val data = json.asJsObject.fields("data").convertTo[String]
       val attributes = json.asJsObject.fields("attributes").convertTo[immutable.Map[String, String]]
       val orderingKey = json.asJsObject.fields.get("orderingKey").map(_.convertTo[String])
-      PublishMessage(data, attributes, orderingKey)
+      PublishMessage(data, Some(attributes), orderingKey)
     }
     def write(m: PublishMessage): JsValue =
       JsObject(

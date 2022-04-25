@@ -120,6 +120,8 @@ object PubSubConfig {
 final class PublishMessage private (val data: String,
                                     val attributes: Option[immutable.Map[String, String]],
                                     val orderingKey: Option[String]) {
+  def this(data: String, attributes: Option[immutable.Map[String, String]]) = this(data, attributes, None)
+
   override def toString: String =
     "PublishMessage(data=" + data + ",attributes=" + attributes.toString + ",orderingKey=" + orderingKey + ")"
 
@@ -132,10 +134,11 @@ final class PublishMessage private (val data: String,
 }
 
 object PublishMessage {
-  def apply(data: String, attributes: immutable.Map[String, String], orderingKey: Option[String] = None) =
-    new PublishMessage(data, Some(attributes), orderingKey)
+  def apply(data: String, attributes: immutable.Map[String, String]) = new PublishMessage(data, Some(attributes), None)
   def apply(data: String, attributes: Option[immutable.Map[String, String]], orderingKey: Option[String]) =
     new PublishMessage(data, attributes, orderingKey)
+  def apply(data: String, attributes: Option[immutable.Map[String, String]]) =
+    new PublishMessage(data, attributes, None)
   def apply(data: String) = new PublishMessage(data, None, None)
   def create(data: String) = new PublishMessage(data, None, None)
 
@@ -168,6 +171,11 @@ final class PubSubMessage private (val data: Option[String],
                                    val publishTime: Instant,
                                    val orderingKey: Option[String]) {
 
+  def this(data: Option[String],
+           attributes: Option[immutable.Map[String, String]],
+           messageId: String,
+           publishTime: Instant) = this(data, attributes, messageId, publishTime, None)
+
   def withAttributes(attributes: java.util.Map[String, String]): PubSubMessage =
     new PubSubMessage(data, Some(attributes.asScala.toMap), messageId, publishTime, orderingKey)
 
@@ -190,6 +198,12 @@ final class PubSubMessage private (val data: Option[String],
 }
 
 object PubSubMessage {
+
+  def apply(data: Option[String],
+            attributes: Option[immutable.Map[String, String]],
+            messageId: String,
+            publishTime: Instant) =
+    new PubSubMessage(data, attributes, messageId, publishTime, None)
 
   def apply(data: Option[String] = None,
             attributes: Option[immutable.Map[String, String]] = None,
