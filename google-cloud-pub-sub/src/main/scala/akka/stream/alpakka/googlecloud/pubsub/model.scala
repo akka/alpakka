@@ -132,8 +132,10 @@ final class PublishMessage private (val data: String,
 }
 
 object PublishMessage {
-  def apply(data: String, attributes: immutable.Map[String, String], orderingKey: Option[String] = None) = new PublishMessage(data, Some(attributes), orderingKey)
-  def apply(data: String, attributes: Option[immutable.Map[String, String]], orderingKey: Option[String]) = new PublishMessage(data, attributes, orderingKey)
+  def apply(data: String, attributes: immutable.Map[String, String], orderingKey: Option[String] = None) =
+    new PublishMessage(data, Some(attributes), orderingKey)
+  def apply(data: String, attributes: Option[immutable.Map[String, String]], orderingKey: Option[String]) =
+    new PublishMessage(data, attributes, orderingKey)
   def apply(data: String) = new PublishMessage(data, None, None)
   def create(data: String) = new PublishMessage(data, None, None)
 
@@ -146,7 +148,9 @@ object PublishMessage {
   /**
    * Java API with ordering key
    */
-  def create(data: String, attributes: java.util.Map[String, String], orderingKey: java.util.Optional[String]): PublishMessage =
+  def create(data: String,
+             attributes: java.util.Map[String, String],
+             orderingKey: java.util.Optional[String]): PublishMessage =
     new PublishMessage(data, Some(attributes.asScala.toMap), Option(orderingKey.orElse(null)))
 }
 
@@ -201,7 +205,7 @@ object PubSubMessage {
              attributes: java.util.Optional[java.util.Map[String, String]],
              messageId: String,
              publishTime: Instant): PubSubMessage =
-      create(data, attributes, messageId, publishTime, java.util.Optional.empty())
+    create(data, attributes, messageId, publishTime, java.util.Optional.empty())
 
   /**
    * Java API with ordering key
@@ -212,10 +216,10 @@ object PubSubMessage {
              publishTime: Instant,
              orderingKey: java.util.Optional[String]): PubSubMessage =
     new PubSubMessage(Option(data.orElse(null)),
-      Option(attributes.orElse(null)).map(_.asScala.toMap),
-      messageId,
-      publishTime,
-      Option(orderingKey.orElse(null)))
+                      Option(attributes.orElse(null)).map(_.asScala.toMap),
+                      messageId,
+                      publishTime,
+                      Option(orderingKey.orElse(null)))
 
 }
 

@@ -101,8 +101,8 @@ private[pubsub] trait PubSubApi {
     def write(m: PublishMessage): JsValue =
       JsObject(
         Seq("data" -> JsString(m.data)) ++
-          m.orderingKey.map(orderingKey => "orderingKey" -> orderingKey.toJson) ++
-          m.attributes.map(a => "attributes" -> a.toJson): _*
+        m.orderingKey.map(orderingKey => "orderingKey" -> orderingKey.toJson) ++
+        m.attributes.map(a => "attributes" -> a.toJson): _*
       )
   }
 

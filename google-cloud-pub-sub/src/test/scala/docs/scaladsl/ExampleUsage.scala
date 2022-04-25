@@ -67,8 +67,10 @@ class ExampleUsage {
   //#publish-fast
 
   //#publish with ordering key
-  val messageWithOrderingKey = PublishMessage(new String(Base64.getEncoder.encode("Hello Google!".getBytes)), None, Some("my-ordering-key"))
-  val publishedMessageWithOrderingKeyIds: Future[Seq[Seq[String]]] = Source.single(PublishRequest(Seq(messageWithOrderingKey)))
+  val messageWithOrderingKey =
+    PublishMessage(new String(Base64.getEncoder.encode("Hello Google!".getBytes)), None, Some("my-ordering-key"))
+  val publishedMessageWithOrderingKeyIds: Future[Seq[Seq[String]]] = Source
+    .single(PublishRequest(Seq(messageWithOrderingKey)))
     .via(publishFlow)
     .runWith(Sink.seq)
   //#publish with ordering key

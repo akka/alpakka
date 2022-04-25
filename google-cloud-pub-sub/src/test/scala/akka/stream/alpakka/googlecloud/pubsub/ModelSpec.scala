@@ -43,7 +43,7 @@ class ModelSpec extends AnyFunSuite with Matchers with LogCapturing {
     "PublishMessage(data=abcde,attributes=Some(Map(k1 -> v1, k2 -> v2)),orderingKey=None)"
 
     publishMessage6.toString shouldBe
-      "PublishMessage(data=abcde,attributes=Some(Map(k1 -> v1, k2 -> v2)),orderingKey=Some(qwe))"
+    "PublishMessage(data=abcde,attributes=Some(Map(k1 -> v1, k2 -> v2)),orderingKey=Some(qwe))"
   }
 
   val pubSubMessage1 = PubSubMessage(Some("data"), Some(Map("k1" -> "v1")), "Id-1", Instant.ofEpochMilli(0L))
@@ -52,7 +52,8 @@ class ModelSpec extends AnyFunSuite with Matchers with LogCapturing {
   val pubSubMessage4 = PubSubMessage(Some("data"), Some(Map("k1" -> "v1")), "Id-2", Instant.ofEpochMilli(0L))
   val pubSubMessage5 = PubSubMessage(Some("data"), Some(Map("k1" -> "v1")), "Id-1", Instant.ofEpochMilli(1L))
   val pubSubMessage6 = PubSubMessage(Some("data"), Some(Map("k1" -> "v1")), "Id-1", Instant.ofEpochMilli(0L))
-  val pubSubMessage7 = PubSubMessage(Some("data"), Some(Map("k1" -> "v1")), "Id-1", Instant.ofEpochMilli(0L), Some("qwe"))
+  val pubSubMessage7 =
+    PubSubMessage(Some("data"), Some(Map("k1" -> "v1")), "Id-1", Instant.ofEpochMilli(0L), Some("qwe"))
 
   test("PubSubMessage equals, hashCode") {
     pubSubMessage1 shouldNot be(pubSubMessage2)
