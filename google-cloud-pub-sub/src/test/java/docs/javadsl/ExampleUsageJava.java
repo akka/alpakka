@@ -77,11 +77,15 @@ public class ExampleUsageJava {
 
     // #publish with ordering key
     PublishMessage publishMessageWithOrderingKey =
-            PublishMessage.create(new String(Base64.getEncoder().encode("Hello Google!".getBytes())), new HashMap<>(), Optional.of("my-ordering-key"));
-    PublishRequest publishRequestWithOrderingKey = PublishRequest.create(Lists.newArrayList(publishMessage));
+        PublishMessage.create(
+            new String(Base64.getEncoder().encode("Hello Google!".getBytes())),
+            new HashMap<>(),
+            Optional.of("my-ordering-key"));
+    PublishRequest publishRequestWithOrderingKey =
+        PublishRequest.create(Lists.newArrayList(publishMessage));
 
     CompletionStage<List<List<String>>> publishedMessageWithOrderingKeyIds =
-            source.via(publishFlow).runWith(Sink.seq(), system);
+        source.via(publishFlow).runWith(Sink.seq(), system);
     // #publish with ordering key
 
     // #subscribe
