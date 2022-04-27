@@ -130,7 +130,7 @@ class PubSubApiSpec extends AnyFlatSpec with BeforeAndAfterAll with ScalaFutures
     val publishMessage =
       PublishMessage(
         data = new String(Base64.getEncoder.encode("Hello Google!".getBytes)),
-        attributes = Map("row_id" -> "7"),
+        attributes = Some(Map("row_id" -> "7")),
         orderingKey = Some("my-ordering-key")
       )
     val publishRequest = PublishRequest(Seq(publishMessage))

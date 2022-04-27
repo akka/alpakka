@@ -18,8 +18,8 @@ class ModelSpec extends AnyFunSuite with Matchers with LogCapturing {
   val publishMessage3 = PublishMessage("abcde")
   val publishMessage4 = PublishMessage("abcd", Map("k1" -> "v1", "k2" -> "v2"))
   val publishMessage5 = PublishMessage("abcde", Map("k1" -> "v1", "k2" -> "v2"))
-  val publishMessage6 = PublishMessage("abcde", Map("k1" -> "v1", "k2" -> "v2"), Some("qwe"))
-  val publishMessage7 = PublishMessage("abcde", Map("k1" -> "v1", "k2" -> "v2"), None)
+  val publishMessage6 = PublishMessage("abcde", Some(Map("k1" -> "v1", "k2" -> "v2")), Some("qwe"))
+  val publishMessage7 = PublishMessage("abcde", Some(Map("k1" -> "v1", "k2" -> "v2")), None)
 
   test("PublishMessage equals, hashCode") {
 
