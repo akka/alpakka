@@ -13,9 +13,10 @@ import akka.stream.alpakka.elasticsearch.{
   ApiVersionBase,
   ElasticsearchConnectionSettings,
   ElasticsearchParams,
+  OpensearchApiVersion,
+  OpensearchParams,
   SourceSettingsBase
 }
-import akka.stream.alpakka.opensearch.OpensearchParams
 import akka.stream.scaladsl.Sink
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.wordspec.AnyWordSpec
@@ -89,7 +90,7 @@ trait ElasticsearchSpecUtils { this: AnyWordSpec with ScalaFutures =>
       ElasticsearchParams.V5(indexName, typeName)
     } else if (apiVersion == akka.stream.alpakka.elasticsearch.ApiVersion.V7) {
       ElasticsearchParams.V7(indexName)
-    } else if (apiVersion == akka.stream.alpakka.opensearch.ApiVersion.V1) {
+    } else if (apiVersion == OpensearchApiVersion.V1) {
       OpensearchParams.V1(indexName)
     } else {
       throw new IllegalArgumentException(s"API version $apiVersion is not supported")

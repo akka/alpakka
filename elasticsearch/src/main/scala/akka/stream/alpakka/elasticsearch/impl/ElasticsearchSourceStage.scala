@@ -9,7 +9,13 @@ import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.alpakka.elasticsearch.{ApiVersion, ElasticsearchParams, ReadResult, SourceSettingsBase}
+import akka.stream.alpakka.elasticsearch.{
+  ApiVersion,
+  ElasticsearchParams,
+  OpensearchApiVersion,
+  ReadResult,
+  SourceSettingsBase
+}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler, StageLogging}
 import akka.stream.{Attributes, Materializer, Outlet, SourceShape}
 import spray.json.DefaultJsonProtocol._
@@ -142,7 +148,7 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
           val endpoint: String = settings.apiVersion match {
             case ApiVersion.V5 => s"/${elasticsearchParams.indexName}/${elasticsearchParams.typeName.get}/_search"
             case ApiVersion.V7 => s"/${elasticsearchParams.indexName}/_search"
-            case akka.stream.alpakka.opensearch.ApiVersion.V1 => s"/${elasticsearchParams.indexName}/_search"
+            case OpensearchApiVersion.V1 => s"/${elasticsearchParams.indexName}/_search"
             case other => throw new IllegalArgumentException(s"API version $other is not supported")
           }
 

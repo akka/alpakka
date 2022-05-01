@@ -6,11 +6,7 @@ package docs.javadsl;
 
 import akka.Done;
 import akka.NotUsed;
-import akka.stream.alpakka.opensearch.*;
-import akka.stream.alpakka.elasticsearch.ReadResult;
-import akka.stream.alpakka.elasticsearch.StringMessageWriter;
-import akka.stream.alpakka.elasticsearch.WriteMessage;
-import akka.stream.alpakka.elasticsearch.WriteResult;
+import akka.stream.alpakka.elasticsearch.*;
 import akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchFlow;
 import akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchSink;
 import akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchSource;
@@ -34,7 +30,7 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
   public static void setup() throws IOException {
     setupBase();
 
-    prepareIndex(9203, ApiVersion.V1);
+    prepareIndex(9203, OpensearchApiVersion.V1);
   }
 
   @AfterClass
@@ -46,13 +42,13 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
   public void typedStream() throws Exception {
     // Copy source/book to sink2/book through JsObject stream
     OpensearchSourceSettings sourceSettings =
-        OpensearchSourceSettings.create(connectionSettings).withApiVersion(ApiVersion.V1);
+        OpensearchSourceSettings.create(connectionSettings).withApiVersion(OpensearchApiVersion.V1);
     OpensearchWriteSettings sinkSettings =
-        OpensearchWriteSettings.create(connectionSettings).withApiVersion(ApiVersion.V1);
+        OpensearchWriteSettings.create(connectionSettings).withApiVersion(OpensearchApiVersion.V1);
 
     Source<ReadResult<Book>, NotUsed> source =
         ElasticsearchSource.typed(
-            constructElasticsearchParams("source", "_doc", ApiVersion.V1),
+            constructElasticsearchParams("source", "_doc", OpensearchApiVersion.V1),
             "{\"match_all\": {}}",
             sourceSettings,
             Book.class);
@@ -61,7 +57,7 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
             .map(m -> WriteMessage.createIndexMessage(m.id(), m.source()))
             .runWith(
                 ElasticsearchSink.create(
-                    constructElasticsearchParams("sink2", "_doc", ApiVersion.V1),
+                    constructElasticsearchParams("sink2", "_doc", OpensearchApiVersion.V1),
                     sinkSettings,
                     new ObjectMapper()),
                 system);
@@ -73,10 +69,10 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
     // Assert docs in sink2/book
     CompletionStage<List<String>> f2 =
         ElasticsearchSource.typed(
-                constructElasticsearchParams("sink2", "_doc", ApiVersion.V1),
+                constructElasticsearchParams("sink2", "_doc", OpensearchApiVersion.V1),
                 "{\"match_all\": {}}",
                 OpensearchSourceSettings.create(connectionSettings)
-                    .withApiVersion(ApiVersion.V1)
+                    .withApiVersion(OpensearchApiVersion.V1)
                     .withBufferSize(5),
                 Book.class)
             .map(m -> m.source().title)
@@ -103,13 +99,13 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
     // Copy source/book to sink1/book through JsObject stream
     // #run-jsobject
     OpensearchSourceSettings sourceSettings =
-        OpensearchSourceSettings.create(connectionSettings).withApiVersion(ApiVersion.V1);
+        OpensearchSourceSettings.create(connectionSettings).withApiVersion(OpensearchApiVersion.V1);
     OpensearchWriteSettings sinkSettings =
-        OpensearchWriteSettings.create(connectionSettings).withApiVersion(ApiVersion.V1);
+        OpensearchWriteSettings.create(connectionSettings).withApiVersion(OpensearchApiVersion.V1);
 
     Source<ReadResult<Map<String, Object>>, NotUsed> source =
         ElasticsearchSource.create(
-            constructElasticsearchParams("source", "_doc", ApiVersion.V1),
+            constructElasticsearchParams("source", "_doc", OpensearchApiVersion.V1),
             "{\"match_all\": {}}",
             sourceSettings);
     CompletionStage<Done> f1 =
@@ -117,7 +113,7 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
             .map(m -> WriteMessage.createIndexMessage(m.id(), m.source()))
             .runWith(
                 ElasticsearchSink.create(
-                    constructElasticsearchParams("sink1", "_doc", ApiVersion.V1),
+                    constructElasticsearchParams("sink1", "_doc", OpensearchApiVersion.V1),
                     sinkSettings,
                     new ObjectMapper()),
                 system);
@@ -130,10 +126,10 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
     // Assert docs in sink1/_doc
     CompletionStage<List<String>> f2 =
         ElasticsearchSource.create(
-                constructElasticsearchParams("sink1", "_doc", ApiVersion.V1),
+                constructElasticsearchParams("sink1", "_doc", OpensearchApiVersion.V1),
                 "{\"match_all\": {}}",
                 OpensearchSourceSettings.create(connectionSettings)
-                    .withApiVersion(ApiVersion.V1)
+                    .withApiVersion(OpensearchApiVersion.V1)
                     .withBufferSize(5))
             .map(m -> (String) m.source().get("title"))
             .runWith(Sink.seq(), system);
@@ -159,18 +155,18 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
     // Copy source/book to sink3/book through JsObject stream
     CompletionStage<List<WriteResult<Book, NotUsed>>> f1 =
         ElasticsearchSource.typed(
-                constructElasticsearchParams("source", "_doc", ApiVersion.V1),
+                constructElasticsearchParams("source", "_doc", OpensearchApiVersion.V1),
                 "{\"match_all\": {}}",
                 OpensearchSourceSettings.create(connectionSettings)
-                    .withApiVersion(ApiVersion.V1)
+                    .withApiVersion(OpensearchApiVersion.V1)
                     .withBufferSize(5),
                 Book.class)
             .map(m -> WriteMessage.createIndexMessage(m.id(), m.source()))
             .via(
                 ElasticsearchFlow.create(
-                    constructElasticsearchParams("sink3", "_doc", ApiVersion.V1),
+                    constructElasticsearchParams("sink3", "_doc", OpensearchApiVersion.V1),
                     OpensearchWriteSettings.create(connectionSettings)
-                        .withApiVersion(ApiVersion.V1)
+                        .withApiVersion(OpensearchApiVersion.V1)
                         .withBufferSize(5),
                     new ObjectMapper()))
             .runWith(Sink.seq(), system);
@@ -185,10 +181,10 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
     // Assert docs in sink3/book
     CompletionStage<List<String>> f2 =
         ElasticsearchSource.typed(
-                constructElasticsearchParams("sink3", "_doc", ApiVersion.V1),
+                constructElasticsearchParams("sink3", "_doc", OpensearchApiVersion.V1),
                 "{\"match_all\": {}}",
                 OpensearchSourceSettings.create(connectionSettings)
-                    .withApiVersion(ApiVersion.V1)
+                    .withApiVersion(OpensearchApiVersion.V1)
                     .withConnection(connectionSettings)
                     .withBufferSize(5),
                 Book.class)
@@ -224,9 +220,9 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
                         "3", "{\"title\": \"Die unendliche Geschichte\"}")))
             .via(
                 ElasticsearchFlow.create(
-                    constructElasticsearchParams(indexName, "_doc", ApiVersion.V1),
+                    constructElasticsearchParams(indexName, "_doc", OpensearchApiVersion.V1),
                     OpensearchWriteSettings.create(connectionSettings)
-                        .withApiVersion(ApiVersion.V1)
+                        .withApiVersion(OpensearchApiVersion.V1)
                         .withBufferSize(5),
                     StringMessageWriter.getInstance()))
             .runWith(Sink.seq(), system);
@@ -240,10 +236,10 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
 
     CompletionStage<List<String>> f2 =
         ElasticsearchSource.typed(
-                constructElasticsearchParams(indexName, "_doc", ApiVersion.V1),
+                constructElasticsearchParams(indexName, "_doc", OpensearchApiVersion.V1),
                 "{\"match_all\": {}}",
                 OpensearchSourceSettings.create(connectionSettings)
-                    .withApiVersion(ApiVersion.V1)
+                    .withApiVersion(OpensearchApiVersion.V1)
                     .withBufferSize(5),
                 Book.class)
             .map(m -> m.source().title)
@@ -271,8 +267,9 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
     Source.from(requests)
         .via(
             ElasticsearchFlow.create(
-                constructElasticsearchParams("sink8", "_doc", ApiVersion.V1),
-                OpensearchWriteSettings.create(connectionSettings).withApiVersion(ApiVersion.V1),
+                constructElasticsearchParams("sink8", "_doc", OpensearchApiVersion.V1),
+                OpensearchWriteSettings.create(connectionSettings)
+                    .withApiVersion(OpensearchApiVersion.V1),
                 new ObjectMapper()))
         .runWith(Sink.seq(), system)
         .toCompletableFuture()
@@ -283,9 +280,10 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
     // Assert docs in sink8/book
     CompletionStage<List<String>> f2 =
         ElasticsearchSource.typed(
-                constructElasticsearchParams("sink8", "_doc", ApiVersion.V1),
+                constructElasticsearchParams("sink8", "_doc", OpensearchApiVersion.V1),
                 "{\"match_all\": {}}",
-                OpensearchSourceSettings.create(connectionSettings).withApiVersion(ApiVersion.V1),
+                OpensearchSourceSettings.create(connectionSettings)
+                    .withApiVersion(OpensearchApiVersion.V1),
                 Book.class)
             .map(m -> m.source().title)
             .runWith(Sink.seq(), system);
@@ -324,9 +322,9 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
                 })
             .via( // write to elastic
                 ElasticsearchFlow.createWithPassThrough(
-                    constructElasticsearchParams("sink6", "_doc", ApiVersion.V1),
+                    constructElasticsearchParams("sink6", "_doc", OpensearchApiVersion.V1),
                     OpensearchWriteSettings.create(connectionSettings)
-                        .withApiVersion(ApiVersion.V1)
+                        .withApiVersion(OpensearchApiVersion.V1)
                         .withBufferSize(5),
                     new ObjectMapper()))
             .map(
@@ -348,9 +346,10 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
     // Assert that all docs were written to elastic
     List<String> result2 =
         ElasticsearchSource.typed(
-                constructElasticsearchParams("sink6", "_doc", ApiVersion.V1),
+                constructElasticsearchParams("sink6", "_doc", OpensearchApiVersion.V1),
                 "{\"match_all\": {}}",
-                OpensearchSourceSettings.create(connectionSettings).withApiVersion(ApiVersion.V1),
+                OpensearchSourceSettings.create(connectionSettings)
+                    .withApiVersion(OpensearchApiVersion.V1),
                 Book.class)
             .map(m -> m.source().title)
             .runWith(Sink.seq(), system) // Run it
@@ -379,9 +378,9 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
         .map((TestDoc d) -> WriteMessage.createIndexMessage(d.id, d))
         .via(
             ElasticsearchFlow.create(
-                constructElasticsearchParams(indexName, typeName, ApiVersion.V1),
+                constructElasticsearchParams(indexName, typeName, OpensearchApiVersion.V1),
                 OpensearchWriteSettings.create(connectionSettings)
-                    .withApiVersion(ApiVersion.V1)
+                    .withApiVersion(OpensearchApiVersion.V1)
                     .withBufferSize(5),
                 new ObjectMapper()))
         .runWith(Sink.seq(), system)
@@ -398,9 +397,10 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
 
     List<TestDoc> result =
         ElasticsearchSource.<TestDoc>typed(
-                constructElasticsearchParams(indexName, typeName, ApiVersion.V1),
+                constructElasticsearchParams(indexName, typeName, OpensearchApiVersion.V1),
                 searchParams, // <-- Using searchParams
-                OpensearchSourceSettings.create(connectionSettings).withApiVersion(ApiVersion.V1),
+                OpensearchSourceSettings.create(connectionSettings)
+                    .withApiVersion(OpensearchApiVersion.V1),
                 TestDoc.class,
                 new ObjectMapper())
             .map(

@@ -2,13 +2,9 @@
  * Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.stream.alpakka.opensearch
+package akka.stream.alpakka.elasticsearch
 
 import java.util.concurrent.TimeUnit
-
-import akka.stream.alpakka.elasticsearch.ElasticsearchConnectionSettings
-import akka.stream.alpakka.elasticsearch.SourceSettingsBase
-
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -19,17 +15,17 @@ final class OpensearchSourceSettings private (connection: ElasticsearchConnectio
                                               bufferSize: Int,
                                               includeDocumentVersion: Boolean,
                                               scrollDuration: FiniteDuration,
-                                              apiVersion: ApiVersion)
-    extends SourceSettingsBase[ApiVersion, OpensearchSourceSettings](connection,
-                                                                     bufferSize,
-                                                                     includeDocumentVersion,
-                                                                     scrollDuration,
-                                                                     apiVersion) {
+                                              apiVersion: OpensearchApiVersion)
+    extends SourceSettingsBase[OpensearchApiVersion, OpensearchSourceSettings](connection,
+                                                                               bufferSize,
+                                                                               includeDocumentVersion,
+                                                                               scrollDuration,
+                                                                               apiVersion) {
   protected override def copy(connection: ElasticsearchConnectionSettings,
                               bufferSize: Int,
                               includeDocumentVersion: Boolean,
                               scrollDuration: FiniteDuration,
-                              apiVersion: ApiVersion): OpensearchSourceSettings =
+                              apiVersion: OpensearchApiVersion): OpensearchSourceSettings =
     new OpensearchSourceSettings(connection = connection,
                                  bufferSize = bufferSize,
                                  includeDocumentVersion = includeDocumentVersion,
@@ -49,7 +45,7 @@ object OpensearchSourceSettings {
                                  10,
                                  includeDocumentVersion = false,
                                  FiniteDuration(5, TimeUnit.MINUTES),
-                                 ApiVersion.V1)
+                                 OpensearchApiVersion.V1)
 
   /** Java API */
   def create(connection: ElasticsearchConnectionSettings): OpensearchSourceSettings =
@@ -57,5 +53,5 @@ object OpensearchSourceSettings {
                                  10,
                                  includeDocumentVersion = false,
                                  FiniteDuration(5, TimeUnit.MINUTES),
-                                 ApiVersion.V1)
+                                 OpensearchApiVersion.V1)
 }

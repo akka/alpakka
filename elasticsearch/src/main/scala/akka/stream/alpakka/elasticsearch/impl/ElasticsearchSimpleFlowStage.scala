@@ -12,6 +12,7 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.alpakka.elasticsearch._
 import akka.stream.stage._
 import akka.stream._
+import akka.stream.alpakka.elasticsearch
 
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
@@ -46,7 +47,7 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
     case ApiVersion.V7 =>
       new RestBulkApiV7[T, C](elasticsearchParams.indexName, settings.versionType, settings.allowExplicitIndex, writer)
 
-    case akka.stream.alpakka.opensearch.ApiVersion.V1 =>
+    case elasticsearch.OpensearchApiVersion.V1 =>
       new RestBulkApiV7[T, C](elasticsearchParams.indexName, settings.versionType, settings.allowExplicitIndex, writer)
 
     case other => throw new IllegalArgumentException(s"API version $other is not supported")

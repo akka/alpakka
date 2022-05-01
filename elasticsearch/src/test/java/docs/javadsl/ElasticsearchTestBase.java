@@ -9,9 +9,11 @@ import akka.http.javadsl.Http;
 import akka.http.javadsl.model.ContentTypes;
 import akka.http.javadsl.model.HttpRequest;
 import akka.stream.alpakka.elasticsearch.ApiVersion;
+import akka.stream.alpakka.elasticsearch.ApiVersionBase;
 import akka.stream.alpakka.elasticsearch.ElasticsearchConnectionSettings;
 import akka.stream.alpakka.elasticsearch.ElasticsearchParams;
-import akka.stream.alpakka.opensearch.OpensearchParams;
+import akka.stream.alpakka.elasticsearch.OpensearchApiVersion;
+import akka.stream.alpakka.elasticsearch.OpensearchParams;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
@@ -140,14 +142,12 @@ public class ElasticsearchTestBase {
   }
 
   protected ElasticsearchParams constructElasticsearchParams(
-      String indexName,
-      String typeName,
-      akka.stream.alpakka.elasticsearch.ApiVersionBase apiVersion) {
+      String indexName, String typeName, ApiVersionBase apiVersion) {
     if (apiVersion == ApiVersion.V5) {
       return ElasticsearchParams.V5(indexName, typeName);
     } else if (apiVersion == ApiVersion.V7) {
       return ElasticsearchParams.V7(indexName);
-    } else if (apiVersion == akka.stream.alpakka.opensearch.ApiVersion.V1) {
+    } else if (apiVersion == OpensearchApiVersion.V1) {
       return OpensearchParams.V1(indexName);
     } else {
       throw new IllegalArgumentException("API version " + apiVersion + " is not supported");

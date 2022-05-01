@@ -2,12 +2,7 @@
  * Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.stream.alpakka.opensearch
-
-import akka.stream.alpakka.elasticsearch.ElasticsearchConnectionSettings
-import akka.stream.alpakka.elasticsearch.RetryLogic
-import akka.stream.alpakka.elasticsearch.RetryNever
-import akka.stream.alpakka.elasticsearch.WriteSettingsBase
+package akka.stream.alpakka.elasticsearch
 
 /**
  * Configure Opensearch sinks and flows.
@@ -16,20 +11,20 @@ final class OpensearchWriteSettings private (connection: ElasticsearchConnection
                                              bufferSize: Int,
                                              retryLogic: RetryLogic,
                                              versionType: Option[String],
-                                             apiVersion: ApiVersion,
+                                             apiVersion: OpensearchApiVersion,
                                              allowExplicitIndex: Boolean)
-    extends WriteSettingsBase[ApiVersion, OpensearchWriteSettings](connection,
-                                                                   bufferSize,
-                                                                   retryLogic,
-                                                                   versionType,
-                                                                   apiVersion,
-                                                                   allowExplicitIndex) {
+    extends WriteSettingsBase[OpensearchApiVersion, OpensearchWriteSettings](connection,
+                                                                             bufferSize,
+                                                                             retryLogic,
+                                                                             versionType,
+                                                                             apiVersion,
+                                                                             allowExplicitIndex) {
 
   protected override def copy(connection: ElasticsearchConnectionSettings,
                               bufferSize: Int,
                               retryLogic: RetryLogic,
                               versionType: Option[String],
-                              apiVersion: ApiVersion,
+                              apiVersion: OpensearchApiVersion,
                               allowExplicitIndex: Boolean): OpensearchWriteSettings =
     new OpensearchWriteSettings(connection, bufferSize, retryLogic, versionType, apiVersion, allowExplicitIndex)
 
@@ -48,9 +43,9 @@ object OpensearchWriteSettings {
 
   /** Scala API */
   def apply(connection: ElasticsearchConnectionSettings): OpensearchWriteSettings =
-    new OpensearchWriteSettings(connection, 10, RetryNever, None, ApiVersion.V1, allowExplicitIndex = true)
+    new OpensearchWriteSettings(connection, 10, RetryNever, None, OpensearchApiVersion.V1, allowExplicitIndex = true)
 
   /** Java API */
   def create(connection: ElasticsearchConnectionSettings): OpensearchWriteSettings =
-    new OpensearchWriteSettings(connection, 10, RetryNever, None, ApiVersion.V1, allowExplicitIndex = true)
+    new OpensearchWriteSettings(connection, 10, RetryNever, None, OpensearchApiVersion.V1, allowExplicitIndex = true)
 }
