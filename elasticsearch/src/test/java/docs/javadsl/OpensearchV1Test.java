@@ -41,6 +41,7 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
   @Test
   public void typedStream() throws Exception {
     // Copy source/book to sink2/book through JsObject stream
+    // #run-typed
     OpensearchSourceSettings sourceSettings =
         OpensearchSourceSettings.create(connectionSettings).withApiVersion(OpensearchApiVersion.V1);
     OpensearchWriteSettings sinkSettings =
@@ -61,6 +62,7 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
                     sinkSettings,
                     new ObjectMapper()),
                 system);
+    // #run-typed
 
     f1.toCompletableFuture().get();
 
@@ -153,6 +155,7 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
   @Test
   public void flow() throws Exception {
     // Copy source/book to sink3/book through JsObject stream
+    // #run-flow
     CompletionStage<List<WriteResult<Book, NotUsed>>> f1 =
         ElasticsearchSource.typed(
                 constructElasticsearchParams("source", "_doc", OpensearchApiVersion.V1),
@@ -170,6 +173,7 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
                         .withBufferSize(5),
                     new ObjectMapper()))
             .runWith(Sink.seq(), system);
+    // #run-flow
 
     List<WriteResult<Book, NotUsed>> result1 = f1.toCompletableFuture().get();
     flushAndRefresh("sink3");
@@ -211,6 +215,7 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
   public void stringFlow() throws Exception {
     // Copy source/book to sink3/book through JsObject stream
     String indexName = "sink3-0";
+    // #string
     CompletionStage<List<WriteResult<String, NotUsed>>> write =
         Source.from(
                 Arrays.asList(
@@ -226,6 +231,7 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
                         .withBufferSize(5),
                     StringMessageWriter.getInstance()))
             .runWith(Sink.seq(), system);
+    // #string
 
     List<WriteResult<String, NotUsed>> result1 = write.toCompletableFuture().get();
     flushAndRefresh(indexName);
@@ -255,6 +261,7 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
 
   @Test
   public void testMultipleOperations() throws Exception {
+    // #multiple-operations
     // Create, update, upsert and delete documents in sink8/book
     List<WriteMessage<Book, NotUsed>> requests =
         Arrays.asList(
@@ -274,6 +281,7 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
         .runWith(Sink.seq(), system)
         .toCompletableFuture()
         .get();
+    // #multiple-operations
 
     flushAndRefresh("sink8");
 
@@ -297,6 +305,7 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
 
   @Test
   public void testKafkaExample() throws Exception {
+    // #kafka-example
     // We're going to pretend we got messages from kafka.
     // After we've written them to Elastic, we want
     // to commit the offset to Kafka
@@ -309,7 +318,7 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
 
     final KafkaCommitter kafkaCommitter = new KafkaCommitter();
 
-    CompletionStage<Done> kafkaToEs =
+    CompletionStage<Done> kafkaToOs =
         Source.from(messagesFromKafka) // Assume we get this from Kafka
             .map(
                 kafkaMessage -> {
@@ -336,8 +345,8 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
                   return NotUsed.getInstance();
                 })
             .runWith(Sink.ignore(), system);
-
-    kafkaToEs.toCompletableFuture().get(5, TimeUnit.SECONDS); // Wait for it to complete
+    // #kafka-example
+    kafkaToOs.toCompletableFuture().get(5, TimeUnit.SECONDS); // Wait for it to complete
     flushAndRefresh("sink6");
 
     // Make sure all messages was committed to kafka
@@ -389,6 +398,7 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
 
     flushAndRefresh(indexName);
 
+    // #custom-search-params
     // Search for docs and ask elastic to only return some fields
 
     Map<String, String> searchParams = new HashMap<>();
@@ -410,7 +420,7 @@ public class OpensearchV1Test extends ElasticsearchTestBase {
             .runWith(Sink.seq(), system)
             .toCompletableFuture()
             .get();
-
+    // #custom-search-params
     flushAndRefresh(indexName);
 
     assertEquals(

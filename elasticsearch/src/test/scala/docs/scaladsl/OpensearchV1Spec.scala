@@ -50,6 +50,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
     "consume and publish Json documents" in {
       val indexName = "sink2"
 
+      //#run-jsobject
       val copy = ElasticsearchSource
         .create(
           constructElasticsearchParams("source", "_doc", OpensearchApiVersion.V1),
@@ -66,6 +67,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
             settings = baseWriteSettings
           )
         )
+      //#run-jsobject
 
       copy.futureValue shouldBe Done
       flushAndRefresh(connectionSettings, indexName)
@@ -86,6 +88,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
     "consume and publish documents as specific type" in {
       val indexName = "sink2"
 
+      //#run-typed
       val copy = ElasticsearchSource
         .typed[Book](
           constructElasticsearchParams("source", "_doc", OpensearchApiVersion.V1),
@@ -101,6 +104,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
             settings = baseWriteSettings
           )
         )
+      //#run-typed
 
       copy.futureValue shouldBe Done
       flushAndRefresh(connectionSettings, indexName)
@@ -120,7 +124,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
   "ElasticsearchFlow" should {
     "store documents and pass failed documents to downstream" in {
       val indexName = "sink3"
-
+      //#run-flow
       val copy = ElasticsearchSource
         .typed[Book](
           constructElasticsearchParams("source", "_doc", OpensearchApiVersion.V1),
@@ -137,6 +141,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
           )
         )
         .runWith(Sink.seq)
+      //#run-flow
 
       // Assert no errors
       copy.futureValue.filter(!_.success) shouldBe empty
@@ -156,6 +161,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
     "store properly formatted JSON from Strings" in {
       val indexName = "sink3-0"
 
+      // #string
       val write: Future[immutable.Seq[WriteResult[String, NotUsed]]] = Source(
         immutable.Seq(
           WriteMessage.createIndexMessage("1", Book("Das Parfum").toJson.toString()),
@@ -170,6 +176,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
           )
         )
         .runWith(Sink.seq)
+      // #string
 
       // Assert no errors
       write.futureValue.filter(!_.success) shouldBe empty
@@ -184,6 +191,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
 
     "kafka-example - store documents and pass Responses with passThrough" in {
 
+      //#kafka-example
       // We're going to pretend we got messages from kafka.
       // After we've written them to Elastic, we want
       // to commit the offset to Kafka
@@ -203,7 +211,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
         committedOffsets = committedOffsets :+ offset
 
       val indexName = "sink6"
-      val kafkaToEs = Source(messagesFromKafka) // Assume we get this from Kafka
+      val kafkaToOs = Source(messagesFromKafka) // Assume we get this from Kafka
         .map { kafkaMessage: KafkaMessage =>
           val book = kafkaMessage.book
           val id = book.title
@@ -224,8 +232,8 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
         }
         .runWith(Sink.ignore)
 
-      kafkaToEs.futureValue shouldBe Done
-
+      kafkaToOs.futureValue shouldBe Done
+      //#kafka-example
       flushAndRefresh(connectionSettings, indexName)
 
       // Make sure all messages was committed to kafka
@@ -255,7 +263,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
         committedOffsets = committedOffsets :+ offset
 
       val indexName = "sink6-bulk"
-      val kafkaToEs = Source(messagesFromKafka) // Assume we get this from Kafka
+      val kafkaToOs = Source(messagesFromKafka) // Assume we get this from Kafka
         .map { kafkaMessage: KafkaMessage =>
           val book = kafkaMessage.book
           val id = book.title
@@ -277,7 +285,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
         })
         .runWith(Sink.ignore)
 
-      kafkaToEs.futureValue shouldBe Done
+      kafkaToOs.futureValue shouldBe Done
 
       flushAndRefresh(connectionSettings, indexName)
 
@@ -311,7 +319,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
         committedOffsets = committedOffsets :+ offset
 
       val indexName = "sink6-nop"
-      val kafkaToEs = Source(messagesFromKafka) // Assume we get this from Kafka
+      val kafkaToOs = Source(messagesFromKafka) // Assume we get this from Kafka
         .map { kafkaMessage: KafkaMessage =>
           val book = kafkaMessage.book
           val id = book.title
@@ -335,7 +343,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
         }
         .runWith(Sink.ignore)
 
-      kafkaToEs.futureValue shouldBe Done
+      kafkaToOs.futureValue shouldBe Done
 
       flushAndRefresh(connectionSettings, indexName)
 
@@ -369,7 +377,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
       val indexName = "sink6-none"
       register(connectionSettings, indexName, "dummy", 10) // need to create index else exception in reading below
 
-      val kafkaToEs = Source(messagesFromKafka) // Assume we get this from Kafka
+      val kafkaToOs = Source(messagesFromKafka) // Assume we get this from Kafka
         .map { kafkaMessage: KafkaMessage =>
           val book = kafkaMessage.book
           val id = book.title
@@ -393,7 +401,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
         }
         .runWith(Sink.ignore)
 
-      kafkaToEs.futureValue shouldBe Done
+      kafkaToOs.futureValue shouldBe Done
 
       flushAndRefresh(connectionSettings, indexName)
 
@@ -404,6 +412,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
 
     "handle multiple types of operations correctly" in {
       val indexName = "sink8"
+      //#multiple-operations
       val requests = List[WriteMessage[Book, NotUsed]](
         WriteMessage.createIndexMessage(id = "00001", source = Book("Book 1")),
         WriteMessage.createUpsertMessage(id = "00002", source = Book("Book 2")),
@@ -421,6 +430,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
           )
         )
         .runWith(Sink.seq)
+      //#multiple-operations
 
       val results = writeResults.futureValue
       results should have size requests.size
@@ -451,6 +461,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
     "use indexName supplied in message if present" in {
       // Copy source/_doc to sink2/_doc through typed stream
 
+      //#custom-index-name-example
       val customIndexName = "custom-index"
 
       val writeCustomIndex = ElasticsearchSource
@@ -470,6 +481,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
             settings = baseWriteSettings
           )
         )
+      //#custom-index-name-example
 
       writeCustomIndex.futureValue shouldBe Done
       flushAndRefresh(connectionSettings, customIndexName)
@@ -519,6 +531,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
       writes.futureValue.filter(!_.success) shouldBe empty
       flushAndRefresh(connectionSettings, indexName)
 
+      //#custom-search-params
       // Search for docs and ask elastic to only return some fields
 
       val readWithSearchParameters = ElasticsearchSource
@@ -534,6 +547,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
           message.source
         }
         .runWith(Sink.seq)
+      //#custom-search-params
 
       assert(readWithSearchParameters.futureValue.toList.sortBy(_.id) == docs.map(_.copy(b = None)))
 
