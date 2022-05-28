@@ -21,7 +21,7 @@ object ElasticsearchSink {
    */
   def create[T](
       elasticsearchParams: ElasticsearchParams,
-      settings: ElasticsearchWriteSettings,
+      settings: WriteSettingsBase[_, _],
       objectMapper: ObjectMapper
   ): akka.stream.javadsl.Sink[WriteMessage[T, NotUsed], CompletionStage[Done]] =
     ElasticsearchFlow

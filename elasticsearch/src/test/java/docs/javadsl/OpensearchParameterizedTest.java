@@ -26,26 +26,22 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(value = Parameterized.class)
-public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {
-  private final ApiVersion apiVersion;
+public class OpensearchParameterizedTest extends ElasticsearchTestBase {
+  private final OpensearchApiVersion apiVersion;
 
   @Parameterized.Parameters(name = "{index}: port={0} api={1}")
   public static Iterable<Object[]> data() {
-    return Arrays.asList(
-        new Object[][] {
-          {9201, ApiVersion.V5},
-          {9202, ApiVersion.V7}
-        });
+    return Arrays.asList(new Object[][] {{9203, OpensearchApiVersion.V1}});
   }
 
-  public ElasticsearchParameterizedTest(int port, ApiVersion apiVersion) {
+  public OpensearchParameterizedTest(int port, OpensearchApiVersion apiVersion) {
     this.apiVersion = apiVersion;
   }
 
   @Parameterized.BeforeParam
   public static void beforeParam(
-      int port, akka.stream.alpakka.elasticsearch.ApiVersionBase esApiVersion) throws IOException {
-    prepareIndex(port, esApiVersion);
+      int port, akka.stream.alpakka.elasticsearch.ApiVersionBase osApiVersion) throws IOException {
+    prepareIndex(port, osApiVersion);
   }
 
   @Parameterized.AfterParam
@@ -56,27 +52,26 @@ public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {
   private void documentation() {
     // #connection-settings
     ElasticsearchConnectionSettings connectionSettings =
-        ElasticsearchConnectionSettings.create("http://localhost:9200")
+        OpensearchConnectionSettings.create("http://localhost:9200")
             .withCredentials("user", "password");
     // #connection-settings
 
     // #source-settings
-    ElasticsearchSourceSettings sourceSettings =
-        ElasticsearchSourceSettings.create(connectionSettings).withBufferSize(10);
+    OpensearchSourceSettings sourceSettings =
+        OpensearchSourceSettings.create(connectionSettings).withBufferSize(10);
     // #source-settings
     // #sink-settings
-    ElasticsearchWriteSettings settings =
-        ElasticsearchWriteSettings.create(connectionSettings)
+    OpensearchWriteSettings settings =
+        OpensearchWriteSettings.create(connectionSettings)
             .withBufferSize(10)
             .withVersionType("internal")
             .withRetryLogic(RetryAtFixedRate.create(5, Duration.ofSeconds(1)))
-            .withApiVersion(ApiVersion.V5);
+            .withApiVersion(OpensearchApiVersion.V1);
     // #sink-settings
 
-    // #es-params
-    ElasticsearchParams elasticsearchParamsV5 = ElasticsearchParams.V5("source", "_doc");
-    ElasticsearchParams elasticsearchParamsV7 = ElasticsearchParams.V7("source");
-    // #es-params
+    // #opensearch-params
+    ElasticsearchParams opensearchParams = OpensearchParams.V1("source");
+    // #opensearch-params
   }
 
   @Test
@@ -93,7 +88,7 @@ public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {
         .via(
             ElasticsearchFlow.create(
                 constructElasticsearchParams(indexName, typeName, apiVersion),
-                ElasticsearchWriteSettings.create(connectionSettings)
+                OpensearchWriteSettings.create(connectionSettings)
                     .withApiVersion(apiVersion)
                     .withBufferSize(5),
                 new ObjectMapper()))
@@ -108,7 +103,7 @@ public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {
         ElasticsearchSource.<Book>typed(
                 constructElasticsearchParams(indexName, typeName, apiVersion),
                 "{\"match_all\": {}}",
-                ElasticsearchSourceSettings.create(connectionSettings)
+                OpensearchSourceSettings.create(connectionSettings)
                     .withApiVersion(apiVersion)
                     .withIncludeDocumentVersion(true),
                 Book.class)
@@ -125,7 +120,7 @@ public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {
         .via(
             ElasticsearchFlow.create(
                 constructElasticsearchParams(indexName, typeName, apiVersion),
-                ElasticsearchWriteSettings.create(connectionSettings)
+                OpensearchWriteSettings.create(connectionSettings)
                     .withApiVersion(apiVersion)
                     .withBufferSize(5)
                     .withVersionType("external"),
@@ -143,7 +138,7 @@ public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {
             .via(
                 ElasticsearchFlow.create(
                     constructElasticsearchParams(indexName, typeName, apiVersion),
-                    ElasticsearchWriteSettings.create(connectionSettings)
+                    OpensearchWriteSettings.create(connectionSettings)
                         .withApiVersion(apiVersion)
                         .withBufferSize(5)
                         .withVersionType("external"),
@@ -171,7 +166,7 @@ public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {
         .via(
             ElasticsearchFlow.create(
                 constructElasticsearchParams(indexName, typeName, apiVersion),
-                ElasticsearchWriteSettings.create(connectionSettings)
+                OpensearchWriteSettings.create(connectionSettings)
                     .withApiVersion(apiVersion)
                     .withBufferSize(5)
                     .withVersionType("external"),
@@ -187,7 +182,7 @@ public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {
         ElasticsearchSource.<Book>typed(
                 constructElasticsearchParams(indexName, typeName, apiVersion),
                 "{\"match_all\": {}}",
-                ElasticsearchSourceSettings.create(connectionSettings)
+                OpensearchSourceSettings.create(connectionSettings)
                     .withApiVersion(apiVersion)
                     .withIncludeDocumentVersion(true),
                 Book.class)
@@ -209,7 +204,7 @@ public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {
         ElasticsearchSource.<Book>typed(
                 constructElasticsearchParams(indexName, typeName, apiVersion),
                 "{\"match_all\": {}}",
-                ElasticsearchSourceSettings.create(connectionSettings).withApiVersion(apiVersion),
+                OpensearchSourceSettings.create(connectionSettings).withApiVersion(apiVersion),
                 Book.class)
             .runWith(Sink.seq(), system)
             .toCompletableFuture()

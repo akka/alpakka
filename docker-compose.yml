@@ -85,6 +85,13 @@ services:
       - "9202:9200"
     environment:
       - "discovery.type=single-node"
+  opensearch1:
+    image: opensearchproject/opensearch:1.3.1
+    ports:
+      - "9203:9200"
+    environment:
+      - "discovery.type=single-node"
+      - "DISABLE_SECURITY_PLUGIN=true"
   ftp:
     image: stilliard/pure-ftpd:latest
     ports:
