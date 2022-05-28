@@ -92,6 +92,7 @@ lazy val alpakka = project
         // springWeb triggers an esoteric ScalaDoc bug (from Java code)
         springWeb
       ),
+    licenses := List(License.Apache2),
     crossScalaVersions := List() // workaround for https://github.com/sbt/sbt/issues/3465
   )
 
@@ -432,6 +433,7 @@ def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sb
     .disablePlugins(SitePlugin)
     .settings(
       name := s"akka-stream-alpakka-$projectId",
+      licenses := List(License.Apache2),
       AutomaticModuleName.settings(s"akka.stream.alpakka.$moduleName"),
       mimaPreviousArtifacts := Set(
           organization.value %% name.value % previousStableVersion.value
