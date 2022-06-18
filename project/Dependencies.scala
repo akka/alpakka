@@ -513,4 +513,9 @@ object Dependencies {
       )
   )
 
+  val Typesense = Seq(
+    libraryDependencies ++= Seq(
+        )
+  )
+
 }
