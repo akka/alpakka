@@ -27,8 +27,7 @@ import akka.{Done, NotUsed}
 import software.amazon.awssdk.regions.Region
 
 import scala.collection.immutable
-import scala.collection.immutable.Seq
-import scala.concurrent.Future
+import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
 
 /** Internal Api */
@@ -197,6 +196,32 @@ import scala.util.{Failure, Success, Try}
           }
       }
   }.mapMaterializedValue(_ => NotUsed)
+
+  def getObject(
+      s3Location: S3Location,
+      range: Option[ByteRange],
+      versionId: Option[String],
+      s3Headers: S3Headers
+  ): Source[ByteString, Future[ObjectMetadata]] = {
+    val headers = s3Headers.headersFor(GetObject)
+    val objectMetadataMat = Promise[ObjectMetadata]()
+
+    Source
+      .fromMaterializer { (mat, attr) =>
+        implicit val materializer: Materializer = mat
+        issueRequest(s3Location, rangeOption = range, versionId = versionId, s3Headers = headers)(mat, attr)
+          .map(response => response.withEntity(response.entity.withoutSizeLimit))
+          .mapAsync(parallelism = 1)(entityForSuccess)
+          .map {
+            case (entity, headers) =>
+              objectMetadataMat.success(computeMetaData(headers, entity))
+              entity.dataBytes
+          }
+          .flatMapConcat(identity)
+          .mapMaterializedValue(_ => objectMetadataMat.future)
+      }
+      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.parasitic))
+  }
 
   /**
    * An ADT that represents the current state of pagination
