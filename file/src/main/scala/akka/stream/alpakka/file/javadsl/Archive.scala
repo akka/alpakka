@@ -11,8 +11,10 @@ import akka.util.ByteString
 import akka.japi.Pair
 import akka.stream.alpakka.file.impl.archive.{TarReaderStage, ZipSource}
 import akka.stream.javadsl.Source
+import sun.nio.cs.UTF_8
 
 import java.io.File
+import java.nio.charset.Charset
 
 /**
  * Java API.
@@ -31,9 +33,10 @@ object Archive {
   /**
    * Flow for reading ZIP files.
    */
-  def zipReader(file: File, chunkSize: Int): Source[Pair[ZipArchiveMetadata, Source[ByteString, NotUsed]], NotUsed] =
+  def zipReader(file: File, chunkSize: Int, fileCharset: Charset = UTF_8.INSTANCE):
+  Source[Pair[ZipArchiveMetadata, Source[ByteString, NotUsed]], NotUsed] =
     Source
-      .fromGraph(new ZipSource(file, chunkSize))
+      .fromGraph(new ZipSource(file, chunkSize, fileCharset))
       .map(func {
         case (metadata, source) =>
           Pair(metadata, source.asJava)
