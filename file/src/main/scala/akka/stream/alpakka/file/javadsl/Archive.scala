@@ -33,8 +33,11 @@ object Archive {
   /**
    * Flow for reading ZIP files.
    */
-  def zipReader(file: File, chunkSize: Int, fileCharset: Charset = UTF_8.INSTANCE):
-  Source[Pair[ZipArchiveMetadata, Source[ByteString, NotUsed]], NotUsed] =
+  def zipReader(
+      file: File,
+      chunkSize: Int,
+      fileCharset: Charset = UTF_8.INSTANCE
+  ): Source[Pair[ZipArchiveMetadata, Source[ByteString, NotUsed]], NotUsed] =
     Source
       .fromGraph(new ZipSource(file, chunkSize, fileCharset))
       .map(func {

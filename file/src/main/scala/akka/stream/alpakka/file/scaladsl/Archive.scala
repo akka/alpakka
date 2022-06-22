@@ -28,8 +28,9 @@ object Archive {
   /**
    * Flow for reading ZIP files.
    */
-  def zipReader(file: File, chunkSize: Int, fileCharset: Charset = UTF_8.INSTANCE):
-  Source[(ZipArchiveMetadata, Source[ByteString, Any]), NotUsed] =
+  def zipReader(file: File,
+                chunkSize: Int,
+                fileCharset: Charset = UTF_8.INSTANCE): Source[(ZipArchiveMetadata, Source[ByteString, Any]), NotUsed] =
     Source.fromGraph(new ZipSource(file, chunkSize, fileCharset))
   def zipReader(file: File): Source[(ZipArchiveMetadata, Source[ByteString, Any]), NotUsed] =
     Source.fromGraph(new ZipSource(file, 8192))
