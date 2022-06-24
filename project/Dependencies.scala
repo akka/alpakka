@@ -517,7 +517,8 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-        "org.scalatest" %% "scalatest" % ScalaTestVersion % Test
+        "org.scalatest" %% "scalatest" % ScalaTestVersion % Test,
+        "com.dimafeng" %% "testcontainers-scala-scalatest" % TestContainersScalaTestVersion % Test
       )
   )
 
