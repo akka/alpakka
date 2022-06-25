@@ -13,7 +13,7 @@ import org.testcontainers.containers.wait.strategy.Wait
 import java.io.File
 
 //TODO: check compatibility with older Typesense versions
-abstract class TypesenseIntegrationSpec
+abstract class TypesenseIntegrationSpec(version: String)
     extends AnyFunSpec
     with TestContainerForAll
     with ScalaFutures
@@ -21,7 +21,8 @@ abstract class TypesenseIntegrationSpec
   implicit val system: ActorSystem = ActorSystem()
   implicit val defaultPatience: PatienceConfig = PatienceConfig(timeout = Span(5, Seconds), interval = Span(5, Millis))
 
-  private val dockerComposeFile: File = new File("typesense/src/test/resources/docker-compose.yml")
+  private val versionFileSufix = version.replace('.', '_')
+  private val dockerComposeFile: File = new File(s"typesense/src/test/resources/docker-compose-$versionFileSufix.yml")
   private val port = 8108
   private val containerName = "typesense"
   private val exposedService: ExposedService =
