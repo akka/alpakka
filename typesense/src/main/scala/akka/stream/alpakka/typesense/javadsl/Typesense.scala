@@ -18,13 +18,13 @@ object Typesense {
   /**
    * Creates a collection.
    */
-  def createCollectionFuture(
+  def createCollectionRequest(
       settings: TypesenseSettings,
       schema: CollectionSchema,
       system: ActorSystem
   ): CompletionStage[CollectionResponse] =
     ScalaTypesense
-      .createCollectionFuture(settings, schema)(system)
+      .createCollectionRequest(settings, schema)(system)
       .toJava
 
   /**

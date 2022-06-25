@@ -10,6 +10,9 @@ import org.scalatest.Assertion
 
 import java.time.Instant
 import java.util.UUID
+import java.util.concurrent.CompletionStage
+import scala.concurrent.Future
+import scala.jdk.FutureConverters.CompletionStageOps
 import scala.util.{Failure, Success}
 
 abstract class CreateCollectionTypesenseIntegrationSpec(val version: String) extends TypesenseIntegrationSpec(version) {
@@ -22,8 +25,54 @@ abstract class CreateCollectionTypesenseIntegrationSpec(val version: String) ext
 
   describe(s"For Typesense $version") {
     describe("should create collection") {
-      it("with only required data") {
+      it("using flow") {
         createAndCheck(randomSchema())
+      }
+
+      it("using sink") {
+        val schema = randomSchema()
+        val result = Source
+          .single(schema)
+          .toMat(Typesense.createCollectionSink(settings))(Keep.right)
+          .run()
+          .futureValue
+
+        result shouldBe Done
+      }
+
+      it("using direct request") {
+        val schema = randomSchema()
+        val result = Typesense.createCollectionRequest(settings, schema).futureValue
+        compareResponseAndSchema(result, schema)
+      }
+
+      it("using flow with Java API") {
+        val schema = randomSchema()
+        val result: Future[CollectionResponse] = Source
+          .single(schema)
+          .via(akka.stream.alpakka.typesense.javadsl.Typesense.createCollectionFlow(settings))
+          .toMat(Sink.head)(Keep.right)
+          .run()
+
+        compareResponseAndSchema(result.futureValue, schema)
+      }
+
+      it("using sink with Java API") {
+        val schema = randomSchema()
+        val result: CompletionStage[Done] = Source
+          .single(schema)
+          .toMat(akka.stream.alpakka.typesense.javadsl.Typesense.createCollectionSink(settings))(Keep.right)
+          .run()
+
+        result.asScala.futureValue shouldBe Done
+      }
+
+      it("using direct request with Java API") {
+        val schema = randomSchema()
+        val result: CompletionStage[CollectionResponse] = akka.stream.alpakka.typesense.javadsl.Typesense
+          .createCollectionRequest(settings, schema, system)
+
+        compareResponseAndSchema(result.asScala.futureValue, schema)
       }
 
       it("with specified token separators") {
@@ -124,17 +173,6 @@ abstract class CreateCollectionTypesenseIntegrationSpec(val version: String) ext
       it("with many fields") {
         val fields = Seq(Field("first-field", FieldType.String), Field("second-field", FieldType.String))
         createAndCheck(randomSchema(fields = fields))
-      }
-
-      it("using sink") {
-        val schema = randomSchema()
-        val result = Source
-          .single(schema)
-          .toMat(Typesense.createCollectionSink(settings))(Keep.right)
-          .run()
-          .futureValue
-
-        result shouldBe Done
       }
     }
 

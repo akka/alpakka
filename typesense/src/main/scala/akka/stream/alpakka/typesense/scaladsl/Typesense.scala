@@ -22,8 +22,8 @@ object Typesense {
   /**
    * Creates a collection.
    */
-  def createCollectionFuture(settings: TypesenseSettings,
-                             schema: CollectionSchema)(implicit system: ActorSystem): Future[CollectionResponse] = {
+  def createCollectionRequest(settings: TypesenseSettings,
+                              schema: CollectionSchema)(implicit system: ActorSystem): Future[CollectionResponse] = {
     TypesenseHttp
       .executeRequest[CollectionSchema, CollectionResponse]("collections", HttpMethods.POST, schema, settings)
   }
@@ -36,7 +36,7 @@ object Typesense {
       implicit val system: ActorSystem = materializer.system
       Flow[CollectionSchema]
         .mapAsync(parallelism = 1) { schema =>
-          createCollectionFuture(settings, schema)
+          createCollectionRequest(settings, schema)
         }
     }
 
