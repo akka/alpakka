@@ -12,7 +12,7 @@ import spray.json.{JsonReader, JsonWriter}
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.Try
 
-object TypesenseHttp {
+private[typesense] object TypesenseHttp {
   class TypesenseException(val statusCode: StatusCode, val reason: String)
       extends Exception(s"[Status code $statusCode]: $reason")
 

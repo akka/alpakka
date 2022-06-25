@@ -1,11 +1,11 @@
 package akka.stream.alpakka.typesense.scaladsl
 
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.http.scaladsl.model.HttpMethods
 import akka.stream.Materializer
 import akka.stream.alpakka.typesense.impl.TypesenseHttp
 import akka.stream.alpakka.typesense.{CollectionResponse, CollectionSchema, TypesenseSettings}
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.{Flow, Keep, Sink}
 
 import scala.concurrent.Future
 
@@ -13,6 +13,10 @@ import scala.concurrent.Future
  * Scala DSL for Google Pub/Sub
  */
 object Typesense {
+
+  /**
+   * Creates a flow for creating collections.
+   */
   def createCollectionFlow(settings: TypesenseSettings): Flow[CollectionSchema, CollectionResponse, Future[NotUsed]] =
     Flow.fromMaterializer { (materializer, _) =>
       import akka.stream.alpakka.typesense.TypesenseJsonProtocol._
@@ -23,4 +27,10 @@ object Typesense {
             .executeRequest[CollectionSchema, CollectionResponse]("collections", HttpMethods.POST, schema, settings)
         }
     }
+
+  /**
+   * Creates a sink for creating collections.
+   */
+  def createCollection(settings: TypesenseSettings): Sink[CollectionSchema, Future[Done]] =
+    createCollectionFlow(settings).toMat(Sink.ignore)(Keep.right)
 }

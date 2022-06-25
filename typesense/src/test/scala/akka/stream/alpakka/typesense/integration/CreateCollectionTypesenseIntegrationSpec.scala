@@ -1,5 +1,6 @@
 package akka.stream.alpakka.typesense.integration
 
+import akka.{Done, NotUsed}
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import akka.stream.alpakka.typesense._
 import akka.stream.alpakka.typesense.impl.TypesenseHttp.TypesenseException
@@ -12,6 +13,7 @@ import java.util.UUID
 import scala.util.{Failure, Success}
 
 abstract class CreateCollectionTypesenseIntegrationSpec(val version: String) extends TypesenseIntegrationSpec(version) {
+  import system.dispatcher
   val mockedTime: Instant = Instant.now()
 
   //all tests run in the same container without cleaning data
@@ -123,6 +125,17 @@ abstract class CreateCollectionTypesenseIntegrationSpec(val version: String) ext
         val fields = Seq(Field("first-field", FieldType.String), Field("second-field", FieldType.String))
         createAndCheck(randomSchema(fields = fields))
       }
+
+      it("using sink") {
+        val schema = randomSchema()
+        val result = Source
+          .single(schema)
+          .toMat(Typesense.createCollection(settings))(Keep.right)
+          .run()
+          .futureValue
+
+        result shouldBe Done
+      }
     }
 
     describe("should not create collection") {
@@ -136,6 +149,23 @@ abstract class CreateCollectionTypesenseIntegrationSpec(val version: String) ext
         val schema = randomSchema()
         createAndCheck(schema)
         tryCreateAndExpectError(schema, expectedstatusCode = StatusCodes.Conflict)
+      }
+
+      it("if is invalid using sink") {
+        val fields = Seq(Field("company_nr", FieldType.Int32))
+        val schema = randomSchema(fields = fields).copy(defaultSortingField = Some("invalid"))
+
+        val result = Source
+          .single(schema)
+          .toMat(Typesense.createCollection(settings))(Keep.right)
+          .run()
+          .map(Success.apply)
+          .recover(e => Failure(e))
+          .futureValue
+
+        val gotStatusCode = result.toEither.swap.toOption.get.asInstanceOf[TypesenseException].statusCode
+
+        gotStatusCode shouldBe StatusCodes.BadRequest
       }
     }
   }
