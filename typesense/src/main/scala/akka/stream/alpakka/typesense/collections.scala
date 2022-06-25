@@ -336,7 +336,6 @@ object FieldType {
   sealed abstract class GeopointArray extends FieldType
   case object GeopointArray extends GeopointArray
 
-
   /**
    * Java API
    */

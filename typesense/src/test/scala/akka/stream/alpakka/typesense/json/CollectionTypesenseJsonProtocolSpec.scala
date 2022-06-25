@@ -1,12 +1,6 @@
 package akka.stream.alpakka.typesense.json
 
-import akka.stream.alpakka.typesense.{
-  CollectionResponse,
-  CollectionSchema,
-  Field,
-  FieldResponse,
-  FieldType
-}
+import akka.stream.alpakka.typesense.{CollectionResponse, CollectionSchema, Field, FieldResponse, FieldType}
 import spray.json._
 
 import java.time.Instant
