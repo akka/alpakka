@@ -1,6 +1,6 @@
 package akka.stream.alpakka.typesense.integration
 
-import akka.{Done, NotUsed}
+import akka.Done
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import akka.stream.alpakka.typesense._
 import akka.stream.alpakka.typesense.impl.TypesenseHttp.TypesenseException
@@ -27,28 +27,28 @@ abstract class CreateCollectionTypesenseIntegrationSpec(val version: String) ext
       }
 
       it("with specified token separators") {
-        createAndCheck(randomSchema().copy(tokenSeparators = Some(Seq("-"))))
+        createAndCheck(randomSchema().withTokenSeparators(Seq("-")))
       }
 
       it("with specified empty token separators") {
-        createAndCheck(randomSchema().copy(tokenSeparators = Some(Seq.empty)))
+        createAndCheck(randomSchema().withTokenSeparators(Seq.empty))
       }
 
       it("with specified symbols to index") {
-        createAndCheck(randomSchema().copy(symbolsToIndex = Some(Seq("+"))))
+        createAndCheck(randomSchema().withSymbolsToIndex(Seq("+")))
       }
 
       it("with specified empty symbols to index") {
-        createAndCheck(randomSchema().copy(symbolsToIndex = Some(Seq.empty)))
+        createAndCheck(randomSchema().withSymbolsToIndex(Seq.empty))
       }
 
       it("with specified correct default sorting field") {
         val fields = Seq(Field("company_nr", FieldType.Int32))
-        createAndCheck(randomSchema(fields).copy(defaultSortingField = Some("company_nr")))
+        createAndCheck(randomSchema(fields).withDefaultSortingField("company_nr"))
       }
 
       it("with specified empty default sorting field") {
-        createAndCheck(randomSchema().copy(defaultSortingField = Some("")))
+        createAndCheck(randomSchema().withDefaultSortingField(""))
       }
 
       it("with string field") {
@@ -141,7 +141,7 @@ abstract class CreateCollectionTypesenseIntegrationSpec(val version: String) ext
     describe("should not create collection") {
       it("with invalid default sorting field") {
         val fields = Seq(Field("company_nr", FieldType.Int32))
-        val schema = randomSchema(fields = fields).copy(defaultSortingField = Some("invalid"))
+        val schema = randomSchema(fields = fields).withDefaultSortingField("invalid")
         tryCreateAndExpectError(schema, expectedstatusCode = StatusCodes.BadRequest)
       }
 
@@ -153,7 +153,7 @@ abstract class CreateCollectionTypesenseIntegrationSpec(val version: String) ext
 
       it("if is invalid using sink") {
         val fields = Seq(Field("company_nr", FieldType.Int32))
-        val schema = randomSchema(fields = fields).copy(defaultSortingField = Some("invalid"))
+        val schema = randomSchema(fields = fields).withDefaultSortingField("invalid")
 
         val result = Source
           .single(schema)
@@ -207,7 +207,13 @@ abstract class CreateCollectionTypesenseIntegrationSpec(val version: String) ext
       createdAt = mockedTime
     )
 
-    val responseToCheck = response.copy(createdAt = mockedTime)
+    val responseToCheck = CollectionResponse(
+      name = response.name,
+      numDocuments = response.numDocuments,
+      fields = response.fields,
+      defaultSortingField = response.defaultSortingField,
+      createdAt = mockedTime
+    )
 
     expectedResponse shouldBe responseToCheck
   }

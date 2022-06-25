@@ -181,7 +181,7 @@ class CollectionTypesenseJsonProtocolSpec extends TypesenseJsonProtocolSpec {
 
       describe("with facet flag") {
         checkJson(
-          data = Field(name = "company_name", `type` = FieldType.String, facet = Some(true)),
+          data = Field(name = "company_name", `type` = FieldType.String).withFacet(true),
           expectedJson = JsObject(
             "name" -> JsString("company_name"),
             "type" -> JsString("string"),
@@ -192,7 +192,7 @@ class CollectionTypesenseJsonProtocolSpec extends TypesenseJsonProtocolSpec {
 
       describe("with index flag") {
         checkJson(
-          data = Field(name = "company_name", `type` = FieldType.String, index = Some(true)),
+          data = Field(name = "company_name", `type` = FieldType.String).withIndex(true),
           expectedJson = JsObject(
             "name" -> JsString("company_name"),
             "type" -> JsString("string"),
@@ -222,7 +222,7 @@ class CollectionTypesenseJsonProtocolSpec extends TypesenseJsonProtocolSpec {
 
       it("with specified non empty token separators") {
         checkJson(
-          data = CollectionSchema(name = "companies",
+          data = collectionSchema(name = "companies",
                                   fields = Seq(Field("company_name", FieldType.String)),
                                   tokenSeparators = Some(Seq("-"))),
           expectedJson = JsObject(
@@ -240,7 +240,7 @@ class CollectionTypesenseJsonProtocolSpec extends TypesenseJsonProtocolSpec {
 
       it("with specified empty token separators") {
         checkJson(
-          data = CollectionSchema(name = "companies",
+          data = collectionSchema(name = "companies",
                                   fields = Seq(Field("company_name", FieldType.String)),
                                   tokenSeparators = Some(Seq.empty)),
           expectedJson = JsObject(
@@ -258,7 +258,7 @@ class CollectionTypesenseJsonProtocolSpec extends TypesenseJsonProtocolSpec {
 
       it("with specified non empty symbols to index") {
         checkJson(
-          data = CollectionSchema(name = "companies",
+          data = collectionSchema(name = "companies",
                                   fields = Seq(Field("company_name", FieldType.String)),
                                   symbolsToIndex = Some(Seq("+"))),
           expectedJson = JsObject(
@@ -276,7 +276,7 @@ class CollectionTypesenseJsonProtocolSpec extends TypesenseJsonProtocolSpec {
 
       it("with specified empty symbols to index") {
         checkJson(
-          data = CollectionSchema(name = "companies",
+          data = collectionSchema(name = "companies",
                                   fields = Seq(Field("company_name", FieldType.String)),
                                   symbolsToIndex = Some(Seq.empty)),
           expectedJson = JsObject(
@@ -294,7 +294,7 @@ class CollectionTypesenseJsonProtocolSpec extends TypesenseJsonProtocolSpec {
 
       it("with specified default sorting field") {
         checkJson(
-          data = CollectionSchema(name = "companies",
+          data = collectionSchema(name = "companies",
                                   fields = Seq(Field("company_name", FieldType.String)),
                                   defaultSortingField = Some("company_nr")),
           expectedJson = JsObject(
@@ -345,4 +345,11 @@ class CollectionTypesenseJsonProtocolSpec extends TypesenseJsonProtocolSpec {
       }
     }
   }
+
+  private def collectionSchema(name: String,
+                               fields: Seq[Field],
+                               tokenSeparators: Option[Seq[String]] = None,
+                               symbolsToIndex: Option[Seq[String]] = None,
+                               defaultSortingField: Option[String] = None): CollectionSchema =
+    CollectionSchema(name, fields, tokenSeparators, symbolsToIndex, defaultSortingField)
 }

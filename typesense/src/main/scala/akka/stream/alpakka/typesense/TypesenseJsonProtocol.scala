@@ -48,24 +48,102 @@ private[typesense] object TypesenseJsonProtocol extends DefaultJsonProtocol {
     }
   }
 
-  implicit val fieldFormat: RootJsonFormat[Field] =
-    jsonFormat(Field, "name", "type", "optional", "facet", "index")
-
-  implicit val collectionSchemaFormat: RootJsonFormat[CollectionSchema] =
-    jsonFormat(CollectionSchema, "name", "fields", "token_separators", "symbols_to_index", "default_sorting_field")
-
-  implicit val fieldResponseFormat: RootJsonFormat[FieldResponse] =
-    jsonFormat(FieldResponse, "name", "type", "optional", "facet", "index")
-
-  implicit val collectionResponseFormat: RootJsonFormat[CollectionResponse] = {
-    implicit val timestampFormat: RootJsonFormat[Instant] = new RootJsonFormat[Instant] {
-      override def read(json: JsValue): Instant = json match {
-        case JsNumber(value) => Instant.ofEpochSecond(value.toLongExact)
-        case _ => deserializationError("Instant expected")
-      }
-
-      override def write(time: Instant): JsValue = JsNumber(time.getEpochSecond)
+  implicit val fieldFormat: RootJsonFormat[Field] = new RootJsonFormat[Field] {
+    override def read(json: JsValue): Field = {
+      val fields = json.asJsObject.fields
+      Field(
+        name = fields("name").convertTo[String],
+        `type` = fields("type").convertTo[FieldType],
+        optional = fields.get("optional").map(_.convertTo[Boolean]),
+        facet = fields.get("facet").map(_.convertTo[Boolean]),
+        index = fields.get("index").map(_.convertTo[Boolean])
+      )
     }
-    jsonFormat(CollectionResponse, "name", "num_documents", "fields", "default_sorting_field", "created_at")
+
+    override def write(obj: Field): JsValue = JsObject(
+      Seq(
+        "name" -> obj.name.toJson,
+        "type" -> obj.`type`.toJson
+      )
+      ++ obj.optional.map("optional" -> _.toJson)
+      ++ obj.facet.map("facet" -> _.toJson)
+      ++ obj.index.map("index" -> _.toJson): _*
+    )
   }
+
+  implicit val collectionSchemaFormat: RootJsonFormat[CollectionSchema] = new RootJsonFormat[CollectionSchema] {
+    override def read(json: JsValue): CollectionSchema = {
+      val fields = json.asJsObject.fields
+      CollectionSchema(
+        name = fields("name").convertTo[String],
+        fields = fields("fields").convertTo[Seq[Field]],
+        tokenSeparators = fields.get("token_separators").map(_.convertTo[Seq[String]]),
+        symbolsToIndex = fields.get("symbols_to_index").map(_.convertTo[Seq[String]]),
+        defaultSortingField = fields.get("default_sorting_field").map(_.convertTo[String])
+      )
+    }
+
+    override def write(obj: CollectionSchema): JsValue = JsObject(
+      Seq(
+        "name" -> obj.name.toJson,
+        "fields" -> obj.fields.toJson
+      )
+      ++ obj.tokenSeparators.map("token_separators" -> _.toJson)
+      ++ obj.symbolsToIndex.map("symbols_to_index" -> _.toJson)
+      ++ obj.defaultSortingField.map("default_sorting_field" -> _.toJson): _*
+    )
+  }
+
+  implicit val fieldResponseFormat: RootJsonFormat[FieldResponse] = new RootJsonFormat[FieldResponse] {
+    override def read(json: JsValue): FieldResponse = {
+      val fields = json.asJsObject.fields
+      FieldResponse(
+        name = fields("name").convertTo[String],
+        `type` = fields("type").convertTo[FieldType],
+        optional = fields("optional").convertTo[Boolean],
+        facet = fields("facet").convertTo[Boolean],
+        index = fields("index").convertTo[Boolean]
+      )
+    }
+
+    override def write(obj: FieldResponse): JsValue = JsObject(
+      "name" -> obj.name.toJson,
+      "type" -> obj.`type`.toJson,
+      "optional" -> obj.optional.toJson,
+      "facet" -> obj.facet.toJson,
+      "index" -> obj.index.toJson
+    )
+  }
+
+  implicit val collectionResponseFormat: RootJsonFormat[CollectionResponse] = new RootJsonFormat[CollectionResponse] {
+    override def read(json: JsValue): CollectionResponse = {
+      val fields = json.asJsObject.fields
+      CollectionResponse(
+        name = fields("name").convertTo[String],
+        numDocuments = fields("num_documents").convertTo[Int],
+        fields = fields("fields").convertTo[Seq[FieldResponse]],
+        defaultSortingField = fields("default_sorting_field").convertTo[String],
+        createdAt = Instant.ofEpochSecond(fields("created_at").convertTo[Long])
+      )
+    }
+
+    override def write(obj: CollectionResponse): JsValue = JsObject(
+      "name" -> obj.name.toJson,
+      "num_documents" -> obj.numDocuments.toJson,
+      "fields" -> obj.fields.toJson,
+      "default_sorting_field" -> obj.defaultSortingField.toJson,
+      "created_at" -> obj.createdAt.getEpochSecond.toJson
+    )
+  }
+//  {
+//    implicit val timestampFormat: RootJsonFormat[Instant] = new RootJsonFormat[Instant] {
+//      override def read(json: JsValue): Instant = json match {
+//        case JsNumber(value) => Instant.ofEpochSecond(value.toLongExact)
+//        case _ => deserializationError("Instant expected")
+//      }
+//
+//      override def write(time: Instant): JsValue = JsNumber(time.getEpochSecond)
+//    }
+//    jsonFormat(CollectionResponse, "name", "num_documents", "fields", "default_sorting_field", "created_at")
+//  }
 }
