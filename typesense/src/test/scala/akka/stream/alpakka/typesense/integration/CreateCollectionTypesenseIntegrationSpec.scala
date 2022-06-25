@@ -130,7 +130,7 @@ abstract class CreateCollectionTypesenseIntegrationSpec(val version: String) ext
         val schema = randomSchema()
         val result = Source
           .single(schema)
-          .toMat(Typesense.createCollection(settings))(Keep.right)
+          .toMat(Typesense.createCollectionSink(settings))(Keep.right)
           .run()
           .futureValue
 
@@ -157,7 +157,7 @@ abstract class CreateCollectionTypesenseIntegrationSpec(val version: String) ext
 
         val result = Source
           .single(schema)
-          .toMat(Typesense.createCollection(settings))(Keep.right)
+          .toMat(Typesense.createCollectionSink(settings))(Keep.right)
           .run()
           .map(Success.apply)
           .recover(e => Failure(e))

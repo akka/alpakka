@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.typesense.javadsl
 
+import akka.actor.ActorSystem
 import akka.stream.alpakka.typesense.{CollectionResponse, CollectionSchema, TypesenseSettings}
 import akka.stream.javadsl.{Flow, Sink}
 import akka.{Done, NotUsed}
@@ -13,6 +14,18 @@ import scala.compat.java8.FutureConverters.FutureOps
 
 object Typesense {
   private val ScalaTypesense = akka.stream.alpakka.typesense.scaladsl.Typesense
+
+  /**
+   * Creates a collection.
+   */
+  def createCollectionFuture(
+      settings: TypesenseSettings,
+      schema: CollectionSchema,
+      system: ActorSystem
+  ): CompletionStage[CollectionResponse] =
+    ScalaTypesense
+      .createCollectionFuture(settings, schema)(system)
+      .toJava
 
   /**
    * Creates a flow for creating collections.
@@ -28,9 +41,9 @@ object Typesense {
   /**
    * Creates a sink for creating collections.
    */
-  def createCollection(settings: TypesenseSettings): Sink[CollectionSchema, CompletionStage[Done]] =
+  def createCollectionSink(settings: TypesenseSettings): Sink[CollectionSchema, CompletionStage[Done]] =
     ScalaTypesense
-      .createCollection(settings)
+      .createCollectionSink(settings)
       .mapMaterializedValue(_.toJava)
       .asJava
 }
