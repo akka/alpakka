@@ -4,18 +4,37 @@
 
 package akka.stream.alpakka.typesense
 
-import java.time.Instant
+import akka.annotation.InternalApi
 
-final class CollectionSchema private (val name: String,
-                                      val fields: Seq[Field],
-                                      val tokenSeparators: Option[Seq[String]],
-                                      val symbolsToIndex: Option[Seq[String]],
-                                      val defaultSortingField: Option[String]) {
+import java.time.Instant
+import scala.compat.java8.OptionConverters.RichOptionForJava8
+import scala.jdk.CollectionConverters.{CollectionHasAsScala, SeqHasAsJava}
+import scala.jdk.OptionConverters.RichOptional
+
+final class CollectionSchema @InternalApi private[typesense] (val name: String,
+                                                              val fields: Seq[Field],
+                                                              val tokenSeparators: Option[Seq[String]],
+                                                              val symbolsToIndex: Option[Seq[String]],
+                                                              val defaultSortingField: Option[String]) {
+  def getFields(): java.util.List[Field] = fields.asJava
+
+  def getTokenSeparators(): java.util.Optional[java.util.List[String]] = tokenSeparators.asJava.map(_.asJava)
+
+  def getSymbolsToIndex(): java.util.Optional[java.util.List[String]] = symbolsToIndex.asJava.map(_.asJava)
+
+  def getDefaultSortingField(): java.util.Optional[String] = defaultSortingField.asJava
+
   def withTokenSeparators(tokenSeparators: Seq[String]): CollectionSchema =
     new CollectionSchema(name, fields, Some(tokenSeparators), symbolsToIndex, defaultSortingField)
 
+  def withTokenSeparators(tokenSeparators: java.util.List[String]): CollectionSchema =
+    new CollectionSchema(name, fields, Some(tokenSeparators.asScala.toSeq), symbolsToIndex, defaultSortingField)
+
   def withSymbolsToIndex(symbolsToIndex: Seq[String]): CollectionSchema =
     new CollectionSchema(name, fields, tokenSeparators, Some(symbolsToIndex), defaultSortingField)
+
+  def withSymbolsToIndex(symbolsToIndex: java.util.List[String]): CollectionSchema =
+    new CollectionSchema(name, fields, tokenSeparators, Some(symbolsToIndex.asScala.toSeq), defaultSortingField)
 
   def withDefaultSortingField(defaultSortingField: String): CollectionSchema =
     new CollectionSchema(name, fields, tokenSeparators, symbolsToIndex, Some(defaultSortingField))
@@ -41,8 +60,16 @@ object CollectionSchema {
   def apply(name: String, fields: Seq[Field]): CollectionSchema =
     new CollectionSchema(name, fields, None, None, None)
 
+  def create(name: String, fields: java.util.List[Field]): CollectionSchema =
+    new CollectionSchema(name, fields.asScala.toSeq, None, None, None)
+
   def apply(name: String, fields: Seq[Field], tokenSeparators: Option[Seq[String]]): CollectionSchema =
     new CollectionSchema(name, fields, tokenSeparators, None, None)
+
+  def create(name: String,
+             fields: java.util.List[Field],
+             tokenSeparators: java.util.Optional[java.util.List[String]]): CollectionSchema =
+    new CollectionSchema(name, fields.asScala.toSeq, tokenSeparators.toScala.map(_.asScala.toSeq), None, None)
 
   def apply(name: String,
             fields: Seq[Field],
@@ -50,21 +77,50 @@ object CollectionSchema {
             symbolsToIndex: Option[Seq[String]]): CollectionSchema =
     new CollectionSchema(name, fields, tokenSeparators, symbolsToIndex, None)
 
+  def create(name: String,
+             fields: java.util.List[Field],
+             tokenSeparators: java.util.Optional[java.util.List[String]],
+             symbolsToIndex: java.util.Optional[java.util.List[String]]): CollectionSchema =
+    new CollectionSchema(name,
+                         fields.asScala.toSeq,
+                         tokenSeparators.toScala.map(_.asScala.toSeq),
+                         symbolsToIndex.toScala.map(_.asScala.toSeq),
+                         None)
+
   def apply(name: String,
             fields: Seq[Field],
             tokenSeparators: Option[Seq[String]],
             symbolsToIndex: Option[Seq[String]],
             defaultSortingField: Option[String]): CollectionSchema =
     new CollectionSchema(name, fields, tokenSeparators, symbolsToIndex, defaultSortingField)
+
+  def create(name: String,
+             fields: java.util.List[Field],
+             tokenSeparators: java.util.Optional[java.util.List[String]],
+             symbolsToIndex: java.util.Optional[java.util.List[String]],
+             defaultSortingField: java.util.Optional[String]): CollectionSchema =
+    new CollectionSchema(name,
+                         fields.asScala.toSeq,
+                         tokenSeparators.toScala.map(_.asScala.toSeq),
+                         symbolsToIndex.toScala.map(_.asScala.toSeq),
+                         defaultSortingField.toScala)
 }
 
-final class Field private (val name: String,
-                           val `type`: FieldType,
-                           val optional: Option[Boolean],
-                           val facet: Option[Boolean],
-                           val index: Option[Boolean]) {
+final class Field @InternalApi private[typesense] (val name: String,
+                                                   val `type`: FieldType,
+                                                   val optional: Option[Boolean],
+                                                   val facet: Option[Boolean],
+                                                   val index: Option[Boolean]) {
+  def getOptional(): java.util.Optional[Boolean] = optional.asJava
+
+  def getFacet(): java.util.Optional[Boolean] = facet.asJava
+
+  def getIndes(): java.util.Optional[Boolean] = index.asJava
+
   def withOptional(optional: Boolean): Field = new Field(name, `type`, Some(optional), facet, index)
+
   def withFacet(facet: Boolean): Field = new Field(name, `type`, optional, Some(facet), index)
+
   def withIndex(index: Boolean): Field = new Field(name, `type`, optional, facet, Some(index))
 
   override def equals(other: Any): Boolean = other match {
@@ -85,24 +141,45 @@ final class Field private (val name: String,
 object Field {
   def apply(name: String, `type`: FieldType): Field = new Field(name, `type`, None, None, None)
 
+  def create(name: String, `type`: FieldType): Field = new Field(name, `type`, None, None, None)
+
   def apply(name: String, `type`: FieldType, optional: Option[Boolean]): Field =
     new Field(name, `type`, optional, None, None)
 
+  def create(name: String, `type`: FieldType, optional: java.util.Optional[Boolean]): Field =
+    new Field(name, `type`, optional.toScala, None, None)
+
   def apply(name: String, `type`: FieldType, optional: Option[Boolean], facet: Option[Boolean]): Field =
     new Field(name, `type`, optional, facet, None)
+
+  def create(name: String,
+             `type`: FieldType,
+             optional: java.util.Optional[Boolean],
+             facet: java.util.Optional[Boolean]): Field =
+    new Field(name, `type`, optional.toScala, facet.toScala, None)
 
   def apply(name: String,
             `type`: FieldType,
             optional: Option[Boolean],
             facet: Option[Boolean],
             index: Option[Boolean]): Field = new Field(name, `type`, optional, facet, index)
+
+  def create(name: String,
+             `type`: FieldType,
+             optional: java.util.Optional[Boolean],
+             facet: java.util.Optional[Boolean],
+             index: java.util.Optional[Boolean]): Field =
+    new Field(name, `type`, optional.toScala, facet.toScala, index.toScala)
 }
 
-final class CollectionResponse private (val name: String,
-                                        val numDocuments: Int,
-                                        val fields: Seq[FieldResponse],
-                                        val defaultSortingField: String,
-                                        val createdAt: Instant) {
+final class CollectionResponse @InternalApi private[typesense] (val name: String,
+                                                                val numDocuments: Int,
+                                                                val fields: Seq[FieldResponse],
+                                                                val defaultSortingField: String,
+                                                                val createdAt: Instant) {
+  def getNumDocuments(): java.lang.Integer = java.lang.Integer.valueOf(numDocuments)
+
+  def getFields(): java.util.List[FieldResponse] = fields.asJava
 
   override def equals(other: Any): Boolean = other match {
     case that: CollectionResponse =>
@@ -127,14 +204,21 @@ object CollectionResponse {
             defaultSortingField: String,
             createdAt: Instant): CollectionResponse =
     new CollectionResponse(name, numDocuments, fields, defaultSortingField, createdAt)
+
+  def create(name: String,
+             numDocuments: java.lang.Integer,
+             fields: java.util.List[FieldResponse],
+             defaultSortingField: String,
+             createdAt: Instant): CollectionResponse =
+    new CollectionResponse(name, scala.Int.box(numDocuments), fields.asScala.toSeq, defaultSortingField, createdAt)
 }
 
 //TODO: add infix, sort, locale
-final class FieldResponse private (val name: String,
-                                   val `type`: FieldType,
-                                   val optional: Boolean,
-                                   val facet: Boolean,
-                                   val index: Boolean) {
+final class FieldResponse @InternalApi private[typesense] (val name: String,
+                                                           val `type`: FieldType,
+                                                           val optional: Boolean,
+                                                           val facet: Boolean,
+                                                           val index: Boolean) {
 
   override def equals(other: Any): Boolean = other match {
     case that: FieldResponse =>
@@ -152,6 +236,9 @@ final class FieldResponse private (val name: String,
 
 object FieldResponse {
   def apply(name: String, `type`: FieldType, optional: Boolean, facet: Boolean, index: Boolean): FieldResponse =
+    new FieldResponse(name, `type`, optional, facet, index)
+
+  def create(name: String, `type`: FieldType, optional: Boolean, facet: Boolean, index: Boolean): FieldResponse =
     new FieldResponse(name, `type`, optional, facet, index)
 }
 

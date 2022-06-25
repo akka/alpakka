@@ -1,9 +1,6 @@
-/*
- * Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>
- */
+package akka.stream.alpakka.typesense.impl
 
-package akka.stream.alpakka.typesense
-
+import akka.stream.alpakka.typesense._
 import spray.json.DefaultJsonProtocol
 
 import java.time.Instant

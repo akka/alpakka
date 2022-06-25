@@ -17,7 +17,7 @@ import scala.concurrent.Future
  * Scala DSL for Google Pub/Sub
  */
 object Typesense {
-  import akka.stream.alpakka.typesense.TypesenseJsonProtocol._
+  import akka.stream.alpakka.typesense.impl.TypesenseJsonProtocol._
 
   /**
    * Creates a collection.

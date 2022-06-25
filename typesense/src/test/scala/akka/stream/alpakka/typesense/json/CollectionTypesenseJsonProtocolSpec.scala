@@ -5,15 +5,14 @@ import akka.stream.alpakka.typesense.{
   CollectionSchema,
   Field,
   FieldResponse,
-  FieldType,
-  TypesenseJsonProtocol
+  FieldType
 }
 import spray.json._
 
 import java.time.Instant
 
 class CollectionTypesenseJsonProtocolSpec extends TypesenseJsonProtocolSpec {
-  import TypesenseJsonProtocol._
+  import akka.stream.alpakka.typesense.impl.TypesenseJsonProtocol._
 
   def fieldReponse(name: String): FieldResponse =
     FieldResponse(name = name, `type` = FieldType.String, optional = true, facet = false, index = true)
