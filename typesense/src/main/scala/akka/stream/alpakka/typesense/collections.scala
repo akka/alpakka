@@ -242,21 +242,119 @@ object FieldResponse {
     new FieldResponse(name, `type`, optional, facet, index)
 }
 
-sealed trait FieldType
+sealed abstract class FieldType
 
 object FieldType {
-  case object String extends FieldType
-  case object StringArray extends FieldType
-  case object Int32 extends FieldType
-  case object Int32Array extends FieldType
-  case object Int64 extends FieldType
-  case object Int64Array extends FieldType
-  case object Float extends FieldType
-  case object FloatArray extends FieldType
-  case object Bool extends FieldType
-  case object BoolArray extends FieldType
-  case object Geopoint extends FieldType
-  case object GeopointArray extends FieldType
-  case object StringAutoArray extends FieldType
-  case object Auto extends FieldType
+  sealed abstract class String extends FieldType
+  case object String extends String
+
+  /**
+   * Java API
+   */
+  def string: String = String
+
+  sealed abstract class StringArray extends FieldType
+  case object StringArray extends StringArray
+
+  /**
+   * Java API
+   */
+  def stringArray: StringArray = StringArray
+
+  sealed abstract class Int32 extends FieldType
+  case object Int32 extends Int32
+
+  /**
+   * Java API
+   */
+  def int32: Int32 = Int32
+
+  sealed abstract class Int32Array extends FieldType
+  case object Int32Array extends Int32Array
+
+  /**
+   * Java API
+   */
+  def int32Array: Int32Array = Int32Array
+
+  sealed abstract class Int64 extends FieldType
+  case object Int64 extends Int64
+
+  /**
+   * Java API
+   */
+  def int64: Int64 = Int64
+
+  sealed abstract class Int64Array extends FieldType
+  case object Int64Array extends Int64Array
+
+  /**
+   * Java API
+   */
+  def int64Array: Int64Array = Int64Array
+
+  sealed abstract class Float extends FieldType
+  case object Float extends Float
+
+  /**
+   * Java API
+   */
+  def float: Float = Float
+
+  sealed abstract class FloatArray extends FieldType
+  case object FloatArray extends FloatArray
+
+  /**
+   * Java API
+   */
+  def floatArray: FloatArray = FloatArray
+
+  sealed abstract class Bool extends FieldType
+  case object Bool extends Bool
+
+  /**
+   * Java API
+   */
+  def bool: Bool = Bool
+
+  sealed abstract class BoolArray extends FieldType
+  case object BoolArray extends BoolArray
+
+  /**
+   * Java API
+   */
+  def boolArray: BoolArray = BoolArray
+
+  sealed abstract class Geopoint extends FieldType
+  case object Geopoint extends Geopoint
+
+  /**
+   * Java API
+   */
+  def geopoint: Geopoint = Geopoint
+
+  sealed abstract class GeopointArray extends FieldType
+  case object GeopointArray extends GeopointArray
+
+
+  /**
+   * Java API
+   */
+  def geopointArray: GeopointArray = GeopointArray
+
+  sealed abstract class StringAutoArray extends FieldType
+  case object StringAutoArray extends StringAutoArray
+
+  /**
+   * Java API
+   */
+  def stringAutoArray: StringAutoArray = StringAutoArray
+
+  sealed abstract class Auto extends FieldType
+  case object Auto extends Auto
+
+  /**
+   * Java API
+   */
+  def auto: Auto = Auto
 }
