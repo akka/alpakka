@@ -12,19 +12,21 @@ import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import org.scalatest.OptionValues
 
 //#publish-single
+import akka.NotUsed
 import akka.stream.alpakka.googlecloud.pubsub.grpc.scaladsl.GooglePubSub
 import akka.stream.scaladsl._
+
+import com.google.protobuf.ByteString
 import com.google.pubsub.v1.pubsub._
+
+import scala.concurrent.Future
 
 //#publish-single
 
-import akka.NotUsed
-import com.google.protobuf.ByteString
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, Inside}
 
 import scala.concurrent.duration._
-import scala.concurrent.Future
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
