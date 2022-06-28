@@ -30,11 +30,16 @@ object Archive {
   def zipReader(
       file: File,
       chunkSize: Int,
-      fileCharset: Charset = StandardCharsets.UTF_8
+      fileCharset: Charset
   ): Source[(ZipArchiveMetadata, Source[ByteString, Any]), NotUsed] =
     Source.fromGraph(new ZipSource(file, chunkSize, fileCharset))
   def zipReader(file: File): Source[(ZipArchiveMetadata, Source[ByteString, Any]), NotUsed] =
     Source.fromGraph(new ZipSource(file, 8192))
+  def zipReader(
+      file: File,
+      chunkSize: Int
+  ): Source[(ZipArchiveMetadata, Source[ByteString, Any]), NotUsed] =
+    Source.fromGraph(new ZipSource(file, chunkSize, StandardCharsets.UTF_8))
 
   /**
    * Flow for packaging multiple files into one TAR file.
