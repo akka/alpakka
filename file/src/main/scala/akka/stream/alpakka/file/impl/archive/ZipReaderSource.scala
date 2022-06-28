@@ -11,13 +11,15 @@ import akka.stream.{Attributes, Outlet, SourceShape}
 import akka.stream.scaladsl.Source
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import akka.util.ByteString
-import sun.nio.cs.UTF_8
 
 import java.io.{File, FileInputStream}
-import java.nio.charset.Charset
+import java.nio.charset.{Charset, StandardCharsets}
 import java.util.zip.{ZipEntry, ZipInputStream}
 
-@InternalApi class ZipEntrySource(n: ZipArchiveMetadata, f: File, chunkSize: Int, fileCharset: Charset = StandardCharsets.UTF_8)
+@InternalApi class ZipEntrySource(n: ZipArchiveMetadata,
+                                  f: File,
+                                  chunkSize: Int,
+                                  fileCharset: Charset = StandardCharsets.UTF_8)
     extends GraphStage[SourceShape[ByteString]] {
   private val out = Outlet[ByteString]("flowOut")
   override val shape: SourceShape[ByteString] =
@@ -66,7 +68,7 @@ import java.util.zip.{ZipEntry, ZipInputStream}
     }
 }
 
-@InternalApi class ZipSource(f: File, chunkSize: Int, fileCharset: Charset = UTF_8.INSTANCE)
+@InternalApi class ZipSource(f: File, chunkSize: Int, fileCharset: Charset = StandardCharsets.UTF_8)
     extends GraphStage[SourceShape[(ZipArchiveMetadata, Source[ByteString, NotUsed])]] {
   private val out = Outlet[(ZipArchiveMetadata, Source[ByteString, NotUsed])]("flowOut")
   override val shape: SourceShape[(ZipArchiveMetadata, Source[ByteString, NotUsed])] =
