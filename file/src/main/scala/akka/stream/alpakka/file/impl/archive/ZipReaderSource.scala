@@ -19,7 +19,7 @@ import java.util.zip.{ZipEntry, ZipInputStream}
 @InternalApi class ZipEntrySource(n: ZipArchiveMetadata,
                                   f: File,
                                   chunkSize: Int,
-                                  fileCharset: Charset = StandardCharsets.UTF_8)
+                                  fileCharset: Charset)
     extends GraphStage[SourceShape[ByteString]] {
   private val out = Outlet[ByteString]("flowOut")
   override val shape: SourceShape[ByteString] =
