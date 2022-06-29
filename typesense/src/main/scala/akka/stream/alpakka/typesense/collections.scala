@@ -216,30 +216,59 @@ object CollectionResponse {
 //TODO: add infix, sort, locale
 final class FieldResponse @InternalApi private[typesense] (val name: String,
                                                            val `type`: FieldType,
-                                                           val optional: Boolean,
                                                            val facet: Boolean,
-                                                           val index: Boolean) {
+                                                           val optional: Option[Boolean],
+                                                           val index: Option[Boolean]) {
+
+  def getOptional(): java.util.Optional[Boolean] = optional.asJava
+
+  def getIndex(): java.util.Optional[Boolean] = index.asJava
+
+  def withOptional(optional: Boolean): FieldResponse = new FieldResponse(name, `type`, facet, Some(optional), index)
+
+  def withIndex(index: Boolean): FieldResponse = new FieldResponse(name, `type`, facet, optional, Some(index))
 
   override def equals(other: Any): Boolean = other match {
     case that: FieldResponse =>
       name == that.name &&
       `type` == that.`type` &&
-      optional == that.optional &&
       facet == that.facet &&
+      optional == that.optional &&
       index == that.index
     case _ => false
   }
-  override def hashCode: Int = java.util.Objects.hash(name, `type`, optional, facet, index)
 
-  override def toString = s"FieldResponse(name=$name, `type`=${`type`}, optional=$optional, facet=$facet, index=$index)"
+  override def hashCode(): Int = java.util.Objects.hash(name, `type`, facet, optional, index)
+
+  override def toString = s"FieldResponse(name=$name, `type`=${`type`}, facet=$facet, optional=$optional, index=$index)"
 }
 
 object FieldResponse {
-  def apply(name: String, `type`: FieldType, optional: Boolean, facet: Boolean, index: Boolean): FieldResponse =
-    new FieldResponse(name, `type`, optional, facet, index)
+  def apply(name: String, `type`: FieldType, facet: Boolean): FieldResponse =
+    new FieldResponse(name, `type`, facet, None, None)
 
-  def create(name: String, `type`: FieldType, optional: Boolean, facet: Boolean, index: Boolean): FieldResponse =
-    new FieldResponse(name, `type`, optional, facet, index)
+  def apply(name: String, `type`: FieldType, facet: Boolean, optional: Option[Boolean]): FieldResponse =
+    new FieldResponse(name, `type`, facet, optional, None)
+
+  def apply(name: String,
+            `type`: FieldType,
+            facet: Boolean,
+            optional: Option[Boolean],
+            index: Option[Boolean]): FieldResponse =
+    new FieldResponse(name, `type`, facet, optional, index)
+
+  def create(name: String, `type`: FieldType, facet: Boolean): FieldResponse =
+    new FieldResponse(name, `type`, facet, None, None)
+
+  def create(name: String, `type`: FieldType, facet: Boolean, optional: java.util.Optional[Boolean]): FieldResponse =
+    new FieldResponse(name, `type`, facet, optional.toScala, None)
+
+  def create(name: String,
+             `type`: FieldType,
+             facet: Boolean,
+             optional: java.util.Optional[Boolean],
+             index: java.util.Optional[Boolean]): FieldResponse =
+    new FieldResponse(name, `type`, facet, optional.toScala, index.toScala)
 }
 
 sealed abstract class FieldType

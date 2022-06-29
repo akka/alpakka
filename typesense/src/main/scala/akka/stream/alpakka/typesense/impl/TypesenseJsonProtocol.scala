@@ -101,18 +101,20 @@ private[typesense] object TypesenseJsonProtocol extends DefaultJsonProtocol {
       FieldResponse(
         name = fields("name").convertTo[String],
         `type` = fields("type").convertTo[FieldType],
-        optional = fields("optional").convertTo[Boolean],
         facet = fields("facet").convertTo[Boolean],
-        index = fields("index").convertTo[Boolean]
+        optional = fields.get("optional").map(_.convertTo[Boolean]),
+        index = fields.get("index").map(_.convertTo[Boolean])
       )
     }
 
     override def write(obj: FieldResponse): JsValue = JsObject(
-      "name" -> obj.name.toJson,
-      "type" -> obj.`type`.toJson,
-      "optional" -> obj.optional.toJson,
-      "facet" -> obj.facet.toJson,
-      "index" -> obj.index.toJson
+      Seq(
+        "name" -> obj.name.toJson,
+        "type" -> obj.`type`.toJson,
+        "facet" -> obj.facet.toJson
+      )
+      ++ obj.optional.map("optional" -> _.toJson)
+      ++ obj.index.map("index" -> _.toJson): _*
     )
   }
 
@@ -136,15 +138,4 @@ private[typesense] object TypesenseJsonProtocol extends DefaultJsonProtocol {
       "created_at" -> obj.createdAt.getEpochSecond.toJson
     )
   }
-//  {
-//    implicit val timestampFormat: RootJsonFormat[Instant] = new RootJsonFormat[Instant] {
-//      override def read(json: JsValue): Instant = json match {
-//        case JsNumber(value) => Instant.ofEpochSecond(value.toLongExact)
-//        case _ => deserializationError("Instant expected")
-//      }
-//
-//      override def write(time: Instant): JsValue = JsNumber(time.getEpochSecond)
-//    }
-//    jsonFormat(CollectionResponse, "name", "num_documents", "fields", "default_sorting_field", "created_at")
-//  }
 }

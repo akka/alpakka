@@ -2,9 +2,9 @@ package akka.stream.alpakka.typesense.integration
 
 import akka.Done
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
-import akka.stream.alpakka.typesense._
 import akka.stream.alpakka.typesense.impl.TypesenseHttp.TypesenseException
 import akka.stream.alpakka.typesense.scaladsl.Typesense
+import akka.stream.alpakka.typesense._
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import org.scalatest.Assertion
 
@@ -15,13 +15,14 @@ import scala.concurrent.Future
 import scala.jdk.FutureConverters.CompletionStageOps
 import scala.util.{Failure, Success}
 
-abstract class CreateCollectionTypesenseIntegrationSpec(val version: String) extends TypesenseIntegrationSpec(version) {
+//all tests run in the same container without cleaning data
+abstract class CreateCollectionTypesenseIntegrationSpec(version: String) extends TypesenseIntegrationSpec(version) {
   import system.dispatcher
-  val mockedTime: Instant = Instant.now()
+  protected val mockedTime: Instant = Instant.now()
 
-  //all tests run in the same container without cleaning data
-
-  val defaultFields = Seq(Field("name", FieldType.String))
+  protected val defaultSortingFieldName = "item-nr"
+  protected val defaultSortingField = Field(defaultSortingFieldName, FieldType.Int32)
+  protected val defaultFields = Seq(defaultSortingField, Field("name", FieldType.String))
 
   describe(s"For Typesense $version") {
     describe("should create collection") {
@@ -91,88 +92,79 @@ abstract class CreateCollectionTypesenseIntegrationSpec(val version: String) ext
         createAndCheck(randomSchema().withSymbolsToIndex(Seq.empty))
       }
 
-      it("with specified correct default sorting field") {
-        val fields = Seq(Field("company_nr", FieldType.Int32))
-        createAndCheck(randomSchema(fields).withDefaultSortingField("company_nr"))
-      }
-
-      it("with specified empty default sorting field") {
-        createAndCheck(randomSchema().withDefaultSortingField(""))
+      def testWithField(field: Field): Unit = {
+        val fields = Seq(defaultSortingField, field)
+        createAndCheck(randomSchema(fields = fields).withDefaultSortingField(defaultSortingFieldName))
       }
 
       it("with string field") {
         val field = Field("name", FieldType.String)
-        createAndCheck(randomSchema(fields = Seq(field)))
+        testWithField(field)
       }
 
       it("with string[] field") {
         val field = Field("names", FieldType.StringArray)
-        createAndCheck(randomSchema(fields = Seq(field)))
+        testWithField(field)
       }
 
       it("with int32 field") {
         val field = Field("company_nr", FieldType.Int32)
-        createAndCheck(randomSchema(fields = Seq(field)))
+        testWithField(field)
       }
 
       it("with int32[] field") {
         val field = Field("company_nrs", FieldType.Int32Array)
-        createAndCheck(randomSchema(fields = Seq(field)))
+        testWithField(field)
       }
 
       it("with int64 field") {
         val field = Field("company_nr", FieldType.Int64)
-        createAndCheck(randomSchema(fields = Seq(field)))
+        testWithField(field)
       }
 
       it("with int64[] field") {
         val field = Field("company_nrs", FieldType.Int64Array)
-        createAndCheck(randomSchema(fields = Seq(field)))
+        testWithField(field)
       }
 
       it("with float field") {
         val field = Field("company_nr", FieldType.Int64)
-        createAndCheck(randomSchema(fields = Seq(field)))
+        testWithField(field)
       }
 
       it("with float[] field") {
         val field = Field("company_nrs", FieldType.Int64Array)
-        createAndCheck(randomSchema(fields = Seq(field)))
+        testWithField(field)
       }
 
       it("with bool field") {
         val field = Field("active", FieldType.Bool)
-        createAndCheck(randomSchema(fields = Seq(field)))
+        testWithField(field)
       }
 
       it("with bool[] field") {
         val field = Field("active", FieldType.BoolArray)
-        createAndCheck(randomSchema(fields = Seq(field)))
+        testWithField(field)
       }
 
       it("with geopoint field") {
         val field = Field("geo", FieldType.Geopoint)
-        createAndCheck(randomSchema(fields = Seq(field)))
+        testWithField(field)
       }
 
       it("with geopoint[] field") {
         val field = Field("geo", FieldType.GeopointArray)
-        createAndCheck(randomSchema(fields = Seq(field)))
+        testWithField(field)
       }
 
       it("with string* field") {
         val field = Field("names", FieldType.StringAutoArray)
-        createAndCheck(randomSchema(fields = Seq(field)))
+        testWithField(field)
       }
 
       it("with auto field") {
         val field = Field("data", FieldType.Auto)
-        createAndCheck(randomSchema(fields = Seq(field)))
-      }
-
-      it("with many fields") {
-        val fields = Seq(Field("first-field", FieldType.String), Field("second-field", FieldType.String))
-        createAndCheck(randomSchema(fields = fields))
+        testWithField(field)
       }
     }
 
@@ -208,10 +200,14 @@ abstract class CreateCollectionTypesenseIntegrationSpec(val version: String) ext
     }
   }
 
-  private def randomSchema(fields: Seq[Field] = defaultFields): CollectionSchema =
+  protected def randomSchema(): CollectionSchema =
+    CollectionSchema("my-collection-" + UUID.randomUUID(), defaultFields)
+      .withDefaultSortingField(defaultSortingFieldName)
+
+  protected def randomSchema(fields: Seq[Field]): CollectionSchema =
     CollectionSchema("my-collection-" + UUID.randomUUID(), fields)
 
-  private def createAndCheck(schema: CollectionSchema): Assertion = {
+  protected def createAndCheck(schema: CollectionSchema): Assertion = {
     val response = Source
       .single(schema)
       .via(Typesense.createCollectionFlow(settings))
@@ -221,7 +217,7 @@ abstract class CreateCollectionTypesenseIntegrationSpec(val version: String) ext
     compareResponseAndSchema(response, schema)
   }
 
-  private def tryCreateAndExpectError(schema: CollectionSchema, expectedstatusCode: StatusCode): Assertion = {
+  protected def tryCreateAndExpectError(schema: CollectionSchema, expectedstatusCode: StatusCode): Assertion = {
     val response = Source
       .single(schema)
       .via(Typesense.createCollectionFlow(settings))
@@ -236,7 +232,7 @@ abstract class CreateCollectionTypesenseIntegrationSpec(val version: String) ext
     gotStatusCode shouldBe expectedstatusCode
   }
 
-  private def compareResponseAndSchema(response: CollectionResponse, schema: CollectionSchema): Assertion = {
+  protected def compareResponseAndSchema(response: CollectionResponse, schema: CollectionSchema): Assertion = {
     val expectedResponse = CollectionResponse(
       name = schema.name,
       numDocuments = 0,
@@ -256,12 +252,5 @@ abstract class CreateCollectionTypesenseIntegrationSpec(val version: String) ext
     expectedResponse shouldBe responseToCheck
   }
 
-  private def fieldResponseFromField(field: Field): FieldResponse = {
-    val autoOptionalTypes: Set[FieldType] = Set(FieldType.StringAutoArray, FieldType.Auto)
-    val optional = if (autoOptionalTypes.contains(field.`type`)) true else field.optional.getOrElse(false)
-    val facet = field.facet.getOrElse(false)
-    val index = field.facet.getOrElse(true)
-
-    FieldResponse(name = field.name, `type` = field.`type`, optional = optional, facet = facet, index = index)
-  }
+  protected def fieldResponseFromField(field: Field): FieldResponse
 }

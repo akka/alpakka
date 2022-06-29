@@ -12,8 +12,12 @@ import org.testcontainers.containers.wait.strategy.Wait
 
 import java.io.File
 
-//TODO: check compatibility with older Typesense versions
-abstract class TypesenseIntegrationSpec(version: String)
+/**
+ * Integration tests for Typesense using Docker container.
+ * The idea is to execute tests for two Typesense versions:
+ * the newest one (0.23.0) and the oldest with available documentation (0.11.2)
+ */
+abstract class TypesenseIntegrationSpec(protected val version: String)
     extends AnyFunSpec
     with TestContainerForAll
     with ScalaFutures

@@ -9,14 +9,12 @@ class CollectionTypesenseJsonProtocolSpec extends TypesenseJsonProtocolSpec {
   import akka.stream.alpakka.typesense.impl.TypesenseJsonProtocol._
 
   def fieldReponse(name: String): FieldResponse =
-    FieldResponse(name = name, `type` = FieldType.String, optional = true, facet = false, index = true)
+    FieldResponse(name = name, `type` = FieldType.String, facet = false, optional = None, index = None)
 
   def fieldResponseJson(name: String): JsObject = JsObject(
     "name" -> JsString(name),
     "type" -> JsString("string"),
-    "optional" -> JsBoolean(true),
-    "facet" -> JsBoolean(false),
-    "index" -> JsBoolean(true)
+    "facet" -> JsBoolean(false)
   )
 
   describe("Field") {
@@ -307,10 +305,34 @@ class CollectionTypesenseJsonProtocolSpec extends TypesenseJsonProtocolSpec {
 
   describe("FieldResponse") {
     describe("should be serialized and deserialized") {
-      it("with all fields") {
+      it("with all required fields") {
         checkJson(
           data = fieldReponse("company_name"),
           expectedJson = fieldResponseJson("company_name")
+        )
+      }
+
+      it("with optional flag") {
+        checkJson(
+          data = fieldReponse("company_name").withOptional(true),
+          expectedJson = JsObject(
+            "name" -> JsString("company_name"),
+            "type" -> JsString("string"),
+            "facet" -> JsBoolean(false),
+            "optional" -> JsBoolean(true)
+          )
+        )
+      }
+
+      it("with index flag") {
+        checkJson(
+          data = fieldReponse("company_name").withIndex(true),
+          expectedJson = JsObject(
+            "name" -> JsString("company_name"),
+            "type" -> JsString("string"),
+            "facet" -> JsBoolean(false),
+            "index" -> JsBoolean(true)
+          )
         )
       }
     }
