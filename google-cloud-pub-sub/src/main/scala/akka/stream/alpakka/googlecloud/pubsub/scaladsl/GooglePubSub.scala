@@ -29,16 +29,72 @@ protected[pubsub] trait GooglePubSub {
 
   /**
    * Creates a flow to that publishes messages to a topic and emits the message ids.
+   * @param overrideHost if present publish message will be sent to specific host,
+   *                     can be used to send message to specific regional endpoint,
+   *                     which can be important when ordering is enabled
+   */
+  def publish(topic: String,
+              config: PubSubConfig,
+              overrideHost: Option[String],
+              parallelism: Int): Flow[PublishRequest, immutable.Seq[String], NotUsed] =
+    Flow[PublishRequest]
+      .map((_, ()))
+      .via(
+        publishWithContext[Unit](topic, config, overrideHost, parallelism).asFlow
+      )
+      .map(_._1)
+
+  /**
+   * Creates a flow to that publishes messages to a topic and emits the message ids.
+   * @param overrideHost if present publish message will be sent to specific host,
+   *                     can be used to send message to specific regional endpoint,
+   *                     which can be important when ordering is enabled
+   */
+  def publish(topic: String,
+              config: PubSubConfig,
+              overrideHost: Option[String]): Flow[PublishRequest, immutable.Seq[String], NotUsed] =
+    publish(topic, config, overrideHost, parallelism = 1)
+
+  /**
+   * Creates a flow to that publishes messages to a topic and emits the message ids.
    */
   def publish(topic: String,
               config: PubSubConfig,
               parallelism: Int = 1): Flow[PublishRequest, immutable.Seq[String], NotUsed] =
-    Flow[PublishRequest]
-      .map((_, ()))
-      .via(
-        publishWithContext[Unit](topic, config, parallelism).asFlow
-      )
-      .map(_._1)
+    publish(topic, config, None, parallelism)
+
+  /**
+   * Creates a flow to that publishes messages to a topic and emits the message ids and carries a context
+   * through.
+   * @param overrideHost if present publish message will be sent to specific host,
+   *                     can be used to send message to specific regional endpoint,
+   *                     which can be important when ordering is enabled
+   */
+  def publishWithContext[C](
+      topic: String,
+      config: PubSubConfig,
+      overrideHost: Option[String],
+      parallelism: Int
+  ): FlowWithContext[PublishRequest, C, immutable.Seq[String], C, NotUsed] =
+    // some wrapping back and forth as FlowWithContext doesn't offer `setup`
+    // https://github.com/akka/akka/issues/27883
+    FlowWithContext
+      .fromTuples(flow(config)(httpApi.publish[C](topic, parallelism, overrideHost).asFlow))
+      .map(_.messageIds)
+
+  /**
+   * Creates a flow to that publishes messages to a topic and emits the message ids and carries a context
+   * through.
+   * @param overrideHost if present publish message will be sent to specific host,
+   *                     can be used to send message to specific regional endpoint,
+   *                     which can be important when ordering is enabled
+   */
+  def publishWithContext[C](
+      topic: String,
+      config: PubSubConfig,
+      overrideHost: Option[String]
+  ): FlowWithContext[PublishRequest, C, immutable.Seq[String], C, NotUsed] =
+    publishWithContext(topic, config, overrideHost, parallelism = 1)
 
   /**
    * Creates a flow to that publishes messages to a topic and emits the message ids and carries a context
@@ -49,9 +105,7 @@ protected[pubsub] trait GooglePubSub {
       config: PubSubConfig,
       parallelism: Int = 1
   ): FlowWithContext[PublishRequest, C, immutable.Seq[String], C, NotUsed] =
-    // some wrapping back and forth as FlowWithContext doesn't offer `setup`
-    // https://github.com/akka/akka/issues/27883
-    FlowWithContext.fromTuples(flow(config)(httpApi.publish[C](topic, parallelism).asFlow)).map(_.messageIds)
+    publishWithContext(topic, config, None, parallelism)
 
   /**
    * Creates a source pulling messages from a subscription.
