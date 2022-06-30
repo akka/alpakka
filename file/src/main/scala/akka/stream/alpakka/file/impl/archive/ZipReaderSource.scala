@@ -13,9 +13,10 @@ import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import akka.util.ByteString
 
 import java.io.{File, FileInputStream}
+import java.nio.charset.{Charset, StandardCharsets}
 import java.util.zip.{ZipEntry, ZipInputStream}
 
-@InternalApi class ZipEntrySource(n: ZipArchiveMetadata, f: File, chunkSize: Int)
+@InternalApi class ZipEntrySource(n: ZipArchiveMetadata, f: File, chunkSize: Int, fileCharset: Charset)
     extends GraphStage[SourceShape[ByteString]] {
   private val out = Outlet[ByteString]("flowOut")
   override val shape: SourceShape[ByteString] =
@@ -23,7 +24,7 @@ import java.util.zip.{ZipEntry, ZipInputStream}
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) {
-      val zis = new ZipInputStream(new FileInputStream(f))
+      val zis = new ZipInputStream(new FileInputStream(f), fileCharset)
       var entry: ZipEntry = null
       val data = new Array[Byte](chunkSize)
 
@@ -64,7 +65,7 @@ import java.util.zip.{ZipEntry, ZipInputStream}
     }
 }
 
-@InternalApi class ZipSource(f: File, chunkSize: Int)
+@InternalApi class ZipSource(f: File, chunkSize: Int, fileCharset: Charset = StandardCharsets.UTF_8)
     extends GraphStage[SourceShape[(ZipArchiveMetadata, Source[ByteString, NotUsed])]] {
   private val out = Outlet[(ZipArchiveMetadata, Source[ByteString, NotUsed])]("flowOut")
   override val shape: SourceShape[(ZipArchiveMetadata, Source[ByteString, NotUsed])] =
@@ -72,7 +73,7 @@ import java.util.zip.{ZipEntry, ZipInputStream}
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) {
-      val zis = new ZipInputStream(new FileInputStream(f))
+      val zis = new ZipInputStream(new FileInputStream(f), fileCharset)
 
       setHandler(
         out,
@@ -82,7 +83,7 @@ import java.util.zip.{ZipEntry, ZipInputStream}
             if (e != null) {
               val n = ZipArchiveMetadata(e.getName)
               zis.closeEntry()
-              push(out, n -> Source.fromGraph(new ZipEntrySource(n, f, chunkSize)))
+              push(out, n -> Source.fromGraph(new ZipEntrySource(n, f, chunkSize, fileCharset)))
             } else {
               zis.close()
               completeStage()
