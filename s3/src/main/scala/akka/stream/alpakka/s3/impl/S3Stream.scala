@@ -204,10 +204,10 @@ import scala.util.{Failure, Success, Try}
       s3Headers: S3Headers
   ): Source[ByteString, Future[ObjectMetadata]] = {
     val headers = s3Headers.headersFor(GetObject)
-    val objectMetadataMat = Promise[ObjectMetadata]()
 
     Source
       .fromMaterializer { (mat, attr) =>
+        val objectMetadataMat = Promise[ObjectMetadata]()
         implicit val materializer: Materializer = mat
         issueRequest(s3Location, rangeOption = range, versionId = versionId, s3Headers = headers)(mat, attr)
           .map(response => response.withEntity(response.entity.withoutSizeLimit))
