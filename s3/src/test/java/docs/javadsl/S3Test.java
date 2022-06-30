@@ -21,6 +21,7 @@ import akka.stream.alpakka.s3.headers.ServerSideEncryption;
 import akka.stream.alpakka.s3.javadsl.S3;
 import akka.stream.alpakka.s3.scaladsl.S3WireMockBase;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
+import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
@@ -117,40 +118,38 @@ public class S3Test extends S3WireMockBase {
     mockDownload();
 
     // #download
-    final Source<Optional<Pair<Source<ByteString, NotUsed>, ObjectMetadata>>, NotUsed>
-        sourceAndMeta = S3.download(bucket(), bucketKey());
-    final Pair<Source<ByteString, NotUsed>, ObjectMetadata> dataAndMetadata =
-        sourceAndMeta
-            .runWith(Sink.head(), system)
-            .toCompletableFuture()
-            .get(5, TimeUnit.SECONDS)
-            .get();
+    final Source<ByteString, CompletionStage<ObjectMetadata>> s3Source =
+        S3.getObject(bucket(), bucketKey());
+    final Pair<CompletionStage<ObjectMetadata>, CompletionStage<String>> dataAndMetadata =
+        s3Source.map(ByteString::utf8String).toMat(Sink.head(), Keep.both()).run(system);
 
-    final Source<ByteString, NotUsed> data = dataAndMetadata.first();
-    final ObjectMetadata metadata = dataAndMetadata.second();
+    final CompletionStage<ObjectMetadata> metadataCompletionStage = dataAndMetadata.first();
+    final CompletionStage<String> dataCompletionStage = dataAndMetadata.second();
 
-    final CompletionStage<String> resultCompletionStage =
-        data.map(ByteString::utf8String).runWith(Sink.head(), system);
-
-    String result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
     // #download
 
-    assertEquals(body(), result);
+    // #downloadToAkkaHttp
+    metadataCompletionStage.thenApply(
+        metadata ->
+            HttpResponse.create()
+                .withEntity(
+                    HttpEntities.create(
+                        metadata
+                            .getContentType()
+                            .map(ContentTypes::parse)
+                            .orElse(ContentTypes.APPLICATION_OCTET_STREAM),
+                        metadata.getContentLength(),
+                        s3Source)));
+    // #downloadToAkkaHttp
+
+    String result = dataCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+    ObjectMetadata metadata =
+        metadataCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     System.out.println("#####");
     System.out.println(metadata.getContentLength());
 
-    // #downloadToAkkaHttp
-    HttpResponse.create()
-        .withEntity(
-            HttpEntities.create(
-                metadata
-                    .getContentType()
-                    .map(ct -> ContentTypes.parse(ct))
-                    .orElse(ContentTypes.APPLICATION_OCTET_STREAM),
-                metadata.getContentLength(),
-                data));
-    // #downloadToAkkaHttp
+    assertEquals(body(), result);
   }
 
   @Test
@@ -215,18 +214,11 @@ public class S3Test extends S3WireMockBase {
   public void downloadServerSideEncryption() throws Exception {
     mockDownloadSSEC();
 
-    final Source<Optional<Pair<Source<ByteString, NotUsed>, ObjectMetadata>>, NotUsed>
-        sourceAndMeta = S3.download(bucket(), bucketKey(), sseCustomerKeys());
+    final Source<ByteString, CompletionStage<ObjectMetadata>> s3Source =
+        S3.getObject(bucket(), bucketKey(), sseCustomerKeys());
 
-    final Source<ByteString, NotUsed> source =
-        sourceAndMeta
-            .runWith(Sink.head(), system)
-            .toCompletableFuture()
-            .get(5, TimeUnit.SECONDS)
-            .get()
-            .first();
     final CompletionStage<String> resultCompletionStage =
-        source.map(ByteString::utf8String).runWith(Sink.head(), system);
+        s3Source.map(ByteString::utf8String).runWith(Sink.head(), system);
 
     String result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
@@ -238,24 +230,17 @@ public class S3Test extends S3WireMockBase {
     String versionId = "3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo";
     mockDownloadSSECWithVersion(versionId);
 
-    final Source<Optional<Pair<Source<ByteString, NotUsed>, ObjectMetadata>>, NotUsed>
-        sourceAndMeta =
-            S3.download(bucket(), bucketKey(), null, Optional.of(versionId), sseCustomerKeys());
+    final Source<ByteString, CompletionStage<ObjectMetadata>> s3Source =
+        S3.getObject(bucket(), bucketKey(), null, Optional.of(versionId), sseCustomerKeys());
 
-    final Pair<Source<ByteString, NotUsed>, ObjectMetadata> p =
-        sourceAndMeta
-            .runWith(Sink.head(), system)
-            .toCompletableFuture()
-            .get(5, TimeUnit.SECONDS)
-            .orElseThrow(() -> new RuntimeException("empty Optional from S3.download"));
+    final Pair<CompletionStage<ObjectMetadata>, CompletionStage<String>> p =
+        s3Source.map(ByteString::utf8String).toMat(Sink.head(), Keep.both()).run(system);
 
-    final Source<ByteString, NotUsed> source = p.first();
-    final CompletionStage<String> resultCompletionStage =
-        source.map(ByteString::utf8String).runWith(Sink.head(), system);
+    final CompletionStage<String> resultCompletionStage = p.second();
     final String result = resultCompletionStage.toCompletableFuture().get(2, TimeUnit.SECONDS);
     assertEquals(bodySSE(), result);
 
-    final ObjectMetadata metadata = p.second();
+    final ObjectMetadata metadata = p.first().toCompletableFuture().get(2, TimeUnit.SECONDS);
     assertEquals(Optional.of(versionId), metadata.getVersionId());
   }
 
@@ -265,21 +250,13 @@ public class S3Test extends S3WireMockBase {
     mockRangedDownload();
 
     // #rangedDownload
-    final Source<Optional<Pair<Source<ByteString, NotUsed>, ObjectMetadata>>, NotUsed>
-        sourceAndMeta =
-            S3.download(
-                bucket(), bucketKey(), ByteRange.createSlice(bytesRangeStart(), bytesRangeEnd()));
+    final Source<ByteString, CompletionStage<ObjectMetadata>> sourceAndMeta =
+        S3.getObject(
+            bucket(), bucketKey(), ByteRange.createSlice(bytesRangeStart(), bytesRangeEnd()));
     // #rangedDownload
 
-    final Source<ByteString, NotUsed> source =
-        sourceAndMeta
-            .runWith(Sink.head(), system)
-            .toCompletableFuture()
-            .get(5, TimeUnit.SECONDS)
-            .get()
-            .first();
     final CompletionStage<byte[]> resultCompletionStage =
-        source.map(ByteString::toArray).runWith(Sink.head(), system);
+        sourceAndMeta.map(ByteString::toArray).runWith(Sink.head(), system);
 
     byte[] result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
@@ -291,23 +268,15 @@ public class S3Test extends S3WireMockBase {
 
     mockRangedDownloadSSE();
 
-    final Source<Optional<Pair<Source<ByteString, NotUsed>, ObjectMetadata>>, NotUsed>
-        sourceAndMeta =
-            S3.download(
-                bucket(),
-                bucketKey(),
-                ByteRange.createSlice(bytesRangeStart(), bytesRangeEnd()),
-                sseCustomerKeys());
+    final Source<ByteString, CompletionStage<ObjectMetadata>> sourceAndMeta =
+        S3.getObject(
+            bucket(),
+            bucketKey(),
+            ByteRange.createSlice(bytesRangeStart(), bytesRangeEnd()),
+            sseCustomerKeys());
 
-    final Source<ByteString, NotUsed> source =
-        sourceAndMeta
-            .runWith(Sink.head(), system)
-            .toCompletableFuture()
-            .get(5, TimeUnit.SECONDS)
-            .get()
-            .first();
     final CompletionStage<byte[]> resultCompletionStage =
-        source.map(ByteString::toArray).runWith(Sink.head(), system);
+        sourceAndMeta.map(ByteString::toArray).runWith(Sink.head(), system);
 
     byte[] result = resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 

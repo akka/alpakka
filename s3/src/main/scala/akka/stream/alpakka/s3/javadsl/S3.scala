@@ -338,6 +338,7 @@ object S3 {
    * @param key the s3 object key
    * @return A [[akka.japi.Pair]] with a [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]], and a [[akka.stream.javadsl.Source Source]] containing the [[ObjectMetadata]]
    */
+  @deprecated("Use S3.getObject instead", "4.0.0")
   def download(bucket: String,
                key: String): Source[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]], NotUsed] =
     toJava(S3Stream.download(S3Location(bucket, key), None, None, S3Headers.empty))
@@ -350,6 +351,7 @@ object S3 {
    * @param sse the server side encryption to use
    * @return A [[akka.japi.Pair]] with a [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]], and a [[akka.stream.javadsl.Source Source]] containing the [[ObjectMetadata]]
    */
+  @deprecated("Use S3.getObject instead", "4.0.0")
   def download(
       bucket: String,
       key: String,
@@ -365,6 +367,7 @@ object S3 {
    * @param range the [[akka.http.javadsl.model.headers.ByteRange ByteRange]] you want to download
    * @return A [[akka.japi.Pair]] with a [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]], and a [[akka.stream.javadsl.Source Source]] containing the [[ObjectMetadata]]
    */
+  @deprecated("Use S3.getObject instead", "4.0.0")
   def download(bucket: String,
                key: String,
                range: ByteRange): Source[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]], NotUsed] = {
@@ -381,6 +384,7 @@ object S3 {
    * @param sse the server side encryption to use
    * @return A [[akka.japi.Pair]] with a [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]], and a [[akka.stream.javadsl.Source Source]] containing the [[ObjectMetadata]]
    */
+  @deprecated("Use S3.getObject instead", "4.0.0")
   def download(
       bucket: String,
       key: String,
@@ -399,6 +403,7 @@ object S3 {
    * @param sse the server side encryption to use
    * @return A [[akka.japi.Pair]] with a [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]], and a [[akka.stream.javadsl.Source Source]] containing the [[ObjectMetadata]]
    */
+  @deprecated("Use S3.getObject instead", "4.0.0")
   def download(
       bucket: String,
       key: String,
@@ -416,6 +421,7 @@ object S3 {
    * @param s3Headers any headers you want to add
    * @return A [[akka.japi.Pair]] with a [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]], and a [[akka.stream.javadsl.Source Source]] containing the [[ObjectMetadata]]
    */
+  @deprecated("Use S3.getObject instead", "4.0.0")
   def download(
       bucket: String,
       key: String,
@@ -434,6 +440,7 @@ object S3 {
    * @param s3Headers any headers you want to add
    * @return A [[akka.japi.Pair]] with a [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]], and a [[akka.stream.javadsl.Source Source]] containing the [[ObjectMetadata]]
    */
+  @deprecated("Use S3.getObject instead", "4.0.0")
   def download(
       bucket: String,
       key: String,
@@ -456,6 +463,7 @@ object S3 {
    * @param s3Headers any headers you want to add
    * @return A [[akka.japi.Pair]] with a [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]], and a [[akka.stream.javadsl.Source Source]] containing the [[ObjectMetadata]]
    */
+  @deprecated("Use S3.getObject instead", "4.0.0")
   def download(
       bucket: String,
       key: String,
@@ -466,6 +474,147 @@ object S3 {
     val scalaRange = range.asInstanceOf[ScalaByteRange]
     toJava(
       S3Stream.download(S3Location(bucket, key), Option(scalaRange), Option(versionId.orElse(null)), s3Headers)
+    )
+  }
+
+  /**
+   * Gets a S3 Object
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @return A [[akka.stream.javadsl.Source]] containing the objects data as a [[akka.util.ByteString]] along with a materialized value containing the
+   *         [[akka.stream.alpakka.s3.ObjectMetadata]]
+   */
+  def getObject(bucket: String, key: String): Source[ByteString, CompletionStage[ObjectMetadata]] =
+    new Source(S3Stream.getObject(S3Location(bucket, key), None, None, S3Headers.empty).toCompletionStage())
+
+  /**
+   * Gets a S3 Object
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param sse the server side encryption to use
+   * @return A [[akka.stream.javadsl.Source]] containing the objects data as a [[akka.util.ByteString]] along with a materialized value containing the
+   *         [[akka.stream.alpakka.s3.ObjectMetadata]]
+   */
+  def getObject(
+      bucket: String,
+      key: String,
+      sse: ServerSideEncryption
+  ): Source[ByteString, CompletionStage[ObjectMetadata]] =
+    getObject(bucket, key, S3Headers.empty.withOptionalServerSideEncryption(Option(sse)))
+
+  /**
+   * Gets a specific byte range of a S3 Object
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param range the [[akka.http.javadsl.model.headers.ByteRange ByteRange]] you want to download
+   * @return A [[akka.stream.javadsl.Source]] containing the objects data as a [[akka.util.ByteString]] along with a materialized value containing the
+   *         [[akka.stream.alpakka.s3.ObjectMetadata]]
+   */
+  def getObject(bucket: String, key: String, range: ByteRange): Source[ByteString, CompletionStage[ObjectMetadata]] = {
+    val scalaRange = range.asInstanceOf[ScalaByteRange]
+    new Source(S3Stream.getObject(S3Location(bucket, key), Some(scalaRange), None, S3Headers.empty).toCompletionStage())
+  }
+
+  /**
+   * Gets a specific byte range of a S3 Object
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param range the [[akka.http.javadsl.model.headers.ByteRange ByteRange]] you want to download
+   * @param sse the server side encryption to use
+   * @return A [[akka.stream.javadsl.Source]] containing the objects data as a [[akka.util.ByteString]] along with a materialized value containing the
+   *         [[akka.stream.alpakka.s3.ObjectMetadata]]
+   */
+  def getObject(
+      bucket: String,
+      key: String,
+      range: ByteRange,
+      sse: ServerSideEncryption
+  ): Source[ByteString, CompletionStage[ObjectMetadata]] =
+    getObject(bucket, key, range, S3Headers.empty.withOptionalServerSideEncryption(Option(sse)))
+
+  /**
+   * Gets a specific byte range of a S3 Object
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param range the [[akka.http.javadsl.model.headers.ByteRange ByteRange]] you want to download
+   * @param versionId optional version id of the object
+   * @param sse the server side encryption to use
+   * @return A [[akka.stream.javadsl.Source]] containing the objects data as a [[akka.util.ByteString]] along with a materialized value containing the
+   *         [[akka.stream.alpakka.s3.ObjectMetadata]]
+   */
+  def getObject(
+      bucket: String,
+      key: String,
+      range: ByteRange,
+      versionId: Optional[String],
+      sse: ServerSideEncryption
+  ): Source[ByteString, CompletionStage[ObjectMetadata]] =
+    getObject(bucket, key, range, versionId, S3Headers.empty.withOptionalServerSideEncryption(Option(sse)))
+
+  /**
+   * Gets a S3 Object
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param s3Headers any headers you want to add
+   * @return A [[akka.stream.javadsl.Source]] containing the objects data as a [[akka.util.ByteString]] along with a materialized value containing the
+   *         [[akka.stream.alpakka.s3.ObjectMetadata]]
+   */
+  def getObject(
+      bucket: String,
+      key: String,
+      s3Headers: S3Headers
+  ): Source[ByteString, CompletionStage[ObjectMetadata]] =
+    new Source(S3Stream.getObject(S3Location(bucket, key), None, None, s3Headers).toCompletionStage())
+
+  /**
+   * Gets a specific byte range of a S3 Object
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param range the [[akka.http.javadsl.model.headers.ByteRange ByteRange]] you want to download
+   * @param s3Headers any headers you want to add
+   * @return A [[akka.stream.javadsl.Source]] containing the objects data as a [[akka.util.ByteString]] along with a materialized value containing the
+   *         [[akka.stream.alpakka.s3.ObjectMetadata]]
+   */
+  def getObject(
+      bucket: String,
+      key: String,
+      range: ByteRange,
+      s3Headers: S3Headers
+  ): Source[ByteString, CompletionStage[ObjectMetadata]] = {
+    val scalaRange = range.asInstanceOf[ScalaByteRange]
+    new Source(S3Stream.getObject(S3Location(bucket, key), Some(scalaRange), None, s3Headers).toCompletionStage())
+  }
+
+  /**
+   * Gets a specific byte range of a S3 Object
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param range the [[akka.http.javadsl.model.headers.ByteRange ByteRange]] you want to download
+   * @param versionId optional version id of the object
+   * @param s3Headers any headers you want to add
+   * @return A [[akka.stream.javadsl.Source]] containing the objects data as a [[akka.util.ByteString]] along with a materialized value containing the
+   *         [[akka.stream.alpakka.s3.ObjectMetadata]]
+   */
+  def getObject(
+      bucket: String,
+      key: String,
+      range: ByteRange,
+      versionId: Optional[String],
+      s3Headers: S3Headers
+  ): Source[ByteString, CompletionStage[ObjectMetadata]] = {
+    val scalaRange = range.asInstanceOf[ScalaByteRange]
+    new Source(
+      S3Stream
+        .getObject(S3Location(bucket, key), Option(scalaRange), Option(versionId.orElse(null)), s3Headers)
+        .toCompletionStage()
     )
   }
 

@@ -26,7 +26,7 @@ import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.regions.providers._
 
 import java.util.concurrent.ConcurrentLinkedQueue
-import scala.annotation.{nowarn, tailrec}
+import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -188,18 +188,15 @@ trait S3IntegrationSpec
   }
 
   it should "download with real credentials" in {
-    val Some((source, meta)) = S3
-      .download(defaultBucket, objectKey)
+    val (metaFuture, bodyFuture) = S3
+      .getObject(defaultBucket, objectKey)
       .withAttributes(attributes)
-      .runWith(Sink.head)
-      .futureValue: @nowarn("msg=match may not be exhaustive")
-
-    val bodyFuture = source
       .map(_.decodeString("utf8"))
-      .toMat(Sink.head)(Keep.right)
+      .toMat(Sink.head)(Keep.both)
       .run()
 
     bodyFuture.futureValue shouldBe objectValue
+    val meta = metaFuture.futureValue
     meta.eTag should not be empty
     meta.contentType shouldBe Some(ContentTypes.`application/octet-stream`.value)
   }
@@ -238,13 +235,11 @@ trait S3IntegrationSpec
           S3.multipartUpload(defaultBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
             .withAttributes(attributes)
         )
-      download <- S3.download(defaultBucket, objectKey).withAttributes(attributes).runWith(Sink.head).flatMap {
-        case Some((downloadSource, _)) =>
-          downloadSource
-            .map(_.decodeString("utf8"))
-            .runWith(Sink.head)
-        case None => Future.successful(None)
-      }
+      download <- S3
+        .getObject(defaultBucket, objectKey)
+        .withAttributes(attributes)
+        .map(_.decodeString("utf8"))
+        .runWith(Sink.head)
     } yield (upload, download)
 
     val (multipartUploadResult, downloaded) = results.futureValue
@@ -270,16 +265,10 @@ trait S3IntegrationSpec
             .withAttributes(attributes)
         )
       download <- S3
-        .download(defaultBucket, objectKey)
+        .getObject(defaultBucket, objectKey)
         .withAttributes(attributes)
+        .map(_.decodeString("utf8"))
         .runWith(Sink.head)
-        .flatMap {
-          case Some((downloadSource, _)) =>
-            downloadSource
-              .map(_.decodeString("utf8"))
-              .runWith(Sink.head)
-          case None => Future.successful(None)
-        }
     } yield (upload, download)
 
     val (multipartUploadResult, downloaded) = results.futureValue
@@ -630,12 +619,7 @@ trait S3IntegrationSpec
       // This delay is here because sometimes there is a delay when you complete a large file and its
       // actually downloadable
       downloaded <- akka.pattern.after(5.seconds)(
-        S3.download(defaultBucket, sourceKey).withAttributes(attributes).runWith(Sink.head).flatMap {
-          case Some((downloadSource, _)) =>
-            downloadSource
-              .runWith(Sink.seq)
-          case None => throw new Exception(s"Expected object in bucket $defaultBucket with key $sourceKey")
-        }
+        S3.getObject(defaultBucket, sourceKey).withAttributes(attributes).runWith(Sink.seq)
       )
 
       _ <- S3.deleteObject(defaultBucket, sourceKey).withAttributes(attributes).runWith(Sink.head)
@@ -684,12 +668,7 @@ trait S3IntegrationSpec
       // This delay is here because sometimes there is a delay when you complete a large file and its
       // actually downloadable
       downloaded <- akka.pattern.after(5.seconds)(
-        S3.download(defaultBucket, sourceKey).withAttributes(attributes).runWith(Sink.head).flatMap {
-          case Some((downloadSource, _)) =>
-            downloadSource
-              .runWith(Sink.seq)
-          case None => throw new Exception(s"Expected object in bucket $defaultBucket with key $sourceKey")
-        }
+        S3.getObject(defaultBucket, sourceKey).withAttributes(attributes).runWith(Sink.seq)
       )
       _ <- S3.deleteObject(defaultBucket, sourceKey).withAttributes(attributes).runWith(Sink.head)
     } yield downloaded
@@ -790,12 +769,7 @@ trait S3IntegrationSpec
       // This delay is here because sometimes there is a delay when you complete a large file and its
       // actually downloadable
       downloaded <- akka.pattern.after(5.seconds)(
-        S3.download(defaultBucket, sourceKey).withAttributes(attributes).runWith(Sink.head).flatMap {
-          case Some((downloadSource, _)) =>
-            downloadSource
-              .runWith(Sink.seq)
-          case None => throw new Exception(s"Expected object in bucket $defaultBucket with key $sourceKey")
-        }
+        S3.getObject(defaultBucket, sourceKey).withAttributes(attributes).runWith(Sink.seq)
       )
       _ <- S3.deleteObject(defaultBucket, sourceKey).withAttributes(attributes).runWith(Sink.head)
 
@@ -964,16 +938,10 @@ trait S3IntegrationSpec
             .withAttributes(otherRegionSettingsPathStyleAccess)
         )
       download <- S3
-        .download(bucketWithDots, objectKey)
+        .getObject(bucketWithDots, objectKey)
         .withAttributes(otherRegionSettingsPathStyleAccess)
+        .map(_.decodeString("utf8"))
         .runWith(Sink.head)
-        .flatMap {
-          case Some((downloadSource, _)) =>
-            downloadSource
-              .map(_.decodeString("utf8"))
-              .runWith(Sink.head)
-          case None => Future.successful(None)
-        }
     } yield (upload, download)
 
     val (multipartUploadResult, downloaded) = results.futureValue
@@ -998,16 +966,10 @@ trait S3IntegrationSpec
         .withAttributes(attributes)
         .run()
       download <- S3
-        .download(defaultBucket, targetKey)
+        .getObject(defaultBucket, targetKey)
         .withAttributes(attributes)
+        .map(_.decodeString("utf8"))
         .runWith(Sink.head)
-        .flatMap {
-          case Some((downloadSource, _)) =>
-            downloadSource
-              .map(_.decodeString("utf8"))
-              .runWith(Sink.head)
-          case None => Future.successful(None)
-        }
     } yield (upload, copy, download)
 
     whenReady(results) {
