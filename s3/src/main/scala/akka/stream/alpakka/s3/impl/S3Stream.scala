@@ -212,12 +212,11 @@ import scala.util.{Failure, Success, Try}
         issueRequest(s3Location, rangeOption = range, versionId = versionId, s3Headers = headers)(mat, attr)
           .map(response => response.withEntity(response.entity.withoutSizeLimit))
           .mapAsync(parallelism = 1)(entityForSuccess)
-          .map {
+          .flatMapConcat {
             case (entity, headers) =>
               objectMetadataMat.success(computeMetaData(headers, entity))
               entity.dataBytes
           }
-          .flatMapConcat(identity)
           .mapMaterializedValue(_ => objectMetadataMat.future)
       }
       .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.parasitic))
