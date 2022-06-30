@@ -217,6 +217,11 @@ import scala.util.{Failure, Success, Try}
               objectMetadataMat.success(computeMetaData(headers, entity))
               entity.dataBytes
           }
+          .mapError {
+            case e: Throwable =>
+              objectMetadataMat.tryFailure(e)
+              e
+          }
           .mapMaterializedValue(_ => objectMetadataMat.future)
       }
       .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.parasitic))
