@@ -78,7 +78,7 @@ public class ExampleUsageJava {
     // #publish with ordering key
     // to provide ordering messages must be sent to the same regional endpoint
     Flow<PublishRequest, List<String>, NotUsed> publishToRegionalEndpointFlow =
-        GooglePubSub.publish(topic, config, Optional.of("europe-west1-pubsub.googleapis.com"), 1);
+        GooglePubSub.publish(topic, config, "europe-west1-pubsub.googleapis.com", 1);
 
     PublishMessage publishMessageWithOrderingKey =
         PublishMessage.create(
