@@ -12,6 +12,9 @@ import akka.{Done, NotUsed}
 import java.util.concurrent.CompletionStage
 import scala.compat.java8.FutureConverters.FutureOps
 
+/**
+ * Java DSL for Typesense
+ */
 object Typesense {
   private val ScalaTypesense = akka.stream.alpakka.typesense.scaladsl.Typesense
 

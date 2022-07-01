@@ -14,7 +14,7 @@ import akka.{Done, NotUsed}
 import scala.concurrent.Future
 
 /**
- * Scala DSL for Google Pub/Sub
+ * Scala DSL for Typesense
  */
 object Typesense {
   import akka.stream.alpakka.typesense.impl.TypesenseJsonProtocol._
