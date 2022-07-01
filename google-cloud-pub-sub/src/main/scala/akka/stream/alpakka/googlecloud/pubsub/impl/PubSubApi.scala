@@ -220,18 +220,20 @@ private[pubsub] trait PubSubApi {
       }
     }.withDefaultRetry
 
-  private def pool[T: FromResponseUnmarshaller, Ctx](parallelism: Int)(
+  private def pool[T: FromResponseUnmarshaller, Ctx](parallelism: Int, host: Option[String])(
       implicit system: ActorSystem
   ): FlowWithContext[HttpRequest, Ctx, Try[T], Ctx, Future[HostConnectionPool]] =
     GoogleHttp().cachedHostConnectionPoolWithContext[T, Ctx](
-      PubSubGoogleApisHost,
+      host.getOrElse(PubSubGoogleApisHost),
       PubSubGoogleApisPort,
       https = !isEmulated,
       authenticate = !isEmulated,
       parallelism = parallelism
     )
 
-  def publish[T](topic: String, parallelism: Int): FlowWithContext[PublishRequest, T, PublishResponse, T, NotUsed] =
+  def publish[T](topic: String,
+                 parallelism: Int,
+                 host: Option[String]): FlowWithContext[PublishRequest, T, PublishResponse, T, NotUsed] =
     FlowWithContext.fromTuples {
       Flow
         .fromMaterializer { (mat, attr) =>
@@ -247,12 +249,15 @@ private[pubsub] trait PubSubApi {
                   HttpRequest(POST, url, entity = entity)
                 }(ExecutionContexts.parasitic)
             }
-            .via(pool[PublishResponse, T](parallelism))
+            .via(pool[PublishResponse, T](parallelism, host))
             .map(_.get)
             .asFlow
         }
         .mapMaterializedValue(_ => NotUsed)
     }
+
+  def publish[T](topic: String, parallelism: Int): FlowWithContext[PublishRequest, T, PublishResponse, T, NotUsed] =
+    publish(topic, parallelism, None)
 
   private implicit val publishResponseUnmarshaller: FromResponseUnmarshaller[PublishResponse] =
     Unmarshaller.withMaterializer { implicit ec => implicit mat => response: HttpResponse =>

@@ -76,6 +76,10 @@ public class ExampleUsageJava {
     // #publish-fast
 
     // #publish with ordering key
+    // to provide ordering messages must be sent to the same regional endpoint
+    Flow<PublishRequest, List<String>, NotUsed> publishToRegionalEndpointFlow =
+        GooglePubSub.publish(topic, config, "europe-west1-pubsub.googleapis.com", 1);
+
     PublishMessage publishMessageWithOrderingKey =
         PublishMessage.create(
             new String(Base64.getEncoder().encode("Hello Google!".getBytes())),
@@ -85,7 +89,7 @@ public class ExampleUsageJava {
         PublishRequest.create(Lists.newArrayList(publishMessage));
 
     CompletionStage<List<List<String>>> publishedMessageWithOrderingKeyIds =
-        source.via(publishFlow).runWith(Sink.seq(), system);
+        source.via(publishToRegionalEndpointFlow).runWith(Sink.seq(), system);
     // #publish with ordering key
 
     // #subscribe
