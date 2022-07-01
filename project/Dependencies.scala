@@ -513,4 +513,13 @@ object Dependencies {
       )
   )
 
+  val Typesense = Seq(
+    libraryDependencies ++= Seq(
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
+        "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
+        "org.scalatest" %% "scalatest" % ScalaTestVersion % Test,
+        "com.dimafeng" %% "testcontainers-scala-scalatest" % TestContainersScalaTestVersion % Test
+      )
+  )
+
 }

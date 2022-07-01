@@ -331,6 +331,8 @@ lazy val unixdomainsocket =
 
 lazy val xml = alpakkaProject("xml", "xml", Dependencies.Xml)
 
+lazy val typesense = alpakkaProject("typesense", "typesense", Dependencies.Typesense)
+
 lazy val docs = project
   .enablePlugins(AkkaParadoxPlugin, ParadoxSitePlugin, PreprocessPlugin, PublishRsyncPlugin)
   .disablePlugins(MimaPlugin)
