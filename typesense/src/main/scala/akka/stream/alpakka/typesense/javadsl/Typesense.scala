@@ -5,7 +5,7 @@
 package akka.stream.alpakka.typesense.javadsl
 
 import akka.actor.ActorSystem
-import akka.stream.alpakka.typesense.{CollectionResponse, CollectionSchema, TypesenseSettings}
+import akka.stream.alpakka.typesense.{CollectionResponse, CollectionSchema, RetrieveCollection, TypesenseSettings}
 import akka.stream.javadsl.{Flow, Sink}
 import akka.{Done, NotUsed}
 
@@ -47,6 +47,29 @@ object Typesense {
   def createCollectionSink(settings: TypesenseSettings): Sink[CollectionSchema, CompletionStage[Done]] =
     ScalaTypesense
       .createCollectionSink(settings)
+      .mapMaterializedValue(_.toJava)
+      .asJava
+
+  /**
+   * Retrieve a collection.
+   */
+  def retrieveCollectionRequest(
+      settings: TypesenseSettings,
+      retrieve: RetrieveCollection,
+      system: ActorSystem
+  ): CompletionStage[CollectionResponse] =
+    ScalaTypesense
+      .retrieveCollectionRequest(settings, retrieve)(system)
+      .toJava
+
+  /**
+   * Creates a flow for retrieving collections.
+   */
+  def retrieveCollectionFlow(
+      settings: TypesenseSettings
+  ): Flow[RetrieveCollection, CollectionResponse, CompletionStage[NotUsed]] =
+    ScalaTypesense
+      .retrieveCollectionFlow(settings)
       .mapMaterializedValue(_.toJava)
       .asJava
 }

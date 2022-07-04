@@ -386,3 +386,24 @@ object FieldType {
    */
   def auto: Auto = Auto
 }
+
+final class RetrieveCollection @InternalApi private[typesense] (val collectionName: String) {
+
+  override def equals(other: Any): Boolean = other match {
+    case that: RetrieveCollection =>
+      collectionName == that.collectionName
+    case _ => false
+  }
+
+  override def hashCode(): Int = java.util.Objects.hash(collectionName)
+
+  override def toString = s"RetrieveCollection(collectionName=$collectionName)"
+}
+
+object RetrieveCollection {
+  def apply(collectionName: String): RetrieveCollection =
+    new RetrieveCollection(collectionName)
+
+  def create(collectionName: String): RetrieveCollection =
+    new RetrieveCollection(collectionName)
+}

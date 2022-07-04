@@ -5,6 +5,7 @@
 package akka.stream.alpakka.typesense.impl
 
 import akka.actor.ActorSystem
+import akka.annotation.InternalApi
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
@@ -15,20 +16,29 @@ import spray.json.{JsonReader, JsonWriter}
 import scala.concurrent.Future
 import scala.util.Try
 
-private[typesense] object TypesenseHttp {
+@InternalApi private[typesense] object TypesenseHttp {
   class TypesenseException(val statusCode: StatusCode, val reason: String)
       extends Exception(s"[Status code $statusCode]: $reason")
 
+  def executeGetRequestWithoutBody[Response: JsonReader](endpoint: String, settings: TypesenseSettings)(
+      implicit system: ActorSystem
+  ): Future[Response] =
+    executeHttpRequest(
+      HttpRequest(
+        method = HttpMethods.GET,
+        uri = settings.host + "/" + endpoint,
+        headers = List(RawHeader("X-TYPESENSE-API-KEY", settings.apiKey))
+      )
+    )
+
   //TODO: error handling tests - ex. authentication
-  //TODO: add retries
-  def executeRequest[Request: JsonWriter, Response: JsonReader](
+  def executeRequestWithBody[Request: JsonWriter, Response: JsonReader](
       endpoint: String,
       method: HttpMethod,
       requestData: Request,
       settings: TypesenseSettings
   )(implicit system: ActorSystem): Future[Response] = {
     import spray.json._
-    import system.dispatcher
 
     val requestJson = requestData.toJson.prettyPrint
 
@@ -38,6 +48,15 @@ private[typesense] object TypesenseHttp {
       headers = List(RawHeader("X-TYPESENSE-API-KEY", settings.apiKey)),
       entity = HttpEntity(ContentTypes.`application/json`, requestJson)
     )
+
+    executeHttpRequest(request)
+  }
+
+  private def executeHttpRequest[Response: JsonReader](
+      request: HttpRequest
+  )(implicit system: ActorSystem): Future[Response] = {
+    import spray.json._
+    import system.dispatcher
 
     Http()
       .singleRequest(request)
@@ -50,4 +69,5 @@ private[typesense] object TypesenseHttp {
         }
       }
   }
+
 }

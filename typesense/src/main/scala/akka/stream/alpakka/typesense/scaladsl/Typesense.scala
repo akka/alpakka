@@ -7,7 +7,7 @@ package akka.stream.alpakka.typesense.scaladsl
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpMethods
 import akka.stream.alpakka.typesense.impl.TypesenseHttp
-import akka.stream.alpakka.typesense.{CollectionResponse, CollectionSchema, TypesenseSettings}
+import akka.stream.alpakka.typesense.{CollectionResponse, CollectionSchema, RetrieveCollection, TypesenseSettings}
 import akka.stream.scaladsl.{Flow, Keep, Sink}
 import akka.{Done, NotUsed}
 
@@ -25,7 +25,7 @@ object Typesense {
   def createCollectionRequest(settings: TypesenseSettings,
                               schema: CollectionSchema)(implicit system: ActorSystem): Future[CollectionResponse] = {
     TypesenseHttp
-      .executeRequest[CollectionSchema, CollectionResponse]("collections", HttpMethods.POST, schema, settings)
+      .executeRequestWithBody[CollectionSchema, CollectionResponse]("collections", HttpMethods.POST, schema, settings)
   }
 
   /**
@@ -45,4 +45,27 @@ object Typesense {
    */
   def createCollectionSink(settings: TypesenseSettings): Sink[CollectionSchema, Future[Done]] =
     createCollectionFlow(settings).toMat(Sink.ignore)(Keep.right)
+
+  /**
+   * Retrieve a collection.
+   */
+  def retrieveCollectionRequest(settings: TypesenseSettings, retrieve: RetrieveCollection)(
+      implicit system: ActorSystem
+  ): Future[CollectionResponse] =
+    TypesenseHttp
+      .executeGetRequestWithoutBody[CollectionResponse](s"collections/${retrieve.collectionName}", settings)
+
+  /**
+   * Creates a flow for retrieving collections.
+   */
+  def retrieveCollectionFlow(
+      settings: TypesenseSettings
+  ): Flow[RetrieveCollection, CollectionResponse, Future[NotUsed]] =
+    Flow.fromMaterializer { (materializer, _) =>
+      implicit val system: ActorSystem = materializer.system
+      Flow[RetrieveCollection]
+        .mapAsync(parallelism = 1) { retrieve =>
+          retrieveCollectionRequest(settings, retrieve)
+        }
+    }
 }

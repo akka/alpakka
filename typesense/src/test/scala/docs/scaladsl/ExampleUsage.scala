@@ -3,7 +3,14 @@ package docs.scaladsl
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.alpakka.typesense.scaladsl.Typesense
-import akka.stream.alpakka.typesense.{CollectionResponse, CollectionSchema, Field, FieldType, TypesenseSettings}
+import akka.stream.alpakka.typesense.{
+  CollectionResponse,
+  CollectionSchema,
+  Field,
+  FieldType,
+  RetrieveCollection,
+  TypesenseSettings
+}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 
 import java.util.UUID
@@ -28,6 +35,15 @@ class ExampleUsage {
     Typesense.createCollectionFlow(settings)
 
   val createdCollectionResponse: Future[CollectionResponse] =
-    createCollectionSource.via(createCollectionFlow).toMat(Sink.head)(Keep.right).run()
+    createCollectionSource.via(createCollectionFlow).runWith(Sink.head)
   //#create collection
+
+  //#retrieve collection
+  val retrieveCollectionSource: Source[RetrieveCollection, NotUsed] = Source.single(RetrieveCollection("my-collection"))
+  val retrieveCollectionFlow: Flow[RetrieveCollection, CollectionResponse, Future[NotUsed]] =
+    Typesense.retrieveCollectionFlow(settings)
+
+  val retrievedCollectionResponse: Future[CollectionResponse] =
+    retrieveCollectionSource.via(retrieveCollectionFlow).runWith(Sink.head)
+  //#retrieve collection
 }

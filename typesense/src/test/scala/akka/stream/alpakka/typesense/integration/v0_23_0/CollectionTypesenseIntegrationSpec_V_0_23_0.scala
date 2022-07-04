@@ -1,9 +1,9 @@
 package akka.stream.alpakka.typesense.integration.v0_23_0
 
 import akka.stream.alpakka.typesense.{Field, FieldResponse, FieldType}
-import akka.stream.alpakka.typesense.integration.CreateCollectionTypesenseIntegrationSpec
+import akka.stream.alpakka.typesense.integration.CollectionTypesenseIntegrationSpec
 
-class CreateCollectionTypesenseIntegrationSpec_V_0_23_0 extends CreateCollectionTypesenseIntegrationSpec("0.23.0") {
+class CollectionTypesenseIntegrationSpec_V_0_23_0 extends CollectionTypesenseIntegrationSpec("0.23.0") {
   override protected def fieldResponseFromField(field: Field): FieldResponse = {
     val autoOptionalTypes: Set[FieldType] = Set(FieldType.StringAutoArray, FieldType.Auto)
     val optional = if (autoOptionalTypes.contains(field.`type`)) true else field.optional.getOrElse(false)

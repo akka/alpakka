@@ -34,5 +34,15 @@ public class ExampleUsage {
     CompletionStage<CollectionResponse> createCollectionResponse =
         createCollectionSource.via(createCollectionFlow).runWith(Sink.head(), system);
     // #create collection
+
+    // #retrieve collection
+    Source<RetrieveCollection, NotUsed> retrieveCollectionSource =
+        Source.single(RetrieveCollection.create("my-collection"));
+    Flow<RetrieveCollection, CollectionResponse, CompletionStage<NotUsed>> retrieveCollectionFlow =
+        Typesense.retrieveCollectionFlow(settings);
+
+    CompletionStage<CollectionResponse> retrievedCollectionResponse =
+        retrieveCollectionSource.via(retrieveCollectionFlow).runWith(Sink.head(), system);
+    // #retrieve collection
   }
 }
