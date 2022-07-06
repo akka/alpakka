@@ -4,12 +4,13 @@
 
 package akka.stream.alpakka.typesense.impl
 
+import akka.annotation.InternalApi
 import akka.stream.alpakka.typesense._
 import spray.json.DefaultJsonProtocol
 
 import java.time.Instant
 
-private[typesense] object TypesenseJsonProtocol extends DefaultJsonProtocol {
+@InternalApi private[typesense] object TypesenseJsonProtocol extends DefaultJsonProtocol {
   import spray.json._
 
   implicit val fieldTypeFormat: RootJsonFormat[FieldType] = new RootJsonFormat[FieldType] {

@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.typesense
 
-import akka.annotation.InternalApi
+import akka.annotation.{ApiMayChange, InternalApi}
 
 import java.time.Instant
 import scala.compat.java8.OptionConverters.RichOptionForJava8
@@ -214,6 +214,7 @@ object CollectionResponse {
 }
 
 //TODO: add infix, sort, locale
+@ApiMayChange //remove optional if decide to not support old versions of Typesense
 final class FieldResponse @InternalApi private[typesense] (val name: String,
                                                            val `type`: FieldType,
                                                            val facet: Boolean,

@@ -7,7 +7,7 @@ package akka.stream.alpakka.typesense.scaladsl
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpMethods
 import akka.stream.alpakka.typesense.impl.TypesenseHttp
-import akka.stream.alpakka.typesense.{CollectionResponse, CollectionSchema, RetrieveCollection, TypesenseSettings}
+import akka.stream.alpakka.typesense._
 import akka.stream.scaladsl.{Flow, Keep, Sink}
 import akka.{Done, NotUsed}
 
@@ -18,6 +18,7 @@ import scala.concurrent.Future
  */
 object Typesense {
   import akka.stream.alpakka.typesense.impl.TypesenseJsonProtocol._
+  import spray.json._
 
   /**
    * Creates a collection.
@@ -25,7 +26,11 @@ object Typesense {
   def createCollectionRequest(settings: TypesenseSettings,
                               schema: CollectionSchema)(implicit system: ActorSystem): Future[CollectionResponse] = {
     TypesenseHttp
-      .executeRequestWithBody[CollectionSchema, CollectionResponse]("collections", HttpMethods.POST, schema, settings)
+      .executeRequest[CollectionResponse]("collections",
+                                          HttpMethods.POST,
+                                          Some(schema.toJson),
+                                          settings,
+                                          _.parseJson.convertTo[CollectionResponse])
   }
 
   /**
@@ -53,7 +58,11 @@ object Typesense {
       implicit system: ActorSystem
   ): Future[CollectionResponse] =
     TypesenseHttp
-      .executeGetRequestWithoutBody[CollectionResponse](s"collections/${retrieve.collectionName}", settings)
+      .executeRequest[CollectionResponse](s"collections/${retrieve.collectionName}",
+                                          HttpMethods.GET,
+                                          None,
+                                          settings,
+                                          _.parseJson.convertTo[CollectionResponse])
 
   /**
    * Creates a flow for retrieving collections.
@@ -68,4 +77,50 @@ object Typesense {
           retrieveCollectionRequest(settings, retrieve)
         }
     }
+
+  /**
+   * Index a single document.
+   */
+  def indexDocumentRequest[T: JsonWriter](settings: TypesenseSettings, document: IndexDocument[T])(
+      implicit system: ActorSystem
+  ): Future[Done] =
+    TypesenseHttp
+      .executeRequest(
+        s"collections/${document.collectionName}/documents",
+        HttpMethods.POST,
+        Some(document.content.toJson),
+        settings,
+        _ => Done,
+        Map("action" -> indexActionValue(document.action))
+      )(system)
+
+  /**
+   * Creates a flow for indexing a single document.
+   */
+  def indexDocumentFlow[T: JsonWriter](
+      settings: TypesenseSettings
+  ): Flow[IndexDocument[T], Done, Future[NotUsed]] =
+    Flow.fromMaterializer { (materializer, _) =>
+      implicit val system: ActorSystem = materializer.system
+      Flow[IndexDocument[T]]
+        .mapAsync(parallelism = 1) { document =>
+          indexDocumentRequest(settings, document)
+        }
+    }
+
+  /**
+   * Creates a sink for indexing a single document.
+   */
+  def indexDocumentSink[T: JsonWriter](
+      settings: TypesenseSettings
+  ): Sink[IndexDocument[T], Future[Done]] =
+    indexDocumentFlow[T](settings).toMat(Sink.ignore)(Keep.right)
+
+  private def indexActionValue(action: IndexDocumentAction): String = action match {
+    case IndexDocumentAction.Create => "create"
+    case IndexDocumentAction.Upsert => "upsert"
+    case _ => throw new IllegalArgumentException()
+//    case emplace: IndexDocumentAction.Update => "update"
+//    case emplace: IndexDocumentAction.Emplace => "emplace"
+  }
 }

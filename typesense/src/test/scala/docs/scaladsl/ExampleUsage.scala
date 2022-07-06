@@ -1,17 +1,15 @@
+/*
+ * Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package docs.scaladsl
 
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.stream.alpakka.typesense.scaladsl.Typesense
-import akka.stream.alpakka.typesense.{
-  CollectionResponse,
-  CollectionSchema,
-  Field,
-  FieldType,
-  RetrieveCollection,
-  TypesenseSettings
-}
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import akka.stream.alpakka.typesense._
+import akka.stream.scaladsl.{Flow, Sink, Source}
+import spray.json.RootJsonFormat
 
 import java.util.UUID
 import scala.concurrent.Future
@@ -46,4 +44,22 @@ class ExampleUsage {
   val retrievedCollectionResponse: Future[CollectionResponse] =
     retrieveCollectionSource.via(retrieveCollectionFlow).runWith(Sink.head)
   //#retrieve collection
+
+  final case class MyDocument(id: String, name: String)
+  implicit val companyFormat: RootJsonFormat[MyDocument] = {
+    import spray.json._
+    import DefaultJsonProtocol._
+    jsonFormat2(MyDocument)
+  }
+
+  //#index single document
+  val indexSingleDocumentSource: Source[IndexDocument[MyDocument], NotUsed] =
+    Source.single(IndexDocument("my-collection", MyDocument(UUID.randomUUID().toString, "Hello")))
+
+  val indexSingleDocumentFlow: Flow[IndexDocument[MyDocument], Done, Future[NotUsed]] =
+    Typesense.indexDocumentFlow(settings)
+
+  val indexSingleDocumentResult: Future[Done] =
+    indexSingleDocumentSource.via(indexSingleDocumentFlow).runWith(Sink.head)
+  //#index single document
 }

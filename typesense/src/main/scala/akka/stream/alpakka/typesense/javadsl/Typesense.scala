@@ -5,9 +5,16 @@
 package akka.stream.alpakka.typesense.javadsl
 
 import akka.actor.ActorSystem
-import akka.stream.alpakka.typesense.{CollectionResponse, CollectionSchema, RetrieveCollection, TypesenseSettings}
+import akka.stream.alpakka.typesense.{
+  CollectionResponse,
+  CollectionSchema,
+  IndexDocument,
+  RetrieveCollection,
+  TypesenseSettings
+}
 import akka.stream.javadsl.{Flow, Sink}
 import akka.{Done, NotUsed}
+import spray.json.{JsonReader, JsonWriter}
 
 import java.util.concurrent.CompletionStage
 import scala.compat.java8.FutureConverters.FutureOps
@@ -70,6 +77,43 @@ object Typesense {
   ): Flow[RetrieveCollection, CollectionResponse, CompletionStage[NotUsed]] =
     ScalaTypesense
       .retrieveCollectionFlow(settings)
+      .mapMaterializedValue(_.toJava)
+      .asJava
+
+  /**
+   * Index a single document.
+   */
+  def indexDocumentRequest[T](
+      settings: TypesenseSettings,
+      document: IndexDocument[T],
+      system: ActorSystem,
+      jsonWriter: JsonWriter[T]
+  ): CompletionStage[Done] =
+    ScalaTypesense
+      .indexDocumentRequest(settings, document)(jsonWriter, system)
+      .toJava
+
+  /**
+   * Creates a flow for indexing a single document.
+   */
+  def indexDocumentFlow[T](
+      settings: TypesenseSettings,
+      jsonWriter: JsonWriter[T]
+  ): Flow[IndexDocument[T], Done, CompletionStage[NotUsed]] =
+    ScalaTypesense
+      .indexDocumentFlow(settings)(jsonWriter)
+      .mapMaterializedValue(_.toJava)
+      .asJava
+
+  /**
+   * Creates a sink for indexing a single document.
+   */
+  def indexDocumentSink[T](
+      settings: TypesenseSettings,
+      jsonWriter: JsonWriter[T]
+  ): Sink[IndexDocument[T], CompletionStage[Done]] =
+    ScalaTypesense
+      .indexDocumentSink[T](settings)(jsonWriter)
       .mapMaterializedValue(_.toJava)
       .asJava
 }

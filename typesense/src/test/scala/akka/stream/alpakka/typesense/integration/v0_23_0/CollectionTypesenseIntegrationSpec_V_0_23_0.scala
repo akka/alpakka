@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.stream.alpakka.typesense.integration.v0_23_0
 
 import akka.stream.alpakka.typesense.{Field, FieldResponse, FieldType}

@@ -11,7 +11,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.alpakka.typesense.TypesenseSettings
-import spray.json.{JsonReader, JsonWriter}
+import spray.json.JsValue
 
 import scala.concurrent.Future
 import scala.util.Try
@@ -20,43 +20,31 @@ import scala.util.Try
   class TypesenseException(val statusCode: StatusCode, val reason: String)
       extends Exception(s"[Status code $statusCode]: $reason")
 
-  def executeGetRequestWithoutBody[Response: JsonReader](endpoint: String, settings: TypesenseSettings)(
-      implicit system: ActorSystem
-  ): Future[Response] =
-    executeHttpRequest(
-      HttpRequest(
-        method = HttpMethods.GET,
-        uri = settings.host + "/" + endpoint,
-        headers = List(RawHeader("X-TYPESENSE-API-KEY", settings.apiKey))
-      )
-    )
-
   //TODO: error handling tests - ex. authentication
-  def executeRequestWithBody[Request: JsonWriter, Response: JsonReader](
+  def executeRequest[Response](
       endpoint: String,
       method: HttpMethod,
-      requestData: Request,
-      settings: TypesenseSettings
+      requestBody: Option[JsValue],
+      settings: TypesenseSettings,
+      parseResponseBody: String => Response,
+      requestParameters: Map[String, String] = Map.empty
   )(implicit system: ActorSystem): Future[Response] = {
-    import spray.json._
+    import system.dispatcher
 
-    val requestJson = requestData.toJson.prettyPrint
+    val uri = {
+      val baseUri = Uri(settings.host + "/" + endpoint)
+      if (requestParameters.isEmpty) baseUri
+      else baseUri.withQuery(Uri.Query(requestParameters))
+    }
 
     val request = HttpRequest(
       method = method,
-      uri = settings.host + "/" + endpoint,
+      uri = uri,
       headers = List(RawHeader("X-TYPESENSE-API-KEY", settings.apiKey)),
-      entity = HttpEntity(ContentTypes.`application/json`, requestJson)
+      entity = requestBody
+        .map(body => HttpEntity(ContentTypes.`application/json`, body.prettyPrint))
+        .getOrElse(HttpEntity.Empty)
     )
-
-    executeHttpRequest(request)
-  }
-
-  private def executeHttpRequest[Response: JsonReader](
-      request: HttpRequest
-  )(implicit system: ActorSystem): Future[Response] = {
-    import spray.json._
-    import system.dispatcher
 
     Http()
       .singleRequest(request)
@@ -65,9 +53,8 @@ import scala.util.Try
           if (res.status.isFailure())
             Future.failed(new TypesenseException(res.status, body))
           else
-            Future.fromTry(Try(body.parseJson.convertTo[Response]))
+            Future.fromTry(Try(parseResponseBody(body)))
         }
       }
   }
-
 }

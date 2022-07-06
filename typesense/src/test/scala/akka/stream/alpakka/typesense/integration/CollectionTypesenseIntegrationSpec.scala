@@ -1,11 +1,14 @@
+/*
+ * Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.stream.alpakka.typesense.integration
 
-import akka.{Done, NotUsed}
+import akka.Done
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
-import akka.stream.alpakka.typesense.impl.TypesenseHttp.TypesenseException
-import akka.stream.alpakka.typesense.scaladsl.Typesense
 import akka.stream.alpakka.typesense._
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import akka.stream.alpakka.typesense.scaladsl.Typesense
+import akka.stream.scaladsl.{Keep, Sink, Source}
 import org.scalatest.Assertion
 
 import java.time.Instant
@@ -13,18 +16,14 @@ import java.util.UUID
 import java.util.concurrent.CompletionStage
 import scala.concurrent.Future
 import scala.jdk.FutureConverters.CompletionStageOps
-import scala.util.{Failure, Success}
 
 //all tests run in the same container without cleaning data
 abstract class CollectionTypesenseIntegrationSpec(version: String) extends TypesenseIntegrationSpec(version) {
-  import system.dispatcher
   protected val mockedTime: Instant = Instant.now()
 
-  protected val defaultSortingFieldName = "item-nr"
-  protected val defaultSortingField = Field(defaultSortingFieldName, FieldType.Int32)
-  protected val defaultFields = Seq(defaultSortingField, Field("name", FieldType.String))
-
-  protected val JavaTypesense = akka.stream.alpakka.typesense.javadsl.Typesense
+  protected val defaultSortingFieldName: String = "item-nr"
+  protected val defaultSortingField: Field = Field(defaultSortingFieldName, FieldType.Int32)
+  protected val defaultFields: Seq[Field] = Seq(defaultSortingField, Field("name", FieldType.String))
 
   describe(s"For Typesense $version") {
     describe("should create collection") {
@@ -34,11 +33,7 @@ abstract class CollectionTypesenseIntegrationSpec(version: String) extends Types
 
       it("using sink") {
         val schema = randomSchema()
-        val result = Source
-          .single(schema)
-          .toMat(Typesense.createCollectionSink(settings))(Keep.right)
-          .run()
-          .futureValue
+        val result = runWithSink(schema, Typesense.createCollectionSink(settings))
 
         result shouldBe Done
       }
@@ -51,22 +46,16 @@ abstract class CollectionTypesenseIntegrationSpec(version: String) extends Types
 
       it("using flow with Java API") {
         val schema = randomSchema()
-        val result: Future[CollectionResponse] = Source
-          .single(schema)
-          .via(JavaTypesense.createCollectionFlow(settings))
-          .runWith(Sink.head)
+        val result = runWithJavaFlow(schema, JavaTypesense.createCollectionFlow(settings))
 
-        compareResponseAndSchema(result.futureValue, schema)
+        compareResponseAndSchema(result, schema)
       }
 
       it("using sink with Java API") {
         val schema = randomSchema()
-        val result: CompletionStage[Done] = Source
-          .single(schema)
-          .toMat(JavaTypesense.createCollectionSink(settings))(Keep.right)
-          .run()
+        val result = runWithJavaSink(schema, JavaTypesense.createCollectionSink(settings))
 
-        result.asScala.futureValue shouldBe Done
+        result shouldBe Done
       }
 
       it("using direct request with Java API") {
@@ -312,104 +301,12 @@ abstract class CollectionTypesenseIntegrationSpec(version: String) extends Types
     CollectionSchema("my-collection-" + UUID.randomUUID(), fields)
 
   protected def createAndCheck(schema: CollectionSchema): Assertion = {
-    val response = Source
-      .single(schema)
-      .via(Typesense.createCollectionFlow(settings))
-      .runWith(Sink.head)
-      .futureValue
+    val response = runWithFlow(schema, Typesense.createCollectionFlow(settings))
     compareResponseAndSchema(response, schema)
   }
 
   protected def tryCreateAndExpectError(schema: CollectionSchema, expectedStatusCode: StatusCode): Assertion =
     tryUsingFlowAndExpectError(schema, Typesense.createCollectionFlow(settings), expectedStatusCode)
-
-  protected def tryUsingFlowAndExpectError[Request](request: Request,
-                                                    flow: Flow[Request, _, Future[NotUsed]],
-                                                    expectedStatusCode: StatusCode): Assertion = {
-    val response = Source
-      .single(request)
-      .via(flow)
-      .map(Success.apply)
-      .recover(e => Failure(e))
-      .runWith(Sink.head)
-      .futureValue
-
-    val gotStatusCode = response.toEither.swap.toOption.get.asInstanceOf[TypesenseException].statusCode
-
-    gotStatusCode shouldBe expectedStatusCode
-  }
-
-  protected def tryUsingSinkAndExpectError[Request](request: Request,
-                                                    sink: Sink[Request, Future[Done]],
-                                                    expectedStatusCode: StatusCode): Assertion = {
-
-    val result = Source
-      .single(request)
-      .toMat(sink)(Keep.right)
-      .run()
-      .map(Success.apply)
-      .recover(e => Failure(e))
-      .futureValue
-
-    val gotStatusCode = result.toEither.swap.toOption.get.asInstanceOf[TypesenseException].statusCode
-    gotStatusCode shouldBe expectedStatusCode
-  }
-
-  protected def tryUsingDirectRequestAndExpectError(future: Future[_], expectedStatusCode: StatusCode): Assertion = {
-    val result = future
-      .map(Success.apply)
-      .recover(e => Failure(e))
-      .futureValue
-
-    val gotStatusCode = result.toEither.swap.toOption.get.asInstanceOf[TypesenseException].statusCode
-    gotStatusCode shouldBe expectedStatusCode
-  }
-
-  protected def tryUsingJavaFlowAndExpectError[Request](
-      request: Request,
-      flow: akka.stream.javadsl.Flow[Request, _, CompletionStage[NotUsed]],
-      expectedStatusCode: StatusCode
-  ): Assertion = {
-    val response = Source
-      .single(request)
-      .via(flow)
-      .map(Success.apply)
-      .recover(e => Failure(e))
-      .runWith(Sink.head)
-      .futureValue
-
-    val gotStatusCode = response.toEither.swap.toOption.get.asInstanceOf[TypesenseException].statusCode
-
-    gotStatusCode shouldBe expectedStatusCode
-  }
-
-  protected def tryUsingJavaSinkAndExpectError[Request](request: Request,
-                                                        sink: akka.stream.javadsl.Sink[Request, CompletionStage[Done]],
-                                                        expectedStatusCode: StatusCode): Assertion = {
-
-    val result = Source
-      .single(request)
-      .toMat(sink)(Keep.right)
-      .run()
-      .asScala
-      .map(Success.apply)
-      .recover(e => Failure(e))
-      .futureValue
-
-    val gotStatusCode = result.toEither.swap.toOption.get.asInstanceOf[TypesenseException].statusCode
-    gotStatusCode shouldBe expectedStatusCode
-  }
-
-  protected def tryUsingJavaDirectRequestAndExpectError(completionStage: CompletionStage[_],
-                                                        expectedStatusCode: StatusCode): Assertion = {
-    val result = completionStage.asScala
-      .map(Success.apply)
-      .recover(e => Failure(e))
-      .futureValue
-
-    val gotStatusCode = result.toEither.swap.toOption.get.asInstanceOf[TypesenseException].statusCode
-    gotStatusCode shouldBe expectedStatusCode
-  }
 
   protected def compareResponseAndSchema(response: CollectionResponse, schema: CollectionSchema): Assertion = {
     val expectedResponse = CollectionResponse(
