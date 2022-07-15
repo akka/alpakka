@@ -62,4 +62,15 @@ class ExampleUsage {
   val indexSingleDocumentResult: Future[Done] =
     indexSingleDocumentSource.via(indexSingleDocumentFlow).runWith(Sink.head)
   //#index single document
+
+  //# retrieve document
+  val retrieveDocumentSource: Source[RetrieveDocument, NotUsed] =
+    Source.single(RetrieveDocument("my-collection", UUID.randomUUID().toString))
+
+  val retrieveDocumentFlow: Flow[RetrieveDocument, MyDocument, Future[NotUsed]] =
+    Typesense.retrieveDocumentFlow(settings)
+
+  val retrieveDocumentResult: Future[MyDocument] =
+    retrieveDocumentSource.via(retrieveDocumentFlow).runWith(Sink.head)
+  //# retrieve document
 }

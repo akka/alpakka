@@ -8,6 +8,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpMethods
 import akka.stream.alpakka.typesense.impl.TypesenseHttp
 import akka.stream.alpakka.typesense._
+import akka.stream.alpakka.typesense.impl.TypesenseHttp.ParseResponse
 import akka.stream.scaladsl.{Flow, Keep, Sink}
 import akka.{Done, NotUsed}
 
@@ -26,11 +27,11 @@ object Typesense {
   def createCollectionRequest(settings: TypesenseSettings,
                               schema: CollectionSchema)(implicit system: ActorSystem): Future[CollectionResponse] = {
     TypesenseHttp
-      .executeRequest[CollectionResponse]("collections",
-                                          HttpMethods.POST,
-                                          Some(schema.toJson),
-                                          settings,
-                                          _.parseJson.convertTo[CollectionResponse])
+      .executeRequest("collections",
+                      HttpMethods.POST,
+                      Some(schema.toJson),
+                      settings,
+                      ParseResponse.default[CollectionResponse])
   }
 
   /**
@@ -58,11 +59,11 @@ object Typesense {
       implicit system: ActorSystem
   ): Future[CollectionResponse] =
     TypesenseHttp
-      .executeRequest[CollectionResponse](s"collections/${retrieve.collectionName}",
-                                          HttpMethods.GET,
-                                          None,
-                                          settings,
-                                          _.parseJson.convertTo[CollectionResponse])
+      .executeRequest(s"collections/${retrieve.collectionName}",
+                      HttpMethods.GET,
+                      None,
+                      settings,
+                      ParseResponse.default[CollectionResponse])
 
   /**
    * Creates a flow for retrieving collections.
@@ -90,7 +91,7 @@ object Typesense {
         HttpMethods.POST,
         Some(document.content.toJson),
         settings,
-        _ => Done,
+        ParseResponse.withoutBody,
         Map("action" -> indexActionValue(document.action))
       )(system)
 
@@ -115,6 +116,35 @@ object Typesense {
       settings: TypesenseSettings
   ): Sink[IndexDocument[T], Future[Done]] =
     indexDocumentFlow[T](settings).toMat(Sink.ignore)(Keep.right)
+
+  /**
+   * Retrieve a document.
+   */
+  def retrieveDocumentRequest[T: JsonReader](settings: TypesenseSettings, retrieve: RetrieveDocument)(
+      implicit system: ActorSystem
+  ): Future[T] =
+    TypesenseHttp
+      .executeRequest(
+        s"collections/${retrieve.collectionName}/documents/${retrieve.documentId}",
+        HttpMethods.GET,
+        None,
+        settings,
+        ParseResponse.default[T]
+      )(system)
+
+  /**
+   * Creates a flow for retrieving a document.
+   */
+  def retrieveDocumentFlow[T: JsonReader](
+      settings: TypesenseSettings
+  ): Flow[RetrieveDocument, T, Future[NotUsed]] =
+    Flow.fromMaterializer { (materializer, _) =>
+      implicit val system: ActorSystem = materializer.system
+      Flow[RetrieveDocument]
+        .mapAsync(parallelism = 1) { document =>
+          retrieveDocumentRequest[T](settings, document)
+        }
+    }
 
   private def indexActionValue(action: IndexDocumentAction): String = action match {
     case IndexDocumentAction.Create => "create"

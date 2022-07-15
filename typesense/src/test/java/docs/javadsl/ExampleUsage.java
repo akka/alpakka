@@ -23,60 +23,71 @@ import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 
 public class ExampleUsage {
-    private static void example() {
-        ActorSystem system = ActorSystem.create();
+  private static class MyDocument {
+    final String id;
+    final String name;
 
-        // #settings
-        String host = "http://localhost:8108";
-        String apiKey = "Hu52dwsas2AdxdE";
-        TypesenseSettings settings = TypesenseSettings.create(host, apiKey);
-        // #setings
-
-        // #create collection
-        Field field = Field.create("name", FieldType.string());
-        List<Field> fields = Collections.singletonList(field);
-        CollectionSchema collectionSchema = CollectionSchema.create("my_collection", fields);
-
-        Source<CollectionSchema, NotUsed> createCollectionSource = Source.single(collectionSchema);
-        Flow<CollectionSchema, CollectionResponse, CompletionStage<NotUsed>> createCollectionFlow =
-                Typesense.createCollectionFlow(settings);
-
-        CompletionStage<CollectionResponse> createCollectionResponse =
-                createCollectionSource.via(createCollectionFlow).runWith(Sink.head(), system);
-        // #create collection
-
-        // #retrieve collection
-        Source<RetrieveCollection, NotUsed> retrieveCollectionSource =
-                Source.single(RetrieveCollection.create("my-collection"));
-        Flow<RetrieveCollection, CollectionResponse, CompletionStage<NotUsed>> retrieveCollectionFlow =
-                Typesense.retrieveCollectionFlow(settings);
-
-        CompletionStage<CollectionResponse> retrievedCollectionResponse =
-                retrieveCollectionSource.via(retrieveCollectionFlow).runWith(Sink.head(), system);
-        // #retrieve collection
-
-        JsonWriter<MyDocument> documentJsonWriter = null;
-
-        // #index single document
-        Source<IndexDocument<MyDocument>, NotUsed> indexSingleDocumentSource =
-                Source.single(IndexDocument.create(
-                        "my-collection", new MyDocument(UUID.randomUUID().toString(), "Hello")));
-        Flow<IndexDocument<MyDocument>, Done, CompletionStage<NotUsed>>
-                indexSingleDocumentFlow =
-                Typesense.indexDocumentFlow(settings, documentJsonWriter);
-
-        CompletionStage<Done> indexSingleDocumentResponse =
-                indexSingleDocumentSource.via(indexSingleDocumentFlow).runWith(Sink.head(), system);
-        // #index single document
+    MyDocument(String id, String name) {
+      this.id = id;
+      this.name = name;
     }
+  }
 
-    private static class MyDocument {
-        final String id;
-        final String name;
+  private static void example() {
+    ActorSystem system = ActorSystem.create();
 
-        MyDocument(String id, String name) {
-            this.id = id;
-            this.name = name;
-        }
-    }
+    // #settings
+    String host = "http://localhost:8108";
+    String apiKey = "Hu52dwsas2AdxdE";
+    TypesenseSettings settings = TypesenseSettings.create(host, apiKey);
+    // #setings
+
+    // #create collection
+    Field field = Field.create("name", FieldType.string());
+    List<Field> fields = Collections.singletonList(field);
+    CollectionSchema collectionSchema = CollectionSchema.create("my_collection", fields);
+
+    Source<CollectionSchema, NotUsed> createCollectionSource = Source.single(collectionSchema);
+    Flow<CollectionSchema, CollectionResponse, CompletionStage<NotUsed>> createCollectionFlow =
+        Typesense.createCollectionFlow(settings);
+
+    CompletionStage<CollectionResponse> createCollectionResponse =
+        createCollectionSource.via(createCollectionFlow).runWith(Sink.head(), system);
+    // #create collection
+
+    // #retrieve collection
+    Source<RetrieveCollection, NotUsed> retrieveCollectionSource =
+        Source.single(RetrieveCollection.create("my-collection"));
+    Flow<RetrieveCollection, CollectionResponse, CompletionStage<NotUsed>> retrieveCollectionFlow =
+        Typesense.retrieveCollectionFlow(settings);
+
+    CompletionStage<CollectionResponse> retrievedCollectionResponse =
+        retrieveCollectionSource.via(retrieveCollectionFlow).runWith(Sink.head(), system);
+    // #retrieve collection
+
+    JsonWriter<MyDocument> documentJsonWriter = null;
+    JsonReader<MyDocument> documentJsonReader = null;
+
+    // #index single document
+    Source<IndexDocument<MyDocument>, NotUsed> indexSingleDocumentSource =
+        Source.single(
+            IndexDocument.create(
+                "my-collection", new MyDocument(UUID.randomUUID().toString(), "Hello")));
+    Flow<IndexDocument<MyDocument>, Done, CompletionStage<NotUsed>> indexSingleDocumentFlow =
+        Typesense.indexDocumentFlow(settings, documentJsonWriter);
+
+    CompletionStage<Done> indexSingleDocumentResponse =
+        indexSingleDocumentSource.via(indexSingleDocumentFlow).runWith(Sink.head(), system);
+    // #index single document
+
+    // #retrieve document
+    Source<RetrieveDocument, NotUsed> retrieveDocumentSource =
+        Source.single(RetrieveDocument.create("my-collection", UUID.randomUUID().toString()));
+    Flow<RetrieveDocument, MyDocument, CompletionStage<NotUsed>> retrieveDocumentFlow =
+        Typesense.retrieveDocumentFlow(settings, documentJsonReader);
+
+    CompletionStage<MyDocument> retrieveDocumentResponse =
+        retrieveDocumentSource.via(retrieveDocumentFlow).runWith(Sink.head(), system);
+    // #retrieve document
+  }
 }

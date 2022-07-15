@@ -5,13 +5,7 @@
 package akka.stream.alpakka.typesense.javadsl
 
 import akka.actor.ActorSystem
-import akka.stream.alpakka.typesense.{
-  CollectionResponse,
-  CollectionSchema,
-  IndexDocument,
-  RetrieveCollection,
-  TypesenseSettings
-}
+import akka.stream.alpakka.typesense._
 import akka.stream.javadsl.{Flow, Sink}
 import akka.{Done, NotUsed}
 import spray.json.{JsonReader, JsonWriter}
@@ -114,6 +108,31 @@ object Typesense {
   ): Sink[IndexDocument[T], CompletionStage[Done]] =
     ScalaTypesense
       .indexDocumentSink[T](settings)(jsonWriter)
+      .mapMaterializedValue(_.toJava)
+      .asJava
+
+  /**
+   * Retrieve a document.
+   */
+  def retrieveDocumentRequest[T](
+      settings: TypesenseSettings,
+      retrieve: RetrieveDocument,
+      system: ActorSystem,
+      jsonReader: JsonReader[T]
+  ): CompletionStage[T] =
+    ScalaTypesense
+      .retrieveDocumentRequest(settings, retrieve)(jsonReader, system)
+      .toJava
+
+  /**
+   * Creates a flow for retrieving documents.
+   */
+  def retrieveDocumentFlow[T](
+      settings: TypesenseSettings,
+      jsonReader: JsonReader[T]
+  ): Flow[RetrieveDocument, T, CompletionStage[NotUsed]] =
+    ScalaTypesense
+      .retrieveDocumentFlow(settings)(jsonReader)
       .mapMaterializedValue(_.toJava)
       .asJava
 }

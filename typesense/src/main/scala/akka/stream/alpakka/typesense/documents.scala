@@ -77,3 +77,24 @@ object IndexDocumentAction {
    */
   def emplace: Emplace = Emplace
 }
+
+final class RetrieveDocument @InternalApi private[typesense] (val collectionName: String, val documentId: String) {
+
+  override def equals(other: Any): Boolean = other match {
+    case that: RetrieveDocument =>
+      collectionName == that.collectionName &&
+      documentId == that.documentId
+    case _ => false
+  }
+
+  override def hashCode(): Int = java.util.Objects.hash(collectionName, documentId)
+
+  override def toString = s"RetrieveDocument(collectionName=$collectionName, documentId=$documentId)"
+}
+
+object RetrieveDocument {
+  def apply(collectionName: String, documentId: String): RetrieveDocument =
+    new RetrieveDocument(collectionName, documentId)
+  def create(collectionName: String, documentId: String): RetrieveDocument =
+    new RetrieveDocument(collectionName, documentId)
+}

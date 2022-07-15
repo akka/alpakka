@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.typesense.impl
 
+import akka.Done
 import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.http.scaladsl.Http
@@ -11,12 +12,45 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.alpakka.typesense.TypesenseSettings
-import spray.json.JsValue
+import spray.json.{JsValue, JsonReader}
 
 import scala.concurrent.Future
 import scala.util.Try
 
 @InternalApi private[typesense] object TypesenseHttp {
+  object ParseResponse {
+    def default[T: JsonReader](res: HttpResponse, system: ActorSystem): Future[T] = {
+      import spray.json._
+      implicit val as: ActorSystem = system
+      import system.dispatcher
+
+      Unmarshal(res).to[String].flatMap { body: String =>
+        if (res.status.isFailure())
+          Future.failed(new TypesenseException(res.status, body))
+        else
+          Future.fromTry(Try(body.parseJson.convertTo[T]))
+      }
+    }
+
+    def defaultOption[T: JsonReader](res: HttpResponse, system: ActorSystem): Future[Option[T]] = {
+      import system.dispatcher
+
+      if (res.status == StatusCodes.NotFound) Future.successful(None)
+      else default(res, system).map(Some.apply)
+    }
+
+    def withoutBody(res: HttpResponse, system: ActorSystem): Future[Done] = {
+      implicit val as: ActorSystem = system
+      import system.dispatcher
+      Unmarshal(res).to[String].flatMap { body: String =>
+        if (res.status.isFailure())
+          Future.failed(new TypesenseException(res.status, body))
+        else
+          Future.successful(Done)
+      }
+    }
+  }
+
   class TypesenseException(val statusCode: StatusCode, val reason: String)
       extends Exception(s"[Status code $statusCode]: $reason")
 
@@ -26,7 +60,7 @@ import scala.util.Try
       method: HttpMethod,
       requestBody: Option[JsValue],
       settings: TypesenseSettings,
-      parseResponseBody: String => Response,
+      parseResponseBody: (HttpResponse, ActorSystem) => Future[Response],
       requestParameters: Map[String, String] = Map.empty
   )(implicit system: ActorSystem): Future[Response] = {
     import system.dispatcher
@@ -48,13 +82,6 @@ import scala.util.Try
 
     Http()
       .singleRequest(request)
-      .flatMap { res =>
-        Unmarshal(res).to[String].flatMap { body: String =>
-          if (res.status.isFailure())
-            Future.failed(new TypesenseException(res.status, body))
-          else
-            Future.fromTry(Try(parseResponseBody(body)))
-        }
-      }
+      .flatMap(res => parseResponseBody(res, system))
   }
 }
