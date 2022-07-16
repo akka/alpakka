@@ -12,10 +12,8 @@ import akka.stream.alpakka.typesense.javadsl.Typesense;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import spray.json.JsValue;
 import spray.json.JsonReader;
 import spray.json.JsonWriter;
-import spray.json.RootJsonFormat;
 
 import java.util.Collections;
 import java.util.List;
@@ -73,12 +71,27 @@ public class ExampleUsage {
         Source.single(
             IndexDocument.create(
                 "my-collection", new MyDocument(UUID.randomUUID().toString(), "Hello")));
+
     Flow<IndexDocument<MyDocument>, Done, CompletionStage<NotUsed>> indexSingleDocumentFlow =
         Typesense.indexDocumentFlow(settings, documentJsonWriter);
 
     CompletionStage<Done> indexSingleDocumentResponse =
         indexSingleDocumentSource.via(indexSingleDocumentFlow).runWith(Sink.head(), system);
     // #index single document
+
+    // #index many documents
+    Source<IndexManyDocuments<MyDocument>, NotUsed> indexManyDocumentsSource =
+        Source.single(
+            IndexManyDocuments.create(
+                "my-collection",
+                Collections.singletonList(new MyDocument(UUID.randomUUID().toString(), "Hello"))));
+
+    Flow<IndexManyDocuments<MyDocument>, List<IndexDocumentResult>, CompletionStage<NotUsed>>
+        indexManyDocumentsFlow = Typesense.indexManyDocumentsFlow(settings, documentJsonWriter);
+
+    CompletionStage<List<IndexDocumentResult>> indexManyDocumentsResult =
+        indexManyDocumentsSource.via(indexManyDocumentsFlow).runWith(Sink.head(), system);
+    // #index many documents
 
     // #retrieve document
     Source<RetrieveDocument, NotUsed> retrieveDocumentSource =

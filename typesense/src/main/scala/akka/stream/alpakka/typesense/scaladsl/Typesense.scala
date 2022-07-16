@@ -8,7 +8,8 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpMethods
 import akka.stream.alpakka.typesense.impl.TypesenseHttp
 import akka.stream.alpakka.typesense._
-import akka.stream.alpakka.typesense.impl.TypesenseHttp.ParseResponse
+import akka.stream.alpakka.typesense.impl.CollectionResponses.IndexManyDocumentsResponse
+import akka.stream.alpakka.typesense.impl.TypesenseHttp.{ParseResponse, PrepareRequestEntity}
 import akka.stream.scaladsl.{Flow, Keep, Sink}
 import akka.{Done, NotUsed}
 
@@ -29,9 +30,9 @@ object Typesense {
     TypesenseHttp
       .executeRequest("collections",
                       HttpMethods.POST,
-                      Some(schema.toJson),
+                      PrepareRequestEntity.json(schema.toJson),
                       settings,
-                      ParseResponse.default[CollectionResponse])
+                      ParseResponse.json[CollectionResponse])
   }
 
   /**
@@ -61,9 +62,9 @@ object Typesense {
     TypesenseHttp
       .executeRequest(s"collections/${retrieve.collectionName}",
                       HttpMethods.GET,
-                      None,
+                      PrepareRequestEntity.empty,
                       settings,
-                      ParseResponse.default[CollectionResponse])
+                      ParseResponse.json[CollectionResponse])
 
   /**
    * Creates a flow for retrieving collections.
@@ -89,7 +90,7 @@ object Typesense {
       .executeRequest(
         s"collections/${document.collectionName}/documents",
         HttpMethods.POST,
-        Some(document.content.toJson),
+        PrepareRequestEntity.json(document.content.toJson),
         settings,
         ParseResponse.withoutBody,
         Map("action" -> indexActionValue(document.action))
@@ -106,6 +107,37 @@ object Typesense {
       Flow[IndexDocument[T]]
         .mapAsync(parallelism = 1) { document =>
           indexDocumentRequest(settings, document)
+        }
+    }
+
+  /**
+   * Index many documents.
+   */
+  def indexManyDocumentsRequest[T: JsonWriter](settings: TypesenseSettings, index: IndexManyDocuments[T])(
+      implicit system: ActorSystem
+  ): Future[Seq[IndexDocumentResult]] =
+    TypesenseHttp
+      .executeRequest(
+        s"collections/${index.collectionName}/documents/import",
+        HttpMethods.POST,
+        PrepareRequestEntity.jsonLine(index.documents.map(_.toJson)),
+        settings,
+        ParseResponse.jsonLine[IndexManyDocumentsResponse],
+        Map("action" -> indexActionValue(index.action))
+      )(system)
+      .map(_.map(_.asResult))(system.dispatcher)
+
+  /**
+   * Creates a flow for indexing many documents.
+   */
+  def indexManyDocumentsFlow[T: JsonWriter](
+      settings: TypesenseSettings
+  ): Flow[IndexManyDocuments[T], Seq[IndexDocumentResult], Future[NotUsed]] =
+    Flow.fromMaterializer { (materializer, _) =>
+      implicit val system: ActorSystem = materializer.system
+      Flow[IndexManyDocuments[T]]
+        .mapAsync(parallelism = 1) { index =>
+          indexManyDocumentsRequest(settings, index)
         }
     }
 
@@ -127,9 +159,9 @@ object Typesense {
       .executeRequest(
         s"collections/${retrieve.collectionName}/documents/${retrieve.documentId}",
         HttpMethods.GET,
-        None,
+        PrepareRequestEntity.empty,
         settings,
-        ParseResponse.default[T]
+        ParseResponse.json[T]
       )(system)
 
   /**

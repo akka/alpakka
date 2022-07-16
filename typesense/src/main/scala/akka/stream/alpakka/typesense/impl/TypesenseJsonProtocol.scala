@@ -6,6 +6,7 @@ package akka.stream.alpakka.typesense.impl
 
 import akka.annotation.InternalApi
 import akka.stream.alpakka.typesense._
+import akka.stream.alpakka.typesense.impl.CollectionResponses.IndexManyDocumentsResponse
 import spray.json.DefaultJsonProtocol
 
 import java.time.Instant
@@ -139,4 +140,8 @@ import java.time.Instant
       "created_at" -> obj.createdAt.getEpochSecond.toJson
     )
   }
+
+  implicit val indexManyDocumentsResponseFormat: RootJsonFormat[IndexManyDocumentsResponse] = jsonFormat3(
+    IndexManyDocumentsResponse
+  )
 }

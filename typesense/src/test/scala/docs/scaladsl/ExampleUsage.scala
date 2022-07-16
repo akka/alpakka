@@ -15,6 +15,7 @@ import java.util.UUID
 import scala.concurrent.Future
 
 class ExampleUsage {
+  import ExampleUsage._
   implicit val system: ActorSystem = ActorSystem()
 
   //#settings
@@ -45,13 +46,6 @@ class ExampleUsage {
     retrieveCollectionSource.via(retrieveCollectionFlow).runWith(Sink.head)
   //#retrieve collection
 
-  final case class MyDocument(id: String, name: String)
-  implicit val companyFormat: RootJsonFormat[MyDocument] = {
-    import spray.json._
-    import DefaultJsonProtocol._
-    jsonFormat2(MyDocument)
-  }
-
   //#index single document
   val indexSingleDocumentSource: Source[IndexDocument[MyDocument], NotUsed] =
     Source.single(IndexDocument("my-collection", MyDocument(UUID.randomUUID().toString, "Hello")))
@@ -63,6 +57,17 @@ class ExampleUsage {
     indexSingleDocumentSource.via(indexSingleDocumentFlow).runWith(Sink.head)
   //#index single document
 
+  //#index many documents
+  val indexManyDocumentsSource: Source[IndexManyDocuments[MyDocument], NotUsed] =
+    Source.single(IndexManyDocuments("my-collection", Seq(MyDocument(UUID.randomUUID().toString, "Hello"))))
+
+  val indexManyDocumentsFlow: Flow[IndexManyDocuments[MyDocument], Seq[IndexDocumentResult], Future[NotUsed]] =
+    Typesense.indexManyDocumentsFlow(settings)
+
+  val indexManyDocumentsResult: Future[Seq[IndexDocumentResult]] =
+    indexManyDocumentsSource.via(indexManyDocumentsFlow).runWith(Sink.head)
+  //#index many documents
+
   //# retrieve document
   val retrieveDocumentSource: Source[RetrieveDocument, NotUsed] =
     Source.single(RetrieveDocument("my-collection", UUID.randomUUID().toString))
@@ -73,4 +78,13 @@ class ExampleUsage {
   val retrieveDocumentResult: Future[MyDocument] =
     retrieveDocumentSource.via(retrieveDocumentFlow).runWith(Sink.head)
   //# retrieve document
+}
+
+object ExampleUsage {
+  final case class MyDocument(id: String, name: String)
+  implicit val companyFormat: RootJsonFormat[MyDocument] = {
+    import spray.json._
+    import DefaultJsonProtocol._
+    jsonFormat2(MyDocument)
+  }
 }

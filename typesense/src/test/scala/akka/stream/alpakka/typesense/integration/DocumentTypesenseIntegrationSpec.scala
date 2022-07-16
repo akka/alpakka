@@ -27,7 +27,7 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
       describe("with default action") {
         it("using flow") {
           //given
-          val indexDocument = randomDocument()
+          val indexDocument = randomIndexDocument()
           val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
 
           //when
@@ -41,7 +41,7 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
 
         it("using sink") {
           //given
-          val indexDocument = randomDocument()
+          val indexDocument = randomIndexDocument()
           val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
 
           //when
@@ -55,7 +55,7 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
 
         it("using direct request") {
           //given
-          val indexDocument = randomDocument()
+          val indexDocument = randomIndexDocument()
           val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
 
           //when
@@ -69,7 +69,7 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
 
         it("using flow with Java API") {
           //given
-          val indexDocument = randomDocument()
+          val indexDocument = randomIndexDocument()
           val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
 
           //when
@@ -88,7 +88,7 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
 
         it("using sink with Java API") {
           //given
-          val indexDocument = randomDocument()
+          val indexDocument = randomIndexDocument()
           val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
 
           //when
@@ -105,7 +105,7 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
 
         it("using direct request with Java API") {
           //given
-          val indexDocument = randomDocument()
+          val indexDocument = randomIndexDocument()
           val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
 
           //when
@@ -127,7 +127,7 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
       describe("with create action") {
         it("using flow") {
           //given
-          val indexDocument = randomDocument(IndexDocumentAction.Create)
+          val indexDocument = randomIndexDocument(IndexDocumentAction.Create)
           val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
 
           //when
@@ -141,7 +141,7 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
 
         it("using sink") {
           //given
-          val indexDocument = randomDocument(IndexDocumentAction.Create)
+          val indexDocument = randomIndexDocument(IndexDocumentAction.Create)
           val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
 
           //when
@@ -155,7 +155,7 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
 
         it("using direct request") {
           //given
-          val indexDocument = randomDocument(IndexDocumentAction.Create)
+          val indexDocument = randomIndexDocument(IndexDocumentAction.Create)
           val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
 
           //when
@@ -169,7 +169,7 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
 
         it("using flow with Java API") {
           //given
-          val indexDocument = randomDocument(IndexDocumentAction.Create)
+          val indexDocument = randomIndexDocument(IndexDocumentAction.Create)
           val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
 
           //when
@@ -189,7 +189,7 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
 
         it("using sink with Java API") {
           //given
-          val indexDocument = randomDocument(IndexDocumentAction.Create)
+          val indexDocument = randomIndexDocument(IndexDocumentAction.Create)
           val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
 
           //when
@@ -209,7 +209,7 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
 
         it("using direct request with Java API") {
           //given
-          val indexDocument = randomDocument(IndexDocumentAction.Create)
+          val indexDocument = randomIndexDocument(IndexDocumentAction.Create)
           val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
 
           //when
@@ -269,7 +269,7 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
         }
 
         it("if document with this id already exists") {
-          val indexDocument = randomDocument()
+          val indexDocument = randomIndexDocument()
           runWithFlow(indexDocument, Typesense.indexDocumentFlow[Company](settings))
           tryUsingFlowAndExpectError(indexDocument,
                                      Typesense.indexDocumentFlow[Company](settings),
@@ -280,7 +280,7 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
       describe("with create action") {
         describe("if document with this id already exists") {
           it("using flow") {
-            val indexDocument = randomDocument()
+            val indexDocument = randomIndexDocument()
             runWithFlow(indexDocument, Typesense.indexDocumentFlow[Company](settings))
             tryUsingFlowAndExpectError(indexDocument,
                                        Typesense.indexDocumentFlow[Company](settings),
@@ -288,7 +288,7 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
           }
 
           it("using sink") {
-            val indexDocument = randomDocument()
+            val indexDocument = randomIndexDocument()
             runWithFlow(indexDocument, Typesense.indexDocumentFlow[Company](settings))
             tryUsingSinkAndExpectError(indexDocument,
                                        Typesense.indexDocumentSink[Company](settings),
@@ -296,14 +296,14 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
           }
 
           it("using direct request") {
-            val indexDocument = randomDocument()
+            val indexDocument = randomIndexDocument()
             runWithFlow(indexDocument, Typesense.indexDocumentFlow[Company](settings))
             tryUsingDirectRequestAndExpectError(Typesense.indexDocumentRequest(settings, indexDocument),
                                                 StatusCodes.Conflict)
           }
 
           it("using flow with Java API") {
-            val indexDocument = randomDocument()
+            val indexDocument = randomIndexDocument()
             runWithFlow(indexDocument, Typesense.indexDocumentFlow[Company](settings))
             tryUsingJavaFlowAndExpectError(indexDocument,
                                            JavaTypesense.indexDocumentFlow[Company](settings,
@@ -312,7 +312,7 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
           }
 
           it("using sink with Java API") {
-            val indexDocument = randomDocument()
+            val indexDocument = randomIndexDocument()
             runWithFlow(indexDocument, Typesense.indexDocumentFlow[Company](settings))
             tryUsingJavaSinkAndExpectError(indexDocument,
                                            JavaTypesense.indexDocumentSink(settings, implicitly[JsonWriter[Company]]),
@@ -320,7 +320,7 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
           }
 
           it("using direct request with Java API") {
-            val indexDocument = randomDocument()
+            val indexDocument = randomIndexDocument()
             runWithFlow(indexDocument, Typesense.indexDocumentFlow[Company](settings))
             tryUsingJavaDirectRequestAndExpectError(
               JavaTypesense.indexDocumentRequest(settings, indexDocument, system, implicitly[JsonWriter[Company]]),
@@ -370,11 +370,13 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
     }
   }
 
-  protected def randomDocument(): IndexDocument[Company] =
-    IndexDocument("companies", Company(UUID.randomUUID().toString, "Functional Corporation", 1000))
+  protected def randomIndexDocument(): IndexDocument[Company] =
+    IndexDocument("companies", randomDocument())
 
-  protected def randomDocument(action: IndexDocumentAction): IndexDocument[Company] =
-    IndexDocument("companies", Company(UUID.randomUUID().toString, "Functional Corporation", 1000), action)
+  protected def randomIndexDocument(action: IndexDocumentAction): IndexDocument[Company] =
+    IndexDocument("companies", randomDocument(), action)
+
+  protected def randomDocument(): Company = Company(UUID.randomUUID().toString, "Functional Corporation", 1000)
 
   protected def retrieveDocumentFromIndexDocument(indexDocument: IndexDocument[Company]) =
     RetrieveDocument(indexDocument.collectionName, indexDocument.content.id)

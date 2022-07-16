@@ -6,12 +6,23 @@ package akka.stream.alpakka.typesense.integration.v0_23_0
 
 import akka.Done
 import akka.http.scaladsl.model.StatusCodes
-import akka.stream.alpakka.typesense.{CollectionSchema, Field, FieldType, IndexDocument, IndexDocumentAction}
+import akka.stream.alpakka.typesense.IndexDocumentResult.IndexSuccess
+import akka.stream.alpakka.typesense.{
+  CollectionSchema,
+  Field,
+  FieldType,
+  IndexDocument,
+  IndexDocumentAction,
+  IndexDocumentResult,
+  IndexManyDocuments
+}
 import akka.stream.alpakka.typesense.integration.DocumentTypesenseIntegrationSpec
 import akka.stream.alpakka.typesense.scaladsl.Typesense
 import spray.json.{JsonReader, JsonWriter}
 
+import java.util
 import java.util.UUID
+import scala.jdk.CollectionConverters.ListHasAsScala
 import scala.jdk.FutureConverters.CompletionStageOps
 
 class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegrationSpec("0.23.0") {
@@ -36,7 +47,7 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
         describe("if already exist") {
           it("using flow") {
             //given
-            val createDocument = randomDocument(IndexDocumentAction.Create)
+            val createDocument = randomIndexDocument(IndexDocumentAction.Create)
             val upsertDocument = upsertFromCreate(createDocument)
             val retrieve = retrieveDocumentFromIndexDocument(createDocument)
 
@@ -53,7 +64,7 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
 
           it("using sink") {
             //given
-            val createDocument = randomDocument(IndexDocumentAction.Create)
+            val createDocument = randomIndexDocument(IndexDocumentAction.Create)
             val upsertDocument = upsertFromCreate(createDocument)
             val retrieve = retrieveDocumentFromIndexDocument(createDocument)
 
@@ -70,7 +81,7 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
 
           it("using direct request") {
             //given
-            val createDocument = randomDocument(IndexDocumentAction.Create)
+            val createDocument = randomIndexDocument(IndexDocumentAction.Create)
             val upsertDocument = upsertFromCreate(createDocument)
             val retrieve = retrieveDocumentFromIndexDocument(createDocument)
 
@@ -87,7 +98,7 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
 
           it("using flow with Java API") {
             //given
-            val createDocument = randomDocument(IndexDocumentAction.Create)
+            val createDocument = randomIndexDocument(IndexDocumentAction.Create)
             val upsertDocument = upsertFromCreate(createDocument)
             val retrieve = retrieveDocumentFromIndexDocument(createDocument)
 
@@ -110,7 +121,7 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
 
           it("using sink with Java API") {
             //given
-            val createDocument = randomDocument(IndexDocumentAction.Create)
+            val createDocument = randomIndexDocument(IndexDocumentAction.Create)
             val upsertDocument = upsertFromCreate(createDocument)
             val retrieve = retrieveDocumentFromIndexDocument(createDocument)
 
@@ -133,7 +144,7 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
 
           it("using direct request with Java API") {
             //given
-            val createDocument = randomDocument(IndexDocumentAction.Create)
+            val createDocument = randomIndexDocument(IndexDocumentAction.Create)
             val upsertDocument = upsertFromCreate(createDocument)
             val retrieve = retrieveDocumentFromIndexDocument(createDocument)
 
@@ -161,7 +172,7 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
         describe("if doesn't exist") {
           it("using flow") {
             //given
-            val upsertDocument = randomDocument(IndexDocumentAction.Upsert)
+            val upsertDocument = randomIndexDocument(IndexDocumentAction.Upsert)
             val retrieve = retrieveDocumentFromIndexDocument(upsertDocument)
 
             //when
@@ -178,7 +189,7 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
       describe("with update action") {
         it("using flow") {
           //given
-          val indexDocument = randomDocument(IndexDocumentAction.Create)
+          val indexDocument = randomIndexDocument(IndexDocumentAction.Create)
           val updateDocument =
             IndexDocument(indexDocument.collectionName,
                           UpdateCompany(id = indexDocument.content.id, budget = 7654),
@@ -202,7 +213,7 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
         describe("to create") {
           it("using flow") {
             //given
-            val emplaceDocument = randomDocument(IndexDocumentAction.Emplace)
+            val emplaceDocument = randomIndexDocument(IndexDocumentAction.Emplace)
             val retrieve = retrieveDocumentFromIndexDocument(emplaceDocument)
 
             //when
@@ -218,7 +229,7 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
         describe("to update") {
           it("using flow") {
             //given
-            val indexDocument = randomDocument(IndexDocumentAction.Create)
+            val indexDocument = randomIndexDocument(IndexDocumentAction.Create)
             val emplaceDocument =
               IndexDocument(indexDocument.collectionName,
                             UpdateCompany(id = indexDocument.content.id, budget = 7654),
@@ -252,6 +263,84 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
             tryUsingFlowAndExpectError(updateDocument,
                                        Typesense.indexDocumentFlow[UpdateCompany](settings),
                                        StatusCodes.NotFound)
+          }
+        }
+      }
+    }
+
+    describe("should index many documents") {
+      describe("with create action") {
+        it("using flow") {
+          //given
+          val indexDocuments = IndexManyDocuments("companies", Seq(randomDocument(), randomDocument()))
+
+          //when
+          val indexResult = runWithFlow(indexDocuments, Typesense.indexManyDocumentsFlow[Company](settings))
+
+          //then
+          indexResult shouldBe Seq(IndexSuccess(), IndexSuccess())
+          indexResult(0).isSuccess shouldBe true
+          indexResult(1).isSuccess shouldBe true
+        }
+
+        it("using direct request") {
+          //given
+          val indexDocuments = IndexManyDocuments("companies", Seq(randomDocument(), randomDocument()))
+
+          //when
+          val indexResult = Typesense.indexManyDocumentsRequest(settings, indexDocuments).futureValue
+
+          //then
+          indexResult shouldBe Seq(IndexSuccess(), IndexSuccess())
+        }
+
+        it("using flow with Java API") {
+          //given
+          val indexDocuments = IndexManyDocuments("companies", Seq(randomDocument(), randomDocument()))
+
+          //when
+          val indexResult: util.List[IndexDocumentResult] =
+            runWithJavaFlow(indexDocuments,
+                            JavaTypesense.indexManyDocumentsFlow(settings, implicitly[JsonWriter[Company]]))
+
+          //then
+          indexResult.asScala shouldBe Seq(IndexSuccess(), IndexSuccess())
+        }
+
+        it("using direct request with Java API") {
+          //given
+          val indexDocuments = IndexManyDocuments("companies", Seq(randomDocument(), randomDocument()))
+
+          //when
+          val indexResult: util.List[IndexDocumentResult] =
+            JavaTypesense
+              .indexManyDocumentRequest(settings, indexDocuments, system, implicitly[JsonWriter[Company]])
+              .asScala
+              .futureValue
+
+          //then
+          indexResult.asScala shouldBe Seq(IndexSuccess(), IndexSuccess())
+        }
+      }
+    }
+
+    describe("should index only correct document") {
+      describe("with create action") {
+        describe("if another document already exist") {
+          it("using flow") {
+            //given
+            val createSingleDocument: IndexDocument[Company] = randomIndexDocument()
+            val createManyDocuments: IndexManyDocuments[Company] =
+              IndexManyDocuments("companies", Seq(createSingleDocument.content, randomDocument()))
+
+            //when
+            val createSingleResult = Typesense.indexDocumentRequest(settings, createSingleDocument).futureValue
+            val createManyResult = runWithFlow(createManyDocuments, Typesense.indexManyDocumentsFlow[Company](settings))
+
+            //then
+            createSingleResult shouldBe Done
+            createManyResult(0).isSuccess shouldBe false
+            createManyResult(1).isSuccess shouldBe true
           }
         }
       }

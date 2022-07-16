@@ -12,6 +12,7 @@ import spray.json.{JsonReader, JsonWriter}
 
 import java.util.concurrent.CompletionStage
 import scala.compat.java8.FutureConverters.FutureOps
+import scala.jdk.CollectionConverters.SeqHasAsJava
 
 /**
  * Java DSL for Typesense
@@ -97,6 +98,33 @@ object Typesense {
     ScalaTypesense
       .indexDocumentFlow(settings)(jsonWriter)
       .mapMaterializedValue(_.toJava)
+      .asJava
+
+  /**
+   * Index many documents.
+   */
+  def indexManyDocumentRequest[T](
+      settings: TypesenseSettings,
+      index: IndexManyDocuments[T],
+      system: ActorSystem,
+      jsonWriter: JsonWriter[T]
+  ): CompletionStage[java.util.List[IndexDocumentResult]] =
+    ScalaTypesense
+      .indexManyDocumentsRequest(settings, index)(jsonWriter, system)
+      .map(_.asJava)(system.dispatcher)
+      .toJava
+
+  /**
+   * Creates a flow for indexing many documents.
+   */
+  def indexManyDocumentsFlow[T](
+      settings: TypesenseSettings,
+      jsonWriter: JsonWriter[T]
+  ): Flow[IndexManyDocuments[T], java.util.List[IndexDocumentResult], CompletionStage[NotUsed]] =
+    ScalaTypesense
+      .indexManyDocumentsFlow(settings)(jsonWriter)
+      .mapMaterializedValue(_.toJava)
+      .map(_.asJava)
       .asJava
 
   /**
