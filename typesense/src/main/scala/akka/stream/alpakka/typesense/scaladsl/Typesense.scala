@@ -149,8 +149,7 @@ object Typesense {
   private def indexActionValue(action: IndexDocumentAction): String = action match {
     case IndexDocumentAction.Create => "create"
     case IndexDocumentAction.Upsert => "upsert"
-    case _ => throw new IllegalArgumentException()
-//    case emplace: IndexDocumentAction.Update => "update"
-//    case emplace: IndexDocumentAction.Emplace => "emplace"
+    case IndexDocumentAction.Update => "update"
+    case IndexDocumentAction.Emplace => "emplace"
   }
 }
