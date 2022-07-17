@@ -178,6 +178,43 @@ object Typesense {
         }
     }
 
+  /**
+   * Delete a document.
+   */
+  def deleteDocumentRequest(settings: TypesenseSettings, delete: DeleteDocument)(
+      implicit system: ActorSystem
+  ): Future[Done] =
+    TypesenseHttp
+      .executeRequest(
+        s"collections/${delete.collectionName}/documents/${delete.documentId}",
+        HttpMethods.DELETE,
+        PrepareRequestEntity.empty,
+        settings,
+        ParseResponse.withoutBody
+      )
+
+  /**
+   * Creates a flow for deleting a single document.
+   */
+  def deleteDocumentFlow(
+      settings: TypesenseSettings
+  ): Flow[DeleteDocument, Done, Future[NotUsed]] =
+    Flow.fromMaterializer { (materializer, _) =>
+      implicit val system: ActorSystem = materializer.system
+      Flow[DeleteDocument]
+        .mapAsync(parallelism = 1) { document =>
+          deleteDocumentRequest(settings, document)
+        }
+    }
+
+  /**
+   * Creates a sink for deleting a single document.
+   */
+  def deleteDocumentSink(
+      settings: TypesenseSettings
+  ): Sink[DeleteDocument, Future[Done]] =
+    deleteDocumentFlow(settings).toMat(Sink.ignore)(Keep.right)
+
   private def indexActionValue(action: IndexDocumentAction): String = action match {
     case IndexDocumentAction.Create => "create"
     case IndexDocumentAction.Upsert => "upsert"

@@ -78,6 +78,17 @@ class ExampleUsage {
   val retrieveDocumentResult: Future[MyDocument] =
     retrieveDocumentSource.via(retrieveDocumentFlow).runWith(Sink.head)
   //# retrieve document
+
+  //# delete document
+  val deleteDocumentSource: Source[DeleteDocument, NotUsed] =
+    Source.single(DeleteDocument("my-collection", UUID.randomUUID().toString))
+
+  val deleteDocumentFlow: Flow[DeleteDocument, Done, Future[NotUsed]] =
+    Typesense.deleteDocumentFlow(settings)
+
+  val deleteDocumentResult: Future[Done] =
+    deleteDocumentSource.via(deleteDocumentFlow).runWith(Sink.head)
+  //# delete document
 }
 
 object ExampleUsage {

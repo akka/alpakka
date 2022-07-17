@@ -101,6 +101,18 @@ object Typesense {
       .asJava
 
   /**
+   * Creates a sink for indexing a single document.
+   */
+  def indexDocumentSink[T](
+      settings: TypesenseSettings,
+      jsonWriter: JsonWriter[T]
+  ): Sink[IndexDocument[T], CompletionStage[Done]] =
+    ScalaTypesense
+      .indexDocumentSink[T](settings)(jsonWriter)
+      .mapMaterializedValue(_.toJava)
+      .asJava
+
+  /**
    * Index many documents.
    */
   def indexManyDocumentRequest[T](
@@ -128,18 +140,6 @@ object Typesense {
       .asJava
 
   /**
-   * Creates a sink for indexing a single document.
-   */
-  def indexDocumentSink[T](
-      settings: TypesenseSettings,
-      jsonWriter: JsonWriter[T]
-  ): Sink[IndexDocument[T], CompletionStage[Done]] =
-    ScalaTypesense
-      .indexDocumentSink[T](settings)(jsonWriter)
-      .mapMaterializedValue(_.toJava)
-      .asJava
-
-  /**
    * Retrieve a document.
    */
   def retrieveDocumentRequest[T](
@@ -161,6 +161,40 @@ object Typesense {
   ): Flow[RetrieveDocument, T, CompletionStage[NotUsed]] =
     ScalaTypesense
       .retrieveDocumentFlow(settings)(jsonReader)
+      .mapMaterializedValue(_.toJava)
+      .asJava
+
+  /**
+   * Delete a single document.
+   */
+  def deleteDocumentRequest[T](
+      settings: TypesenseSettings,
+      delete: DeleteDocument,
+      system: ActorSystem
+  ): CompletionStage[Done] =
+    ScalaTypesense
+      .deleteDocumentRequest(settings, delete)(system)
+      .toJava
+
+  /**
+   * Creates a flow for deleting a single document.
+   */
+  def deleteDocumentFlow(
+      settings: TypesenseSettings
+  ): Flow[DeleteDocument, Done, CompletionStage[NotUsed]] =
+    ScalaTypesense
+      .deleteDocumentFlow(settings)
+      .mapMaterializedValue(_.toJava)
+      .asJava
+
+  /**
+   * Creates a sink for deleting single document.
+   */
+  def deleteDocumentSink(
+      settings: TypesenseSettings
+  ): Sink[DeleteDocument, CompletionStage[Done]] =
+    ScalaTypesense
+      .deleteDocumentSink(settings)
       .mapMaterializedValue(_.toJava)
       .asJava
 }

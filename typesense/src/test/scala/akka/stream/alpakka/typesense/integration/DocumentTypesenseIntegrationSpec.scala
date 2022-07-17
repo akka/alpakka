@@ -368,6 +368,155 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
         }
       }
     }
+
+    describe("should delete document") {
+      it("using flow") {
+        val indexDocument = randomIndexDocument()
+        val delete = deleteDocumentFromIndexDocument(indexDocument)
+        val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
+
+        //when
+        val createResult = runWithFlow(indexDocument, Typesense.indexDocumentFlow[Company](settings))
+        val deleteResult = runWithFlow(delete, Typesense.deleteDocumentFlow(settings))
+
+        //then
+        createResult shouldBe Done
+        deleteResult shouldBe Done
+        tryUsingFlowAndExpectError(retrieve, Typesense.retrieveDocumentFlow[Company](settings), StatusCodes.NotFound)
+      }
+
+      it("using sink") {
+        val indexDocument = randomIndexDocument()
+        val delete = deleteDocumentFromIndexDocument(indexDocument)
+        val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
+
+        //when
+        val createResult = runWithSink(indexDocument, Typesense.indexDocumentSink[Company](settings))
+        val deleteResult = runWithSink(delete, Typesense.deleteDocumentSink(settings))
+
+        //then
+        createResult shouldBe Done
+        deleteResult shouldBe Done
+        tryUsingFlowAndExpectError(retrieve, Typesense.retrieveDocumentFlow[Company](settings), StatusCodes.NotFound)
+      }
+
+      it("using direct request") {
+        //given
+        val indexDocument = randomIndexDocument()
+        val delete = deleteDocumentFromIndexDocument(indexDocument)
+        val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
+
+        //when
+        val createResult = Typesense.indexDocumentRequest(settings, indexDocument).futureValue
+        val deleteResult = Typesense.deleteDocumentRequest(settings, delete).futureValue
+
+        //then
+        createResult shouldBe Done
+        deleteResult shouldBe Done
+        tryUsingDirectRequestAndExpectError(Typesense.retrieveDocumentRequest[Company](settings, retrieve),
+                                            StatusCodes.NotFound)
+      }
+
+      it("using flow with Java API") {
+        val indexDocument = randomIndexDocument()
+        val delete = deleteDocumentFromIndexDocument(indexDocument)
+        val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
+
+        //when
+        val createResult =
+          runWithJavaFlow(indexDocument, JavaTypesense.indexDocumentFlow(settings, implicitly[JsonWriter[Company]]))
+        val deleteResult = runWithJavaFlow(delete, JavaTypesense.deleteDocumentFlow(settings))
+
+        //then
+        createResult shouldBe Done
+        deleteResult shouldBe Done
+        tryUsingJavaFlowAndExpectError(retrieve,
+                                       JavaTypesense.retrieveDocumentFlow(settings, implicitly[JsonReader[Company]]),
+                                       StatusCodes.NotFound)
+      }
+
+      it("using sink with Java API") {
+        val indexDocument = randomIndexDocument()
+        val delete = deleteDocumentFromIndexDocument(indexDocument)
+        val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
+
+        //when
+        val createResult =
+          runWithJavaSink(indexDocument, JavaTypesense.indexDocumentSink(settings, implicitly[JsonWriter[Company]]))
+        val deleteResult = runWithJavaSink(delete, JavaTypesense.deleteDocumentSink(settings))
+
+        //then
+        createResult shouldBe Done
+        deleteResult shouldBe Done
+        tryUsingJavaFlowAndExpectError(retrieve,
+                                       JavaTypesense.retrieveDocumentFlow(settings, implicitly[JsonReader[Company]]),
+                                       StatusCodes.NotFound)
+      }
+
+      it("using direct request with Java API") {
+        //given
+        val indexDocument = randomIndexDocument()
+        val delete = deleteDocumentFromIndexDocument(indexDocument)
+        val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
+
+        //when
+        val createResult = JavaTypesense
+          .indexDocumentRequest(settings, indexDocument, system, implicitly[JsonWriter[Company]])
+          .asScala
+          .futureValue
+        val deleteResult = JavaTypesense.deleteDocumentRequest(settings, delete, system).asScala.futureValue
+
+        //then
+        createResult shouldBe Done
+        deleteResult shouldBe Done
+        tryUsingJavaDirectRequestAndExpectError(
+          JavaTypesense.retrieveDocumentRequest[Company](settings, retrieve, system, implicitly[JsonReader[Company]]),
+          StatusCodes.NotFound
+        )
+      }
+    }
+
+    describe("should not delete document") {
+      describe("if doesn't exist") {
+        val deleteNonexistentDocument = DeleteDocument("companies", UUID.randomUUID().toString)
+
+        it("using flow") {
+          tryUsingFlowAndExpectError(deleteNonexistentDocument,
+                                     Typesense.deleteDocumentFlow(settings),
+                                     StatusCodes.NotFound)
+        }
+
+        it("using sink") {
+          tryUsingSinkAndExpectError(deleteNonexistentDocument,
+                                     Typesense.deleteDocumentSink(settings),
+                                     StatusCodes.NotFound)
+        }
+
+        it("using direct request") {
+          tryUsingDirectRequestAndExpectError(Typesense.deleteDocumentRequest(settings, deleteNonexistentDocument),
+                                              StatusCodes.NotFound)
+        }
+
+        it("using flow with Java API") {
+          tryUsingJavaFlowAndExpectError(deleteNonexistentDocument,
+                                         JavaTypesense.deleteDocumentFlow(settings),
+                                         StatusCodes.NotFound)
+        }
+
+        it("using sink with Java API") {
+          tryUsingJavaSinkAndExpectError(deleteNonexistentDocument,
+                                         JavaTypesense.deleteDocumentSink(settings),
+                                         StatusCodes.NotFound)
+        }
+
+        it("using direct request with Java API") {
+          tryUsingJavaDirectRequestAndExpectError(
+            JavaTypesense.deleteDocumentRequest(settings, deleteNonexistentDocument, system),
+            StatusCodes.NotFound
+          )
+        }
+      }
+    }
   }
 
   protected def randomIndexDocument(): IndexDocument[Company] =
@@ -380,6 +529,9 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
 
   protected def retrieveDocumentFromIndexDocument(indexDocument: IndexDocument[Company]) =
     RetrieveDocument(indexDocument.collectionName, indexDocument.content.id)
+
+  protected def deleteDocumentFromIndexDocument(indexDocument: IndexDocument[Company]) =
+    DeleteDocument(indexDocument.collectionName, indexDocument.content.id)
 }
 
 private[integration] object DocumentTypesenseIntegrationSpec {

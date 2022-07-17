@@ -182,3 +182,24 @@ object RetrieveDocument {
   def create(collectionName: String, documentId: String): RetrieveDocument =
     new RetrieveDocument(collectionName, documentId)
 }
+
+final class DeleteDocument @InternalApi private[typesense] (val collectionName: String, val documentId: String) {
+
+  override def equals(other: Any): Boolean = other match {
+    case that: RetrieveDocument =>
+      collectionName == that.collectionName &&
+      documentId == that.documentId
+    case _ => false
+  }
+
+  override def hashCode(): Int = java.util.Objects.hash(collectionName, documentId)
+
+  override def toString = s"DeleteDocument(collectionName=$collectionName, documentId=$documentId)"
+}
+
+object DeleteDocument {
+  def apply(collectionName: String, documentId: String): DeleteDocument =
+    new DeleteDocument(collectionName, documentId)
+  def create(collectionName: String, documentId: String): DeleteDocument =
+    new DeleteDocument(collectionName, documentId)
+}

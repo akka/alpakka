@@ -96,11 +96,23 @@ public class ExampleUsage {
     // #retrieve document
     Source<RetrieveDocument, NotUsed> retrieveDocumentSource =
         Source.single(RetrieveDocument.create("my-collection", UUID.randomUUID().toString()));
+
     Flow<RetrieveDocument, MyDocument, CompletionStage<NotUsed>> retrieveDocumentFlow =
         Typesense.retrieveDocumentFlow(settings, documentJsonReader);
 
     CompletionStage<MyDocument> retrieveDocumentResponse =
         retrieveDocumentSource.via(retrieveDocumentFlow).runWith(Sink.head(), system);
     // #retrieve document
+
+    // #delete document
+    Source<DeleteDocument, NotUsed> deleteDocumentSource =
+        Source.single(DeleteDocument.create("my-collection", UUID.randomUUID().toString()));
+
+    Flow<DeleteDocument, Done, CompletionStage<NotUsed>> deleteDocumentFlow =
+        Typesense.deleteDocumentFlow(settings);
+
+    CompletionStage<Done> deleteDocumentResponse =
+        deleteDocumentSource.via(deleteDocumentFlow).runWith(Sink.head(), system);
+    // #delete document
   }
 }
