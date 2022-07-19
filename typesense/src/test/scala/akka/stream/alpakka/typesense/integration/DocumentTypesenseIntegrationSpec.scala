@@ -18,9 +18,9 @@ import scala.jdk.FutureConverters.CompletionStageOps
 abstract class DocumentTypesenseIntegrationSpec(version: String) extends TypesenseIntegrationSpec(version) {
   import DocumentTypesenseIntegrationSpec._
 
-  override def afterContainersStart(containers: DockerComposeContainer): Unit = createCompaniesCollection()
+  override def afterContainersStart(containers: DockerComposeContainer): Unit = createCollection("companies")
 
-  protected def createCompaniesCollection(): Unit
+  protected def createCollection(name: String): Unit
 
   describe(s"For Typesense $version") {
     describe("should index and retrieve single document") {
@@ -527,10 +527,10 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
 
   protected def randomDocument(): Company = Company(UUID.randomUUID().toString, "Functional Corporation", 1000)
 
-  protected def retrieveDocumentFromIndexDocument(indexDocument: IndexDocument[Company]) =
+  protected def retrieveDocumentFromIndexDocument(indexDocument: IndexDocument[Company]): RetrieveDocument =
     RetrieveDocument(indexDocument.collectionName, indexDocument.content.id)
 
-  protected def deleteDocumentFromIndexDocument(indexDocument: IndexDocument[Company]) =
+  protected def deleteDocumentFromIndexDocument(indexDocument: IndexDocument[Company]): DeleteDocument =
     DeleteDocument(indexDocument.collectionName, indexDocument.content.id)
 }
 
@@ -541,5 +541,4 @@ private[integration] object DocumentTypesenseIntegrationSpec {
   implicit val companyFormat: RootJsonFormat[Company] = jsonFormat3(Company)
   final case class UpdateCompany(id: String, budget: Int)
   implicit val updateCompanyFormat: RootJsonFormat[UpdateCompany] = jsonFormat2(UpdateCompany)
-
 }

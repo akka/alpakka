@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.typesense.json
 
+import akka.stream.alpakka.typesense.DeleteManyDocumentsResult
 import akka.stream.alpakka.typesense.impl.CollectionResponses.IndexManyDocumentsResponse
 import spray.json._
 
@@ -33,6 +34,17 @@ class DocumentTypesenseJsonProtocolSpec extends TypesenseJsonProtocolSpec {
           )
         )
       }
+    }
+  }
+
+  describe("Delete many documents result") {
+    it("should be serialized and deserialized") {
+      checkJson(
+        data = DeleteManyDocumentsResult(numDeleted = 25),
+        expectedJson = JsObject(
+          "num_deleted" -> JsNumber(25)
+        )
+      )
     }
   }
 }

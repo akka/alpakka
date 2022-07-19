@@ -4,8 +4,10 @@
 
 package akka.stream.alpakka.typesense
 
-import akka.annotation.InternalApi
+import akka.annotation.{ApiMayChange, InternalApi}
 
+import java.util.OptionalInt
+import scala.compat.java8.OptionConverters.RichOptionalInt
 import scala.jdk.CollectionConverters.{CollectionHasAsScala, SeqHasAsJava}
 
 final class IndexDocument[T] @InternalApi private[typesense] (val collectionName: String,
@@ -202,4 +204,83 @@ object DeleteDocument {
     new DeleteDocument(collectionName, documentId)
   def create(collectionName: String, documentId: String): DeleteDocument =
     new DeleteDocument(collectionName, documentId)
+}
+
+final class DeleteManyDocumentsByQuery @InternalApi private[typesense] (val collectionName: String,
+                                                                        val filterBy: FilterDeleteDocuments,
+                                                                        val batchSize: Option[Int]) {
+  def getBatchSize(): java.util.OptionalInt = batchSize.map(OptionalInt.of).getOrElse(OptionalInt.empty())
+
+  override def equals(other: Any): Boolean = other match {
+    case that: DeleteManyDocumentsByQuery =>
+      collectionName == that.collectionName &&
+      filterBy == that.filterBy &&
+      batchSize == that.batchSize
+    case _ => false
+  }
+
+  override def hashCode(): Int = java.util.Objects.hash(collectionName, filterBy, batchSize)
+
+  override def toString =
+    s"DeleteManyDocumentsByQuery(collectionName=$collectionName, filterBy=$filterBy, batchSize=$batchSize)"
+}
+
+object DeleteManyDocumentsByQuery {
+  def apply(collectionName: String, filterBy: FilterDeleteDocuments): DeleteManyDocumentsByQuery =
+    new DeleteManyDocumentsByQuery(collectionName, filterBy, None)
+
+  def apply(collectionName: String,
+            filterBy: FilterDeleteDocuments,
+            batchSize: Option[Int]): DeleteManyDocumentsByQuery =
+    new DeleteManyDocumentsByQuery(collectionName, filterBy, batchSize)
+
+  def apply(collectionName: String, filterBy: String): DeleteManyDocumentsByQuery =
+    new DeleteManyDocumentsByQuery(collectionName, FilterDeleteDocuments.stringQuery(filterBy), None)
+
+  def apply(collectionName: String, filterBy: String, batchSize: Option[Int]): DeleteManyDocumentsByQuery =
+    new DeleteManyDocumentsByQuery(collectionName, FilterDeleteDocuments.stringQuery(filterBy), batchSize)
+
+  def create(collectionName: String, filterBy: FilterDeleteDocuments): DeleteManyDocumentsByQuery =
+    new DeleteManyDocumentsByQuery(collectionName, filterBy, None)
+
+  def create(collectionName: String,
+             filterBy: FilterDeleteDocuments,
+             batchSize: java.util.OptionalInt): DeleteManyDocumentsByQuery =
+    new DeleteManyDocumentsByQuery(collectionName, filterBy, batchSize.asScala)
+
+  def create(collectionName: String, filterBy: String): DeleteManyDocumentsByQuery =
+    new DeleteManyDocumentsByQuery(collectionName, FilterDeleteDocuments.stringQuery(filterBy), None)
+
+  def create(collectionName: String, filterBy: String, batchSize: java.util.OptionalInt): DeleteManyDocumentsByQuery =
+    new DeleteManyDocumentsByQuery(collectionName, FilterDeleteDocuments.stringQuery(filterBy), batchSize.asScala)
+}
+
+final class DeleteManyDocumentsResult @InternalApi private[typesense] (val numDeleted: Int) {
+  def getNumDeleted(): java.lang.Integer = java.lang.Integer.valueOf(numDeleted)
+
+  override def equals(other: Any): Boolean = other match {
+    case that: DeleteManyDocumentsResult =>
+      numDeleted == that.numDeleted
+    case _ => false
+  }
+
+  override def hashCode(): Int = java.util.Objects.hash(numDeleted)
+
+  override def toString = s"DeleteManyDocumentsResult(numDeleted=$numDeleted)"
+}
+
+object DeleteManyDocumentsResult {
+  def apply(numDeleted: Int): DeleteManyDocumentsResult = new DeleteManyDocumentsResult(numDeleted)
+  def create(numDeleted: java.lang.Integer): DeleteManyDocumentsResult = new DeleteManyDocumentsResult(numDeleted)
+}
+
+@ApiMayChange //maybe can be reuse for search, if yes name might be changed
+sealed trait FilterDeleteDocuments {
+  def asTextQuery: String
+}
+
+object FilterDeleteDocuments {
+  def stringQuery(query: String): FilterDeleteDocuments = new FilterDeleteDocuments {
+    override def asTextQuery: String = query
+  }
 }

@@ -179,7 +179,7 @@ object Typesense {
     }
 
   /**
-   * Delete a document.
+   * Delete a single document.
    */
   def deleteDocumentRequest(settings: TypesenseSettings, delete: DeleteDocument)(
       implicit system: ActorSystem
@@ -221,4 +221,34 @@ object Typesense {
     case IndexDocumentAction.Update => "update"
     case IndexDocumentAction.Emplace => "emplace"
   }
+
+  /**
+   * Delete many documents by query.
+   */
+  def deleteManyDocumentsByQueryRequest(settings: TypesenseSettings, delete: DeleteManyDocumentsByQuery)(
+      implicit system: ActorSystem
+  ): Future[DeleteManyDocumentsResult] =
+    TypesenseHttp
+      .executeRequest(
+        s"collections/${delete.collectionName}/documents",
+        HttpMethods.DELETE,
+        PrepareRequestEntity.empty,
+        settings,
+        ParseResponse.json[DeleteManyDocumentsResult],
+        Map("filter_by" -> delete.filterBy.asTextQuery) ++ delete.batchSize.map("batch_size" -> _.toString)
+      )
+
+  /**
+   * Creates a flow for deleting many documents by query.
+   */
+  def deleteManyDocumentsByQueryFlow(
+      settings: TypesenseSettings
+  ): Flow[DeleteManyDocumentsByQuery, DeleteManyDocumentsResult, Future[NotUsed]] =
+    Flow.fromMaterializer { (materializer, _) =>
+      implicit val system: ActorSystem = materializer.system
+      Flow[DeleteManyDocumentsByQuery]
+        .mapAsync(parallelism = 1) { document =>
+          deleteManyDocumentsByQueryRequest(settings, document)
+        }
+    }
 }

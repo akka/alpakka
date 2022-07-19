@@ -8,7 +8,7 @@ import akka.Done
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import akka.stream.alpakka.typesense._
 import akka.stream.alpakka.typesense.scaladsl.Typesense
-import akka.stream.scaladsl.{Keep, Sink, Source}
+import akka.stream.scaladsl.{Sink, Source}
 import org.scalatest.Assertion
 
 import java.time.Instant

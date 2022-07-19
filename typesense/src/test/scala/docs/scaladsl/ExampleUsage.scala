@@ -89,6 +89,17 @@ class ExampleUsage {
   val deleteDocumentResult: Future[Done] =
     deleteDocumentSource.via(deleteDocumentFlow).runWith(Sink.head)
   //# delete document
+
+  //# delete documents by query
+  val deleteDocumentsByQuerySource: Source[DeleteManyDocumentsByQuery, NotUsed] =
+    Source.single(DeleteManyDocumentsByQuery("my-collection", "budget:>150"))
+
+  val deleteDocumentsByQueryFlow: Flow[DeleteManyDocumentsByQuery, DeleteManyDocumentsResult, Future[NotUsed]] =
+    Typesense.deleteManyDocumentsByQueryFlow(settings)
+
+  val deleteDocumentsByQueryResult: Future[DeleteManyDocumentsResult] =
+    deleteDocumentsByQuerySource.via(deleteDocumentsByQueryFlow).runWith(Sink.head)
+  //# delete documents by query
 }
 
 object ExampleUsage {

@@ -197,4 +197,27 @@ object Typesense {
       .deleteDocumentSink(settings)
       .mapMaterializedValue(_.toJava)
       .asJava
+
+  /**
+   * Delete many documents by query.
+   */
+  def deleteManyDocumentsByQueryRequest(
+      settings: TypesenseSettings,
+      document: DeleteManyDocumentsByQuery,
+      system: ActorSystem
+  ): CompletionStage[DeleteManyDocumentsResult] =
+    ScalaTypesense
+      .deleteManyDocumentsByQueryRequest(settings, document)(system)
+      .toJava
+
+  /**
+   * Creates a flow for deleting many documents by flow.
+   */
+  def deleteManyDocumentsByQueryFlow(
+      settings: TypesenseSettings
+  ): Flow[DeleteManyDocumentsByQuery, DeleteManyDocumentsResult, CompletionStage[NotUsed]] =
+    ScalaTypesense
+      .deleteManyDocumentsByQueryFlow(settings)
+      .mapMaterializedValue(_.toJava)
+      .asJava
 }

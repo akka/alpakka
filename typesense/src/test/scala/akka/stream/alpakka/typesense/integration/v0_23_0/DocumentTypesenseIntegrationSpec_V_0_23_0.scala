@@ -9,6 +9,8 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.stream.alpakka.typesense.IndexDocumentResult.IndexSuccess
 import akka.stream.alpakka.typesense.{
   CollectionSchema,
+  DeleteManyDocumentsByQuery,
+  DeleteManyDocumentsResult,
   Field,
   FieldType,
   IndexDocument,
@@ -28,9 +30,9 @@ import scala.jdk.FutureConverters.CompletionStageOps
 class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegrationSpec("0.23.0") {
   import DocumentTypesenseIntegrationSpec._
 
-  override protected def createCompaniesCollection(): Unit = {
+  override protected def createCollection(name: String): Unit = {
     val schema = CollectionSchema(
-      "companies",
+      name,
       Seq(Field("id", FieldType.String), Field("name", FieldType.String), Field("budget", FieldType.Int32))
     )
     Typesense.createCollectionRequest(settings, schema).futureValue
@@ -342,6 +344,133 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
             createManyResult(0).isSuccess shouldBe false
             createManyResult(1).isSuccess shouldBe true
           }
+        }
+      }
+    }
+
+    describe("should delete many documents by query") {
+      def setUpAndReturnCollectionName(): String = {
+        val collectionName = UUID.randomUUID().toString
+
+        val firstDocument = randomDocument().copy(budget = 100)
+        val secondDocument = randomDocument().copy(budget = 200)
+        val thirdDocument = randomDocument().copy(budget = 300)
+        val fourthDocument = randomDocument().copy(budget = 400)
+
+        val indexFirst = IndexDocument(collectionName, firstDocument)
+        val indexSecond = IndexDocument(collectionName, secondDocument)
+        val indexThird = IndexDocument(collectionName, thirdDocument)
+        val indexFourth = IndexDocument(collectionName, fourthDocument)
+
+        createCollection(collectionName)
+
+        runWithFlow(indexFirst, Typesense.indexDocumentFlow[Company](settings))
+        runWithFlow(indexSecond, Typesense.indexDocumentFlow[Company](settings))
+        runWithFlow(indexThird, Typesense.indexDocumentFlow[Company](settings))
+        runWithFlow(indexFourth, Typesense.indexDocumentFlow[Company](settings))
+
+        collectionName
+      }
+
+      describe("without batch size") {
+        it("using flow") {
+          //given
+          val collectionName = setUpAndReturnCollectionName()
+          val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150")
+
+          //when
+          val deleteResult = runWithFlow(delete, Typesense.deleteManyDocumentsByQueryFlow(settings))
+
+          //then
+          deleteResult shouldBe DeleteManyDocumentsResult(3)
+        }
+
+        it("using direst request") {
+          //given
+          val collectionName = setUpAndReturnCollectionName()
+          val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150")
+
+          //when
+          val deleteResult = Typesense.deleteManyDocumentsByQueryRequest(settings, delete).futureValue
+
+          //then
+          deleteResult shouldBe DeleteManyDocumentsResult(3)
+        }
+
+        it("using flow with Java API") {
+          //given
+          val collectionName = setUpAndReturnCollectionName()
+          val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150")
+
+          //when
+          val deleteResult = runWithJavaFlow(delete, JavaTypesense.deleteManyDocumentsByQueryFlow(settings))
+
+          //then
+          deleteResult shouldBe DeleteManyDocumentsResult(3)
+        }
+
+        it("using direct request with Java API") {
+          //given
+          val collectionName = setUpAndReturnCollectionName()
+          val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150")
+
+          //when
+          val deleteResult =
+            JavaTypesense.deleteManyDocumentsByQueryRequest(settings, delete, system).asScala.futureValue
+
+          //then
+          deleteResult shouldBe DeleteManyDocumentsResult(3)
+        }
+      }
+
+      describe("with batch size") {
+        it("using flow") {
+          //given
+          val collectionName = setUpAndReturnCollectionName()
+          val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150", batchSize = Some(2))
+
+          //when
+          val deleteResult = runWithFlow(delete, Typesense.deleteManyDocumentsByQueryFlow(settings))
+
+          //then
+          deleteResult shouldBe DeleteManyDocumentsResult(3)
+        }
+
+        it("using direst request") {
+          //given
+          val collectionName = setUpAndReturnCollectionName()
+          val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150", batchSize = Some(2))
+
+          //when
+          val deleteResult = Typesense.deleteManyDocumentsByQueryRequest(settings, delete).futureValue
+
+          //then
+          deleteResult shouldBe DeleteManyDocumentsResult(3)
+        }
+
+        it("using flow with Java API") {
+          //given
+          val collectionName = setUpAndReturnCollectionName()
+          val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150", batchSize = Some(2))
+
+          //when
+          val deleteResult = runWithJavaFlow(delete, JavaTypesense.deleteManyDocumentsByQueryFlow(settings))
+
+          //then
+          deleteResult shouldBe DeleteManyDocumentsResult(3)
+        }
+
+        it("using direct request with Java API") {
+          //given
+          val collectionName = setUpAndReturnCollectionName()
+          val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150", batchSize = Some(2))
+
+          //when
+          val deleteResult =
+            JavaTypesense.deleteManyDocumentsByQueryRequest(settings, delete, system).asScala.futureValue
+
+          //then
+          deleteResult shouldBe DeleteManyDocumentsResult(3)
         }
       }
     }

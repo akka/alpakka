@@ -114,5 +114,16 @@ public class ExampleUsage {
     CompletionStage<Done> deleteDocumentResponse =
         deleteDocumentSource.via(deleteDocumentFlow).runWith(Sink.head(), system);
     // #delete document
+
+    // #delete documents by query
+    Source<DeleteManyDocumentsByQuery, NotUsed> deleteDocumentsByQuerySource =
+        Source.single(DeleteManyDocumentsByQuery.create("my-collection", "budget:>150"));
+
+    Flow<DeleteManyDocumentsByQuery, DeleteManyDocumentsResult, CompletionStage<NotUsed>>
+        deleteDocumentsByQueryFlow = Typesense.deleteManyDocumentsByQueryFlow(settings);
+
+    CompletionStage<DeleteManyDocumentsResult> deleteDocumentsByQueryResult =
+        deleteDocumentsByQuerySource.via(deleteDocumentsByQueryFlow).runWith(Sink.head(), system);
+    // #delete documents by query
   }
 }

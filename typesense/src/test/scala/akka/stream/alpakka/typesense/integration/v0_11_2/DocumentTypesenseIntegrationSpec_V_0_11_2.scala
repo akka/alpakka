@@ -9,9 +9,9 @@ import akka.stream.alpakka.typesense.integration.DocumentTypesenseIntegrationSpe
 import akka.stream.alpakka.typesense.scaladsl.Typesense
 
 class DocumentTypesenseIntegrationSpec_V_0_11_2 extends DocumentTypesenseIntegrationSpec("0.11.2") {
-  override protected def createCompaniesCollection(): Unit = {
+  override protected def createCollection(name: String): Unit = {
     val schema = CollectionSchema(
-      "companies",
+      name,
       Seq(Field("id", FieldType.String), Field("name", FieldType.String), Field("budget", FieldType.Int32))
     ).withDefaultSortingField("budget")
     Typesense.createCollectionRequest(settings, schema).futureValue

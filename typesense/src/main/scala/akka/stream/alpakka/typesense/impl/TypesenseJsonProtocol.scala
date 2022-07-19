@@ -144,4 +144,19 @@ import java.time.Instant
   implicit val indexManyDocumentsResponseFormat: RootJsonFormat[IndexManyDocumentsResponse] = jsonFormat3(
     IndexManyDocumentsResponse
   )
+
+  implicit val deleteManyDocumentsResultFormat: RootJsonFormat[DeleteManyDocumentsResult] =
+    new RootJsonFormat[DeleteManyDocumentsResult] {
+      override def read(json: JsValue): DeleteManyDocumentsResult = {
+        val fields = json.asJsObject.fields
+        DeleteManyDocumentsResult(
+          numDeleted = fields("num_deleted").convertTo[Int]
+        )
+      }
+
+      override def write(obj: DeleteManyDocumentsResult): JsValue = JsObject(
+        "num_deleted" -> obj.numDeleted.toJson
+      )
+    }
+
 }
