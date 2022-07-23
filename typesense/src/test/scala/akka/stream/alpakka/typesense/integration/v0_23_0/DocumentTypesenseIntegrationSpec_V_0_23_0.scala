@@ -13,13 +13,15 @@ import akka.stream.alpakka.typesense.{
   DeleteManyDocumentsResult,
   Field,
   FieldType,
+  FilterDeleteDocumentsQuery,
   IndexDocument,
   IndexDocumentAction,
   IndexDocumentResult,
   IndexManyDocuments
 }
 import akka.stream.alpakka.typesense.integration.DocumentTypesenseIntegrationSpec
-import akka.stream.alpakka.typesense.scaladsl.Typesense
+import akka.stream.alpakka.typesense.scaladsl.{FilterDeleteDocumentsQueryDsl, Typesense}
+import org.scalatest.Assertion
 import spray.json.{JsonReader, JsonWriter}
 
 import java.util
@@ -33,7 +35,10 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
   override protected def createCollection(name: String): Unit = {
     val schema = CollectionSchema(
       name,
-      Seq(Field("id", FieldType.String), Field("name", FieldType.String), Field("budget", FieldType.Int32))
+      Seq(Field("id", FieldType.String),
+          Field("name", FieldType.String),
+          Field("budget", FieldType.Int32),
+          Field("evaluation", FieldType.Float))
     )
     Typesense.createCollectionRequest(settings, schema).futureValue
   }
@@ -349,13 +354,15 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
     }
 
     describe("should delete many documents by query") {
-      def setUpAndReturnCollectionName(): String = {
+      final case class SetUp(collectionName: String, companyIds: Seq[String])
+
+      def setUpTest(): SetUp = {
         val collectionName = UUID.randomUUID().toString
 
-        val firstDocument = randomDocument().copy(budget = 100)
-        val secondDocument = randomDocument().copy(budget = 200)
-        val thirdDocument = randomDocument().copy(budget = 300)
-        val fourthDocument = randomDocument().copy(budget = 400)
+        val firstDocument = randomDocument().copy(budget = 100, evaluation = 5.6)
+        val secondDocument = randomDocument().copy(budget = 200, evaluation = 3.2)
+        val thirdDocument = randomDocument().copy(budget = 300, evaluation = 4.3)
+        val fourthDocument = randomDocument().copy(budget = 400, evaluation = 2.1)
 
         val indexFirst = IndexDocument(collectionName, firstDocument)
         val indexSecond = IndexDocument(collectionName, secondDocument)
@@ -369,108 +376,204 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
         runWithFlow(indexThird, Typesense.indexDocumentFlow[Company](settings))
         runWithFlow(indexFourth, Typesense.indexDocumentFlow[Company](settings))
 
-        collectionName
+        SetUp(collectionName, Seq(firstDocument.id, secondDocument.id, thirdDocument.id, fourthDocument.id))
       }
 
-      describe("without batch size") {
-        it("using flow") {
-          //given
-          val collectionName = setUpAndReturnCollectionName()
-          val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150")
+      def testWithFlow(deleteQuery: SetUp => FilterDeleteDocumentsQuery, expectedDeleted: Int): Assertion = {
+        //given
+        val setUp = setUpTest()
+        val collectionName = setUp.collectionName
+        val delete = DeleteManyDocumentsByQuery(collectionName, deleteQuery(setUp))
 
-          //when
-          val deleteResult = runWithFlow(delete, Typesense.deleteManyDocumentsByQueryFlow(settings))
+        //when
+        val deleteResult = runWithFlow(delete, Typesense.deleteManyDocumentsByQueryFlow(settings))
 
-          //then
-          deleteResult shouldBe DeleteManyDocumentsResult(3)
+        //then
+        deleteResult shouldBe DeleteManyDocumentsResult(expectedDeleted)
+      }
+
+      describe("with field bigger than int") {
+        describe("with text query") {
+          describe("without batch size") {
+            it("using flow") {
+              //given
+              val setUp = setUpTest()
+              val collectionName = setUp.collectionName
+              val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150")
+
+              //when
+              val deleteResult = runWithFlow(delete, Typesense.deleteManyDocumentsByQueryFlow(settings))
+
+              //then
+              deleteResult shouldBe DeleteManyDocumentsResult(3)
+            }
+
+            it("using direst request") {
+              //given
+              val setUp = setUpTest()
+              val collectionName = setUp.collectionName
+              val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>100")
+
+              //when
+              val deleteResult = Typesense.deleteManyDocumentsByQueryRequest(settings, delete).futureValue
+
+              //then
+              deleteResult shouldBe DeleteManyDocumentsResult(3)
+            }
+
+            it("using flow with Java API") {
+              //given
+              val setUp = setUpTest()
+              val collectionName = setUp.collectionName
+              val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150")
+
+              //when
+              val deleteResult = runWithJavaFlow(delete, JavaTypesense.deleteManyDocumentsByQueryFlow(settings))
+
+              //then
+              deleteResult shouldBe DeleteManyDocumentsResult(3)
+            }
+
+            it("using direct request with Java API") {
+              //given
+              val setUp = setUpTest()
+              val collectionName = setUp.collectionName
+              val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150")
+
+              //when
+              val deleteResult =
+                JavaTypesense.deleteManyDocumentsByQueryRequest(settings, delete, system).asScala.futureValue
+
+              //then
+              deleteResult shouldBe DeleteManyDocumentsResult(3)
+            }
+          }
+
+          describe("with batch size") {
+            it("using flow") {
+              //given
+              val setUp = setUpTest()
+              val collectionName = setUp.collectionName
+              val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150", batchSize = Some(2))
+
+              //when
+              val deleteResult = runWithFlow(delete, Typesense.deleteManyDocumentsByQueryFlow(settings))
+
+              //then
+              deleteResult shouldBe DeleteManyDocumentsResult(3)
+            }
+
+            it("using direst request") {
+              //given
+              val setUp = setUpTest()
+              val collectionName = setUp.collectionName
+              val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150", batchSize = Some(2))
+
+              //when
+              val deleteResult = Typesense.deleteManyDocumentsByQueryRequest(settings, delete).futureValue
+
+              //then
+              deleteResult shouldBe DeleteManyDocumentsResult(3)
+            }
+
+            it("using flow with Java API") {
+              //given
+              val setUp = setUpTest()
+              val collectionName = setUp.collectionName
+              val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150", batchSize = Some(2))
+
+              //when
+              val deleteResult = runWithJavaFlow(delete, JavaTypesense.deleteManyDocumentsByQueryFlow(settings))
+
+              //then
+              deleteResult shouldBe DeleteManyDocumentsResult(3)
+            }
+
+            it("using direct request with Java API") {
+              //given
+              val setUp = setUpTest()
+              val collectionName = setUp.collectionName
+              val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150", batchSize = Some(2))
+
+              //when
+              val deleteResult =
+                JavaTypesense.deleteManyDocumentsByQueryRequest(settings, delete, system).asScala.futureValue
+
+              //then
+              deleteResult shouldBe DeleteManyDocumentsResult(3)
+            }
+          }
         }
 
-        it("using direst request") {
-          //given
-          val collectionName = setUpAndReturnCollectionName()
-          val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150")
-
-          //when
-          val deleteResult = Typesense.deleteManyDocumentsByQueryRequest(settings, delete).futureValue
-
-          //then
-          deleteResult shouldBe DeleteManyDocumentsResult(3)
-        }
-
-        it("using flow with Java API") {
-          //given
-          val collectionName = setUpAndReturnCollectionName()
-          val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150")
-
-          //when
-          val deleteResult = runWithJavaFlow(delete, JavaTypesense.deleteManyDocumentsByQueryFlow(settings))
-
-          //then
-          deleteResult shouldBe DeleteManyDocumentsResult(3)
-        }
-
-        it("using direct request with Java API") {
-          //given
-          val collectionName = setUpAndReturnCollectionName()
-          val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150")
-
-          //when
-          val deleteResult =
-            JavaTypesense.deleteManyDocumentsByQueryRequest(settings, delete, system).asScala.futureValue
-
-          //then
-          deleteResult shouldBe DeleteManyDocumentsResult(3)
+        describe("with DSL") {
+          it("using flow") {
+            testWithFlow(deleteQuery = _ => FilterDeleteDocumentsQueryDsl.biggerThanInt("budget", 100),
+                         expectedDeleted = 3)
+          }
         }
       }
 
-      describe("with batch size") {
+      describe("with field bigger than float") {
+        it("using flow") {
+          testWithFlow(deleteQuery = _ => FilterDeleteDocumentsQueryDsl.biggerThanFloat("evaluation", 3.2),
+                       expectedDeleted = 2)
+        }
+      }
+
+      describe("with field bigger than or equal int") {
+        it("using flow") {
+          testWithFlow(deleteQuery = _ => FilterDeleteDocumentsQueryDsl.biggerThanOrEqualInt("budget", 200),
+                       expectedDeleted = 3)
+        }
+      }
+
+      describe("with field bigger than or equal float") {
+        it("using flow") {
+          testWithFlow(deleteQuery = _ => FilterDeleteDocumentsQueryDsl.biggerThanOrEqualFloat("evaluation", 3.2),
+                       expectedDeleted = 3)
+        }
+      }
+
+      describe("with field lower than int") {
+        it("using flow") {
+          testWithFlow(deleteQuery = _ => FilterDeleteDocumentsQueryDsl.lowerThanInt("budget", 200),
+                       expectedDeleted = 1)
+        }
+      }
+
+      describe("with field lower than float") {
+        it("using flow") {
+          testWithFlow(deleteQuery = _ => FilterDeleteDocumentsQueryDsl.lowerThanFloat("evaluation", 3.2),
+                       expectedDeleted = 1)
+        }
+      }
+
+      describe("with field lower than or equal int") {
+        it("using flow") {
+          testWithFlow(deleteQuery = _ => FilterDeleteDocumentsQueryDsl.lowerThanOrEqualInt("budget", 200),
+                       expectedDeleted = 2)
+        }
+      }
+
+      describe("with field lower than or equal float") {
+        it("using flow") {
+          testWithFlow(deleteQuery = _ => FilterDeleteDocumentsQueryDsl.lowerThanOrEqualFloat("evaluation", 3.2),
+                       expectedDeleted = 2)
+        }
+      }
+
+      describe("with string field in set") {
+        it("using flow") {
+          testWithFlow(deleteQuery = setUp => FilterDeleteDocumentsQueryDsl.inStringSet("id", setUp.companyIds.take(2)),
+                       expectedDeleted = 2)
+        }
+      }
+
+      describe("with int field in set") {
         it("using flow") {
           //given
-          val collectionName = setUpAndReturnCollectionName()
-          val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150", batchSize = Some(2))
-
-          //when
-          val deleteResult = runWithFlow(delete, Typesense.deleteManyDocumentsByQueryFlow(settings))
-
-          //then
-          deleteResult shouldBe DeleteManyDocumentsResult(3)
-        }
-
-        it("using direst request") {
-          //given
-          val collectionName = setUpAndReturnCollectionName()
-          val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150", batchSize = Some(2))
-
-          //when
-          val deleteResult = Typesense.deleteManyDocumentsByQueryRequest(settings, delete).futureValue
-
-          //then
-          deleteResult shouldBe DeleteManyDocumentsResult(3)
-        }
-
-        it("using flow with Java API") {
-          //given
-          val collectionName = setUpAndReturnCollectionName()
-          val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150", batchSize = Some(2))
-
-          //when
-          val deleteResult = runWithJavaFlow(delete, JavaTypesense.deleteManyDocumentsByQueryFlow(settings))
-
-          //then
-          deleteResult shouldBe DeleteManyDocumentsResult(3)
-        }
-
-        it("using direct request with Java API") {
-          //given
-          val collectionName = setUpAndReturnCollectionName()
-          val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150", batchSize = Some(2))
-
-          //when
-          val deleteResult =
-            JavaTypesense.deleteManyDocumentsByQueryRequest(settings, delete, system).asScala.futureValue
-
-          //then
-          deleteResult shouldBe DeleteManyDocumentsResult(3)
+          testWithFlow(deleteQuery = _ => FilterDeleteDocumentsQueryDsl.inIntSet("budget", Seq(200, 400)),
+                       expectedDeleted = 2)
         }
       }
     }

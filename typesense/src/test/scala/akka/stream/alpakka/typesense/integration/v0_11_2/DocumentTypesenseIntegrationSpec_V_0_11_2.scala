@@ -12,7 +12,10 @@ class DocumentTypesenseIntegrationSpec_V_0_11_2 extends DocumentTypesenseIntegra
   override protected def createCollection(name: String): Unit = {
     val schema = CollectionSchema(
       name,
-      Seq(Field("id", FieldType.String), Field("name", FieldType.String), Field("budget", FieldType.Int32))
+      Seq(Field("id", FieldType.String),
+          Field("name", FieldType.String),
+          Field("budget", FieldType.Int32),
+          Field("evaluation", FieldType.Float))
     ).withDefaultSortingField("budget")
     Typesense.createCollectionRequest(settings, schema).futureValue
   }

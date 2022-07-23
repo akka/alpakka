@@ -33,3 +33,7 @@ Elasticsearch module (WriteResult).
 **What should be in test application?**
 
 **Can be also test in project**
+
+## Old Typesense versions
+
+Should old Typesense versions be supported? So far the only trade off are optional fields in FieldResponse.

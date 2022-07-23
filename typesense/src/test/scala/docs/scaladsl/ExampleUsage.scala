@@ -6,7 +6,7 @@ package docs.scaladsl
 
 import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
-import akka.stream.alpakka.typesense.scaladsl.Typesense
+import akka.stream.alpakka.typesense.scaladsl.{FilterDeleteDocumentsQueryDsl, Typesense}
 import akka.stream.alpakka.typesense._
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import spray.json.RootJsonFormat
@@ -93,6 +93,12 @@ class ExampleUsage {
   //# delete documents by query
   val deleteDocumentsByQuerySource: Source[DeleteManyDocumentsByQuery, NotUsed] =
     Source.single(DeleteManyDocumentsByQuery("my-collection", "budget:>150"))
+
+  val deleteDocumentsByQueryWithDslSource: Source[DeleteManyDocumentsByQuery, NotUsed] =
+    Source.single(
+      DeleteManyDocumentsByQuery("my-collection",
+                                 FilterDeleteDocumentsQueryDsl.inStringSet("my-field", Seq(UUID.randomUUID().toString)))
+    )
 
   val deleteDocumentsByQueryFlow: Flow[DeleteManyDocumentsByQuery, DeleteManyDocumentsResult, Future[NotUsed]] =
     Typesense.deleteManyDocumentsByQueryFlow(settings)

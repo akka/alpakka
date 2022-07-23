@@ -537,8 +537,8 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
 private[integration] object DocumentTypesenseIntegrationSpec {
   import spray.json._
   import DefaultJsonProtocol._
-  final case class Company(id: String, name: String, budget: Int)
-  implicit val companyFormat: RootJsonFormat[Company] = jsonFormat3(Company)
+  final case class Company(id: String, name: String, budget: Int, evaluation: Double = 4.3)
+  implicit val companyFormat: RootJsonFormat[Company] = jsonFormat4(Company)
   final case class UpdateCompany(id: String, budget: Int)
   implicit val updateCompanyFormat: RootJsonFormat[UpdateCompany] = jsonFormat2(UpdateCompany)
 }

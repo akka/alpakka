@@ -8,6 +8,7 @@ import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.alpakka.typesense.*;
+import akka.stream.alpakka.typesense.javadsl.FilterDeleteDocumentsQueryDsl;
 import akka.stream.alpakka.typesense.javadsl.Typesense;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
@@ -118,6 +119,13 @@ public class ExampleUsage {
     // #delete documents by query
     Source<DeleteManyDocumentsByQuery, NotUsed> deleteDocumentsByQuerySource =
         Source.single(DeleteManyDocumentsByQuery.create("my-collection", "budget:>150"));
+
+    Source<DeleteManyDocumentsByQuery, NotUsed> deleteDocumentsByQueryWithDslSource =
+        Source.single(
+            DeleteManyDocumentsByQuery.create(
+                "my-collection",
+                FilterDeleteDocumentsQueryDsl.inStringSet(
+                    "id", Collections.singletonList(UUID.randomUUID().toString()))));
 
     Flow<DeleteManyDocumentsByQuery, DeleteManyDocumentsResult, CompletionStage<NotUsed>>
         deleteDocumentsByQueryFlow = Typesense.deleteManyDocumentsByQueryFlow(settings);

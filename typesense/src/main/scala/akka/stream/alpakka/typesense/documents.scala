@@ -4,7 +4,8 @@
 
 package akka.stream.alpakka.typesense
 
-import akka.annotation.{ApiMayChange, InternalApi}
+import akka.annotation.InternalApi
+import akka.stream.alpakka.typesense.javadsl.FilterDeleteDocumentsQueryDsl
 
 import java.util.OptionalInt
 import scala.compat.java8.OptionConverters.RichOptionalInt
@@ -207,7 +208,7 @@ object DeleteDocument {
 }
 
 final class DeleteManyDocumentsByQuery @InternalApi private[typesense] (val collectionName: String,
-                                                                        val filterBy: FilterDeleteDocuments,
+                                                                        val filterBy: FilterDeleteDocumentsQuery,
                                                                         val batchSize: Option[Int]) {
   def getBatchSize(): java.util.OptionalInt = batchSize.map(OptionalInt.of).getOrElse(OptionalInt.empty())
 
@@ -226,33 +227,35 @@ final class DeleteManyDocumentsByQuery @InternalApi private[typesense] (val coll
 }
 
 object DeleteManyDocumentsByQuery {
-  def apply(collectionName: String, filterBy: FilterDeleteDocuments): DeleteManyDocumentsByQuery =
+  def apply(collectionName: String, filterBy: FilterDeleteDocumentsQuery): DeleteManyDocumentsByQuery =
     new DeleteManyDocumentsByQuery(collectionName, filterBy, None)
 
   def apply(collectionName: String,
-            filterBy: FilterDeleteDocuments,
+            filterBy: FilterDeleteDocumentsQuery,
             batchSize: Option[Int]): DeleteManyDocumentsByQuery =
     new DeleteManyDocumentsByQuery(collectionName, filterBy, batchSize)
 
   def apply(collectionName: String, filterBy: String): DeleteManyDocumentsByQuery =
-    new DeleteManyDocumentsByQuery(collectionName, FilterDeleteDocuments.stringQuery(filterBy), None)
+    new DeleteManyDocumentsByQuery(collectionName, FilterDeleteDocumentsQueryDsl.stringQuery(filterBy), None)
 
   def apply(collectionName: String, filterBy: String, batchSize: Option[Int]): DeleteManyDocumentsByQuery =
-    new DeleteManyDocumentsByQuery(collectionName, FilterDeleteDocuments.stringQuery(filterBy), batchSize)
+    new DeleteManyDocumentsByQuery(collectionName, FilterDeleteDocumentsQueryDsl.stringQuery(filterBy), batchSize)
 
-  def create(collectionName: String, filterBy: FilterDeleteDocuments): DeleteManyDocumentsByQuery =
+  def create(collectionName: String, filterBy: FilterDeleteDocumentsQuery): DeleteManyDocumentsByQuery =
     new DeleteManyDocumentsByQuery(collectionName, filterBy, None)
 
   def create(collectionName: String,
-             filterBy: FilterDeleteDocuments,
+             filterBy: FilterDeleteDocumentsQuery,
              batchSize: java.util.OptionalInt): DeleteManyDocumentsByQuery =
     new DeleteManyDocumentsByQuery(collectionName, filterBy, batchSize.asScala)
 
   def create(collectionName: String, filterBy: String): DeleteManyDocumentsByQuery =
-    new DeleteManyDocumentsByQuery(collectionName, FilterDeleteDocuments.stringQuery(filterBy), None)
+    new DeleteManyDocumentsByQuery(collectionName, FilterDeleteDocumentsQueryDsl.stringQuery(filterBy), None)
 
   def create(collectionName: String, filterBy: String, batchSize: java.util.OptionalInt): DeleteManyDocumentsByQuery =
-    new DeleteManyDocumentsByQuery(collectionName, FilterDeleteDocuments.stringQuery(filterBy), batchSize.asScala)
+    new DeleteManyDocumentsByQuery(collectionName,
+                                   FilterDeleteDocumentsQueryDsl.stringQuery(filterBy),
+                                   batchSize.asScala)
 }
 
 final class DeleteManyDocumentsResult @InternalApi private[typesense] (val numDeleted: Int) {
@@ -274,13 +277,6 @@ object DeleteManyDocumentsResult {
   def create(numDeleted: java.lang.Integer): DeleteManyDocumentsResult = new DeleteManyDocumentsResult(numDeleted)
 }
 
-@ApiMayChange //maybe can be reuse for search, if yes name might be changed
-sealed trait FilterDeleteDocuments {
+@InternalApi private[typesense] trait FilterDeleteDocumentsQuery {
   def asTextQuery: String
-}
-
-object FilterDeleteDocuments {
-  def stringQuery(query: String): FilterDeleteDocuments = new FilterDeleteDocuments {
-    override def asTextQuery: String = query
-  }
 }
