@@ -13,6 +13,7 @@ import spray.json.RootJsonFormat
 
 import java.util.UUID
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 
 class ExampleUsage {
   import ExampleUsage._
@@ -21,7 +22,9 @@ class ExampleUsage {
   //#settings
   val host: String = "http://localhost:8108"
   val apiKey: String = "Hu52dwsas2AdxdE"
-  val settings: TypesenseSettings = TypesenseSettings(host, apiKey)
+  val retrySettings: RetrySettings =
+    RetrySettings(maxRetries = 6, minBackoff = 1.second, maxBackoff = 1.minute, randomFactor = 0.2)
+  val settings: TypesenseSettings = TypesenseSettings(host, apiKey, retrySettings)
   //#setings
 
   //#create collection

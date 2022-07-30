@@ -60,7 +60,7 @@ import scala.util.{Success, Try}
 
       Unmarshal(res).to[String].flatMap { body: String =>
         if (res.status.isFailure())
-          Future.failed(new TypesenseException(res.status, body))
+          Future.failed(new RetryableTypesenseException(res.status, body))
         else
           Future.fromTry(
             Try(
@@ -83,7 +83,7 @@ import scala.util.{Success, Try}
     ): Future[TypesenseResult[T]] =
       status match {
         case TooManyRequests | InternalServerError | BadGateway | ServiceUnavailable | GatewayTimeout =>
-          Future.failed(new TypesenseException(status, body))
+          Future.failed(new RetryableTypesenseException(status, body))
         case status if status.isFailure() => Future.successful(new FailureTypesenseResult(status, body))
         case _ => Future.fromTry(convert(body)).map(new SuccessTypesenseResult(_))
       }
@@ -94,14 +94,24 @@ import scala.util.{Success, Try}
       future.flatMap {
         case result: SuccessTypesenseResult[T] => Future.successful(result.value)
         case result: FailureTypesenseResult[T] =>
-          Future.failed(new TypesenseException(result.statusCode, result.reason))
+          Future.failed(new RetryableTypesenseException(result.statusCode, result.reason))
       }
   }
 
-  class TypesenseException @InternalApi private[typesense] (val statusCode: StatusCode, val reason: String)
-      extends Exception(s"[Status code $statusCode]: $reason")
+  final class RetryableTypesenseException @InternalApi private[typesense] (val statusCode: StatusCode,
+                                                                           val reason: String)
+      extends Exception(s"Retryable Typesense exception: [status code $statusCode]: $reason") {
 
-  //TODO: error handling tests - ex. authentication
+    override def equals(other: Any): Boolean = other match {
+      case that: RetryableTypesenseException =>
+        statusCode == that.statusCode &&
+        reason == that.reason
+      case _ => false
+    }
+
+    override def hashCode(): Int = java.util.Objects.hash(statusCode, reason)
+  }
+
   def executeRequest[Response](
       endpoint: String,
       method: HttpMethod,

@@ -9,13 +9,18 @@ import akka.http.scaladsl.model.HttpMethods
 import akka.stream.alpakka.typesense._
 import akka.stream.alpakka.typesense.impl.CollectionResponses.IndexManyDocumentsResponse
 import akka.stream.alpakka.typesense.impl.TypesenseHttp
-import akka.stream.alpakka.typesense.impl.TypesenseHttp.{ParseResponse, PrepareRequestEntity}
+import akka.stream.alpakka.typesense.impl.TypesenseHttp.{
+  ParseResponse,
+  PrepareRequestEntity,
+  RetryableTypesenseException
+}
 import akka.stream.alpakka.typesense.impl.TypesenseJsonProtocol._
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.{Flow, RetryFlow}
 import akka.{Done, NotUsed}
 import spray.json._
 
 import scala.concurrent.Future
+import scala.util.{Failure, Success, Try}
 
 /**
  * Scala DSL for Typesense
@@ -28,17 +33,13 @@ object Typesense {
   def createCollectionFlow(
       settings: TypesenseSettings
   ): Flow[CollectionSchema, TypesenseResult[CollectionResponse], Future[NotUsed]] =
-    Flow.fromMaterializer { (materializer, _) =>
-      implicit val system: ActorSystem = materializer.system
-      Flow[CollectionSchema]
-        .mapAsync(parallelism = 1) { schema =>
-          TypesenseHttp
-            .executeRequest("collections",
-                            HttpMethods.POST,
-                            PrepareRequestEntity.json(schema.toJson),
-                            settings,
-                            ParseResponse.jsonTypesenseResult[CollectionResponse])
-        }
+    flowFlowRequest(settings) { (schema, system) =>
+      TypesenseHttp
+        .executeRequest("collections",
+                        HttpMethods.POST,
+                        PrepareRequestEntity.json(schema.toJson),
+                        settings,
+                        ParseResponse.jsonTypesenseResult[CollectionResponse])(system)
     }
 
   /**
@@ -47,17 +48,13 @@ object Typesense {
   def retrieveCollectionFlow(
       settings: TypesenseSettings
   ): Flow[RetrieveCollection, TypesenseResult[CollectionResponse], Future[NotUsed]] =
-    Flow.fromMaterializer { (materializer, _) =>
-      implicit val system: ActorSystem = materializer.system
-      Flow[RetrieveCollection]
-        .mapAsync(parallelism = 1) { retrieve =>
-          TypesenseHttp
-            .executeRequest(s"collections/${retrieve.collectionName}",
-                            HttpMethods.GET,
-                            PrepareRequestEntity.empty,
-                            settings,
-                            ParseResponse.jsonTypesenseResult[CollectionResponse])
-        }
+    flowFlowRequest(settings) { (retrieve, system) =>
+      TypesenseHttp
+        .executeRequest(s"collections/${retrieve.collectionName}",
+                        HttpMethods.GET,
+                        PrepareRequestEntity.empty,
+                        settings,
+                        ParseResponse.jsonTypesenseResult[CollectionResponse])(system)
     }
 
   /**
@@ -66,20 +63,16 @@ object Typesense {
   def indexDocumentFlow[T: JsonWriter](
       settings: TypesenseSettings
   ): Flow[IndexDocument[T], TypesenseResult[Done], Future[NotUsed]] =
-    Flow.fromMaterializer { (materializer, _) =>
-      implicit val system: ActorSystem = materializer.system
-      Flow[IndexDocument[T]]
-        .mapAsync(parallelism = 1) { document =>
-          TypesenseHttp
-            .executeRequest(
-              s"collections/${document.collectionName}/documents",
-              HttpMethods.POST,
-              PrepareRequestEntity.json(document.content.toJson),
-              settings,
-              ParseResponse.withoutBodyTypesenseResult,
-              Map("action" -> indexActionValue(document.action))
-            )
-        }
+    flowFlowRequest(settings) { (document, system) =>
+      TypesenseHttp
+        .executeRequest(
+          s"collections/${document.collectionName}/documents",
+          HttpMethods.POST,
+          PrepareRequestEntity.json(document.content.toJson),
+          settings,
+          ParseResponse.withoutBodyTypesenseResult,
+          Map("action" -> indexActionValue(document.action))
+        )(system)
     }
 
   /**
@@ -88,22 +81,17 @@ object Typesense {
   def indexManyDocumentsFlow[T: JsonWriter](
       settings: TypesenseSettings
   ): Flow[IndexManyDocuments[T], Seq[IndexDocumentResult], Future[NotUsed]] =
-    Flow.fromMaterializer { (materializer, _) =>
-      implicit val system: ActorSystem = materializer.system
-      import system.dispatcher
-      Flow[IndexManyDocuments[T]]
-        .mapAsync(parallelism = 1) { index =>
-          TypesenseHttp
-            .executeRequest(
-              s"collections/${index.collectionName}/documents/import",
-              HttpMethods.POST,
-              PrepareRequestEntity.jsonLine(index.documents.map(_.toJson)),
-              settings,
-              ParseResponse.jsonLine[IndexManyDocumentsResponse],
-              Map("action" -> indexActionValue(index.action))
-            )
-            .map(_.map(_.asResult))
-        }
+    flowFlowRequest(settings) { (index, system) =>
+      TypesenseHttp
+        .executeRequest(
+          s"collections/${index.collectionName}/documents/import",
+          HttpMethods.POST,
+          PrepareRequestEntity.jsonLine(index.documents.map(_.toJson)),
+          settings,
+          ParseResponse.jsonLine[IndexManyDocumentsResponse],
+          Map("action" -> indexActionValue(index.action))
+        )(system)
+        .map(_.map(_.asResult))(system.dispatcher)
     }
 
   /**
@@ -112,20 +100,17 @@ object Typesense {
   def retrieveDocumentFlow[T: JsonReader](
       settings: TypesenseSettings
   ): Flow[RetrieveDocument, TypesenseResult[T], Future[NotUsed]] =
-    Flow.fromMaterializer { (materializer, _) =>
-      implicit val system: ActorSystem = materializer.system
-      Flow[RetrieveDocument]
-        .mapAsync(parallelism = 1) { retrieve =>
-          TypesenseHttp
-            .executeRequest(
-              s"collections/${retrieve.collectionName}/documents/${retrieve.documentId}",
-              HttpMethods.GET,
-              PrepareRequestEntity.empty,
-              settings,
-              ParseResponse.jsonTypesenseResult[T]
-            )
-        }
-    }
+    flowFlowRequest(settings)(
+      (retrieve, system) =>
+        TypesenseHttp
+          .executeRequest(
+            s"collections/${retrieve.collectionName}/documents/${retrieve.documentId}",
+            HttpMethods.GET,
+            PrepareRequestEntity.empty,
+            settings,
+            ParseResponse.jsonTypesenseResult[T]
+          )(system)
+    )
 
   /**
    * Creates a flow for deleting a single document.
@@ -133,20 +118,17 @@ object Typesense {
   def deleteDocumentFlow(
       settings: TypesenseSettings
   ): Flow[DeleteDocument, TypesenseResult[Done], Future[NotUsed]] =
-    Flow.fromMaterializer { (materializer, _) =>
-      implicit val system: ActorSystem = materializer.system
-      Flow[DeleteDocument]
-        .mapAsync(parallelism = 1) { delete =>
-          TypesenseHttp
-            .executeRequest(
-              s"collections/${delete.collectionName}/documents/${delete.documentId}",
-              HttpMethods.DELETE,
-              PrepareRequestEntity.empty,
-              settings,
-              ParseResponse.withoutBodyTypesenseResult
-            )
-        }
-    }
+    flowFlowRequest(settings)(
+      (delete, system) =>
+        TypesenseHttp
+          .executeRequest(
+            s"collections/${delete.collectionName}/documents/${delete.documentId}",
+            HttpMethods.DELETE,
+            PrepareRequestEntity.empty,
+            settings,
+            ParseResponse.withoutBodyTypesenseResult
+          )(system)
+    )
 
   /**
    * Creates a flow for deleting many documents by query.
@@ -154,21 +136,45 @@ object Typesense {
   def deleteManyDocumentsByQueryFlow(
       settings: TypesenseSettings
   ): Flow[DeleteManyDocumentsByQuery, DeleteManyDocumentsResult, Future[NotUsed]] =
-    Flow.fromMaterializer { (materializer, _) =>
+    flowFlowRequest(settings) { (delete, system) =>
+      TypesenseHttp
+        .executeRequest(
+          s"collections/${delete.collectionName}/documents",
+          HttpMethods.DELETE,
+          PrepareRequestEntity.empty,
+          settings,
+          ParseResponse.json[DeleteManyDocumentsResult],
+          Map("filter_by" -> delete.filterBy.asTextQuery) ++ delete.batchSize.map("batch_size" -> _.toString)
+        )(system)
+    }
+
+  private def flowFlowRequest[Request, Response](
+      settings: TypesenseSettings
+  )(future: (Request, ActorSystem) => Future[Response]): Flow[Request, Response, Future[NotUsed]] = {
+
+    val basicFlow: Flow[Request, Try[Response], Future[NotUsed]] = Flow.fromMaterializer { (materializer, _) =>
       implicit val system: ActorSystem = materializer.system
-      Flow[DeleteManyDocumentsByQuery]
-        .mapAsync(parallelism = 1) { delete =>
-          TypesenseHttp
-            .executeRequest(
-              s"collections/${delete.collectionName}/documents",
-              HttpMethods.DELETE,
-              PrepareRequestEntity.empty,
-              settings,
-              ParseResponse.json[DeleteManyDocumentsResult],
-              Map("filter_by" -> delete.filterBy.asTextQuery) ++ delete.batchSize.map("batch_size" -> _.toString)
-            )
+      import system.dispatcher
+      Flow[Request]
+        .mapAsync(parallelism = 1) { req =>
+          future(req, system).map(Success.apply).recover(e => Failure(e))
         }
     }
+    val retrySettings = settings.retrySettings
+    val retryFlow = RetryFlow.withBackoff(
+      minBackoff = retrySettings.minBackoff,
+      maxBackoff = retrySettings.maxBackoff,
+      randomFactor = retrySettings.randomFactor,
+      maxRetries = retrySettings.maxRetries,
+      flow = basicFlow
+    ) {
+      case (req, Failure(_: RetryableTypesenseException)) => Some(req) //retry
+      case (_, Success(_)) => None //success
+      case (req, Failure(_)) => None //failure, but non retryable, in next flow exception will be thrown
+    }
+
+    retryFlow.map(_.get)
+  }
 
   private def indexActionValue(action: IndexDocumentAction): String = action match {
     case IndexDocumentAction.Create => "create"

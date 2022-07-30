@@ -6,13 +6,7 @@ package akka.stream.alpakka.typesense.integration
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCode
-import akka.stream.alpakka.typesense.{
-  FailureTypesenseResult,
-  SuccessTypesenseResult,
-  TypesenseResult,
-  TypesenseSettings
-}
-import akka.stream.alpakka.typesense.impl.TypesenseHttp.TypesenseException
+import akka.stream.alpakka.typesense._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.{Done, NotUsed}
 import com.dimafeng.testcontainers.scalatest.TestContainerForAll
@@ -27,8 +21,8 @@ import org.testcontainers.containers.wait.strategy.Wait
 import java.io.File
 import java.util.concurrent.CompletionStage
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 import scala.jdk.FutureConverters.CompletionStageOps
-import scala.util.{Failure, Success}
 
 /**
  * Integration tests for Typesense using Docker container.
@@ -41,7 +35,6 @@ abstract class TypesenseIntegrationSpec(protected val version: String)
     with ScalaFutures
     with should.Matchers {
   implicit val system: ActorSystem = ActorSystem()
-  import system.dispatcher
 
   implicit val defaultPatience: PatienceConfig = PatienceConfig(timeout = Span(5, Seconds), interval = Span(5, Millis))
 
@@ -53,7 +46,11 @@ abstract class TypesenseIntegrationSpec(protected val version: String)
     ExposedService(containerName, port, Wait.forHttp("/collections").forStatusCode(401))
   private val apiKey = "Hu52dwsas2AdxdE"
 
-  protected val settings: TypesenseSettings = TypesenseSettings(s"http://localhost:$port", apiKey)
+  protected val settings: TypesenseSettings = TypesenseSettings(
+    s"http://localhost:$port",
+    apiKey,
+    RetrySettings(maxRetries = 1, minBackoff = 1.second, maxBackoff = 1.second, randomFactor = 0.2)
+  )
 
   override val containerDef: DockerComposeContainer.Def =
     DockerComposeContainer.Def(dockerComposeFile, Seq(exposedService))
@@ -141,8 +138,6 @@ abstract class TypesenseIntegrationSpec(protected val version: String)
       .futureValue match {
       case result: FailureTypesenseResult[_] if result.statusCode == expectedStatusCode =>
         result.statusCode shouldBe expectedStatusCode
-      case result: FailureTypesenseResult[_] =>
-        fail(s"Expected error with status code: $expectedStatusCode, got [${result.statusCode}] ${result.reason}")
-      case _: SuccessTypesenseResult[_] => fail(s"Expected error with status code: $expectedStatusCode, got success")
+      case result => fail(s"Expected error with status code: $expectedStatusCode, got ${result.toString}")
     }
 }

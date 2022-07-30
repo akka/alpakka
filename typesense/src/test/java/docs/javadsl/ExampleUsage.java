@@ -16,6 +16,7 @@ import akka.stream.javadsl.Source;
 import spray.json.JsonReader;
 import spray.json.JsonWriter;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -38,7 +39,12 @@ public class ExampleUsage {
     // #settings
     String host = "http://localhost:8108";
     String apiKey = "Hu52dwsas2AdxdE";
-    TypesenseSettings settings = TypesenseSettings.create(host, apiKey);
+    // val retrySettings: RetrySettings =
+    //    RetrySettings(maxRetries = 6, minBackoff = 1.second, maxBackoff = 1.minute, randomFactor =
+    // 0.2)
+    RetrySettings retrySettings =
+        RetrySettings.create(6, Duration.ofSeconds(1), Duration.ofMinutes(1), 0.2);
+    TypesenseSettings settings = TypesenseSettings.create(host, apiKey, retrySettings);
     // #setings
 
     // #create collection

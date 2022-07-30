@@ -518,7 +518,8 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         "org.scalatest" %% "scalatest" % ScalaTestVersion % Test,
-        "com.dimafeng" %% "testcontainers-scala-scalatest" % TestContainersScalaTestVersion % Test
+        "com.dimafeng" %% "testcontainers-scala-scalatest" % TestContainersScalaTestVersion % Test,
+        "com.github.tomakehurst" % "wiremock-jre8" % "2.32.0" % Test // ApacheV2
       )
   )
 
