@@ -2,7 +2,7 @@
 
 The Avro Parquet connector provides an Akka Stream Source, Sink and Flow for push and pull data to and from Parquet files.
 
-For more information about Apache Parquet please visit the [official documentation](https://parquet.apache.org/documentation/latest/).
+For more information about Apache Parquet please visit the [official documentation](https://parquet.apache.org/docs/).
 
 @@project-info{ projectId="avroparquet" }
 
