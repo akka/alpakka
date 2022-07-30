@@ -7,27 +7,15 @@ package akka.stream.alpakka.typesense.integration.v0_23_0
 import akka.Done
 import akka.http.scaladsl.model.StatusCodes
 import akka.stream.alpakka.typesense.IndexDocumentResult.IndexSuccess
-import akka.stream.alpakka.typesense.{
-  CollectionSchema,
-  DeleteManyDocumentsByQuery,
-  DeleteManyDocumentsResult,
-  Field,
-  FieldType,
-  FilterDeleteDocumentsQuery,
-  IndexDocument,
-  IndexDocumentAction,
-  IndexDocumentResult,
-  IndexManyDocuments
-}
 import akka.stream.alpakka.typesense.integration.DocumentTypesenseIntegrationSpec
 import akka.stream.alpakka.typesense.scaladsl.{FilterDeleteDocumentsQueryDsl, Typesense}
+import akka.stream.alpakka.typesense._
 import org.scalatest.Assertion
 import spray.json.{JsonReader, JsonWriter}
 
 import java.util
 import java.util.UUID
 import scala.jdk.CollectionConverters.ListHasAsScala
-import scala.jdk.FutureConverters.CompletionStageOps
 
 class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegrationSpec("0.23.0") {
   import DocumentTypesenseIntegrationSpec._
@@ -40,7 +28,7 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
           Field("budget", FieldType.Int32),
           Field("evaluation", FieldType.Float))
     )
-    Typesense.createCollectionRequest(settings, schema).futureValue
+    runWithFlow(schema, Typesense.createCollectionFlow(settings))
   }
 
   describe(s"Only for Typesense $version") {
@@ -69,40 +57,6 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
             retrieveResult shouldBe upsertDocument.content
           }
 
-          it("using sink") {
-            //given
-            val createDocument = randomIndexDocument(IndexDocumentAction.Create)
-            val upsertDocument = upsertFromCreate(createDocument)
-            val retrieve = retrieveDocumentFromIndexDocument(createDocument)
-
-            //when
-            val createResult = runWithSink(createDocument, Typesense.indexDocumentSink[Company](settings))
-            val upsertResult = runWithSink(upsertDocument, Typesense.indexDocumentSink[Company](settings))
-            val retrieveResult = runWithFlow(retrieve, Typesense.retrieveDocumentFlow[Company](settings))
-
-            //then
-            createResult shouldBe Done
-            upsertResult shouldBe Done
-            retrieveResult shouldBe upsertDocument.content
-          }
-
-          it("using direct request") {
-            //given
-            val createDocument = randomIndexDocument(IndexDocumentAction.Create)
-            val upsertDocument = upsertFromCreate(createDocument)
-            val retrieve = retrieveDocumentFromIndexDocument(createDocument)
-
-            //when
-            val createResult = Typesense.indexDocumentRequest(settings, createDocument).futureValue
-            val upsertResult = Typesense.indexDocumentRequest(settings, upsertDocument).futureValue
-            val retrieveResult = Typesense.retrieveDocumentRequest[Company](settings, retrieve).futureValue
-
-            //then
-            createResult shouldBe Done
-            upsertResult shouldBe Done
-            retrieveResult shouldBe upsertDocument.content
-          }
-
           it("using flow with Java API") {
             //given
             val createDocument = randomIndexDocument(IndexDocumentAction.Create)
@@ -119,55 +73,6 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
             val retrieveResult =
               runWithJavaFlow(retrieve,
                               JavaTypesense.retrieveDocumentFlow[Company](settings, implicitly[JsonReader[Company]]))
-
-            //then
-            createResult shouldBe Done
-            upsertResult shouldBe Done
-            retrieveResult shouldBe upsertDocument.content
-          }
-
-          it("using sink with Java API") {
-            //given
-            val createDocument = randomIndexDocument(IndexDocumentAction.Create)
-            val upsertDocument = upsertFromCreate(createDocument)
-            val retrieve = retrieveDocumentFromIndexDocument(createDocument)
-
-            //when
-            val createResult =
-              runWithJavaSink(createDocument,
-                              JavaTypesense.indexDocumentSink(settings, implicitly[JsonWriter[Company]]))
-            val upsertResult =
-              runWithJavaSink(upsertDocument,
-                              JavaTypesense.indexDocumentSink(settings, implicitly[JsonWriter[Company]]))
-            val retrieveResult =
-              runWithJavaFlow(retrieve,
-                              JavaTypesense.retrieveDocumentFlow[Company](settings, implicitly[JsonReader[Company]]))
-
-            //then
-            createResult shouldBe Done
-            upsertResult shouldBe Done
-            retrieveResult shouldBe upsertDocument.content
-          }
-
-          it("using direct request with Java API") {
-            //given
-            val createDocument = randomIndexDocument(IndexDocumentAction.Create)
-            val upsertDocument = upsertFromCreate(createDocument)
-            val retrieve = retrieveDocumentFromIndexDocument(createDocument)
-
-            //when
-            val createResult = JavaTypesense
-              .indexDocumentRequest(settings, createDocument, system, implicitly[JsonWriter[Company]])
-              .asScala
-              .futureValue
-            val upsertResult = JavaTypesense
-              .indexDocumentRequest(settings, upsertDocument, system, implicitly[JsonWriter[Company]])
-              .asScala
-              .futureValue
-            val retrieveResult = JavaTypesense
-              .retrieveDocumentRequest[Company](settings, retrieve, system, implicitly[JsonReader[Company]])
-              .asScala
-              .futureValue
 
             //then
             createResult shouldBe Done
@@ -290,17 +195,6 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
           indexResult(1).isSuccess shouldBe true
         }
 
-        it("using direct request") {
-          //given
-          val indexDocuments = IndexManyDocuments("companies", Seq(randomDocument(), randomDocument()))
-
-          //when
-          val indexResult = Typesense.indexManyDocumentsRequest(settings, indexDocuments).futureValue
-
-          //then
-          indexResult shouldBe Seq(IndexSuccess(), IndexSuccess())
-        }
-
         it("using flow with Java API") {
           //given
           val indexDocuments = IndexManyDocuments("companies", Seq(randomDocument(), randomDocument()))
@@ -309,21 +203,6 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
           val indexResult: util.List[IndexDocumentResult] =
             runWithJavaFlow(indexDocuments,
                             JavaTypesense.indexManyDocumentsFlow(settings, implicitly[JsonWriter[Company]]))
-
-          //then
-          indexResult.asScala shouldBe Seq(IndexSuccess(), IndexSuccess())
-        }
-
-        it("using direct request with Java API") {
-          //given
-          val indexDocuments = IndexManyDocuments("companies", Seq(randomDocument(), randomDocument()))
-
-          //when
-          val indexResult: util.List[IndexDocumentResult] =
-            JavaTypesense
-              .indexManyDocumentRequest(settings, indexDocuments, system, implicitly[JsonWriter[Company]])
-              .asScala
-              .futureValue
 
           //then
           indexResult.asScala shouldBe Seq(IndexSuccess(), IndexSuccess())
@@ -341,7 +220,7 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
               IndexManyDocuments("companies", Seq(createSingleDocument.content, randomDocument()))
 
             //when
-            val createSingleResult = Typesense.indexDocumentRequest(settings, createSingleDocument).futureValue
+            val createSingleResult = runWithFlow(createSingleDocument, Typesense.indexDocumentFlow[Company](settings))
             val createManyResult = runWithFlow(createManyDocuments, Typesense.indexManyDocumentsFlow[Company](settings))
 
             //then
@@ -408,19 +287,6 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
               deleteResult shouldBe DeleteManyDocumentsResult(3)
             }
 
-            it("using direst request") {
-              //given
-              val setUp = setUpTest()
-              val collectionName = setUp.collectionName
-              val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>100")
-
-              //when
-              val deleteResult = Typesense.deleteManyDocumentsByQueryRequest(settings, delete).futureValue
-
-              //then
-              deleteResult shouldBe DeleteManyDocumentsResult(3)
-            }
-
             it("using flow with Java API") {
               //given
               val setUp = setUpTest()
@@ -429,20 +295,6 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
 
               //when
               val deleteResult = runWithJavaFlow(delete, JavaTypesense.deleteManyDocumentsByQueryFlow(settings))
-
-              //then
-              deleteResult shouldBe DeleteManyDocumentsResult(3)
-            }
-
-            it("using direct request with Java API") {
-              //given
-              val setUp = setUpTest()
-              val collectionName = setUp.collectionName
-              val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150")
-
-              //when
-              val deleteResult =
-                JavaTypesense.deleteManyDocumentsByQueryRequest(settings, delete, system).asScala.futureValue
 
               //then
               deleteResult shouldBe DeleteManyDocumentsResult(3)
@@ -463,19 +315,6 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
               deleteResult shouldBe DeleteManyDocumentsResult(3)
             }
 
-            it("using direst request") {
-              //given
-              val setUp = setUpTest()
-              val collectionName = setUp.collectionName
-              val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150", batchSize = Some(2))
-
-              //when
-              val deleteResult = Typesense.deleteManyDocumentsByQueryRequest(settings, delete).futureValue
-
-              //then
-              deleteResult shouldBe DeleteManyDocumentsResult(3)
-            }
-
             it("using flow with Java API") {
               //given
               val setUp = setUpTest()
@@ -484,20 +323,6 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
 
               //when
               val deleteResult = runWithJavaFlow(delete, JavaTypesense.deleteManyDocumentsByQueryFlow(settings))
-
-              //then
-              deleteResult shouldBe DeleteManyDocumentsResult(3)
-            }
-
-            it("using direct request with Java API") {
-              //given
-              val setUp = setUpTest()
-              val collectionName = setUp.collectionName
-              val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150", batchSize = Some(2))
-
-              //when
-              val deleteResult =
-                JavaTypesense.deleteManyDocumentsByQueryRequest(settings, delete, system).asScala.futureValue
 
               //then
               deleteResult shouldBe DeleteManyDocumentsResult(3)

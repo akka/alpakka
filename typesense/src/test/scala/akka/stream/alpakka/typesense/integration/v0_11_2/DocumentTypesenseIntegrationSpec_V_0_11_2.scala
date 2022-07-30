@@ -17,6 +17,6 @@ class DocumentTypesenseIntegrationSpec_V_0_11_2 extends DocumentTypesenseIntegra
           Field("budget", FieldType.Int32),
           Field("evaluation", FieldType.Float))
     ).withDefaultSortingField("budget")
-    Typesense.createCollectionRequest(settings, schema).futureValue
+    runWithFlow(schema, Typesense.createCollectionFlow(settings))
   }
 }

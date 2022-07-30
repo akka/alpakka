@@ -12,7 +12,6 @@ import com.dimafeng.testcontainers.DockerComposeContainer
 import spray.json.{JsonReader, JsonWriter}
 
 import java.util.UUID
-import scala.jdk.FutureConverters.CompletionStageOps
 
 //all tests run in the same container without cleaning data
 abstract class DocumentTypesenseIntegrationSpec(version: String) extends TypesenseIntegrationSpec(version) {
@@ -39,34 +38,6 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
           retrieveResult shouldBe indexDocument.content
         }
 
-        it("using sink") {
-          //given
-          val indexDocument = randomIndexDocument()
-          val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
-
-          //when
-          val createResult = runWithSink(indexDocument, Typesense.indexDocumentSink[Company](settings))
-          val retrieveResult = Typesense.retrieveDocumentRequest[Company](settings, retrieve).futureValue
-
-          //then
-          createResult shouldBe Done
-          retrieveResult shouldBe indexDocument.content
-        }
-
-        it("using direct request") {
-          //given
-          val indexDocument = randomIndexDocument()
-          val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
-
-          //when
-          val createResult = Typesense.indexDocumentRequest(settings, indexDocument).futureValue
-          val retrieveResult = Typesense.retrieveDocumentRequest[Company](settings, retrieve).futureValue
-
-          //then
-          createResult shouldBe Done
-          retrieveResult shouldBe indexDocument.content
-        }
-
         it("using flow with Java API") {
           //given
           val indexDocument = randomIndexDocument()
@@ -80,43 +51,6 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
           val retrieveResult =
             runWithJavaFlow(retrieve,
                             JavaTypesense.retrieveDocumentFlow[Company](settings, implicitly[JsonReader[Company]]))
-
-          //then
-          createResult shouldBe Done
-          retrieveResult shouldBe indexDocument.content
-        }
-
-        it("using sink with Java API") {
-          //given
-          val indexDocument = randomIndexDocument()
-          val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
-
-          //when
-          val createResult = runWithJavaSink(
-            indexDocument,
-            JavaTypesense.indexDocumentSink(settings, implicitly[JsonWriter[Company]])
-          )
-          val retrieveResult = Typesense.retrieveDocumentRequest[Company](settings, retrieve).futureValue
-
-          //then
-          createResult shouldBe Done
-          retrieveResult shouldBe indexDocument.content
-        }
-
-        it("using direct request with Java API") {
-          //given
-          val indexDocument = randomIndexDocument()
-          val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
-
-          //when
-          val createResult = JavaTypesense
-            .indexDocumentRequest(settings, indexDocument, system, implicitly[JsonWriter[Company]])
-            .asScala
-            .futureValue
-          val retrieveResult = JavaTypesense
-            .retrieveDocumentRequest[Company](settings, retrieve, system, implicitly[JsonReader[Company]])
-            .asScala
-            .futureValue
 
           //then
           createResult shouldBe Done
@@ -139,34 +73,6 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
           retrieveResult shouldBe indexDocument.content
         }
 
-        it("using sink") {
-          //given
-          val indexDocument = randomIndexDocument(IndexDocumentAction.Create)
-          val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
-
-          //when
-          val createResult = runWithSink(indexDocument, Typesense.indexDocumentSink[Company](settings))
-          val retrieveResult = runWithFlow(retrieve, Typesense.retrieveDocumentFlow[Company](settings))
-
-          //then
-          createResult shouldBe Done
-          retrieveResult shouldBe indexDocument.content
-        }
-
-        it("using direct request") {
-          //given
-          val indexDocument = randomIndexDocument(IndexDocumentAction.Create)
-          val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
-
-          //when
-          val createResult = Typesense.indexDocumentRequest(settings, indexDocument).futureValue
-          val retrieveResult = Typesense.retrieveDocumentRequest[Company](settings, retrieve).futureValue
-
-          //then
-          createResult shouldBe Done
-          retrieveResult shouldBe indexDocument.content
-        }
-
         it("using flow with Java API") {
           //given
           val indexDocument = randomIndexDocument(IndexDocumentAction.Create)
@@ -186,46 +92,6 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
           createResult shouldBe Done
           retrieveResult shouldBe indexDocument.content
         }
-
-        it("using sink with Java API") {
-          //given
-          val indexDocument = randomIndexDocument(IndexDocumentAction.Create)
-          val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
-
-          //when
-          val createResult = runWithJavaSink(
-            indexDocument,
-            JavaTypesense.indexDocumentSink(settings, implicitly[JsonWriter[Company]])
-          )
-          val retrieveResult = runWithJavaFlow(
-            retrieve,
-            JavaTypesense.retrieveDocumentFlow[Company](settings, implicitly[JsonReader[Company]])
-          )
-
-          //then
-          createResult shouldBe Done
-          retrieveResult shouldBe indexDocument.content
-        }
-
-        it("using direct request with Java API") {
-          //given
-          val indexDocument = randomIndexDocument(IndexDocumentAction.Create)
-          val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
-
-          //when
-          val createResult = JavaTypesense
-            .indexDocumentRequest(settings, indexDocument, system, implicitly[JsonWriter[Company]])
-            .asScala
-            .futureValue
-          val retrieveResult = JavaTypesense
-            .retrieveDocumentRequest[Company](settings, retrieve, system, implicitly[JsonReader[Company]])
-            .asScala
-            .futureValue
-
-          //then
-          createResult shouldBe Done
-          retrieveResult shouldBe indexDocument.content
-        }
       }
     }
 
@@ -238,33 +104,11 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
             tryUsingFlowAndExpectError(document, Typesense.indexDocumentFlow[Company](settings), StatusCodes.NotFound)
           }
 
-          it("using sink") {
-            tryUsingSinkAndExpectError(document, Typesense.indexDocumentSink[Company](settings), StatusCodes.NotFound)
-          }
-
-          it("using direct request") {
-            tryUsingDirectRequestAndExpectError(Typesense.indexDocumentRequest(settings, document),
-                                                StatusCodes.NotFound)
-          }
-
           it("using flow with Java API") {
             tryUsingJavaFlowAndExpectError(document,
                                            JavaTypesense.indexDocumentFlow[Company](settings,
                                                                                     implicitly[JsonWriter[Company]]),
                                            StatusCodes.NotFound)
-          }
-
-          it("using sink with Java API") {
-            tryUsingJavaSinkAndExpectError(document,
-                                           JavaTypesense.indexDocumentSink(settings, implicitly[JsonWriter[Company]]),
-                                           StatusCodes.NotFound)
-          }
-
-          it("using direct request with Java API") {
-            tryUsingJavaDirectRequestAndExpectError(
-              JavaTypesense.indexDocumentRequest(settings, document, system, implicitly[JsonWriter[Company]]),
-              StatusCodes.NotFound
-            )
           }
         }
 
@@ -287,21 +131,6 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
                                        StatusCodes.Conflict)
           }
 
-          it("using sink") {
-            val indexDocument = randomIndexDocument()
-            runWithFlow(indexDocument, Typesense.indexDocumentFlow[Company](settings))
-            tryUsingSinkAndExpectError(indexDocument,
-                                       Typesense.indexDocumentSink[Company](settings),
-                                       StatusCodes.Conflict)
-          }
-
-          it("using direct request") {
-            val indexDocument = randomIndexDocument()
-            runWithFlow(indexDocument, Typesense.indexDocumentFlow[Company](settings))
-            tryUsingDirectRequestAndExpectError(Typesense.indexDocumentRequest(settings, indexDocument),
-                                                StatusCodes.Conflict)
-          }
-
           it("using flow with Java API") {
             val indexDocument = randomIndexDocument()
             runWithFlow(indexDocument, Typesense.indexDocumentFlow[Company](settings))
@@ -309,23 +138,6 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
                                            JavaTypesense.indexDocumentFlow[Company](settings,
                                                                                     implicitly[JsonWriter[Company]]),
                                            StatusCodes.Conflict)
-          }
-
-          it("using sink with Java API") {
-            val indexDocument = randomIndexDocument()
-            runWithFlow(indexDocument, Typesense.indexDocumentFlow[Company](settings))
-            tryUsingJavaSinkAndExpectError(indexDocument,
-                                           JavaTypesense.indexDocumentSink(settings, implicitly[JsonWriter[Company]]),
-                                           StatusCodes.Conflict)
-          }
-
-          it("using direct request with Java API") {
-            val indexDocument = randomIndexDocument()
-            runWithFlow(indexDocument, Typesense.indexDocumentFlow[Company](settings))
-            tryUsingJavaDirectRequestAndExpectError(
-              JavaTypesense.indexDocumentRequest(settings, indexDocument, system, implicitly[JsonWriter[Company]]),
-              StatusCodes.Conflict
-            )
           }
         }
       }
@@ -339,24 +151,12 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
           tryUsingFlowAndExpectError(retrieve, Typesense.retrieveDocumentFlow[Company](settings), StatusCodes.NotFound)
         }
 
-        it("using direct request") {
-          tryUsingDirectRequestAndExpectError(Typesense.retrieveDocumentRequest[Company](settings, retrieve),
-                                              StatusCodes.NotFound)
-        }
-
         it("using flow with Java API") {
           tryUsingJavaFlowAndExpectError(retrieve,
                                          JavaTypesense.retrieveDocumentFlow[Company](settings,
                                                                                      implicitly[JsonReader[Company]]),
                                          StatusCodes.NotFound)
 
-        }
-
-        it("using direct request with Java API") {
-          tryUsingJavaDirectRequestAndExpectError(
-            JavaTypesense.retrieveDocumentRequest[Company](settings, retrieve, system, implicitly[JsonReader[Company]]),
-            StatusCodes.NotFound
-          )
         }
       }
 
@@ -385,38 +185,6 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
         tryUsingFlowAndExpectError(retrieve, Typesense.retrieveDocumentFlow[Company](settings), StatusCodes.NotFound)
       }
 
-      it("using sink") {
-        val indexDocument = randomIndexDocument()
-        val delete = deleteDocumentFromIndexDocument(indexDocument)
-        val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
-
-        //when
-        val createResult = runWithSink(indexDocument, Typesense.indexDocumentSink[Company](settings))
-        val deleteResult = runWithSink(delete, Typesense.deleteDocumentSink(settings))
-
-        //then
-        createResult shouldBe Done
-        deleteResult shouldBe Done
-        tryUsingFlowAndExpectError(retrieve, Typesense.retrieveDocumentFlow[Company](settings), StatusCodes.NotFound)
-      }
-
-      it("using direct request") {
-        //given
-        val indexDocument = randomIndexDocument()
-        val delete = deleteDocumentFromIndexDocument(indexDocument)
-        val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
-
-        //when
-        val createResult = Typesense.indexDocumentRequest(settings, indexDocument).futureValue
-        val deleteResult = Typesense.deleteDocumentRequest(settings, delete).futureValue
-
-        //then
-        createResult shouldBe Done
-        deleteResult shouldBe Done
-        tryUsingDirectRequestAndExpectError(Typesense.retrieveDocumentRequest[Company](settings, retrieve),
-                                            StatusCodes.NotFound)
-      }
-
       it("using flow with Java API") {
         val indexDocument = randomIndexDocument()
         val delete = deleteDocumentFromIndexDocument(indexDocument)
@@ -434,46 +202,6 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
                                        JavaTypesense.retrieveDocumentFlow(settings, implicitly[JsonReader[Company]]),
                                        StatusCodes.NotFound)
       }
-
-      it("using sink with Java API") {
-        val indexDocument = randomIndexDocument()
-        val delete = deleteDocumentFromIndexDocument(indexDocument)
-        val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
-
-        //when
-        val createResult =
-          runWithJavaSink(indexDocument, JavaTypesense.indexDocumentSink(settings, implicitly[JsonWriter[Company]]))
-        val deleteResult = runWithJavaSink(delete, JavaTypesense.deleteDocumentSink(settings))
-
-        //then
-        createResult shouldBe Done
-        deleteResult shouldBe Done
-        tryUsingJavaFlowAndExpectError(retrieve,
-                                       JavaTypesense.retrieveDocumentFlow(settings, implicitly[JsonReader[Company]]),
-                                       StatusCodes.NotFound)
-      }
-
-      it("using direct request with Java API") {
-        //given
-        val indexDocument = randomIndexDocument()
-        val delete = deleteDocumentFromIndexDocument(indexDocument)
-        val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
-
-        //when
-        val createResult = JavaTypesense
-          .indexDocumentRequest(settings, indexDocument, system, implicitly[JsonWriter[Company]])
-          .asScala
-          .futureValue
-        val deleteResult = JavaTypesense.deleteDocumentRequest(settings, delete, system).asScala.futureValue
-
-        //then
-        createResult shouldBe Done
-        deleteResult shouldBe Done
-        tryUsingJavaDirectRequestAndExpectError(
-          JavaTypesense.retrieveDocumentRequest[Company](settings, retrieve, system, implicitly[JsonReader[Company]]),
-          StatusCodes.NotFound
-        )
-      }
     }
 
     describe("should not delete document") {
@@ -486,34 +214,10 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
                                      StatusCodes.NotFound)
         }
 
-        it("using sink") {
-          tryUsingSinkAndExpectError(deleteNonexistentDocument,
-                                     Typesense.deleteDocumentSink(settings),
-                                     StatusCodes.NotFound)
-        }
-
-        it("using direct request") {
-          tryUsingDirectRequestAndExpectError(Typesense.deleteDocumentRequest(settings, deleteNonexistentDocument),
-                                              StatusCodes.NotFound)
-        }
-
         it("using flow with Java API") {
           tryUsingJavaFlowAndExpectError(deleteNonexistentDocument,
                                          JavaTypesense.deleteDocumentFlow(settings),
                                          StatusCodes.NotFound)
-        }
-
-        it("using sink with Java API") {
-          tryUsingJavaSinkAndExpectError(deleteNonexistentDocument,
-                                         JavaTypesense.deleteDocumentSink(settings),
-                                         StatusCodes.NotFound)
-        }
-
-        it("using direct request with Java API") {
-          tryUsingJavaDirectRequestAndExpectError(
-            JavaTypesense.deleteDocumentRequest(settings, deleteNonexistentDocument, system),
-            StatusCodes.NotFound
-          )
         }
       }
     }

@@ -4,18 +4,13 @@
 
 package akka.stream.alpakka.typesense.integration
 
-import akka.Done
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import akka.stream.alpakka.typesense._
 import akka.stream.alpakka.typesense.scaladsl.Typesense
-import akka.stream.scaladsl.{Sink, Source}
 import org.scalatest.Assertion
 
 import java.time.Instant
 import java.util.UUID
-import java.util.concurrent.CompletionStage
-import scala.concurrent.Future
-import scala.jdk.FutureConverters.CompletionStageOps
 
 //all tests run in the same container without cleaning data
 abstract class CollectionTypesenseIntegrationSpec(version: String) extends TypesenseIntegrationSpec(version) {
@@ -31,39 +26,11 @@ abstract class CollectionTypesenseIntegrationSpec(version: String) extends Types
         createAndCheck(randomSchema())
       }
 
-      it("using sink") {
-        val schema = randomSchema()
-        val result = runWithSink(schema, Typesense.createCollectionSink(settings))
-
-        result shouldBe Done
-      }
-
-      it("using direct request") {
-        val schema = randomSchema()
-        val result = Typesense.createCollectionRequest(settings, schema).futureValue
-        compareResponseAndSchema(result, schema)
-      }
-
       it("using flow with Java API") {
         val schema = randomSchema()
         val result = runWithJavaFlow(schema, JavaTypesense.createCollectionFlow(settings))
 
         compareResponseAndSchema(result, schema)
-      }
-
-      it("using sink with Java API") {
-        val schema = randomSchema()
-        val result = runWithJavaSink(schema, JavaTypesense.createCollectionSink(settings))
-
-        result shouldBe Done
-      }
-
-      it("using direct request with Java API") {
-        val schema = randomSchema()
-        val result: CompletionStage[CollectionResponse] = JavaTypesense
-          .createCollectionRequest(settings, schema, system)
-
-        compareResponseAndSchema(result.asScala.futureValue, schema)
       }
 
       it("with specified token separators") {
@@ -169,43 +136,11 @@ abstract class CollectionTypesenseIntegrationSpec(version: String) extends Types
           tryCreateAndExpectError(schema, expectedStatusCode = StatusCodes.BadRequest)
         }
 
-        it("using sink") {
-          val fields = Seq(Field("company_nr", FieldType.Int32))
-          val schema = randomSchema(fields = fields).withDefaultSortingField("invalid")
-
-          tryUsingSinkAndExpectError(schema, Typesense.createCollectionSink(settings), StatusCodes.BadRequest)
-        }
-
-        it("using direct request") {
-          val fields = Seq(Field("company_nr", FieldType.Int32))
-          val schema = randomSchema(fields = fields).withDefaultSortingField("invalid")
-
-          tryUsingDirectRequestAndExpectError(Typesense.createCollectionRequest(settings, schema),
-                                              StatusCodes.BadRequest)
-        }
-
         it("using flow with Java API") {
           val fields = Seq(Field("company_nr", FieldType.Int32))
           val schema = randomSchema(fields = fields).withDefaultSortingField("invalid")
 
           tryUsingJavaFlowAndExpectError(schema, JavaTypesense.createCollectionFlow(settings), StatusCodes.BadRequest)
-        }
-
-        it("using sink with Java API") {
-          val fields = Seq(Field("company_nr", FieldType.Int32))
-          val schema = randomSchema(fields = fields).withDefaultSortingField("invalid")
-
-          tryUsingJavaSinkAndExpectError(schema, JavaTypesense.createCollectionSink(settings), StatusCodes.BadRequest)
-        }
-
-        it("using direct request with Java API") {
-          val fields = Seq(Field("company_nr", FieldType.Int32))
-          val schema = randomSchema(fields = fields).withDefaultSortingField("invalid")
-
-          tryUsingJavaDirectRequestAndExpectError(
-            JavaTypesense.createCollectionRequest(settings, schema, system),
-            StatusCodes.BadRequest
-          )
         }
       }
 
@@ -220,43 +155,20 @@ abstract class CollectionTypesenseIntegrationSpec(version: String) extends Types
       describe("if exists") {
         it("using flow") {
           val schema = randomSchema()
-          val createResult: CollectionResponse = Typesense.createCollectionRequest(settings, schema).futureValue
-          val retrieveResult: CollectionResponse = Source
-            .single(RetrieveCollection(schema.name))
-            .via(Typesense.retrieveCollectionFlow(settings))
-            .runWith(Sink.head)
-            .futureValue
-
-          createResult shouldBe retrieveResult
-        }
-
-        it("using direct request") {
-          val schema = randomSchema()
-          val createResult: CollectionResponse = Typesense.createCollectionRequest(settings, schema).futureValue
+          val createResult: CollectionResponse = runWithFlow(schema, Typesense.createCollectionFlow(settings))
           val retrieveResult: CollectionResponse =
-            Typesense.retrieveCollectionRequest(settings, RetrieveCollection(schema.name)).futureValue
+            runWithFlow(RetrieveCollection(schema.name), Typesense.retrieveCollectionFlow(settings))
 
           createResult shouldBe retrieveResult
         }
 
         it("using flow with Java API") {
           val schema = randomSchema()
-          val createResult: CollectionResponse = Typesense.createCollectionRequest(settings, schema).futureValue
-          val retrieveResult: Future[CollectionResponse] = Source
-            .single(RetrieveCollection(schema.name))
-            .via(JavaTypesense.retrieveCollectionFlow(settings))
-            .runWith(Sink.head)
+          val createResult: CollectionResponse = runWithJavaFlow(schema, JavaTypesense.createCollectionFlow(settings))
+          val retrieveResult: CollectionResponse =
+            runWithJavaFlow(RetrieveCollection(schema.name), JavaTypesense.retrieveCollectionFlow(settings))
 
-          createResult shouldBe retrieveResult.futureValue
-        }
-
-        it("using direct request with Java API") {
-          val schema = randomSchema()
-          val createResult: CollectionResponse = Typesense.createCollectionRequest(settings, schema).futureValue
-          val retrieveResult: CompletionStage[CollectionResponse] = JavaTypesense
-            .retrieveCollectionRequest(settings, RetrieveCollection(schema.name), system)
-
-          createResult shouldBe retrieveResult.asScala.futureValue
+          createResult shouldBe retrieveResult
         }
       }
     }
@@ -271,23 +183,10 @@ abstract class CollectionTypesenseIntegrationSpec(version: String) extends Types
                                      StatusCodes.NotFound)
         }
 
-        it("using direct request") {
-          tryUsingDirectRequestAndExpectError(Typesense.retrieveCollectionRequest(settings,
-                                                                                  retrieveNonExistingCollection),
-                                              StatusCodes.NotFound)
-        }
-
         it("using flow with Java API") {
           tryUsingJavaFlowAndExpectError(retrieveNonExistingCollection,
                                          JavaTypesense.retrieveCollectionFlow(settings),
                                          StatusCodes.NotFound)
-        }
-
-        it("using direct request with Java API") {
-          tryUsingJavaDirectRequestAndExpectError(JavaTypesense.retrieveCollectionRequest(settings,
-                                                                                          retrieveNonExistingCollection,
-                                                                                          system),
-                                                  StatusCodes.NotFound)
         }
       }
     }
