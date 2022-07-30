@@ -30,19 +30,19 @@ class ExampleUsage {
   val collectionSchema: CollectionSchema = CollectionSchema("my-collection", fields)
 
   val createCollectionSource: Source[CollectionSchema, NotUsed] = Source.single(collectionSchema)
-  val createCollectionFlow: Flow[CollectionSchema, CollectionResponse, Future[NotUsed]] =
+  val createCollectionFlow: Flow[CollectionSchema, TypesenseResult[CollectionResponse], Future[NotUsed]] =
     Typesense.createCollectionFlow(settings)
 
-  val createdCollectionResponse: Future[CollectionResponse] =
+  val createdCollectionResponse: Future[TypesenseResult[CollectionResponse]] =
     createCollectionSource.via(createCollectionFlow).runWith(Sink.head)
   //#create collection
 
   //#retrieve collection
   val retrieveCollectionSource: Source[RetrieveCollection, NotUsed] = Source.single(RetrieveCollection("my-collection"))
-  val retrieveCollectionFlow: Flow[RetrieveCollection, CollectionResponse, Future[NotUsed]] =
+  val retrieveCollectionFlow: Flow[RetrieveCollection, TypesenseResult[CollectionResponse], Future[NotUsed]] =
     Typesense.retrieveCollectionFlow(settings)
 
-  val retrievedCollectionResponse: Future[CollectionResponse] =
+  val retrievedCollectionResponse: Future[TypesenseResult[CollectionResponse]] =
     retrieveCollectionSource.via(retrieveCollectionFlow).runWith(Sink.head)
   //#retrieve collection
 
@@ -50,10 +50,10 @@ class ExampleUsage {
   val indexSingleDocumentSource: Source[IndexDocument[MyDocument], NotUsed] =
     Source.single(IndexDocument("my-collection", MyDocument(UUID.randomUUID().toString, "Hello")))
 
-  val indexSingleDocumentFlow: Flow[IndexDocument[MyDocument], Done, Future[NotUsed]] =
+  val indexSingleDocumentFlow: Flow[IndexDocument[MyDocument], TypesenseResult[Done], Future[NotUsed]] =
     Typesense.indexDocumentFlow(settings)
 
-  val indexSingleDocumentResult: Future[Done] =
+  val indexSingleDocumentResult: Future[TypesenseResult[Done]] =
     indexSingleDocumentSource.via(indexSingleDocumentFlow).runWith(Sink.head)
   //#index single document
 
@@ -72,10 +72,10 @@ class ExampleUsage {
   val retrieveDocumentSource: Source[RetrieveDocument, NotUsed] =
     Source.single(RetrieveDocument("my-collection", UUID.randomUUID().toString))
 
-  val retrieveDocumentFlow: Flow[RetrieveDocument, MyDocument, Future[NotUsed]] =
+  val retrieveDocumentFlow: Flow[RetrieveDocument, TypesenseResult[MyDocument], Future[NotUsed]] =
     Typesense.retrieveDocumentFlow(settings)
 
-  val retrieveDocumentResult: Future[MyDocument] =
+  val retrieveDocumentResult: Future[TypesenseResult[MyDocument]] =
     retrieveDocumentSource.via(retrieveDocumentFlow).runWith(Sink.head)
   //# retrieve document
 
@@ -83,10 +83,10 @@ class ExampleUsage {
   val deleteDocumentSource: Source[DeleteDocument, NotUsed] =
     Source.single(DeleteDocument("my-collection", UUID.randomUUID().toString))
 
-  val deleteDocumentFlow: Flow[DeleteDocument, Done, Future[NotUsed]] =
+  val deleteDocumentFlow: Flow[DeleteDocument, TypesenseResult[Done], Future[NotUsed]] =
     Typesense.deleteDocumentFlow(settings)
 
-  val deleteDocumentResult: Future[Done] =
+  val deleteDocumentResult: Future[TypesenseResult[Done]] =
     deleteDocumentSource.via(deleteDocumentFlow).runWith(Sink.head)
   //# delete document
 

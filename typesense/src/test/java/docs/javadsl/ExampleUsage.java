@@ -47,20 +47,20 @@ public class ExampleUsage {
     CollectionSchema collectionSchema = CollectionSchema.create("my_collection", fields);
 
     Source<CollectionSchema, NotUsed> createCollectionSource = Source.single(collectionSchema);
-    Flow<CollectionSchema, CollectionResponse, CompletionStage<NotUsed>> createCollectionFlow =
-        Typesense.createCollectionFlow(settings);
+    Flow<CollectionSchema, TypesenseResult<CollectionResponse>, CompletionStage<NotUsed>>
+        createCollectionFlow = Typesense.createCollectionFlow(settings);
 
-    CompletionStage<CollectionResponse> createCollectionResponse =
+    CompletionStage<TypesenseResult<CollectionResponse>> createCollectionResponse =
         createCollectionSource.via(createCollectionFlow).runWith(Sink.head(), system);
     // #create collection
 
     // #retrieve collection
     Source<RetrieveCollection, NotUsed> retrieveCollectionSource =
         Source.single(RetrieveCollection.create("my-collection"));
-    Flow<RetrieveCollection, CollectionResponse, CompletionStage<NotUsed>> retrieveCollectionFlow =
-        Typesense.retrieveCollectionFlow(settings);
+    Flow<RetrieveCollection, TypesenseResult<CollectionResponse>, CompletionStage<NotUsed>>
+        retrieveCollectionFlow = Typesense.retrieveCollectionFlow(settings);
 
-    CompletionStage<CollectionResponse> retrievedCollectionResponse =
+    CompletionStage<TypesenseResult<CollectionResponse>> retrievedCollectionResponse =
         retrieveCollectionSource.via(retrieveCollectionFlow).runWith(Sink.head(), system);
     // #retrieve collection
 
@@ -73,10 +73,10 @@ public class ExampleUsage {
             IndexDocument.create(
                 "my-collection", new MyDocument(UUID.randomUUID().toString(), "Hello")));
 
-    Flow<IndexDocument<MyDocument>, Done, CompletionStage<NotUsed>> indexSingleDocumentFlow =
-        Typesense.indexDocumentFlow(settings, documentJsonWriter);
+    Flow<IndexDocument<MyDocument>, TypesenseResult<Done>, CompletionStage<NotUsed>>
+        indexSingleDocumentFlow = Typesense.indexDocumentFlow(settings, documentJsonWriter);
 
-    CompletionStage<Done> indexSingleDocumentResponse =
+    CompletionStage<TypesenseResult<Done>> indexSingleDocumentResponse =
         indexSingleDocumentSource.via(indexSingleDocumentFlow).runWith(Sink.head(), system);
     // #index single document
 
@@ -98,10 +98,10 @@ public class ExampleUsage {
     Source<RetrieveDocument, NotUsed> retrieveDocumentSource =
         Source.single(RetrieveDocument.create("my-collection", UUID.randomUUID().toString()));
 
-    Flow<RetrieveDocument, MyDocument, CompletionStage<NotUsed>> retrieveDocumentFlow =
-        Typesense.retrieveDocumentFlow(settings, documentJsonReader);
+    Flow<RetrieveDocument, TypesenseResult<MyDocument>, CompletionStage<NotUsed>>
+        retrieveDocumentFlow = Typesense.retrieveDocumentFlow(settings, documentJsonReader);
 
-    CompletionStage<MyDocument> retrieveDocumentResponse =
+    CompletionStage<TypesenseResult<MyDocument>> retrieveDocumentResponse =
         retrieveDocumentSource.via(retrieveDocumentFlow).runWith(Sink.head(), system);
     // #retrieve document
 
@@ -109,10 +109,10 @@ public class ExampleUsage {
     Source<DeleteDocument, NotUsed> deleteDocumentSource =
         Source.single(DeleteDocument.create("my-collection", UUID.randomUUID().toString()));
 
-    Flow<DeleteDocument, Done, CompletionStage<NotUsed>> deleteDocumentFlow =
+    Flow<DeleteDocument, TypesenseResult<Done>, CompletionStage<NotUsed>> deleteDocumentFlow =
         Typesense.deleteDocumentFlow(settings);
 
-    CompletionStage<Done> deleteDocumentResponse =
+    CompletionStage<TypesenseResult<Done>> deleteDocumentResponse =
         deleteDocumentSource.via(deleteDocumentFlow).runWith(Sink.head(), system);
     // #delete document
 

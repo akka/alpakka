@@ -6,7 +6,12 @@ package akka.stream.alpakka.typesense.integration
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCode
-import akka.stream.alpakka.typesense.TypesenseSettings
+import akka.stream.alpakka.typesense.{
+  FailureTypesenseResult,
+  SuccessTypesenseResult,
+  TypesenseResult,
+  TypesenseSettings
+}
 import akka.stream.alpakka.typesense.impl.TypesenseHttp.TypesenseException
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.{Done, NotUsed}
@@ -55,13 +60,24 @@ abstract class TypesenseIntegrationSpec(protected val version: String)
 
   protected val JavaTypesense = akka.stream.alpakka.typesense.javadsl.Typesense
 
-  protected def runWithFlow[Request, Response](request: Request,
-                                               flow: Flow[Request, Response, Future[NotUsed]]): Response =
+  protected def runWithFlow[Request, Response](
+      request: Request,
+      flow: Flow[Request, Response, Future[NotUsed]]
+  ): Response =
     Source
       .single(request)
       .via(flow)
       .runWith(Sink.head)
       .futureValue
+
+  protected def runWithFlowTypesenseResult[Request, Response](
+      request: Request,
+      flow: Flow[Request, TypesenseResult[Response], Future[NotUsed]]
+  ): Response =
+    runWithFlow(request, flow) match {
+      case result: SuccessTypesenseResult[Response] => result.value
+      case result: FailureTypesenseResult[Response] => throw new RuntimeException(result.reason)
+    }
 
   protected def runWithSink[Request](request: Request, sink: Sink[Request, Future[Done]]): Done =
     Source
@@ -80,6 +96,15 @@ abstract class TypesenseIntegrationSpec(protected val version: String)
       .runWith(Sink.head)
       .futureValue
 
+  protected def runWithJavaFlowTypesenseResult[Request, Response](
+      request: Request,
+      flow: akka.stream.javadsl.Flow[Request, TypesenseResult[Response], CompletionStage[NotUsed]]
+  ): Response =
+    runWithJavaFlow(request, flow) match {
+      case result: SuccessTypesenseResult[Response] => result.value
+      case result: FailureTypesenseResult[Response] => throw new RuntimeException(result.reason)
+    }
+
   protected def runWithJavaSink[Request](request: Request,
                                          sink: akka.stream.javadsl.Sink[Request, CompletionStage[Done]]): Done =
     Source
@@ -90,90 +115,34 @@ abstract class TypesenseIntegrationSpec(protected val version: String)
       .futureValue
 
   protected def tryUsingFlowAndExpectError[Request](request: Request,
-                                                    flow: Flow[Request, _, Future[NotUsed]],
-                                                    expectedStatusCode: StatusCode): Assertion = {
-    val response = Source
+                                                    flow: Flow[Request, TypesenseResult[_], Future[NotUsed]],
+                                                    expectedStatusCode: StatusCode): Assertion =
+    Source
       .single(request)
       .via(flow)
-      .map(Success.apply)
-      .recover(e => Failure(e))
       .runWith(Sink.head)
-      .futureValue
-
-    val gotStatusCode = response.toEither.swap.toOption.get.asInstanceOf[TypesenseException].statusCode
-
-    gotStatusCode shouldBe expectedStatusCode
-  }
-
-  protected def tryUsingSinkAndExpectError[Request](request: Request,
-                                                    sink: Sink[Request, Future[Done]],
-                                                    expectedStatusCode: StatusCode): Assertion = {
-
-    val result = Source
-      .single(request)
-      .toMat(sink)(Keep.right)
-      .run()
-      .map(Success.apply)
-      .recover(e => Failure(e))
-      .futureValue
-
-    val gotStatusCode = result.toEither.swap.toOption.get.asInstanceOf[TypesenseException].statusCode
-    gotStatusCode shouldBe expectedStatusCode
-  }
-
-  protected def tryUsingDirectRequestAndExpectError(future: Future[_], expectedStatusCode: StatusCode): Assertion = {
-    val result = future
-      .map(Success.apply)
-      .recover(e => Failure(e))
-      .futureValue
-
-    val gotStatusCode = result.toEither.swap.toOption.get.asInstanceOf[TypesenseException].statusCode
-    gotStatusCode shouldBe expectedStatusCode
-  }
+      .futureValue match {
+      case result: FailureTypesenseResult[_] if result.statusCode == expectedStatusCode =>
+        result.statusCode shouldBe expectedStatusCode
+      case result: FailureTypesenseResult[_] =>
+        fail(s"Expected error with status code: $expectedStatusCode, got [${result.statusCode}] ${result.reason}")
+      case _: SuccessTypesenseResult[_] => fail(s"Expected error with status code: $expectedStatusCode, got success")
+    }
 
   protected def tryUsingJavaFlowAndExpectError[Request](
       request: Request,
       flow: akka.stream.javadsl.Flow[Request, _, CompletionStage[NotUsed]],
       expectedStatusCode: StatusCode
-  ): Assertion = {
-    val response = Source
+  ): Assertion =
+    Source
       .single(request)
       .via(flow)
-      .map(Success.apply)
-      .recover(e => Failure(e))
       .runWith(Sink.head)
-      .futureValue
-
-    val gotStatusCode = response.toEither.swap.toOption.get.asInstanceOf[TypesenseException].statusCode
-
-    gotStatusCode shouldBe expectedStatusCode
-  }
-
-  protected def tryUsingJavaSinkAndExpectError[Request](request: Request,
-                                                        sink: akka.stream.javadsl.Sink[Request, CompletionStage[Done]],
-                                                        expectedStatusCode: StatusCode): Assertion = {
-
-    val result = Source
-      .single(request)
-      .toMat(sink)(Keep.right)
-      .run()
-      .asScala
-      .map(Success.apply)
-      .recover(e => Failure(e))
-      .futureValue
-
-    val gotStatusCode = result.toEither.swap.toOption.get.asInstanceOf[TypesenseException].statusCode
-    gotStatusCode shouldBe expectedStatusCode
-  }
-
-  protected def tryUsingJavaDirectRequestAndExpectError(completionStage: CompletionStage[_],
-                                                        expectedStatusCode: StatusCode): Assertion = {
-    val result = completionStage.asScala
-      .map(Success.apply)
-      .recover(e => Failure(e))
-      .futureValue
-
-    val gotStatusCode = result.toEither.swap.toOption.get.asInstanceOf[TypesenseException].statusCode
-    gotStatusCode shouldBe expectedStatusCode
-  }
+      .futureValue match {
+      case result: FailureTypesenseResult[_] if result.statusCode == expectedStatusCode =>
+        result.statusCode shouldBe expectedStatusCode
+      case result: FailureTypesenseResult[_] =>
+        fail(s"Expected error with status code: $expectedStatusCode, got [${result.statusCode}] ${result.reason}")
+      case _: SuccessTypesenseResult[_] => fail(s"Expected error with status code: $expectedStatusCode, got success")
+    }
 }

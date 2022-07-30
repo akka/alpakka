@@ -25,7 +25,9 @@ object Typesense {
   /**
    * Creates a flow for creating collections.
    */
-  def createCollectionFlow(settings: TypesenseSettings): Flow[CollectionSchema, CollectionResponse, Future[NotUsed]] =
+  def createCollectionFlow(
+      settings: TypesenseSettings
+  ): Flow[CollectionSchema, TypesenseResult[CollectionResponse], Future[NotUsed]] =
     Flow.fromMaterializer { (materializer, _) =>
       implicit val system: ActorSystem = materializer.system
       Flow[CollectionSchema]
@@ -35,7 +37,7 @@ object Typesense {
                             HttpMethods.POST,
                             PrepareRequestEntity.json(schema.toJson),
                             settings,
-                            ParseResponse.json[CollectionResponse])
+                            ParseResponse.jsonTypesenseResult[CollectionResponse])
         }
     }
 
@@ -44,7 +46,7 @@ object Typesense {
    */
   def retrieveCollectionFlow(
       settings: TypesenseSettings
-  ): Flow[RetrieveCollection, CollectionResponse, Future[NotUsed]] =
+  ): Flow[RetrieveCollection, TypesenseResult[CollectionResponse], Future[NotUsed]] =
     Flow.fromMaterializer { (materializer, _) =>
       implicit val system: ActorSystem = materializer.system
       Flow[RetrieveCollection]
@@ -54,7 +56,7 @@ object Typesense {
                             HttpMethods.GET,
                             PrepareRequestEntity.empty,
                             settings,
-                            ParseResponse.json[CollectionResponse])
+                            ParseResponse.jsonTypesenseResult[CollectionResponse])
         }
     }
 
@@ -63,7 +65,7 @@ object Typesense {
    */
   def indexDocumentFlow[T: JsonWriter](
       settings: TypesenseSettings
-  ): Flow[IndexDocument[T], Done, Future[NotUsed]] =
+  ): Flow[IndexDocument[T], TypesenseResult[Done], Future[NotUsed]] =
     Flow.fromMaterializer { (materializer, _) =>
       implicit val system: ActorSystem = materializer.system
       Flow[IndexDocument[T]]
@@ -74,7 +76,7 @@ object Typesense {
               HttpMethods.POST,
               PrepareRequestEntity.json(document.content.toJson),
               settings,
-              ParseResponse.withoutBody,
+              ParseResponse.withoutBodyTypesenseResult,
               Map("action" -> indexActionValue(document.action))
             )
         }
@@ -109,7 +111,7 @@ object Typesense {
    */
   def retrieveDocumentFlow[T: JsonReader](
       settings: TypesenseSettings
-  ): Flow[RetrieveDocument, T, Future[NotUsed]] =
+  ): Flow[RetrieveDocument, TypesenseResult[T], Future[NotUsed]] =
     Flow.fromMaterializer { (materializer, _) =>
       implicit val system: ActorSystem = materializer.system
       Flow[RetrieveDocument]
@@ -120,7 +122,7 @@ object Typesense {
               HttpMethods.GET,
               PrepareRequestEntity.empty,
               settings,
-              ParseResponse.json[T]
+              ParseResponse.jsonTypesenseResult[T]
             )
         }
     }
@@ -130,7 +132,7 @@ object Typesense {
    */
   def deleteDocumentFlow(
       settings: TypesenseSettings
-  ): Flow[DeleteDocument, Done, Future[NotUsed]] =
+  ): Flow[DeleteDocument, TypesenseResult[Done], Future[NotUsed]] =
     Flow.fromMaterializer { (materializer, _) =>
       implicit val system: ActorSystem = materializer.system
       Flow[DeleteDocument]
@@ -141,7 +143,7 @@ object Typesense {
               HttpMethods.DELETE,
               PrepareRequestEntity.empty,
               settings,
-              ParseResponse.withoutBody
+              ParseResponse.withoutBodyTypesenseResult
             )
         }
     }

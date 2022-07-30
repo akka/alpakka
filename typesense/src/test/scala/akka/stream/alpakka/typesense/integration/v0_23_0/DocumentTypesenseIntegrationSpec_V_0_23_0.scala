@@ -28,7 +28,7 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
           Field("budget", FieldType.Int32),
           Field("evaluation", FieldType.Float))
     )
-    runWithFlow(schema, Typesense.createCollectionFlow(settings))
+    runWithFlowTypesenseResult(schema, Typesense.createCollectionFlow(settings))
   }
 
   describe(s"Only for Typesense $version") {
@@ -47,9 +47,11 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
             val retrieve = retrieveDocumentFromIndexDocument(createDocument)
 
             //when
-            val createResult = runWithFlow(createDocument, Typesense.indexDocumentFlow[Company](settings))
-            val upsertResult = runWithFlow(upsertDocument, Typesense.indexDocumentFlow[Company](settings))
-            val retrieveResult = runWithFlow(retrieve, Typesense.retrieveDocumentFlow[Company](settings))
+            val createResult =
+              runWithFlowTypesenseResult(createDocument, Typesense.indexDocumentFlow[Company](settings))
+            val upsertResult =
+              runWithFlowTypesenseResult(upsertDocument, Typesense.indexDocumentFlow[Company](settings))
+            val retrieveResult = runWithFlowTypesenseResult(retrieve, Typesense.retrieveDocumentFlow[Company](settings))
 
             //then
             createResult shouldBe Done
@@ -65,14 +67,18 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
 
             //when
             val createResult =
-              runWithJavaFlow(createDocument,
-                              JavaTypesense.indexDocumentFlow[Company](settings, implicitly[JsonWriter[Company]]))
+              runWithJavaFlowTypesenseResult(createDocument,
+                                             JavaTypesense.indexDocumentFlow[Company](settings,
+                                                                                      implicitly[JsonWriter[Company]]))
             val upsertResult =
-              runWithJavaFlow(upsertDocument,
-                              JavaTypesense.indexDocumentFlow[Company](settings, implicitly[JsonWriter[Company]]))
+              runWithJavaFlowTypesenseResult(upsertDocument,
+                                             JavaTypesense.indexDocumentFlow[Company](settings,
+                                                                                      implicitly[JsonWriter[Company]]))
             val retrieveResult =
-              runWithJavaFlow(retrieve,
-                              JavaTypesense.retrieveDocumentFlow[Company](settings, implicitly[JsonReader[Company]]))
+              runWithJavaFlowTypesenseResult(
+                retrieve,
+                JavaTypesense.retrieveDocumentFlow[Company](settings, implicitly[JsonReader[Company]])
+              )
 
             //then
             createResult shouldBe Done
@@ -88,8 +94,9 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
             val retrieve = retrieveDocumentFromIndexDocument(upsertDocument)
 
             //when
-            val upsertResult = runWithFlow(upsertDocument, Typesense.indexDocumentFlow[Company](settings))
-            val retrieveResult = runWithFlow(retrieve, Typesense.retrieveDocumentFlow[Company](settings))
+            val upsertResult =
+              runWithFlowTypesenseResult(upsertDocument, Typesense.indexDocumentFlow[Company](settings))
+            val retrieveResult = runWithFlowTypesenseResult(retrieve, Typesense.retrieveDocumentFlow[Company](settings))
 
             //then
             upsertResult shouldBe Done
@@ -110,9 +117,10 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
           val expectedDocument = indexDocument.content.copy(budget = 7654)
 
           //when
-          val createResult = runWithFlow(indexDocument, Typesense.indexDocumentFlow[Company](settings))
-          val updateResult = runWithFlow(updateDocument, Typesense.indexDocumentFlow[UpdateCompany](settings))
-          val retrieveResult = runWithFlow(retrieve, Typesense.retrieveDocumentFlow[Company](settings))
+          val createResult = runWithFlowTypesenseResult(indexDocument, Typesense.indexDocumentFlow[Company](settings))
+          val updateResult =
+            runWithFlowTypesenseResult(updateDocument, Typesense.indexDocumentFlow[UpdateCompany](settings))
+          val retrieveResult = runWithFlowTypesenseResult(retrieve, Typesense.retrieveDocumentFlow[Company](settings))
 
           //then
           createResult shouldBe Done
@@ -129,8 +137,9 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
             val retrieve = retrieveDocumentFromIndexDocument(emplaceDocument)
 
             //when
-            val emplaceResult = runWithFlow(emplaceDocument, Typesense.indexDocumentFlow[Company](settings))
-            val retrieveResult = runWithFlow(retrieve, Typesense.retrieveDocumentFlow[Company](settings))
+            val emplaceResult =
+              runWithFlowTypesenseResult(emplaceDocument, Typesense.indexDocumentFlow[Company](settings))
+            val retrieveResult = runWithFlowTypesenseResult(retrieve, Typesense.retrieveDocumentFlow[Company](settings))
 
             //then
             emplaceResult shouldBe Done
@@ -150,9 +159,10 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
             val expectedDocument = indexDocument.content.copy(budget = 7654)
 
             //when
-            val createResult = runWithFlow(indexDocument, Typesense.indexDocumentFlow[Company](settings))
-            val emplaceResult = runWithFlow(emplaceDocument, Typesense.indexDocumentFlow[UpdateCompany](settings))
-            val retrieveResult = runWithFlow(retrieve, Typesense.retrieveDocumentFlow[Company](settings))
+            val createResult = runWithFlowTypesenseResult(indexDocument, Typesense.indexDocumentFlow[Company](settings))
+            val emplaceResult =
+              runWithFlowTypesenseResult(emplaceDocument, Typesense.indexDocumentFlow[UpdateCompany](settings))
+            val retrieveResult = runWithFlowTypesenseResult(retrieve, Typesense.retrieveDocumentFlow[Company](settings))
 
             //then
             createResult shouldBe Done
@@ -220,7 +230,8 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
               IndexManyDocuments("companies", Seq(createSingleDocument.content, randomDocument()))
 
             //when
-            val createSingleResult = runWithFlow(createSingleDocument, Typesense.indexDocumentFlow[Company](settings))
+            val createSingleResult =
+              runWithFlowTypesenseResult(createSingleDocument, Typesense.indexDocumentFlow[Company](settings))
             val createManyResult = runWithFlow(createManyDocuments, Typesense.indexManyDocumentsFlow[Company](settings))
 
             //then
@@ -250,10 +261,10 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
 
         createCollection(collectionName)
 
-        runWithFlow(indexFirst, Typesense.indexDocumentFlow[Company](settings))
-        runWithFlow(indexSecond, Typesense.indexDocumentFlow[Company](settings))
-        runWithFlow(indexThird, Typesense.indexDocumentFlow[Company](settings))
-        runWithFlow(indexFourth, Typesense.indexDocumentFlow[Company](settings))
+        runWithFlowTypesenseResult(indexFirst, Typesense.indexDocumentFlow[Company](settings))
+        runWithFlowTypesenseResult(indexSecond, Typesense.indexDocumentFlow[Company](settings))
+        runWithFlowTypesenseResult(indexThird, Typesense.indexDocumentFlow[Company](settings))
+        runWithFlowTypesenseResult(indexFourth, Typesense.indexDocumentFlow[Company](settings))
 
         SetUp(collectionName, Seq(firstDocument.id, secondDocument.id, thirdDocument.id, fourthDocument.id))
       }

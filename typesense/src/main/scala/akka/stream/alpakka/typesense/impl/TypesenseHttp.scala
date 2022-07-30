@@ -8,14 +8,26 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.StatusCodes.{
+  BadGateway,
+  GatewayTimeout,
+  InternalServerError,
+  ServiceUnavailable,
+  TooManyRequests
+}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.alpakka.typesense.TypesenseSettings
+import akka.stream.alpakka.typesense.{
+  FailureTypesenseResult,
+  SuccessTypesenseResult,
+  TypesenseResult,
+  TypesenseSettings
+}
 import spray.json.{JsValue, JsonReader}
 
-import scala.concurrent.Future
-import scala.util.Try
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Success, Try}
 
 @InternalApi private[typesense] object TypesenseHttp {
   object PrepareRequestEntity {
@@ -26,17 +38,19 @@ import scala.util.Try
   }
 
   object ParseResponse {
-    def json[T: JsonReader](res: HttpResponse, system: ActorSystem): Future[T] = {
+    def jsonTypesenseResult[T: JsonReader](res: HttpResponse, system: ActorSystem): Future[TypesenseResult[T]] = {
       import spray.json._
       implicit val as: ActorSystem = system
       import system.dispatcher
 
       Unmarshal(res).to[String].flatMap { body: String =>
-        if (res.status.isFailure())
-          Future.failed(new TypesenseException(res.status, body))
-        else
-          Future.fromTry(Try(body.parseJson.convertTo[T]))
+        prepareTypesenseResult(body, res.status, body => Try(body.parseJson.convertTo[T]))
       }
+    }
+
+    def json[T: JsonReader](res: HttpResponse, system: ActorSystem): Future[T] = {
+      import system.dispatcher
+      unwrapFutureWithTypesenseResult(jsonTypesenseResult(res, system))
     }
 
     def jsonLine[T: JsonReader](res: HttpResponse, system: ActorSystem): Future[Seq[T]] = {
@@ -56,19 +70,35 @@ import scala.util.Try
       }
     }
 
-    def withoutBody(res: HttpResponse, system: ActorSystem): Future[Done] = {
+    def withoutBodyTypesenseResult(res: HttpResponse, system: ActorSystem): Future[TypesenseResult[Done]] = {
       implicit val as: ActorSystem = system
       import system.dispatcher
       Unmarshal(res).to[String].flatMap { body: String =>
-        if (res.status.isFailure())
-          Future.failed(new TypesenseException(res.status, body))
-        else
-          Future.successful(Done)
+        prepareTypesenseResult(body, res.status, _ => Success(Done))
       }
     }
+
+    private def prepareTypesenseResult[T](body: String, status: StatusCode, convert: String => Try[T])(
+        implicit ec: ExecutionContext
+    ): Future[TypesenseResult[T]] =
+      status match {
+        case TooManyRequests | InternalServerError | BadGateway | ServiceUnavailable | GatewayTimeout =>
+          Future.failed(new TypesenseException(status, body))
+        case status if status.isFailure() => Future.successful(new FailureTypesenseResult(status, body))
+        case _ => Future.fromTry(convert(body)).map(new SuccessTypesenseResult(_))
+      }
+
+    private def unwrapFutureWithTypesenseResult[T](future: Future[TypesenseResult[T]])(
+        implicit ec: ExecutionContext
+    ): Future[T] =
+      future.flatMap {
+        case result: SuccessTypesenseResult[T] => Future.successful(result.value)
+        case result: FailureTypesenseResult[T] =>
+          Future.failed(new TypesenseException(result.statusCode, result.reason))
+      }
   }
 
-  class TypesenseException(val statusCode: StatusCode, val reason: String)
+  class TypesenseException @InternalApi private[typesense] (val statusCode: StatusCode, val reason: String)
       extends Exception(s"[Status code $statusCode]: $reason")
 
   //TODO: error handling tests - ex. authentication

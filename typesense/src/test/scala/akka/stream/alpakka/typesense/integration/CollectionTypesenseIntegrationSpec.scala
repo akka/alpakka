@@ -28,7 +28,7 @@ abstract class CollectionTypesenseIntegrationSpec(version: String) extends Types
 
       it("using flow with Java API") {
         val schema = randomSchema()
-        val result = runWithJavaFlow(schema, JavaTypesense.createCollectionFlow(settings))
+        val result = runWithJavaFlowTypesenseResult(schema, JavaTypesense.createCollectionFlow(settings))
 
         compareResponseAndSchema(result, schema)
       }
@@ -155,18 +155,21 @@ abstract class CollectionTypesenseIntegrationSpec(version: String) extends Types
       describe("if exists") {
         it("using flow") {
           val schema = randomSchema()
-          val createResult: CollectionResponse = runWithFlow(schema, Typesense.createCollectionFlow(settings))
+          val createResult: CollectionResponse =
+            runWithFlowTypesenseResult(schema, Typesense.createCollectionFlow(settings))
           val retrieveResult: CollectionResponse =
-            runWithFlow(RetrieveCollection(schema.name), Typesense.retrieveCollectionFlow(settings))
+            runWithFlowTypesenseResult(RetrieveCollection(schema.name), Typesense.retrieveCollectionFlow(settings))
 
           createResult shouldBe retrieveResult
         }
 
         it("using flow with Java API") {
           val schema = randomSchema()
-          val createResult: CollectionResponse = runWithJavaFlow(schema, JavaTypesense.createCollectionFlow(settings))
+          val createResult: CollectionResponse =
+            runWithJavaFlowTypesenseResult(schema, JavaTypesense.createCollectionFlow(settings))
           val retrieveResult: CollectionResponse =
-            runWithJavaFlow(RetrieveCollection(schema.name), JavaTypesense.retrieveCollectionFlow(settings))
+            runWithJavaFlowTypesenseResult(RetrieveCollection(schema.name),
+                                           JavaTypesense.retrieveCollectionFlow(settings))
 
           createResult shouldBe retrieveResult
         }
@@ -200,7 +203,7 @@ abstract class CollectionTypesenseIntegrationSpec(version: String) extends Types
     CollectionSchema("my-collection-" + UUID.randomUUID(), fields)
 
   protected def createAndCheck(schema: CollectionSchema): Assertion = {
-    val response = runWithFlow(schema, Typesense.createCollectionFlow(settings))
+    val response = runWithFlowTypesenseResult(schema, Typesense.createCollectionFlow(settings))
     compareResponseAndSchema(response, schema)
   }
 

@@ -30,8 +30,8 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
           val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
 
           //when
-          val createResult = runWithFlow(indexDocument, Typesense.indexDocumentFlow[Company](settings))
-          val retrieveResult = runWithFlow(retrieve, Typesense.retrieveDocumentFlow[Company](settings))
+          val createResult = runWithFlowTypesenseResult(indexDocument, Typesense.indexDocumentFlow[Company](settings))
+          val retrieveResult = runWithFlowTypesenseResult(retrieve, Typesense.retrieveDocumentFlow[Company](settings))
 
           //then
           createResult shouldBe Done
@@ -44,13 +44,14 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
           val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
 
           //when
-          val createResult = runWithJavaFlow(
+          val createResult = runWithJavaFlowTypesenseResult(
             indexDocument,
             JavaTypesense.indexDocumentFlow[Company](settings, implicitly[JsonWriter[Company]])
           )
           val retrieveResult =
-            runWithJavaFlow(retrieve,
-                            JavaTypesense.retrieveDocumentFlow[Company](settings, implicitly[JsonReader[Company]]))
+            runWithJavaFlowTypesenseResult(retrieve,
+                                           JavaTypesense.retrieveDocumentFlow[Company](settings,
+                                                                                       implicitly[JsonReader[Company]]))
 
           //then
           createResult shouldBe Done
@@ -65,8 +66,8 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
           val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
 
           //when
-          val createResult = runWithFlow(indexDocument, Typesense.indexDocumentFlow[Company](settings))
-          val retrieveResult = runWithFlow(retrieve, Typesense.retrieveDocumentFlow[Company](settings))
+          val createResult = runWithFlowTypesenseResult(indexDocument, Typesense.indexDocumentFlow[Company](settings))
+          val retrieveResult = runWithFlowTypesenseResult(retrieve, Typesense.retrieveDocumentFlow[Company](settings))
 
           //then
           createResult shouldBe Done
@@ -79,11 +80,11 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
           val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
 
           //when
-          val createResult = runWithJavaFlow(
+          val createResult = runWithJavaFlowTypesenseResult(
             indexDocument,
             JavaTypesense.indexDocumentFlow[Company](settings, implicitly[JsonWriter[Company]])
           )
-          val retrieveResult = runWithJavaFlow(
+          val retrieveResult = runWithJavaFlowTypesenseResult(
             retrieve,
             JavaTypesense.retrieveDocumentFlow[Company](settings, implicitly[JsonReader[Company]])
           )
@@ -114,7 +115,7 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
 
         it("if document with this id already exists") {
           val indexDocument = randomIndexDocument()
-          runWithFlow(indexDocument, Typesense.indexDocumentFlow[Company](settings))
+          runWithFlowTypesenseResult(indexDocument, Typesense.indexDocumentFlow[Company](settings))
           tryUsingFlowAndExpectError(indexDocument,
                                      Typesense.indexDocumentFlow[Company](settings),
                                      StatusCodes.Conflict)
@@ -125,7 +126,7 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
         describe("if document with this id already exists") {
           it("using flow") {
             val indexDocument = randomIndexDocument()
-            runWithFlow(indexDocument, Typesense.indexDocumentFlow[Company](settings))
+            runWithFlowTypesenseResult(indexDocument, Typesense.indexDocumentFlow[Company](settings))
             tryUsingFlowAndExpectError(indexDocument,
                                        Typesense.indexDocumentFlow[Company](settings),
                                        StatusCodes.Conflict)
@@ -133,7 +134,7 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
 
           it("using flow with Java API") {
             val indexDocument = randomIndexDocument()
-            runWithFlow(indexDocument, Typesense.indexDocumentFlow[Company](settings))
+            runWithFlowTypesenseResult(indexDocument, Typesense.indexDocumentFlow[Company](settings))
             tryUsingJavaFlowAndExpectError(indexDocument,
                                            JavaTypesense.indexDocumentFlow[Company](settings,
                                                                                     implicitly[JsonWriter[Company]]),
@@ -176,8 +177,8 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
         val retrieve = retrieveDocumentFromIndexDocument(indexDocument)
 
         //when
-        val createResult = runWithFlow(indexDocument, Typesense.indexDocumentFlow[Company](settings))
-        val deleteResult = runWithFlow(delete, Typesense.deleteDocumentFlow(settings))
+        val createResult = runWithFlowTypesenseResult(indexDocument, Typesense.indexDocumentFlow[Company](settings))
+        val deleteResult = runWithFlowTypesenseResult(delete, Typesense.deleteDocumentFlow(settings))
 
         //then
         createResult shouldBe Done
@@ -192,8 +193,9 @@ abstract class DocumentTypesenseIntegrationSpec(version: String) extends Typesen
 
         //when
         val createResult =
-          runWithJavaFlow(indexDocument, JavaTypesense.indexDocumentFlow(settings, implicitly[JsonWriter[Company]]))
-        val deleteResult = runWithJavaFlow(delete, JavaTypesense.deleteDocumentFlow(settings))
+          runWithJavaFlowTypesenseResult(indexDocument,
+                                         JavaTypesense.indexDocumentFlow(settings, implicitly[JsonWriter[Company]]))
+        val deleteResult = runWithJavaFlowTypesenseResult(delete, JavaTypesense.deleteDocumentFlow(settings))
 
         //then
         createResult shouldBe Done

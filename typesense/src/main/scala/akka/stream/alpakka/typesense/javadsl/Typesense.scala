@@ -24,7 +24,7 @@ object Typesense {
    */
   def createCollectionFlow(
       settings: TypesenseSettings
-  ): Flow[CollectionSchema, CollectionResponse, CompletionStage[NotUsed]] =
+  ): Flow[CollectionSchema, TypesenseResult[CollectionResponse], CompletionStage[NotUsed]] =
     ScalaTypesense
       .createCollectionFlow(settings)
       .mapMaterializedValue(_.toJava)
@@ -35,7 +35,7 @@ object Typesense {
    */
   def retrieveCollectionFlow(
       settings: TypesenseSettings
-  ): Flow[RetrieveCollection, CollectionResponse, CompletionStage[NotUsed]] =
+  ): Flow[RetrieveCollection, TypesenseResult[CollectionResponse], CompletionStage[NotUsed]] =
     ScalaTypesense
       .retrieveCollectionFlow(settings)
       .mapMaterializedValue(_.toJava)
@@ -47,7 +47,7 @@ object Typesense {
   def indexDocumentFlow[T](
       settings: TypesenseSettings,
       jsonWriter: JsonWriter[T]
-  ): Flow[IndexDocument[T], Done, CompletionStage[NotUsed]] =
+  ): Flow[IndexDocument[T], TypesenseResult[Done], CompletionStage[NotUsed]] =
     ScalaTypesense
       .indexDocumentFlow(settings)(jsonWriter)
       .mapMaterializedValue(_.toJava)
@@ -72,7 +72,7 @@ object Typesense {
   def retrieveDocumentFlow[T](
       settings: TypesenseSettings,
       jsonReader: JsonReader[T]
-  ): Flow[RetrieveDocument, T, CompletionStage[NotUsed]] =
+  ): Flow[RetrieveDocument, TypesenseResult[T], CompletionStage[NotUsed]] =
     ScalaTypesense
       .retrieveDocumentFlow(settings)(jsonReader)
       .mapMaterializedValue(_.toJava)
@@ -83,7 +83,7 @@ object Typesense {
    */
   def deleteDocumentFlow(
       settings: TypesenseSettings
-  ): Flow[DeleteDocument, Done, CompletionStage[NotUsed]] =
+  ): Flow[DeleteDocument, TypesenseResult[Done], CompletionStage[NotUsed]] =
     ScalaTypesense
       .deleteDocumentFlow(settings)
       .mapMaterializedValue(_.toJava)
