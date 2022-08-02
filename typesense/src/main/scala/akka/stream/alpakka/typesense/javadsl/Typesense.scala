@@ -59,11 +59,11 @@ object Typesense {
   def indexManyDocumentsFlow[T](
       settings: TypesenseSettings,
       jsonWriter: JsonWriter[T]
-  ): Flow[IndexManyDocuments[T], java.util.List[IndexDocumentResult], CompletionStage[NotUsed]] =
+  ): Flow[IndexManyDocuments[T], TypesenseResult[java.util.List[IndexDocumentResult]], CompletionStage[NotUsed]] =
     ScalaTypesense
       .indexManyDocumentsFlow(settings)(jsonWriter)
       .mapMaterializedValue(_.toJava)
-      .map(_.asJava)
+      .map(_.map(_.asJava))
       .asJava
 
   /**
@@ -94,7 +94,7 @@ object Typesense {
    */
   def deleteManyDocumentsByQueryFlow(
       settings: TypesenseSettings
-  ): Flow[DeleteManyDocumentsByQuery, DeleteManyDocumentsResult, CompletionStage[NotUsed]] =
+  ): Flow[DeleteManyDocumentsByQuery, TypesenseResult[DeleteManyDocumentsResult], CompletionStage[NotUsed]] =
     ScalaTypesense
       .deleteManyDocumentsByQueryFlow(settings)
       .mapMaterializedValue(_.toJava)

@@ -200,9 +200,10 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
           val indexResult = runWithFlow(indexDocuments, Typesense.indexManyDocumentsFlow[Company](settings))
 
           //then
-          indexResult shouldBe Seq(IndexSuccess(), IndexSuccess())
-          indexResult(0).isSuccess shouldBe true
-          indexResult(1).isSuccess shouldBe true
+          indexResult.get() shouldBe Some(Seq(IndexSuccess(), IndexSuccess()))
+          val results = indexResult.get().get
+          results(0).isSuccess shouldBe true
+          results(1).isSuccess shouldBe true
         }
 
         it("using flow with Java API") {
@@ -211,8 +212,9 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
 
           //when
           val indexResult: util.List[IndexDocumentResult] =
-            runWithJavaFlow(indexDocuments,
-                            JavaTypesense.indexManyDocumentsFlow(settings, implicitly[JsonWriter[Company]]))
+            runWithJavaFlowTypesenseResult(indexDocuments,
+                                           JavaTypesense.indexManyDocumentsFlow(settings,
+                                                                                implicitly[JsonWriter[Company]]))
 
           //then
           indexResult.asScala shouldBe Seq(IndexSuccess(), IndexSuccess())
@@ -232,7 +234,8 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
             //when
             val createSingleResult =
               runWithFlowTypesenseResult(createSingleDocument, Typesense.indexDocumentFlow[Company](settings))
-            val createManyResult = runWithFlow(createManyDocuments, Typesense.indexManyDocumentsFlow[Company](settings))
+            val createManyResult =
+              runWithFlowTypesenseResult(createManyDocuments, Typesense.indexManyDocumentsFlow[Company](settings))
 
             //then
             createSingleResult shouldBe Done
@@ -276,7 +279,7 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
         val delete = DeleteManyDocumentsByQuery(collectionName, deleteQuery(setUp))
 
         //when
-        val deleteResult = runWithFlow(delete, Typesense.deleteManyDocumentsByQueryFlow(settings))
+        val deleteResult = runWithFlowTypesenseResult(delete, Typesense.deleteManyDocumentsByQueryFlow(settings))
 
         //then
         deleteResult shouldBe DeleteManyDocumentsResult(expectedDeleted)
@@ -292,7 +295,7 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
               val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150")
 
               //when
-              val deleteResult = runWithFlow(delete, Typesense.deleteManyDocumentsByQueryFlow(settings))
+              val deleteResult = runWithFlowTypesenseResult(delete, Typesense.deleteManyDocumentsByQueryFlow(settings))
 
               //then
               deleteResult shouldBe DeleteManyDocumentsResult(3)
@@ -305,7 +308,8 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
               val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150")
 
               //when
-              val deleteResult = runWithJavaFlow(delete, JavaTypesense.deleteManyDocumentsByQueryFlow(settings))
+              val deleteResult =
+                runWithJavaFlowTypesenseResult(delete, JavaTypesense.deleteManyDocumentsByQueryFlow(settings))
 
               //then
               deleteResult shouldBe DeleteManyDocumentsResult(3)
@@ -320,7 +324,7 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
               val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150", batchSize = Some(2))
 
               //when
-              val deleteResult = runWithFlow(delete, Typesense.deleteManyDocumentsByQueryFlow(settings))
+              val deleteResult = runWithFlowTypesenseResult(delete, Typesense.deleteManyDocumentsByQueryFlow(settings))
 
               //then
               deleteResult shouldBe DeleteManyDocumentsResult(3)
@@ -333,7 +337,8 @@ class DocumentTypesenseIntegrationSpec_V_0_23_0 extends DocumentTypesenseIntegra
               val delete = DeleteManyDocumentsByQuery(collectionName, "budget:>150", batchSize = Some(2))
 
               //when
-              val deleteResult = runWithJavaFlow(delete, JavaTypesense.deleteManyDocumentsByQueryFlow(settings))
+              val deleteResult =
+                runWithJavaFlowTypesenseResult(delete, JavaTypesense.deleteManyDocumentsByQueryFlow(settings))
 
               //then
               deleteResult shouldBe DeleteManyDocumentsResult(3)

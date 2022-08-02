@@ -49,7 +49,7 @@ class PerformanceTypesenseIntegrationSpec extends TypesenseIntegrationSpec("0.23
         .via(indexFlow)
         .flatMapConcat {
           case _: SuccessTypesenseResult[Done] => Source.empty
-          case result: FailureTypesenseResult[Done] => Source.single(result.reason)
+          case result: FailureTypesenseResult => Source.single(result.reason)
         }
         .log(logerName, identity)
         .run()
@@ -74,7 +74,7 @@ class PerformanceTypesenseIntegrationSpec extends TypesenseIntegrationSpec("0.23
         .via(Typesense.retrieveCollectionFlow(settings))
         .map {
           case result: SuccessTypesenseResult[CollectionResponse] => result.value
-          case result: FailureTypesenseResult[_] => fail(s"Cannot fetch collection: ${result.reason}")
+          case result: FailureTypesenseResult => fail(s"Cannot fetch collection: ${result.reason}")
         }
         .toMat(Sink.head)(Keep.right)
         .run(),

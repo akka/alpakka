@@ -64,10 +64,11 @@ class ExampleUsage {
   val indexManyDocumentsSource: Source[IndexManyDocuments[MyDocument], NotUsed] =
     Source.single(IndexManyDocuments("my-collection", Seq(MyDocument(UUID.randomUUID().toString, "Hello"))))
 
-  val indexManyDocumentsFlow: Flow[IndexManyDocuments[MyDocument], Seq[IndexDocumentResult], Future[NotUsed]] =
+  val indexManyDocumentsFlow
+      : Flow[IndexManyDocuments[MyDocument], TypesenseResult[Seq[IndexDocumentResult]], Future[NotUsed]] =
     Typesense.indexManyDocumentsFlow(settings)
 
-  val indexManyDocumentsResult: Future[Seq[IndexDocumentResult]] =
+  val indexManyDocumentsResult: Future[TypesenseResult[Seq[IndexDocumentResult]]] =
     indexManyDocumentsSource.via(indexManyDocumentsFlow).runWith(Sink.head)
   //#index many documents
 
@@ -103,10 +104,11 @@ class ExampleUsage {
                                  FilterDeleteDocumentsQueryDsl.inStringSet("my-field", Seq(UUID.randomUUID().toString)))
     )
 
-  val deleteDocumentsByQueryFlow: Flow[DeleteManyDocumentsByQuery, DeleteManyDocumentsResult, Future[NotUsed]] =
+  val deleteDocumentsByQueryFlow
+      : Flow[DeleteManyDocumentsByQuery, TypesenseResult[DeleteManyDocumentsResult], Future[NotUsed]] =
     Typesense.deleteManyDocumentsByQueryFlow(settings)
 
-  val deleteDocumentsByQueryResult: Future[DeleteManyDocumentsResult] =
+  val deleteDocumentsByQueryResult: Future[TypesenseResult[DeleteManyDocumentsResult]] =
     deleteDocumentsByQuerySource.via(deleteDocumentsByQueryFlow).runWith(Sink.head)
   //# delete documents by query
 }

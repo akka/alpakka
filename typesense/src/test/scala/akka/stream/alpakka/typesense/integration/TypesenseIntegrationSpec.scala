@@ -73,7 +73,7 @@ abstract class TypesenseIntegrationSpec(protected val version: String)
   ): Response =
     runWithFlow(request, flow) match {
       case result: SuccessTypesenseResult[Response] => result.value
-      case result: FailureTypesenseResult[Response] => throw new RuntimeException(result.reason)
+      case result: FailureTypesenseResult => throw new RuntimeException(result.reason)
     }
 
   protected def runWithSink[Request](request: Request, sink: Sink[Request, Future[Done]]): Done =
@@ -99,7 +99,7 @@ abstract class TypesenseIntegrationSpec(protected val version: String)
   ): Response =
     runWithJavaFlow(request, flow) match {
       case result: SuccessTypesenseResult[Response] => result.value
-      case result: FailureTypesenseResult[Response] => throw new RuntimeException(result.reason)
+      case result: FailureTypesenseResult => throw new RuntimeException(result.reason)
     }
 
   protected def runWithJavaSink[Request](request: Request,
@@ -119,9 +119,9 @@ abstract class TypesenseIntegrationSpec(protected val version: String)
       .via(flow)
       .runWith(Sink.head)
       .futureValue match {
-      case result: FailureTypesenseResult[_] if result.statusCode == expectedStatusCode =>
+      case result: FailureTypesenseResult if result.statusCode == expectedStatusCode =>
         result.statusCode shouldBe expectedStatusCode
-      case result: FailureTypesenseResult[_] =>
+      case result: FailureTypesenseResult =>
         fail(s"Expected error with status code: $expectedStatusCode, got [${result.statusCode}] ${result.reason}")
       case _: SuccessTypesenseResult[_] => fail(s"Expected error with status code: $expectedStatusCode, got success")
     }
@@ -136,7 +136,7 @@ abstract class TypesenseIntegrationSpec(protected val version: String)
       .via(flow)
       .runWith(Sink.head)
       .futureValue match {
-      case result: FailureTypesenseResult[_] if result.statusCode == expectedStatusCode =>
+      case result: FailureTypesenseResult if result.statusCode == expectedStatusCode =>
         result.statusCode shouldBe expectedStatusCode
       case result => fail(s"Expected error with status code: $expectedStatusCode, got ${result.toString}")
     }

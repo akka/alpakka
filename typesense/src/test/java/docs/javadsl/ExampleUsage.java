@@ -93,10 +93,13 @@ public class ExampleUsage {
                 "my-collection",
                 Collections.singletonList(new MyDocument(UUID.randomUUID().toString(), "Hello"))));
 
-    Flow<IndexManyDocuments<MyDocument>, List<IndexDocumentResult>, CompletionStage<NotUsed>>
+    Flow<
+            IndexManyDocuments<MyDocument>,
+            TypesenseResult<List<IndexDocumentResult>>,
+            CompletionStage<NotUsed>>
         indexManyDocumentsFlow = Typesense.indexManyDocumentsFlow(settings, documentJsonWriter);
 
-    CompletionStage<List<IndexDocumentResult>> indexManyDocumentsResult =
+    CompletionStage<TypesenseResult<List<IndexDocumentResult>>> indexManyDocumentsResult =
         indexManyDocumentsSource.via(indexManyDocumentsFlow).runWith(Sink.head(), system);
     // #index many documents
 
@@ -133,10 +136,13 @@ public class ExampleUsage {
                 FilterDeleteDocumentsQueryDsl.inStringSet(
                     "id", Collections.singletonList(UUID.randomUUID().toString()))));
 
-    Flow<DeleteManyDocumentsByQuery, DeleteManyDocumentsResult, CompletionStage<NotUsed>>
+    Flow<
+            DeleteManyDocumentsByQuery,
+            TypesenseResult<DeleteManyDocumentsResult>,
+            CompletionStage<NotUsed>>
         deleteDocumentsByQueryFlow = Typesense.deleteManyDocumentsByQueryFlow(settings);
 
-    CompletionStage<DeleteManyDocumentsResult> deleteDocumentsByQueryResult =
+    CompletionStage<TypesenseResult<DeleteManyDocumentsResult>> deleteDocumentsByQueryResult =
         deleteDocumentsByQuerySource.via(deleteDocumentsByQueryFlow).runWith(Sink.head(), system);
     // #delete documents by query
   }

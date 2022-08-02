@@ -48,25 +48,13 @@ import scala.util.{Success, Try}
       }
     }
 
-    def json[T: JsonReader](res: HttpResponse, system: ActorSystem): Future[T] = {
-      import system.dispatcher
-      unwrapFutureWithTypesenseResult(jsonTypesenseResult(res, system))
-    }
-
-    def jsonLine[T: JsonReader](res: HttpResponse, system: ActorSystem): Future[Seq[T]] = {
+    def jsonLine[T: JsonReader](res: HttpResponse, system: ActorSystem): Future[TypesenseResult[Seq[T]]] = {
       import spray.json._
       implicit val as: ActorSystem = system
       import system.dispatcher
 
       Unmarshal(res).to[String].flatMap { body: String =>
-        if (res.status.isFailure())
-          Future.failed(new RetryableTypesenseException(res.status, body))
-        else
-          Future.fromTry(
-            Try(
-              body.split("\n").toSeq.map(_.parseJson.convertTo[T])
-            )
-          )
+        prepareTypesenseResult(body, res.status, body => Try(body.split("\n").toSeq.map(_.parseJson.convertTo[T])))
       }
     }
 
@@ -86,15 +74,6 @@ import scala.util.{Success, Try}
           Future.failed(new RetryableTypesenseException(status, body))
         case status if status.isFailure() => Future.successful(new FailureTypesenseResult(status, body))
         case _ => Future.fromTry(convert(body)).map(new SuccessTypesenseResult(_))
-      }
-
-    private def unwrapFutureWithTypesenseResult[T](future: Future[TypesenseResult[T]])(
-        implicit ec: ExecutionContext
-    ): Future[T] =
-      future.flatMap {
-        case result: SuccessTypesenseResult[T] => Future.successful(result.value)
-        case result: FailureTypesenseResult[T] =>
-          Future.failed(new RetryableTypesenseException(result.statusCode, result.reason))
       }
   }
 

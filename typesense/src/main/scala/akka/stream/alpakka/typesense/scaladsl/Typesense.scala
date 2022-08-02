@@ -80,7 +80,7 @@ object Typesense {
    */
   def indexManyDocumentsFlow[T: JsonWriter](
       settings: TypesenseSettings
-  ): Flow[IndexManyDocuments[T], Seq[IndexDocumentResult], Future[NotUsed]] =
+  ): Flow[IndexManyDocuments[T], TypesenseResult[Seq[IndexDocumentResult]], Future[NotUsed]] =
     flowFlowRequest(settings) { (index, system) =>
       TypesenseHttp
         .executeRequest(
@@ -91,7 +91,7 @@ object Typesense {
           ParseResponse.jsonLine[IndexManyDocumentsResponse],
           Map("action" -> indexActionValue(index.action))
         )(system)
-        .map(_.map(_.asResult))(system.dispatcher)
+        .map(_.map(_.map(_.asResult)))(system.dispatcher)
     }
 
   /**
@@ -135,7 +135,7 @@ object Typesense {
    */
   def deleteManyDocumentsByQueryFlow(
       settings: TypesenseSettings
-  ): Flow[DeleteManyDocumentsByQuery, DeleteManyDocumentsResult, Future[NotUsed]] =
+  ): Flow[DeleteManyDocumentsByQuery, TypesenseResult[DeleteManyDocumentsResult], Future[NotUsed]] =
     flowFlowRequest(settings) { (delete, system) =>
       TypesenseHttp
         .executeRequest(
@@ -143,7 +143,7 @@ object Typesense {
           HttpMethods.DELETE,
           PrepareRequestEntity.empty,
           settings,
-          ParseResponse.json[DeleteManyDocumentsResult],
+          ParseResponse.jsonTypesenseResult[DeleteManyDocumentsResult],
           Map("filter_by" -> delete.filterBy.asTextQuery) ++ delete.batchSize.map("batch_size" -> _.toString)
         )(system)
     }
@@ -170,7 +170,7 @@ object Typesense {
     ) {
       case (req, Failure(_: RetryableTypesenseException)) => Some(req) //retry
       case (_, Success(_)) => None //success
-      case (req, Failure(_)) => None //failure, but non retryable, in next flow exception will be thrown
+      case (_, Failure(_)) => None //failure, but non retryable, in next flow exception will be thrown
     }
 
     retryFlow.map(_.get)
