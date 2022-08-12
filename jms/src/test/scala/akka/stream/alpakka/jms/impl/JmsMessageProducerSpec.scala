@@ -45,6 +45,7 @@ class JmsMessageProducerSpec extends JmsSpec with MockitoSugar {
           .withProperty("short", 3.toShort)
           .withProperty("long", 4L)
           .withProperty("double", 5.0)
+          .withProperty("bytearray", Array[Byte](1, 1, 0))
       )
 
       verify(textMessage).setStringProperty("string", "string")
@@ -54,6 +55,7 @@ class JmsMessageProducerSpec extends JmsSpec with MockitoSugar {
       verify(textMessage).setShortProperty("short", 3.toByte)
       verify(textMessage).setLongProperty("long", 4L)
       verify(textMessage).setDoubleProperty("double", 5.0)
+      verify(textMessage).setObjectProperty("bytearray", Array[Byte](1, 1, 0))
     }
 
     "succeed if properties are set as map" in new Setup {
@@ -67,7 +69,8 @@ class JmsMessageProducerSpec extends JmsSpec with MockitoSugar {
         "Java-boxed float" -> java.lang.Float.valueOf(4.35f),
         "long" -> 4L,
         "Java-boxed long" -> java.lang.Long.valueOf(44L),
-        "double" -> 5.0
+        "double" -> 5.0,
+        "bytearray" -> Array[Byte](1, 1, 0)
       )
 
       val jmsProducer = JmsMessageProducer(jmsSession, settings, 0)
@@ -87,6 +90,7 @@ class JmsMessageProducerSpec extends JmsSpec with MockitoSugar {
       verify(textMessage).setLongProperty("long", 4L)
       verify(textMessage).setLongProperty("Java-boxed long", 44L)
       verify(textMessage).setDoubleProperty("double", 5.0)
+      verify(textMessage).setObjectProperty("bytearray", Array[Byte](1, 1, 0))
     }
 
     "fail if a property is set to an unsupported type" in new Setup {
