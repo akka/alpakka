@@ -85,6 +85,7 @@ private class JmsMessageProducer(jmsProducer: jms.MessageProducer, jmsSession: J
           case v: Float => message.setFloatProperty(key, v)
           case v: Long => message.setLongProperty(key, v)
           case v: Double => message.setDoubleProperty(key, v)
+          case v: Array[Byte] => message.setObjectProperty(key, v)
           case null => message.setObjectProperty(key, null)
           case _ => throw UnsupportedMessagePropertyType(key, v, jmsMessage)
         }
