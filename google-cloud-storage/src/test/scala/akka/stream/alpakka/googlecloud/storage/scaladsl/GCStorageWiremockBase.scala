@@ -40,7 +40,9 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Hove
 
   def storageObjectJson(
       generation: Long = 1543055053992768L,
-      metadata: Map[String, String] = Map("countryOfOrigin" -> "United Kingdom")
+      metadata: Map[String, String] = Map("countryOfOrigin" -> "United Kingdom"),
+      maybeMd5Hash: Option[String] = Some("emjwm9mSZxuzsZpecLeCfg=="),
+      maybeCrc32c: Option[String] = Some("AtvFhg==")
   ): String =
     s"""
        |{
@@ -48,8 +50,6 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Hove
        |  "name":"$fileName",
        |  "size":"5",
        |  "generation":"$generation",
-       |  "crc32c":"AtvFhg==",
-       |  "md5Hash":"emjwm9mSZxuzsZpecLeCfg==",
        |  "timeCreated":"2018-11-24T10:24:13.992Z",
        |  "selfLink":"https://www.googleapis.com/storage/v1/b/alpakka/o/$fileName",
        |  "timeStorageClassUpdated":"2018-11-24T10:24:13.992Z",
@@ -76,7 +76,10 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Hove
        |  "customerEncryption": {"encryptionAlgorithm": "AES256", "keySha256": "encryption-key-sha256"},
        |  "owner": {"entity": "project-owners-123412341234", "entityId": "790607247"},
        |  "acl": [{ "kind": "storage#objectAccessControl", "id": "my-bucket/test-acl/1463505795940000", "selfLink": "https://www.googleapis.com/storage/v1/b/my-bucket/o/test-acl", "bucket": "my-bucket", "object": "test-acl", "generation": "1463505795940000", "entity": "some-entity", "role": "OWNER", "email": "owner@google.com", "entityId": "790607247", "domain": "my-domain", "projectTeam": { "projectNumber": "57959400", "team": "management" }, "etag": "R2OZrfQiij=" }]
-       |}""".stripMargin
+       |  ${maybeMd5Hash.fold("")(hash => s""","md5Hash":"$hash"""")}
+       |  ${maybeCrc32c.fold("")(crc32c => s""","crc32c":"$crc32c"""")}
+       | }
+       |""".stripMargin
 
   def getRandomString(size: Int): String =
     Random.alphanumeric.take(size).mkString
@@ -523,7 +526,9 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Hove
   def mockGetExistingStorageObjectJava(generation: Long) =
     mockGetExistingStorageObject(Some(generation))
 
-  def mockGetExistingStorageObject(generation: Option[Long] = None) =
+  def mockGetExistingStorageObject(generation: Option[Long] = None,
+                                   maybeMd5Hash: Option[String] = Some("emjwm9mSZxuzsZpecLeCfg=="),
+                                   maybeCrc32c: Option[String] = Some("AtvFhg==")) =
     dsl(
       storageService
         .get(s"/storage/v1/b/$bucketName/o/$fileName")
@@ -532,7 +537,13 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Hove
         .willReturn(
           response()
             .status(200)
-            .body(generation.map(storageObjectJson(_)) getOrElse storageObjectJson())
+            .body(
+              generation
+                .map(storageObjectJson(_, maybeMd5Hash = maybeMd5Hash, maybeCrc32c = maybeCrc32c)) getOrElse storageObjectJson(
+                maybeMd5Hash = maybeMd5Hash,
+                maybeCrc32c = maybeCrc32c
+              )
+            )
             .header("Content-Type", "application/json")
         )
     )

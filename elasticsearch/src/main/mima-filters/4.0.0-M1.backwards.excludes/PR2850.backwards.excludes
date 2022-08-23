@@ -1,0 +1,11 @@
+# New hierarchy to accommodate Opensearch
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.elasticsearch.ElasticsearchSourceSettings.withApiVersion")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.elasticsearch.ElasticsearchSourceSettings.*")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.elasticsearch.ElasticsearchWriteSettings.withApiVersion")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.elasticsearch.ElasticsearchWriteSettings.*")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchFlow.*")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchSource.*")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchSink.create")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchFlow.*")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSource.*")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSink.create")

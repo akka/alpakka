@@ -59,33 +59,25 @@ object RetryWithBackoff {
 /**
  * Configure Elasticsearch sinks and flows.
  */
-final class ElasticsearchWriteSettings private (val connection: ElasticsearchConnectionSettings,
-                                                val bufferSize: Int,
-                                                val retryLogic: RetryLogic,
-                                                val versionType: Option[String],
-                                                val apiVersion: ApiVersion,
-                                                val allowExplicitIndex: Boolean) {
+final class ElasticsearchWriteSettings private (connection: ElasticsearchConnectionSettings,
+                                                bufferSize: Int,
+                                                retryLogic: RetryLogic,
+                                                versionType: Option[String],
+                                                apiVersion: ApiVersion,
+                                                allowExplicitIndex: Boolean)
+    extends WriteSettingsBase[ApiVersion, ElasticsearchWriteSettings](connection,
+                                                                      bufferSize,
+                                                                      retryLogic,
+                                                                      versionType,
+                                                                      apiVersion,
+                                                                      allowExplicitIndex) {
 
-  def withConnection(value: ElasticsearchConnectionSettings): ElasticsearchWriteSettings = copy(connection = value)
-
-  def withBufferSize(value: Int): ElasticsearchWriteSettings = copy(bufferSize = value)
-
-  def withRetryLogic(value: RetryLogic): ElasticsearchWriteSettings =
-    copy(retryLogic = value)
-
-  def withVersionType(value: String): ElasticsearchWriteSettings = copy(versionType = Option(value))
-
-  def withApiVersion(value: ApiVersion): ElasticsearchWriteSettings =
-    if (apiVersion == value) this else copy(apiVersion = value)
-
-  def withAllowExplicitIndex(value: Boolean): ElasticsearchWriteSettings = copy(allowExplicitIndex = value)
-
-  private def copy(connection: ElasticsearchConnectionSettings = connection,
-                   bufferSize: Int = bufferSize,
-                   retryLogic: RetryLogic = retryLogic,
-                   versionType: Option[String] = versionType,
-                   apiVersion: ApiVersion = apiVersion,
-                   allowExplicitIndex: Boolean = allowExplicitIndex): ElasticsearchWriteSettings =
+  protected override def copy(connection: ElasticsearchConnectionSettings,
+                              bufferSize: Int,
+                              retryLogic: RetryLogic,
+                              versionType: Option[String],
+                              apiVersion: ApiVersion,
+                              allowExplicitIndex: Boolean): ElasticsearchWriteSettings =
     new ElasticsearchWriteSettings(connection, bufferSize, retryLogic, versionType, apiVersion, allowExplicitIndex)
 
   override def toString: String =

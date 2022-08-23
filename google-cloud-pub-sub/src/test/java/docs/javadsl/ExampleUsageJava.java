@@ -19,7 +19,9 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 public class ExampleUsageJava {
@@ -72,6 +74,23 @@ public class ExampleUsageJava {
         .via(publishFlow)
         .runWith(Sink.ignore(), system);
     // #publish-fast
+
+    // #publish with ordering key
+    // to provide ordering messages must be sent to the same regional endpoint
+    Flow<PublishRequest, List<String>, NotUsed> publishToRegionalEndpointFlow =
+        GooglePubSub.publish(topic, config, "europe-west1-pubsub.googleapis.com", 1);
+
+    PublishMessage publishMessageWithOrderingKey =
+        PublishMessage.create(
+            new String(Base64.getEncoder().encode("Hello Google!".getBytes())),
+            new HashMap<>(),
+            Optional.of("my-ordering-key"));
+    PublishRequest publishRequestWithOrderingKey =
+        PublishRequest.create(Lists.newArrayList(publishMessage));
+
+    CompletionStage<List<List<String>>> publishedMessageWithOrderingKeyIds =
+        source.via(publishToRegionalEndpointFlow).runWith(Sink.seq(), system);
+    // #publish with ordering key
 
     // #subscribe
     Source<ReceivedMessage, Cancellable> subscriptionSource =

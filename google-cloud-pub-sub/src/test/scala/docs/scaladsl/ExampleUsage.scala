@@ -66,6 +66,17 @@ class ExampleUsage {
     .to(Sink.seq)
   //#publish-fast
 
+  //#publish with ordering key
+  val publishToRegionalEndpointFlow: Flow[PublishRequest, Seq[String], NotUsed] =
+    GooglePubSub.publish(topic, config, "europe-west1-pubsub.googleapis.com")
+  val messageWithOrderingKey: PublishMessage =
+    PublishMessage(new String(Base64.getEncoder.encode("Hello Google!".getBytes)), None, Some("my-ordering-key"))
+  val publishedMessageWithOrderingKeyIds: Future[Seq[Seq[String]]] = Source
+    .single(PublishRequest(Seq(messageWithOrderingKey)))
+    .via(publishToRegionalEndpointFlow)
+    .runWith(Sink.seq)
+  //#publish with ordering key
+
   //#subscribe
   val subscriptionSource: Source[ReceivedMessage, Cancellable] =
     GooglePubSub.subscribe(subscription, config)
