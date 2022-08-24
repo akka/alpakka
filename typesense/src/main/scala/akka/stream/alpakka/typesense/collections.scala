@@ -281,7 +281,7 @@ object FieldType {
   /**
    * Java API
    */
-  def string: String = String
+  def string(): String = String
 
   sealed abstract class StringArray extends FieldType
   case object StringArray extends StringArray
@@ -289,7 +289,7 @@ object FieldType {
   /**
    * Java API
    */
-  def stringArray: StringArray = StringArray
+  def stringArray(): StringArray = StringArray
 
   sealed abstract class Int32 extends FieldType
   case object Int32 extends Int32
@@ -297,7 +297,7 @@ object FieldType {
   /**
    * Java API
    */
-  def int32: Int32 = Int32
+  def int32(): Int32 = Int32
 
   sealed abstract class Int32Array extends FieldType
   case object Int32Array extends Int32Array
@@ -305,7 +305,7 @@ object FieldType {
   /**
    * Java API
    */
-  def int32Array: Int32Array = Int32Array
+  def int32Array(): Int32Array = Int32Array
 
   sealed abstract class Int64 extends FieldType
   case object Int64 extends Int64
@@ -313,7 +313,7 @@ object FieldType {
   /**
    * Java API
    */
-  def int64: Int64 = Int64
+  def int64(): Int64 = Int64
 
   sealed abstract class Int64Array extends FieldType
   case object Int64Array extends Int64Array
@@ -321,7 +321,7 @@ object FieldType {
   /**
    * Java API
    */
-  def int64Array: Int64Array = Int64Array
+  def int64Array(): Int64Array = Int64Array
 
   sealed abstract class Float extends FieldType
   case object Float extends Float
@@ -329,7 +329,7 @@ object FieldType {
   /**
    * Java API
    */
-  def float: Float = Float
+  def float(): Float = Float
 
   sealed abstract class FloatArray extends FieldType
   case object FloatArray extends FloatArray
@@ -337,7 +337,7 @@ object FieldType {
   /**
    * Java API
    */
-  def floatArray: FloatArray = FloatArray
+  def floatArray(): FloatArray = FloatArray
 
   sealed abstract class Bool extends FieldType
   case object Bool extends Bool
@@ -345,7 +345,7 @@ object FieldType {
   /**
    * Java API
    */
-  def bool: Bool = Bool
+  def bool(): Bool = Bool
 
   sealed abstract class BoolArray extends FieldType
   case object BoolArray extends BoolArray
@@ -353,7 +353,7 @@ object FieldType {
   /**
    * Java API
    */
-  def boolArray: BoolArray = BoolArray
+  def boolArray(): BoolArray = BoolArray
 
   sealed abstract class Geopoint extends FieldType
   case object Geopoint extends Geopoint
@@ -361,7 +361,7 @@ object FieldType {
   /**
    * Java API
    */
-  def geopoint: Geopoint = Geopoint
+  def geopoint(): Geopoint = Geopoint
 
   sealed abstract class GeopointArray extends FieldType
   case object GeopointArray extends GeopointArray
@@ -369,7 +369,7 @@ object FieldType {
   /**
    * Java API
    */
-  def geopointArray: GeopointArray = GeopointArray
+  def geopointArray(): GeopointArray = GeopointArray
 
   sealed abstract class StringAutoArray extends FieldType
   case object StringAutoArray extends StringAutoArray
@@ -377,7 +377,7 @@ object FieldType {
   /**
    * Java API
    */
-  def stringAutoArray: StringAutoArray = StringAutoArray
+  def stringAutoArray(): StringAutoArray = StringAutoArray
 
   sealed abstract class Auto extends FieldType
   case object Auto extends Auto
@@ -385,7 +385,7 @@ object FieldType {
   /**
    * Java API
    */
-  def auto: Auto = Auto
+  def auto(): Auto = Auto
 }
 
 final class RetrieveCollection @InternalApi private[typesense] (val collectionName: String) {

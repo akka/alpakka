@@ -93,7 +93,7 @@ object IndexDocumentAction {
   /**
    * Java API
    */
-  def create: Create = Create
+  def create(): Create = Create
 
   sealed abstract class Upsert extends IndexDocumentAction
   case object Upsert extends Upsert
@@ -101,7 +101,7 @@ object IndexDocumentAction {
   /**
    * Java API
    */
-  def upsert: Upsert = Upsert
+  def upsert(): Upsert = Upsert
 
   sealed abstract class Update extends IndexDocumentAction
   case object Update extends Update
@@ -109,7 +109,7 @@ object IndexDocumentAction {
   /**
    * Java API
    */
-  def update: Update = Update
+  def update(): Update = Update
 
   sealed abstract class Emplace extends IndexDocumentAction
   case object Emplace extends Emplace
@@ -117,7 +117,7 @@ object IndexDocumentAction {
   /**
    * Java API
    */
-  def emplace: Emplace = Emplace
+  def emplace(): Emplace = Emplace
 }
 
 sealed trait IndexDocumentResult {

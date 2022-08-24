@@ -31,7 +31,7 @@ import scala.util.{Success, Try}
 
 @InternalApi private[typesense] object TypesenseHttp {
   object PrepareRequestEntity {
-    def json(body: JsValue): RequestEntity = HttpEntity(ContentTypes.`application/json`, body.prettyPrint)
+    def json(body: JsValue): RequestEntity = HttpEntity(ContentTypes.`application/json`, body.compactPrint)
     def jsonLine(body: Seq[JsValue]): RequestEntity =
       HttpEntity(ContentTypes.`text/plain(UTF-8)`, body.map(_.compactPrint).mkString("\n"))
     val empty: RequestEntity = HttpEntity.Empty

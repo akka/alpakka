@@ -39,9 +39,6 @@ public class ExampleUsage {
     // #settings
     String host = "http://localhost:8108";
     String apiKey = "Hu52dwsas2AdxdE";
-    // val retrySettings: RetrySettings =
-    //    RetrySettings(maxRetries = 6, minBackoff = 1.second, maxBackoff = 1.minute, randomFactor =
-    // 0.2)
     RetrySettings retrySettings =
         RetrySettings.create(6, Duration.ofSeconds(1), Duration.ofMinutes(1), 0.2);
     TypesenseSettings settings = TypesenseSettings.create(host, apiKey, retrySettings);
