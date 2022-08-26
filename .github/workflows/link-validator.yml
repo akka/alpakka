@@ -17,9 +17,9 @@ jobs:
         run: git fetch --depth=100 origin +refs/tags/*:refs/tags/*
 
       - name: Set up JDK 11
-        uses: coursier/setup-action@v1.1.2
+        uses: olafurpg/setup-scala@v13
         with:
-          jvm: adopt:11
+          java-version: adopt@1.11.0-9
 
       - name: Cache Coursier cache
         uses: coursier/cache-action@v5
