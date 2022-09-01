@@ -13,7 +13,7 @@ addSbtPlugin("com.lightbend.sbt" % "sbt-publish-rsync" % "0.2")
 addSbtPlugin("com.github.sbt" % "sbt-unidoc" % "0.5.0")
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "3.0.2")
 addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "1.4.1")
-// Akka gRPC -- sync with version in Dependencies.scala
-addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "2.1.4")
+// Akka gRPC -- sync with version in Dependencies.scala:19
+addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "2.1.5")
 // templating
 addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.1")
