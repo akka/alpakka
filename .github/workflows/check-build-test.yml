@@ -31,12 +31,12 @@ jobs:
         run: git fetch --depth=100 origin +refs/tags/*:refs/tags/*
 
       - name: Set up JDK 8
-        uses: coursier/setup-action@v1.1.2
+        uses: coursier/setup-action@v1.2.1
         with:
           jvm: adopt:8
 
       - name: Cache Coursier cache
-        uses: coursier/cache-action@v6.3
+        uses: coursier/cache-action@v6.3.3
 
       - name: "Code style, compile tests, MiMa. Run locally with: sbt +~2.13 \"verifyCodeStyle; Test/compile; mimaReportBinaryIssues\""
         run: sbt +~2.13 "verifyCodeStyle; Test/compile; mimaReportBinaryIssues"
@@ -57,12 +57,12 @@ jobs:
         run: git fetch --depth=100 origin +refs/tags/*:refs/tags/*
 
       - name: Set up JDK 11
-        uses: coursier/setup-action@v1.1.2
+        uses: coursier/setup-action@v1.2.1
         with:
           jvm: adopt:11
 
       - name: Cache Coursier cache
-        uses: coursier/cache-action@v6.3
+        uses: coursier/cache-action@v6.3.3
 
       - name: "Create all API docs and create site with Paradox"
         run: sbt docs/makeSite
@@ -142,13 +142,13 @@ jobs:
 
       - name: Set up JDK 8
         if: env.execute_build == 'true'
-        uses: coursier/setup-action@v1.1.2
+        uses: coursier/setup-action@v1.2.1
         with:
           jvm: adopt:8
 
       - name: Cache Coursier cache
         if: env.execute_build == 'true'
-        uses: coursier/cache-action@v6.3
+        uses: coursier/cache-action@v6.3.3
 
       - name: ${{ matrix.connector }}
         if: env.execute_build == 'true'
