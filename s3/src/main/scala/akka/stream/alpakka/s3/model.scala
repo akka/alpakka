@@ -837,6 +837,64 @@ object FailedUpload {
   def create(reasons: Seq[Throwable]): FailedUpload = FailedUpload(reasons)
 }
 
+final class ListBucketsResultContents private (val creationDate: java.time.Instant, val name: String) {
+
+  /** Java API */
+  def getCreationDate: java.time.Instant = creationDate
+
+  /** Java API */
+  def getName: String = name
+
+  def withCreationDate(value: java.time.Instant): ListBucketsResultContents = copy(creationDate = value)
+
+  def withName(value: String): ListBucketsResultContents = copy(name = value)
+
+  private def copy(
+      name: String = name,
+      creationDate: java.time.Instant = creationDate
+  ): ListBucketsResultContents = new ListBucketsResultContents(
+    name = name,
+    creationDate = creationDate
+  )
+
+  override def toString: String =
+    "ListBucketsResultContents(" +
+    s"creationDate=$creationDate," +
+    s"name=$name" +
+    ")"
+
+  override def equals(other: Any): Boolean = other match {
+    case that: ListBucketsResultContents =>
+      Objects.equals(this.name, that.name) &&
+      Objects.equals(this.creationDate, that.creationDate)
+    case _ => false
+  }
+
+  override def hashCode(): Int =
+    Objects.hash(name, creationDate)
+}
+
+object ListBucketsResultContents {
+
+  /** Scala API */
+  def apply(
+      creationDate: java.time.Instant,
+      name: String
+  ): ListBucketsResultContents = new ListBucketsResultContents(
+    creationDate,
+    name
+  )
+
+  /** Java API */
+  def create(
+      creationDate: java.time.Instant,
+      name: String
+  ): ListBucketsResultContents = apply(
+    creationDate,
+    name
+  )
+}
+
 /**
  * @param bucketName The name of the bucket in which this object is stored
  * @param key The key under which this object is stored

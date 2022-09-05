@@ -47,6 +47,9 @@ import scala.util.{Failure, Success, Try}
                                                                           versionId: Option[String] = None)
 
 /** Internal Api */
+@InternalApi private[impl] final case class ListBucketsResult(buckets: Seq[ListBucketsResultContents])
+
+/** Internal Api */
 @InternalApi private[impl] final case class ListBucketResult(isTruncated: Boolean,
                                                              continuationToken: Option[String],
                                                              contents: Seq[ListBucketResultContents],
@@ -320,6 +323,25 @@ import scala.util.{Failure, Success, Try}
       }
       .mapMaterializedValue(_ => NotUsed)
   }
+
+  def listBuckets(s3Headers: S3Headers): Source[ListBucketsResultContents, NotUsed] =
+    Source
+      .fromMaterializer { (mat, attr) =>
+        implicit val materializer: Materializer = mat
+        implicit val attributes: Attributes = attr
+        implicit val conf: S3Settings = resolveSettings(attr, mat.system)
+
+        Source
+          .future {
+            signAndGetAs[ListBucketsResult](
+              HttpRequests.listBuckets(s3Headers.headers)
+            ).map { (res: ListBucketsResult) =>
+              res.buckets
+            }(ExecutionContexts.parasitic)
+          }
+          .flatMapConcat(results => Source(results))
+      }
+      .mapMaterializedValue(_ => NotUsed)
 
   type ListMultipartUploadState = S3PaginationState[ListMultipartUploadContinuationToken]
 

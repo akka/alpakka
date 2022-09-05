@@ -91,6 +91,27 @@ import scala.xml.NodeSeq
     }
   }
 
+  implicit val listBucketsResultUnmarshaller: FromEntityUnmarshaller[ListBucketsResult] = {
+    nodeSeqUnmarshaller(MediaTypes.`application/xml` withCharset HttpCharsets.`UTF-8`).map {
+      case NodeSeq.Empty => throw Unmarshaller.NoContentException
+      case x =>
+        val bucketsRoot = (x \\ "Buckets").headOption
+          .map { br =>
+            (br \\ "Bucket").map { u =>
+              val creationDate = Instant.parse((u \ "CreationDate").text)
+              val name = (u \ "Name").text
+
+              ListBucketsResultContents(
+                creationDate,
+                name
+              )
+            }
+          }
+          .getOrElse(Nil)
+        ListBucketsResult(bucketsRoot)
+    }
+  }
+
   implicit val listMultipartUploadsResultUnmarshaller: FromEntityUnmarshaller[ListMultipartUploadsResult] = {
     nodeSeqUnmarshaller(MediaTypes.`application/xml` withCharset HttpCharsets.`UTF-8`).map {
       case NodeSeq.Empty => throw Unmarshaller.NoContentException
