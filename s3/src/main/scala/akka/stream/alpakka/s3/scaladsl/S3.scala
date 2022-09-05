@@ -264,6 +264,25 @@ object S3 {
     S3Stream.getObject(S3Location(bucket, key), range, versionId, s3Headers)
 
   /**
+   * Will return a list containing all of the buckets for the current AWS account
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListBuckets.html
+   * @return [[akka.stream.scaladsl.Source Source]] of [[ListBucketsResultContents]]
+   */
+  def listBuckets(): Source[ListBucketsResultContents, NotUsed] =
+    listBuckets(S3Headers.empty)
+
+  /**
+   * Will return a list containing all of the buckets for the current AWS account
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListBuckets.html
+   * @param s3Headers any headers you want to add
+   * @return [[akka.stream.scaladsl.Source Source]] of [[ListBucketsResultContents]]
+   */
+  def listBuckets(s3Headers: S3Headers): Source[ListBucketsResultContents, NotUsed] =
+    S3Stream.listBuckets(s3Headers)
+
+  /**
    * Will return a source of object metadata for a given bucket with optional prefix using version 2 of the List Bucket API.
    * This will automatically page through all keys with the given parameters.
    *

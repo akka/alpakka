@@ -98,6 +98,16 @@ trait S3IntegrationSpec
   def defaultRegionContentCount = 4
   def otherRegionContentCount = 5
 
+  it should "list buckets in current aws account" in {
+    val result = for {
+      buckets <- S3.listBuckets().withAttributes(attributes).runWith(Sink.seq)
+    } yield buckets
+
+    val buckets = result.futureValue
+
+    buckets.map(_.name) should contain(defaultBucket)
+  }
+
   it should "list with real credentials" in {
     val result = S3
       .listBucket(defaultBucket, None)

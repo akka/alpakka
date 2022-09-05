@@ -619,6 +619,26 @@ object S3 {
   }
 
   /**
+   * Will return a list containing all of the buckets for the current AWS account
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListBuckets.html
+   * @return [[akka.stream.javadsl.Source Source]] of [[ListBucketsResultContents]]
+   */
+  def listBuckets(): Source[ListBucketsResultContents, NotUsed] =
+    listBuckets(S3Headers.empty)
+
+  /**
+   * Will return a list containing all of the buckets for the current AWS account
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListBuckets.html
+   * @return [[akka.stream.javadsl.Source Source]] of [[ListBucketsResultContents]]
+   */
+  def listBuckets(s3Headers: S3Headers): Source[ListBucketsResultContents, NotUsed] =
+    S3Stream
+      .listBuckets(s3Headers)
+      .asJava
+
+  /**
    * Will return a source of object metadata for a given bucket with optional prefix using version 2 of the List Bucket API.
    * This will automatically page through all keys with the given parameters.
    *
