@@ -36,8 +36,8 @@ Key links:
 
 ### Cutting the release
 
-- [ ] Wait until the [build finished](https://github.com/akka/alpakka/actions) after merging the release notes
-- [ ] [Fix up the draft release](https://github.com/akka/alpakka/releases) with the next tag version `v$VERSION$`, title and release description linking to announcement and milestone
+- [ ] Wait until the [build finished](https://github.com/akka/alpakka/actions)
+- [ ] [Fix up the draft and Publish release](https://github.com/akka/alpakka/releases) with the next tag version `v$VERSION$`, title and release description linking to announcement and milestone
 - [ ] Check that the CI release build has executed successfully (GitHub actions will start a [CI publish build](https://github.com/akka/alpakka/actions/workflows/publish.yml) for the new tag and publish artifacts to Sonatype and documentation to Gustav)
 
 ### Check availability
