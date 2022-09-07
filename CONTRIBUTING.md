@@ -16,7 +16,7 @@ You may also check out these [other resources](https://akka.io/get-involved/).
 
 This is the process for committing code into master.
 
-1. Make sure you have signed the Lightbend CLA, if not, [sign it online](http://www.lightbend.com/contribute/cla).
+1. Make sure you have signed the Lightbend CLA, if not, [sign it online](https://www.lightbend.com/contribute/cla/akka).
 
 1. To avoid duplicated effort, it might be good to check the [issue tracker](https://github.com/akka/alpakka/issues) and [existing pull requests](https://github.com/akka/alpakka/pulls) for existing work.
    - If there is no ticket yet, feel free to [create one](https://github.com/akka/alpakka/issues/new) to discuss the problem and the approach you want to take to solve it.
