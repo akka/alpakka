@@ -427,7 +427,7 @@ object Dependencies {
     )
   }
 
-  val SlickVersion = "3.3.3"
+  val SlickVersion = "3.4.1"
   val Slick = Seq(
     libraryDependencies ++= Seq(
         "com.typesafe.slick" %% "slick" % SlickVersion, // BSD 2-clause "Simplified" License
