@@ -92,7 +92,7 @@ lazy val alpakka = project
         // springWeb triggers an esoteric ScalaDoc bug (from Java code)
         springWeb
       ),
-    licenses := Seq(("BUSL-1.1", url("https://raw.githubusercontent.com/akka/alpakka/master/LICENSE"))), // FIXME change s/main/v4.1.0/ when released
+    licenses := Seq(("BUSL-1.1", url("https://raw.githubusercontent.com/akka/alpakka/master/LICENSE"))), // FIXME change s/master/v4.1.0/ when released
     crossScalaVersions := List() // workaround for https://github.com/sbt/sbt/issues/3465
   )
 
@@ -433,8 +433,9 @@ def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sb
     .disablePlugins(SitePlugin)
     .settings(
       name := s"akka-stream-alpakka-$projectId",
-      licenses := List(License.Apache2),
+      licenses := Seq(("BUSL-1.1", url("https://raw.githubusercontent.com/akka/alpakka/master/LICENSE"))), // FIXME change s/master/v4.1.0/ when released
       AutomaticModuleName.settings(s"akka.stream.alpakka.$moduleName"),
+      scalacOptions += "-Wconf:cat=deprecation&msg=.*JavaConverters.*:s",
       mimaPreviousArtifacts := Set(
           organization.value %% name.value % previousStableVersion.value
             .getOrElse(throw new Error("Unable to determine previous version"))
@@ -454,10 +455,9 @@ def internalProject(projectId: String, additionalSettings: sbt.Def.SettingsDefin
   Project(id = projectId, base = file(projectId))
     .enablePlugins(AutomateHeaderPlugin)
     .disablePlugins(SitePlugin, MimaPlugin)
-    .settings(
-      name := s"akka-stream-alpakka-$projectId",
-      publish / skip := true
-    )
+    .settings(name := s"akka-stream-alpakka-$projectId",
+              publish / skip := true,
+              scalacOptions += "-Wconf:cat=deprecation&msg=.*JavaConverters.*:s")
     .settings(additionalSettings: _*)
 
 Global / onLoad := (Global / onLoad).value.andThen { s =>
