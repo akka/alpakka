@@ -11,8 +11,7 @@ import akka.stream.scaladsl.Source
 
 import scala.annotation.nowarn
 
-@nowarn("msg=never used")
-@nowarn("msg=dead code")
+@nowarn
 class GoogleCommonDoc {
 
   implicit val system: ActorSystem = ???
