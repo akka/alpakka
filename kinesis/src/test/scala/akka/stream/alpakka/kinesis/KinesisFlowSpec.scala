@@ -6,6 +6,8 @@ package akka.stream.alpakka.kinesis
 
 import java.util.concurrent.CompletableFuture
 
+import scala.annotation.nowarn
+
 import akka.stream.alpakka.kinesis.KinesisErrors.FailurePublishingRecords
 import akka.stream.alpakka.kinesis.scaladsl.KinesisFlow
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
@@ -21,7 +23,6 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.kinesis.model._
-
 import scala.collection.JavaConverters._
 
 class KinesisFlowSpec extends AnyWordSpec with Matchers with KinesisMock with LogCapturing {
@@ -92,9 +93,10 @@ class KinesisFlowSpec extends AnyWordSpec with Matchers with KinesisMock with Lo
         .run()
   }
 
+  @nowarn("msg=deprecated") // Stream => Stream
   trait KinesisFlowWithContextProbe { self: Settings =>
     val streamName = "stream-name"
-    val recordStream = LazyList
+    val recordStream = Stream
       .from(1)
       .map(
         i =>
@@ -105,7 +107,7 @@ class KinesisFlowSpec extends AnyWordSpec with Matchers with KinesisMock with Lo
              .build(),
            i)
       )
-    val resultStream = LazyList
+    val resultStream = Stream
       .from(1)
       .map(i => (PutRecordsResultEntry.builder().build(), i))
 

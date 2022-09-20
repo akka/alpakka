@@ -7,6 +7,8 @@ package akka.stream.alpakka.s3.impl
 import java.net.InetSocketAddress
 import java.time.{Instant, ZoneOffset, ZonedDateTime}
 
+import scala.annotation.nowarn
+
 import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
@@ -25,7 +27,6 @@ import akka.stream.{Attributes, Materializer}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
 import software.amazon.awssdk.regions.Region
-
 import scala.collection.immutable
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
@@ -1058,13 +1059,14 @@ import scala.util.{Failure, Success, Try}
   /**
    * Initiates a multipart upload. Returns a source of the initiated upload with upload part indicess
    */
+  @nowarn("msg=deprecated") // Stream => LazyList
   private def initiateUpload(s3Location: S3Location,
                              contentType: ContentType,
                              s3Headers: Seq[HttpHeader]): Source[(MultipartUpload, Int), NotUsed] =
     Source
       .single(s3Location)
       .flatMapConcat(initiateMultipartUpload(_, contentType, s3Headers))
-      .mapConcat(r => LazyList.continually(r))
+      .mapConcat(r => Stream.continually(r))
       .zip(Source.fromIterator(() => Iterator.from(1)))
 
   private def poolSettings(implicit settings: S3Settings, system: ActorSystem) =
@@ -1312,6 +1314,7 @@ import scala.util.{Failure, Success, Try}
       .mapMaterializedValue(_ => NotUsed)
   }
 
+  @nowarn("msg=deprecated") // Stream => LazyList
   private def requestInfoOrUploadState(s3Location: S3Location,
                                        contentType: ContentType,
                                        s3Headers: S3Headers,
@@ -1323,7 +1326,7 @@ import scala.util.{Failure, Success, Try}
         Source
           .single(s3Location)
           .flatMapConcat(_ => Source.single(MultipartUpload(s3Location.bucket, s3Location.key, uploadId)))
-          .mapConcat(r => LazyList.continually(r))
+          .mapConcat(r => Stream.continually(r))
           .zip(Source.fromIterator(() => Iterator.from(initialIndex)))
       case None =>
         // First step of the multi part upload process is made.
