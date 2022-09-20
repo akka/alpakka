@@ -8,7 +8,7 @@ import akka.stream.alpakka.reference.{ReferenceReadResult, ReferenceWriteMessage
 import akka.util.ByteString
 
 import scala.collection.immutable
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
 @ApiMayChange

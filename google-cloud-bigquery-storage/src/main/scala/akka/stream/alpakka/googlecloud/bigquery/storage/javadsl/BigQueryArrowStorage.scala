@@ -12,7 +12,7 @@ import akka.stream.alpakka.googlecloud.bigquery.storage.{scaladsl => scstorage}
 import com.google.cloud.bigquery.storage.v1.arrow.{ArrowRecordBatch, ArrowSchema}
 
 import java.util.concurrent.CompletionStage
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters.FutureOps
 
 /**

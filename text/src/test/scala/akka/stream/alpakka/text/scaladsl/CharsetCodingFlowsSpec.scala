@@ -65,7 +65,7 @@ class CharsetCodingFlowsSpec
       import akka.stream.scaladsl.FileIO
 
       // #encoding
-      import scala.jdk.CollectionConverters._
+      import scala.collection.JavaConverters._
       val targetFile = Paths.get("target/outdata.txt")
       val strings = System.getProperties.asScala.map(p => p._1 + " -> " + p._2).toList
       val stringSource: Source[String, _] = Source(strings)

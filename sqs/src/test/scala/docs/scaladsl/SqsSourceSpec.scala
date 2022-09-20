@@ -29,7 +29,7 @@ import software.amazon.awssdk.services.sqs.model.{
   SendMessageRequest
 }
 
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._

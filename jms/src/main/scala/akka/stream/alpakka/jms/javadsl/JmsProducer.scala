@@ -12,7 +12,7 @@ import akka.stream.scaladsl.{Flow, Keep}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
 
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters
 
 /**

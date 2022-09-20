@@ -8,7 +8,7 @@ import akka.actor.{ClassicActorSystemProvider, ExtendedActorSystem, Extension, E
 import akka.annotation.InternalApi
 import com.codahale.metrics.MetricRegistry
 
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 
 /**
  * Retrieves Cassandra metrics registry for an actor system

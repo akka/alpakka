@@ -34,7 +34,7 @@ import java.util.concurrent.CompletionStage
 import java.{lang, util}
 
 import scala.annotation.nowarn
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.{FiniteDuration, MILLISECONDS}
