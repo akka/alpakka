@@ -9,7 +9,7 @@ jobs:
   fossa:
     name: Fossa
     runs-on: ubuntu-latest
-    if: github.repository == 'akka/alpakka
+    if: github.repository == 'akka/alpakka'
     steps:
       - name: Checkout
         uses: actions/checkout@v2
