@@ -19,7 +19,7 @@ import scala.annotation.tailrec
 import scala.util.control.NonFatal
 
 import scala.collection.immutable
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 
 /**
  * Internal API

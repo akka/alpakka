@@ -15,7 +15,7 @@ import org.bson.Document
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 import scala.collection.immutable.Seq
 import scala.concurrent._
 import scala.concurrent.duration._

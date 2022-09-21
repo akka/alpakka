@@ -9,7 +9,7 @@ import org.apache.hadoop.hbase.TableName
 import org.apache.hadoop.hbase.client.Mutation
 
 import scala.collection.immutable
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 import scala.compat.java8.FunctionConverters._
 
 final class HTableSettings[T] private (val conf: Configuration,

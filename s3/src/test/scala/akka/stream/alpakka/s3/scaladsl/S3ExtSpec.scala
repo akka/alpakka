@@ -11,7 +11,7 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.matchers.should.Matchers
 
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 
 class S3ExtSpec extends AnyFlatSpecLike with Matchers {
   it should "reuse application config from actor system" in {

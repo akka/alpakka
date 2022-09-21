@@ -7,7 +7,7 @@ package akka.stream.alpakka.solr
 import akka.NotUsed
 import akka.annotation.InternalApi
 
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 
 object WriteMessage {
   def createUpsertMessage[T](source: T): WriteMessage[T, NotUsed] =

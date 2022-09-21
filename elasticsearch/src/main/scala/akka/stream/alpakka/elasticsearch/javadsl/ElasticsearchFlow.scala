@@ -9,7 +9,7 @@ import akka.annotation.ApiMayChange
 import akka.stream.alpakka.elasticsearch.{scaladsl, _}
 import com.fasterxml.jackson.databind.ObjectMapper
 
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 
 /**
  * Java API to create Elasticsearch flows.

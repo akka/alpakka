@@ -180,7 +180,7 @@ class CsvParsingSpec extends CsvSpec {
           .fromPath(Paths.get("csv/src/test/resources/correctness.csv"))
           .via(CsvParsing.lineScanner())
           .via(CsvToMap.toMap())
-          .map(_.view.mapValues(_.utf8String).toIndexedSeq)
+          .map(_.iterator.map { case (k, v) => k -> v.utf8String }.toIndexedSeq)
           .runWith(Sink.seq)
       val res = fut.futureValue
       res(0) should contain allElementsOf (

@@ -6,7 +6,8 @@ object Dependencies {
   val CronBuild = sys.env.get("GITHUB_EVENT_NAME").contains("schedule")
 
   val Scala213 = "2.13.8" // update even in link-validator.conf
-  val ScalaVersions = Seq(Scala213)
+  val Scala212 = "2.12.16"
+  val ScalaVersions = Seq(Scala213, Scala212)
 
   val AkkaVersion = "2.6.19"
   val AkkaBinaryVersion = "2.6"
@@ -125,7 +126,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
         "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test,
-        "com.typesafe.akka" %% "akka-stream-kafka" % "3.0.0" % Test,
+        "com.typesafe.akka" %% "akka-stream-kafka" % "3.1.0-M1" % Test,
         "junit" % "junit" % "4.13.2" % Test, // Eclipse Public License 1.0
         "org.scalatest" %% "scalatest" % "3.2.11" % Test // ApacheV2
       )
