@@ -92,7 +92,7 @@ lazy val alpakka = project
         // springWeb triggers an esoteric ScalaDoc bug (from Java code)
         springWeb
       ),
-    licenses := Seq(("BUSL-1.1", url("https://raw.githubusercontent.com/akka/alpakka/master/LICENSE"))), // FIXME change s/master/v4.1.0/ when released
+    licenses := Seq(("BUSL-1.1", url("https://raw.githubusercontent.com/akka/alpakka/master/LICENSE"))), // FIXME change s/master/v5.0.0/ when released
     crossScalaVersions := List() // workaround for https://github.com/sbt/sbt/issues/3465
   )
 
@@ -433,7 +433,7 @@ def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sb
     .disablePlugins(SitePlugin)
     .settings(
       name := s"akka-stream-alpakka-$projectId",
-      licenses := Seq(("BUSL-1.1", url("https://raw.githubusercontent.com/akka/alpakka/master/LICENSE"))), // FIXME change s/master/v4.1.0/ when released
+      licenses := Seq(("BUSL-1.1", url("https://raw.githubusercontent.com/akka/alpakka/master/LICENSE"))), // FIXME change s/master/v5.0.0/ when released
       AutomaticModuleName.settings(s"akka.stream.alpakka.$moduleName"),
       scalacOptions += "-Wconf:cat=deprecation&msg=.*JavaConverters.*:s",
       mimaPreviousArtifacts := Set(
