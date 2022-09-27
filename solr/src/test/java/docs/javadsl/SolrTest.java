@@ -45,6 +45,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -57,6 +58,7 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@SuppressWarnings("deprecation") // FIXME #2917 Deprecated getIdField in Solrj 8.11.x
 public class SolrTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
@@ -830,7 +832,7 @@ public class SolrTest {
 
     File confDir = new File("solr/src/test/resources/conf");
 
-    String zkDir = testWorkingDir.toPath().resolve("zookeeper/server/data").toString();
+    Path zkDir = testWorkingDir.toPath().resolve("zookeeper/server/data");
     zkTestServer = new ZkTestServer(zkDir, zookeeperPort);
     zkTestServer.run();
 
