@@ -58,6 +58,7 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@SuppressWarnings("deprecation") // FIXME #2917 Deprecated getIdField in Solrj 8.11.x
 public class SolrTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
