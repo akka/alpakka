@@ -9,17 +9,17 @@ object Dependencies {
   val Scala212 = "2.12.16"
   val ScalaVersions = Seq(Scala213, Scala212)
 
-  val AkkaVersion = "2.6.19"
-  val AkkaBinaryVersion = "2.6"
+  val AkkaVersion = "2.7.0-M2"
+  val AkkaBinaryVersion = "2.7"
 
   val InfluxDBJavaVersion = "2.15"
 
   val AwsSdk2Version = "2.17.113"
   val AwsSpiAkkaHttpVersion = "0.0.11"
   // Sync with plugins.sbt
-  val AkkaGrpcBinaryVersion = "2.1"
-  val AkkaHttpVersion = "10.2.9"
-  val AkkaHttpBinaryVersion = "10.2"
+  val AkkaGrpcBinaryVersion = "2.2"
+  val AkkaHttpVersion = "10.4.0-M1"
+  val AkkaHttpBinaryVersion = "10.4"
   val ScalaTestVersion = "3.2.11"
   val TestContainersScalaTestVersion = "0.40.3"
   val mockitoVersion = "4.8.0" // check even https://github.com/scalatest/scalatestplus-mockito/releases
@@ -42,15 +42,14 @@ object Dependencies {
 
   val testkit = Seq(
     libraryDependencies := Seq(
-        "org.scala-lang.modules" %% "scala-collection-compat" % "2.2.0",
+        "org.scala-lang.modules" %% "scala-collection-compat" % "2.7.0",
         "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
         "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion,
         "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
-        "ch.qos.logback" % "logback-classic" % "1.2.3", // Eclipse Public License 1.0
+        "ch.qos.logback" % "logback-classic" % "1.2.11", // Eclipse Public License 1.0
         "org.scalatest" %% "scalatest" % ScalaTestVersion,
         "com.dimafeng" %% "testcontainers-scala-scalatest" % TestContainersScalaTestVersion,
         "com.novocode" % "junit-interface" % "0.11", // BSD-style
-        "ch.qos.logback" % "logback-classic" % "1.2.3", // Eclipse Public License 1.0
         "junit" % "junit" % "4.13" // Eclipse Public License 1.0
       )
   )
