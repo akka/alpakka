@@ -46,7 +46,7 @@ class SqsSourceMockSpec extends AnyFlatSpec with Matchers with DefaultTestContex
     val probe = SqsSource(
       "url",
       SqsSourceSettings.Defaults.withMaxBufferSize(10)
-    ).runWith(TestSink.probe[Message])
+    ).runWith(TestSink[Message]())
 
     defaultMessages.foreach(probe.requestNext)
 
@@ -84,7 +84,7 @@ class SqsSourceMockSpec extends AnyFlatSpec with Matchers with DefaultTestContex
     val probe = SqsSource(
       "url",
       SqsSourceSettings.Defaults.withMaxBufferSize(SqsSourceSettings.Defaults.maxBatchSize * bufferToBatchRatio)
-    ).runWith(TestSink.probe[Message])
+    ).runWith(TestSink[Message]())
 
     Thread.sleep(timeout.toMillis * (bufferToBatchRatio + 1))
 
@@ -138,7 +138,7 @@ class SqsSourceMockSpec extends AnyFlatSpec with Matchers with DefaultTestContex
         .withMaxBufferSize(10)
         .withParallelRequests(10)
         .withWaitTime(timeout)
-    ).runWith(TestSink.probe[Message])
+    ).runWith(TestSink[Message]())
 
     (1 to firstWithDataCount * 10).foreach(_ => probe.requestNext())
 

@@ -8,7 +8,7 @@ package impl
 import akka.actor.ActorSystem
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Keep, Source}
-import akka.stream.testkit.javadsl.TestSink
+import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.TestKit
 import akka.util.ByteString
@@ -31,7 +31,7 @@ class MqttFrameStageSpec
       Source
         .single(bytes)
         .via(new MqttFrameStage(MaxPacketSize))
-        .runWith(TestSink.probe(system))
+        .runWith(TestSink()(system))
         .request(1)
         .expectNext(bytes)
         .expectComplete()
@@ -42,7 +42,7 @@ class MqttFrameStageSpec
       Source
         .single(bytes)
         .via(new MqttFrameStage(MaxPacketSize))
-        .runWith(TestSink.probe(system))
+        .runWith(TestSink()(system))
         .request(1)
         .expectNext(bytes)
         .expectComplete()
@@ -53,7 +53,7 @@ class MqttFrameStageSpec
       Source
         .single(bytes ++ bytes)
         .via(new MqttFrameStage(MaxPacketSize))
-        .runWith(TestSink.probe(system))
+        .runWith(TestSink()(system))
         .request(2)
         .expectNext(bytes, bytes)
         .expectComplete()
@@ -64,10 +64,9 @@ class MqttFrameStageSpec
       val bytes1 = ByteString.newBuilder.putByte(1).putBytes(Array.ofDim(0x80)).result()
 
       val (pub, sub) =
-        TestSource
-          .probe(system)
+        TestSource()(system)
           .via(new MqttFrameStage(MaxPacketSize * 2))
-          .toMat(TestSink.probe(system))(Keep.both)
+          .toMat(TestSink()(system))(Keep.both)
           .run()
 
       pub.sendNext(bytes0)
@@ -87,7 +86,7 @@ class MqttFrameStageSpec
         Source
           .single(bytes)
           .via(new MqttFrameStage(MaxPacketSize))
-          .runWith(TestSink.probe(system))
+          .runWith(TestSink()(system))
           .request(1)
           .expectError()
       ex.getMessage shouldBe s"Max packet size of $MaxPacketSize exceeded with ${MaxPacketSize + 2}"

@@ -305,7 +305,7 @@ public class MqttSourceTest {
         MqttSource.atMostOnce(settings1, subscriptions, bufferSize);
 
     Pair<CompletionStage<Done>, TestSubscriber.Probe<MqttMessage>> result2 =
-        source1.toMat(TestSink.probe(system), Keep.both()).run(system);
+        source1.toMat(TestSink.create(system), Keep.both()).run(system);
 
     // Ensure that the connection made it all the way to the server by waiting until it receives a
     // message

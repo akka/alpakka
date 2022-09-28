@@ -23,7 +23,7 @@ class AnnotateLastSpec
   "AnnotateLast" should {
 
     "indicate last element" in {
-      val probe = Source(1 to 3).via(AnnotateLast[Int]).runWith(TestSink.probe)
+      val probe = Source(1 to 3).via(AnnotateLast[Int]).runWith(TestSink())
       probe.requestNext(NotLast(1))
       probe.requestNext(NotLast(2))
       probe.requestNext(Last(3))
@@ -31,13 +31,13 @@ class AnnotateLastSpec
     }
 
     "indicate first element is last if only one element" in {
-      val probe = Source.single(1).via(AnnotateLast[Int]).runWith(TestSink.probe)
+      val probe = Source.single(1).via(AnnotateLast[Int]).runWith(TestSink())
       probe.requestNext(Last(1))
       probe.expectComplete()
     }
 
     "do nothing when stream is empty" in {
-      val probe = Source.empty[Nothing].via(AnnotateLast[Nothing]).runWith(TestSink.probe)
+      val probe = Source.empty[Nothing].via(AnnotateLast[Nothing]).runWith(TestSink())
       probe.expectSubscriptionAndComplete()
     }
   }

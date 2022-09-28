@@ -54,7 +54,7 @@ class ElasticsearchSimpleFlowStageTest
                 writer
               )
             )
-            .toMat(TestSink.probe)(Keep.both)
+            .toMat(TestSink())(Keep.both)
             .run()
 
         upstream.sendNext(dummyMessages)
@@ -81,7 +81,7 @@ class ElasticsearchSimpleFlowStageTest
                 writer
               )
             )
-            .toMat(TestSink.probe)(Keep.both)
+            .toMat(TestSink())(Keep.both)
             .run()
 
         upstream.sendNext(dummyMessages)

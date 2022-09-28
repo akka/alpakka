@@ -74,7 +74,7 @@ class KinesisFirehoseFlowSpec extends AnyWordSpec with Matchers with KinesisFire
       TestSource
         .probe[Record]
         .via(KinesisFirehoseFlow(streamName, settings))
-        .toMat(TestSink.probe)(Keep.both)
+        .toMat(TestSink())(Keep.both)
         .run()
   }
 

@@ -280,7 +280,7 @@ class KinesisSchedulerSourceSpec
         .viaMat(Valve(switchMode))(Keep.right)
         .viaMat(KillSwitches.single)(Keep.both)
         .watchTermination()(Keep.both)
-        .toMat(TestSink.probe)(Keep.both)
+        .toMat(TestSink())(Keep.both)
         .run()
 
     watch.onComplete(_ => lock.release())
@@ -467,7 +467,7 @@ class KinesisSchedulerSourceSpec
               KinesisSchedulerCheckpointSettings(maxBatchSize = 100, maxBatchWait = 500.millis)
             )
         )
-        .toMat(TestSink.probe)(Keep.both)
+        .toMat(TestSink())(Keep.both)
         .run()
     val recordProcessor = new ShardProcessor(_ => ())
   }
