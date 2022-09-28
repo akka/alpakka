@@ -71,8 +71,7 @@ class KinesisFirehoseFlowSpec extends AnyWordSpec with Matchers with KinesisFire
     val requestError = new RuntimeException("kinesisfirehose-error")
 
     val (sourceProbe, sinkProbe) =
-      TestSource
-        .probe[Record]
+      TestSource[Record]()
         .via(KinesisFirehoseFlow(streamName, settings))
         .toMat(TestSink())(Keep.both)
         .run()

@@ -86,8 +86,7 @@ class KinesisFlowSpec extends AnyWordSpec with Matchers with KinesisMock with Lo
         .build()
 
     val (sourceProbe, sinkProbe) =
-      TestSource
-        .probe[PutRecordsRequestEntry]
+      TestSource[PutRecordsRequestEntry]()
         .via(KinesisFlow(streamName, settings))
         .toMat(TestSink[PutRecordsResultEntry]())(Keep.both)
         .run()
@@ -112,8 +111,7 @@ class KinesisFlowSpec extends AnyWordSpec with Matchers with KinesisMock with Lo
       .map(i => (PutRecordsResultEntry.builder().build(), i))
 
     val (sourceProbe, sinkProbe) =
-      TestSource
-        .probe[(PutRecordsRequestEntry, Int)]
+      TestSource[(PutRecordsRequestEntry, Int)]()
         .via(KinesisFlow.withContext(streamName, settings))
         .toMat(TestSink())(Keep.both)
         .run()
