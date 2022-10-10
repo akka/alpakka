@@ -9,7 +9,7 @@ object Dependencies {
   val Scala212 = "2.12.16"
   val ScalaVersions = Seq(Scala213, Scala212)
 
-  val AkkaVersion = "2.7.0-M2"
+  val AkkaVersion = "2.7.0-M3"
   val AkkaBinaryVersion = "2.7"
 
   val InfluxDBJavaVersion = "2.15"
