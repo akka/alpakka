@@ -103,7 +103,7 @@ final class CassandraSessionSpec extends CassandraSpecBase(ActorSystem("Cassandr
       val stmt = await(session.prepare(s"SELECT count FROM $dataTable WHERE partition = ?"))
       val bound = stmt.bind("A")
       val rows = session.select(bound).asScala
-      val probe = rows.map(_.getLong("count")).runWith(TestSink.probe[Long])
+      val probe = rows.map(_.getLong("count")).runWith(TestSink[Long]())
       probe.within(10.seconds) {
         probe.request(10).expectNextUnordered(1L, 2L, 3L, 4L).expectComplete()
       }
@@ -111,7 +111,7 @@ final class CassandraSessionSpec extends CassandraSpecBase(ActorSystem("Cassandr
 
     "select and bind as Source" in {
       val rows = session.select(s"SELECT count FROM $dataTable WHERE partition = ?", "B").asScala
-      val probe = rows.map(_.getLong("count")).runWith(TestSink.probe[Long])
+      val probe = rows.map(_.getLong("count")).runWith(TestSink[Long]())
       probe.within(10.seconds) {
         probe.request(10).expectNextUnordered(5L, 6L).expectComplete()
       }

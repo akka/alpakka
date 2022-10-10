@@ -136,7 +136,7 @@ public class AmqpDocsTest {
         Source.from(input)
             .map(ByteString::fromString)
             .viaMat(ampqRpcFlow, Keep.right())
-            .toMat(TestSink.probe(system), Keep.both())
+            .toMat(TestSink.create(system), Keep.both())
             .run(system);
     // #create-rpc-flow
     result.first().toCompletableFuture().get(3, TimeUnit.SECONDS);

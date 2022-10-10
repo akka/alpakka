@@ -69,7 +69,7 @@ class AwsLambdaFlowSpec
           CompletableFuture.completedFuture(invokeResponse)
       })
 
-      val (probe, future) = TestSource.probe[InvokeRequest].via(lambdaFlow).toMat(Sink.seq)(Keep.both).run()
+      val (probe, future) = TestSource[InvokeRequest]().via(lambdaFlow).toMat(Sink.seq)(Keep.both).run()
       probe.sendNext(invokeRequest)
       probe.sendComplete()
 
@@ -91,7 +91,7 @@ class AwsLambdaFlowSpec
         }
       })
 
-      val (probe, future) = TestSource.probe[InvokeRequest].via(lambdaFlow).toMat(Sink.seq)(Keep.both).run()
+      val (probe, future) = TestSource[InvokeRequest]().via(lambdaFlow).toMat(Sink.seq)(Keep.both).run()
 
       probe.sendNext(invokeFailureRequest)
       probe.sendComplete()

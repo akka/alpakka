@@ -97,7 +97,7 @@ class AmqpDocsSpec extends AmqpSpec {
       val (rpcQueueF: Future[String], probe: TestSubscriber.Probe[ByteString]) = Source(input)
         .map(s => ByteString(s))
         .viaMat(amqpRpcFlow)(Keep.right)
-        .toMat(TestSink.probe)(Keep.both)
+        .toMat(TestSink())(Keep.both)
         .run()
       //#create-rpc-flow
       rpcQueueF.futureValue

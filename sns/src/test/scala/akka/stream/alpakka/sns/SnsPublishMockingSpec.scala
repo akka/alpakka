@@ -28,7 +28,7 @@ class SnsPublishMockingSpec extends AnyFlatSpec with DefaultTestContext with Mat
     when(snsClient.publish(meq(publishRequest))).thenReturn(CompletableFuture.completedFuture(publishResult))
 
     val (probe, future) =
-      TestSource.probe[PublishRequest].via(SnsPublisher.publishFlow("topic-arn")).toMat(Sink.seq)(Keep.both).run()
+      TestSource[PublishRequest]().via(SnsPublisher.publishFlow("topic-arn")).toMat(Sink.seq)(Keep.both).run()
 
     probe.sendNext(PublishRequest.builder().message("sns-message").build()).sendComplete()
 
@@ -43,7 +43,7 @@ class SnsPublishMockingSpec extends AnyFlatSpec with DefaultTestContext with Mat
     when(snsClient.publish(any[PublishRequest]())).thenReturn(CompletableFuture.completedFuture(publishResult))
 
     val (probe, future) =
-      TestSource.probe[PublishRequest].via(SnsPublisher.publishFlow("topic-arn")).toMat(Sink.seq)(Keep.both).run()
+      TestSource[PublishRequest]().via(SnsPublisher.publishFlow("topic-arn")).toMat(Sink.seq)(Keep.both).run()
 
     probe
       .sendNext(PublishRequest.builder().message("sns-message-1").build())
@@ -69,7 +69,7 @@ class SnsPublishMockingSpec extends AnyFlatSpec with DefaultTestContext with Mat
     when(snsClient.publish(any[PublishRequest]())).thenReturn(CompletableFuture.completedFuture(publishResult))
 
     val (probe, future) =
-      TestSource.probe[PublishRequest].via(SnsPublisher.publishFlow()).toMat(Sink.seq)(Keep.both).run()
+      TestSource[PublishRequest]().via(SnsPublisher.publishFlow()).toMat(Sink.seq)(Keep.both).run()
 
     probe
       .sendNext(PublishRequest.builder().message("sns-message-1").topicArn("topic-arn-1").build())
@@ -95,7 +95,7 @@ class SnsPublishMockingSpec extends AnyFlatSpec with DefaultTestContext with Mat
 
     when(snsClient.publish(meq(publishRequest))).thenReturn(CompletableFuture.completedFuture(publishResult))
 
-    val (probe, future) = TestSource.probe[String].via(SnsPublisher.flow("topic-arn")).toMat(Sink.seq)(Keep.both).run()
+    val (probe, future) = TestSource[String]().via(SnsPublisher.flow("topic-arn")).toMat(Sink.seq)(Keep.both).run()
     probe.sendNext("sns-message").sendComplete()
 
     Await.result(future, 1.second) mustBe publishResult :: Nil
@@ -107,7 +107,7 @@ class SnsPublishMockingSpec extends AnyFlatSpec with DefaultTestContext with Mat
 
     when(snsClient.publish(any[PublishRequest]())).thenReturn(CompletableFuture.completedFuture(publishResult))
 
-    val (probe, future) = TestSource.probe[String].via(SnsPublisher.flow("topic-arn")).toMat(Sink.seq)(Keep.both).run()
+    val (probe, future) = TestSource[String]().via(SnsPublisher.flow("topic-arn")).toMat(Sink.seq)(Keep.both).run()
     probe.sendNext("sns-message-1").sendNext("sns-message-2").sendNext("sns-message-3").sendComplete()
 
     Await.result(future, 1.second) mustBe publishResult :: publishResult :: publishResult :: Nil
@@ -130,7 +130,7 @@ class SnsPublishMockingSpec extends AnyFlatSpec with DefaultTestContext with Mat
 
     when(snsClient.publish(meq(publishRequest))).thenReturn(promise)
 
-    val (probe, future) = TestSource.probe[String].via(SnsPublisher.flow("topic-arn")).toMat(Sink.seq)(Keep.both).run()
+    val (probe, future) = TestSource[String]().via(SnsPublisher.flow("topic-arn")).toMat(Sink.seq)(Keep.both).run()
     probe.sendNext("sns-message").sendComplete()
 
     a[RuntimeException] should be thrownBy {
@@ -143,7 +143,7 @@ class SnsPublishMockingSpec extends AnyFlatSpec with DefaultTestContext with Mat
   it should "fail stage if upstream failure occurs" in {
     case class MyCustomException(message: String) extends Exception(message)
 
-    val (probe, future) = TestSource.probe[String].via(SnsPublisher.flow("topic-arn")).toMat(Sink.seq)(Keep.both).run()
+    val (probe, future) = TestSource[String]().via(SnsPublisher.flow("topic-arn")).toMat(Sink.seq)(Keep.both).run()
     probe.sendError(MyCustomException("upstream failure"))
 
     a[MyCustomException] should be thrownBy {

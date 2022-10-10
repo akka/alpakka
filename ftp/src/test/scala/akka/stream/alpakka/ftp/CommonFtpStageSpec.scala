@@ -105,7 +105,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       val basePath = ""
       generateFiles(30, 10, basePath)
       val probe =
-        listFiles(basePath).toMat(TestSink.probe)(Keep.right).run()
+        listFiles(basePath).toMat(TestSink())(Keep.right).run()
       probe.request(40).expectNextN(30)
       probe.expectComplete()
     }
@@ -114,7 +114,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       val basePath = "/foo"
       generateFiles(30, 10, basePath)
       val probe =
-        listFiles(basePath).toMat(TestSink.probe)(Keep.right).run()
+        listFiles(basePath).toMat(TestSink())(Keep.right).run()
       probe.request(40).expectNextN(30)
       probe.expectComplete()
     }
@@ -123,7 +123,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       val basePath = "/foo"
       generateFiles(30, 10, basePath)
       val probe =
-        listFilesWithFilter(basePath, f => false).toMat(TestSink.probe)(Keep.right).run()
+        listFilesWithFilter(basePath, f => false).toMat(TestSink())(Keep.right).run()
       probe.request(40).expectNextN(12) // 9 files, 3 directories
       probe.expectComplete()
 
@@ -134,7 +134,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       generateFiles(30, 10, basePath)
       val probe =
         listFilesWithFilter(basePath, f => f.name.contains("1"))
-          .toMat(TestSink.probe)(Keep.right)
+          .toMat(TestSink())(Keep.right)
           .run()
       probe.request(40).expectNextN(21) // 9 files in root, 2 directories, 10 files in dir_1
       probe.expectComplete()
@@ -144,7 +144,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
     "list all files in sparse directory tree" in assertAllStagesStopped {
       putFileOnFtp("foo/bar/baz/foobar/sample")
       val probe =
-        listFiles("/").toMat(TestSink.probe)(Keep.right).run()
+        listFiles("/").toMat(TestSink())(Keep.right).run()
       probe.request(2).expectNextN(1)
       probe.expectComplete()
     }
@@ -153,7 +153,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       putFileOnFtp("foo/bar/baz/foobar/sample")
       val probe =
         listFilesWithFilter("/", _ => true, emitTraversedDirectories = true)
-          .toMat(TestSink.probe)(Keep.right)
+          .toMat(TestSink())(Keep.right)
           .run()
       probe.request(10).expectNextN(5) // foo, bar, baz, foobar, and sample_1 = 5 files
       probe.expectComplete()
@@ -187,7 +187,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       val fileName = "sample_io_" + Instant.now().getNano
       putFileOnFtp(fileName)
       val (result, probe) =
-        retrieveFromPath(s"/$fileName").toMat(TestSink.probe)(Keep.both).run()
+        retrieveFromPath(s"/$fileName").toMat(TestSink())(Keep.both).run()
       probe.request(100).expectNextOrComplete()
 
       val expectedNumOfBytes = getDefaultContent.getBytes().length
@@ -199,7 +199,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       val offset = 10L
       putFileOnFtp(fileName)
       val (result, probe) =
-        retrieveFromPathWithOffset(s"/$fileName", offset).toMat(TestSink.probe)(Keep.both).run()
+        retrieveFromPathWithOffset(s"/$fileName", offset).toMat(TestSink())(Keep.both).run()
       probe.request(100).expectNextOrComplete()
 
       val expectedNumOfBytes = getDefaultContent.getBytes().length - offset
@@ -211,7 +211,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       val fileContents = new Array[Byte](2000020)
       Random.nextBytes(fileContents)
       putFileOnFtpWithContents(fileName, fileContents)
-      val (result, probe) = retrieveFromPath(s"/$fileName").toMat(TestSink.probe)(Keep.both).run()
+      val (result, probe) = retrieveFromPath(s"/$fileName").toMat(TestSink())(Keep.both).run()
       probe.request(1000).expectNextOrComplete()
 
       val expectedNumOfBytes = fileContents.length
@@ -225,7 +225,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       Random.nextBytes(fileContents)
       putFileOnFtpWithContents(fileName, fileContents)
       val (result, probe) =
-        retrieveFromPathWithOffset(s"/$fileName", offset).toMat(TestSink.probe)(Keep.both).run()
+        retrieveFromPathWithOffset(s"/$fileName", offset).toMat(TestSink())(Keep.both).run()
       probe.request(1000).expectNextOrComplete()
 
       val expectedNumOfBytes = fileContents.length - offset
@@ -240,7 +240,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       generateFiles(numOfFiles, numOfFiles, basePath)
       val probe = listFiles(basePath)
         .mapAsyncUnordered(1)(file => retrieveFromPath(file.path, fromRoot = true).to(Sink.ignore).run())
-        .toMat(TestSink.probe)(Keep.right)
+        .toMat(TestSink())(Keep.right)
         .run()
       val result = probe.request(numOfFiles + 1).expectNextN(numOfFiles)
       probe.expectComplete()
