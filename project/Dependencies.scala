@@ -108,7 +108,7 @@ object Dependencies {
           .exclude("org.apache.tinkerpop", "*") //https://github.com/akka/alpakka/issues/2200
           .exclude("com.esri.geometry", "esri-geometry-api"), //https://github.com/akka/alpakka/issues/2225
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion % Provided
-      )
+      ) ++ JacksonDatabindDependencies // evict Jackson version from "com.datastax.oss" % "java-driver-core"
   )
 
   val Couchbase = Seq(
