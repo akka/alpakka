@@ -7,4 +7,4 @@ It has a module that provides an akka-streams source and sink.
 ## External library
 
 This library is not maintained in the Alpakka repository.
-Learn more about it at [GitHub sksamuel/pulsar4s](https://github.com/sksamuel/pulsar4s#akka-streams).
+Learn more about it at [GitHub CleverCloud/pulsar4s](https://github.com/CleverCloud/pulsar4s).
