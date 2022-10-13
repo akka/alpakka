@@ -92,9 +92,9 @@ import scala.collection.mutable
   /**
    * Reset after each row.
    */
-  private[this] var columns = mutable.ListBuffer[ByteString]()
+  private[this] val columns = mutable.ListBuffer[ByteString]()
   private[this] var state: State = LineStart
-  private[this] var fieldBuilder = new FieldBuilder
+  private[this] val fieldBuilder = new FieldBuilder
 
   /**
    * Current iterator being parsed.
