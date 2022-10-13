@@ -5,7 +5,7 @@ object Dependencies {
 
   val CronBuild = sys.env.get("GITHUB_EVENT_NAME").contains("schedule")
 
-  val Scala213 = "2.13.8" // update even in link-validator.conf
+  val Scala213 = "2.13.10" // update even in link-validator.conf
   val Scala212 = "2.12.16"
   val ScalaVersions = Seq(Scala213, Scala212)
 
