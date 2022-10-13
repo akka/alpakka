@@ -34,7 +34,7 @@ import akka.util.ByteString
 
   private case object NewStream
 
-  private def insertMarkers[C](minChunkSize: Long) =
+  private def insertMarkers[C](minChunkSize: Long): GraphStage[FlowShape[(ByteString, C), Any]] =
     new GraphStage[FlowShape[(ByteString, C), Any]] {
       val in = Inlet[(ByteString, C)]("SplitAfterSize.in")
       val out = Outlet[Any]("SplitAfterSize.out")

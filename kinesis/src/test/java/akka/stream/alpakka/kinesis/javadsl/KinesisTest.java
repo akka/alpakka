@@ -76,12 +76,12 @@ public class KinesisTest {
                 invocation ->
                     CompletableFuture.completedFuture(
                         GetRecordsResponse.builder()
-                            .records(Record.builder().sequenceNumber("1").build())
+                            .records(software.amazon.awssdk.services.kinesis.model.Record.builder().sequenceNumber("1").build())
                             .nextShardIterator("iter")
                             .build()));
 
-    final Source<Record, NotUsed> source = KinesisSource.basic(settings, amazonKinesisAsync);
-    final CompletionStage<Record> record = source.runWith(Sink.head(), system);
+    final Source<software.amazon.awssdk.services.kinesis.model.Record, NotUsed> source = KinesisSource.basic(settings, amazonKinesisAsync);
+    final CompletionStage<software.amazon.awssdk.services.kinesis.model.Record> record = source.runWith(Sink.head(), system);
 
     assertEquals("1", record.toCompletableFuture().get(10, TimeUnit.SECONDS).sequenceNumber());
   }

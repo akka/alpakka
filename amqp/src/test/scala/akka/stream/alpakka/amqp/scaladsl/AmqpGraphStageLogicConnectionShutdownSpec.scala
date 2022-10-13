@@ -89,7 +89,7 @@ class AmqpGraphStageLogicConnectionShutdownSpec
 
     Future
       .traverse(input)(in => Source.single(ByteString(in)).runWith(amqpSink))
-      .recover {
+      .recover[Object] {
         case NonFatal(e) => system.terminate().flatMap(_ => Future.failed(e))
       }
       .flatMap(_ => system.terminate())
