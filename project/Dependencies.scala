@@ -209,8 +209,8 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http-jackson" % AkkaHttpVersion % Provided,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         "io.spray" %% "spray-json" % "1.3.6",
-        "com.fasterxml.jackson.core" % "jackson-annotations" % JacksonDatabindVersion,
-        "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % JacksonDatabindVersion % Test,
+        "com.fasterxml.jackson.core" % "jackson-annotations" % JacksonVersion,
+        "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % JacksonVersion % Test,
         "io.specto" % "hoverfly-java" % hoverflyVersion % Test //ApacheV2
       ) ++ Mockito
   )
