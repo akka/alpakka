@@ -5,12 +5,12 @@
 package akka.stream.alpakka.csv.impl
 
 import java.nio.charset.UnsupportedCharsetException
-
 import akka.annotation.InternalApi
 import akka.stream.alpakka.csv.MalformedCsvException
 import akka.stream.alpakka.csv.scaladsl.ByteOrderMark
 import akka.util.{ByteIterator, ByteString, ByteStringBuilder}
 
+import scala.annotation.nowarn
 import scala.collection.mutable
 
 /**
@@ -92,9 +92,13 @@ import scala.collection.mutable
   /**
    * Reset after each row.
    */
-  private[this] val columns = mutable.ListBuffer[ByteString]()
+  @nowarn("msg=never updated")
+  private[this] var columns = mutable.ListBuffer[ByteString]()
+
   private[this] var state: State = LineStart
-  private[this] val fieldBuilder = new FieldBuilder
+
+  @nowarn("msg=never updated")
+  private[this] var fieldBuilder = new FieldBuilder
 
   /**
    * Current iterator being parsed.
