@@ -963,7 +963,7 @@ object S3 {
    *                        with the returned `Sink`.
    * @param contentType an optional [[akka.http.javadsl.model.ContentType ContentType]]
    * @param s3Headers any headers you want to add
-   * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.japi.Pair Pair]] of ([[akka.util.ByteString ByteString]] of [[C]])'s and materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
+   * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.japi.Pair Pair]] of ([[akka.util.ByteString ByteString]] of `C`)'s and materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
    */
   def multipartUploadWithContext[C](
       bucket: String,
@@ -1007,7 +1007,7 @@ object S3 {
    *                        failure will also be propagated to the upload stream. Sink Materialization is also shared
    *                        with the returned `Sink`.
    * @param contentType an optional [[akka.http.javadsl.model.ContentType ContentType]]
-   * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.japi.Pair Pair]] of ([[akka.util.ByteString ByteString]] of [[C]])'s and materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
+   * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.japi.Pair Pair]] of ([[akka.util.ByteString ByteString]] of `C`)'s and materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
    */
   def multipartUploadWithContext[C](
       bucket: String,
@@ -1039,7 +1039,7 @@ object S3 {
    *                        backpressure is applied to the upload stream if `chunkUploadSink` is too slow, likewise any
    *                        failure will also be propagated to the upload stream. Sink Materialization is also shared
    *                        with the returned `Sink`.
-   * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.japi.Pair Pair]] of ([[akka.util.ByteString ByteString]] of [[C]])'s and materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
+   * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.japi.Pair Pair]] of ([[akka.util.ByteString ByteString]] of `C`)'s and materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
    */
   def multipartUploadWithContext[C](
       bucket: String,
@@ -1137,7 +1137,7 @@ object S3 {
    *                        with the returned `Sink`.
    * @param contentType an optional [[akka.http.javadsl.model.ContentType ContentType]]
    * @param s3Headers any headers you want to add
-   * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.japi.Pair Pair]] of ([[akka.util.ByteString ByteString]] of [[C]])'s and materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
+   * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.japi.Pair Pair]] of ([[akka.util.ByteString ByteString]] of `C`)'s and materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
    */
   def resumeMultipartUploadWithContext[C](
       bucket: String,
@@ -1189,7 +1189,7 @@ object S3 {
    *                        failure will also be propagated to the upload stream. Sink Materialization is also shared
    *                        with the returned `Sink`.
    * @param contentType an optional [[akka.http.javadsl.model.ContentType ContentType]]
-   * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.japi.Pair Pair]] of ([[akka.util.ByteString ByteString]] of [[C]])'s and materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
+   * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.japi.Pair Pair]] of ([[akka.util.ByteString ByteString]] of `C`)'s and materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
    */
   def resumeMultipartUploadWithContext[C](
       bucket: String,
@@ -1228,7 +1228,7 @@ object S3 {
    *                        backpressure is applied to the upload stream if `chunkUploadSink` is too slow, likewise any
    *                        failure will also be propagated to the upload stream. Sink Materialization is also shared
    *                        with the returned `Sink`.
-   * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.japi.Pair Pair]] of ([[akka.util.ByteString ByteString]] of [[C]])'s and materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
+   * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.japi.Pair Pair]] of ([[akka.util.ByteString ByteString]] of `C`)'s and materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
    */
   def resumeMultipartUploadWithContext[C](
       bucket: String,

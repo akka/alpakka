@@ -28,7 +28,7 @@ object IronMqProducer {
     flow(queueName, settings).toMat(Sink.ignore)(Keep.right)
 
   /**
-   * A [[Committable]] aware producer [[akka.stream.scaladsl.Flow Flow]] that consume [[(PushMessage, Committable)]], push messages on IronMq and
+   * A [[Committable]] aware producer [[akka.stream.scaladsl.Flow Flow]] that consume `(PushMessage, Committable)`, push messages on IronMq and
    * commit the associated [[Committable]].
    */
   def atLeastOnceFlow(queueName: String,
@@ -37,7 +37,7 @@ object IronMqProducer {
     atLeastOnceFlow(queueName, settings, Flow[Committable].mapAsync(1)(_.commit())).map(_._1)
 
   /**
-   * A [[Committable]] aware producer [[akka.stream.scaladsl.Sink Sink]] that consume [[(PushMessage, Committable)]] push messages on IronMq and
+   * A [[Committable]] aware producer [[akka.stream.scaladsl.Sink Sink]] that consume `(PushMessage, Committable)` push messages on IronMq and
    * commit the associated [[Committable]].
    */
   def atLeastOnceSink(queueName: String, settings: IronMqSettings): Sink[(PushMessage, Committable), NotUsed] =

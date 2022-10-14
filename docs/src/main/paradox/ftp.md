@@ -88,7 +88,7 @@ Scala
 Java
 : @@snip [snip](/ftp/src/test/java/docs/javadsl/FtpRetrievingExample.java) { #retrieving }
 
-This source will emit @scaladoc[ByteString](akka.util.ByteString) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @javadoc[CompletionStage](java/util/concurrent/CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
+This source will emit @scaladoc[ByteString](akka.util.ByteString) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @javadoc[CompletionStage](java.util.concurrent.CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
 
 For both FTPs and SFTP servers, you will need to use the `FTPs` and `SFTP` API respectively.
 
@@ -102,7 +102,7 @@ Scala
 Java
 : @@snip [snip](/ftp/src/test/java/docs/javadsl/FtpWritingTest.java) { #storing }
 
-This sink will consume @scaladoc[ByteString](akka.util.ByteString) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @javadoc[CompletionStage](java/util/concurrent/CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
+This sink will consume @scaladoc[ByteString](akka.util.ByteString) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @javadoc[CompletionStage](java.util.concurrent.CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
 
 For both FTPs and SFTP servers, you will need to use the `FTPs` and `SFTP` API respectively.
 

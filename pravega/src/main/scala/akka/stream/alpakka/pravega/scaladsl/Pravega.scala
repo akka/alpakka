@@ -21,7 +21,7 @@ object Pravega {
   /**
    * Messages are read from a Pravega stream.
    *
-   * Materialized value is a [[Future]] which completes to [[Done]] as soon as the Pravega reader is open.
+   * Materialized value is a [[scala.concurrent.Future]] which completes to [[Done]] as soon as the Pravega reader is open.
    */
   def source[A](readerGroup: ReaderGroup, readerSettings: ReaderSettings[A]): Source[PravegaEvent[A], Future[Done]] =
     Source.fromGraph(new PravegaSource(readerGroup, readerSettings))

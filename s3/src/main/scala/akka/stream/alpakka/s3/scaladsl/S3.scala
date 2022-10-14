@@ -171,7 +171,7 @@ object S3 {
    *
    * @param bucket the s3 bucket name
    * @param key the s3 object key
-   * @param data a [[Stream]] of [[ByteString]]
+   * @param data a [[akka.stream.scaladsl.Source Source]] of [[akka.util.ByteString ByteString]]
    * @param contentLength the number of bytes that will be uploaded (required!)
    * @param contentType an optional [[ContentType]]
    * @param s3Headers any headers you want to add
@@ -507,10 +507,10 @@ object S3 {
    * @param key the s3 object key
    * @param contentType an optional [[akka.http.scaladsl.model.ContentType ContentType]]
    * @param metaHeaders any meta-headers you want to add
-   * @param cannedAcl a [[CannedAcl]], defaults to [[CannedAcl.Private]]
+   * @param cannedAcl a [[akka.stream.alpakka.s3.headers.CannedAcl CannedAcl]], defaults to [[akka.stream.alpakka.s3.headers.CannedAcl CannedAcl.Private]]
    * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
    * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
-   * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts [[ByteString]]'s and materializes to a [[scala.concurrent.Future Future]] of [[MultipartUploadResult]]
+   * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[scala.concurrent.Future Future]] of [[MultipartUploadResult]]
    */
   def multipartUpload(
       bucket: String,
@@ -575,10 +575,10 @@ object S3 {
    *                        with the returned `Sink`.
    * @param contentType an optional [[akka.http.scaladsl.model.ContentType ContentType]]
    * @param metaHeaders any meta-headers you want to add
-   * @param cannedAcl a [[CannedAcl]], defaults to [[CannedAcl.Private]]
+   * @param cannedAcl a [[akka.stream.alpakka.s3.headers.CannedAcl CannedAcl]], defaults to [[akka.stream.alpakka.s3.headers.CannedAcl CannedAcl.Private]]
    * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
    * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
-   * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts ([[ByteString]], [[C]])'s and materializes to a [[scala.concurrent.Future Future]] of [[MultipartUploadResult]]
+   * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts ([[akka.util.ByteString ByteString]], `C`)'s and materializes to a [[scala.concurrent.Future Future]] of [[MultipartUploadResult]]
    */
   def multipartUploadWithContext[C](
       bucket: String,
@@ -624,7 +624,7 @@ object S3 {
    * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
    * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
    * @param s3Headers any headers you want to add
-   * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts ([[ByteString]], [[C]])'s and materializes to a [[scala.concurrent.Future Future]] of [[MultipartUploadResult]]
+   * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts ([[akka.util.ByteString ByteString]], `C`)'s and materializes to a [[scala.concurrent.Future Future]] of [[MultipartUploadResult]]
    */
   def multipartUploadWithHeadersAndContext[C](
       bucket: String,
@@ -654,10 +654,10 @@ object S3 {
    * @param previousParts The previously uploaded parts ending just before when this upload will commence
    * @param contentType an optional [[akka.http.scaladsl.model.ContentType ContentType]]
    * @param metaHeaders any meta-headers you want to add
-   * @param cannedAcl a [[CannedAcl]], defaults to [[CannedAcl.Private]]
+   * @param cannedAcl a [[akka.stream.alpakka.s3.headers.CannedAcl CannedAcl]], defaults to [[akka.stream.alpakka.s3.headers.CannedAcl CannedAcl.Private]]
    * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
    * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
-   * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts [[ByteString]]'s and materializes to a [[scala.concurrent.Future Future]] of [[MultipartUploadResult]]
+   * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[scala.concurrent.Future Future]] of [[MultipartUploadResult]]
    */
   def resumeMultipartUpload(
       bucket: String,
@@ -706,10 +706,10 @@ object S3 {
    *                        with the returned `Sink`.
    * @param contentType an optional [[akka.http.scaladsl.model.ContentType ContentType]]
    * @param metaHeaders any meta-headers you want to add
-   * @param cannedAcl a [[CannedAcl]], defaults to [[CannedAcl.Private]]
+   * @param cannedAcl a [[akka.stream.alpakka.s3.headers.CannedAcl CannedAcl]], defaults to [[akka.stream.alpakka.s3.headers.CannedAcl CannedAcl.Private]]
    * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
    * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
-   * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts ([[ByteString]], [[C]])'s and materializes to a [[scala.concurrent.Future Future]] of [[MultipartUploadResult]]
+   * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts ([[akka.util.ByteString ByteString]], `C`)'s and materializes to a [[scala.concurrent.Future Future]] of [[MultipartUploadResult]]
    */
   def resumeMultipartUploadWithContext[C](
       bucket: String,
@@ -799,7 +799,7 @@ object S3 {
    * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
    * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
    * @param s3Headers any headers you want to add
-   * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts ([[ByteString]], [[C]])'s and materializes to a [[scala.concurrent.Future Future]] of [[MultipartUploadResult]]
+   * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts ([[akka.util.ByteString ByteString]], `C`)'s and materializes to a [[scala.concurrent.Future Future]] of [[MultipartUploadResult]]
    */
   def resumeMultipartUploadWithHeadersAndContext[C](
       bucket: String,
