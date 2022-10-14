@@ -63,7 +63,7 @@ class GooglePubSubSpec
     val source = Source(List(request))
 
     when(mockHttpApi.isEmulated).thenReturn(false)
-    when(mockHttpApi.publish[Unit](topic = "topic1", parallelism = 1))
+    when(mockHttpApi.publish[Unit](topic = "topic1", parallelism = 1, host = None))
       .thenReturn(FlowWithContext[PublishRequest, Unit].map(_ => PublishResponse(Seq("id1"))))
 
     val flow = googlePubSub.publish(
@@ -82,7 +82,7 @@ class GooglePubSubSpec
     val source = Source(List((request, "correlationId")))
 
     when(mockHttpApi.isEmulated).thenReturn(false)
-    when(mockHttpApi.publish[String](topic = "topic1", parallelism = 1))
+    when(mockHttpApi.publish[String](topic = "topic1", parallelism = 1, host = None))
       .thenReturn(FlowWithContext[PublishRequest, String].map(_ => PublishResponse(Seq("id1"))))
 
     val flow = googlePubSub.publishWithContext[String](
@@ -103,7 +103,8 @@ class GooglePubSubSpec
       override def isEmulated: Boolean = true
 
       override def publish[T](topic: String,
-                              parallelism: Int): FlowWithContext[PublishRequest, T, PublishResponse, T, NotUsed] =
+                              parallelism: Int,
+                              host: Option[String]): FlowWithContext[PublishRequest, T, PublishResponse, T, NotUsed] =
         FlowWithContext[PublishRequest, T].map(_ => PublishResponse(Seq("id2")))
     }
 
