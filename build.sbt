@@ -332,6 +332,9 @@ lazy val unixdomainsocket =
 
 lazy val xml = alpakkaProject("xml", "xml", Dependencies.Xml)
 
+// Java Platform version for JavaDoc creation
+val JavaDocLinkVersion = "11"
+
 lazy val docs = project
   .enablePlugins(AkkaParadoxPlugin, ParadoxSitePlugin, PreprocessPlugin, PublishRsyncPlugin)
   .disablePlugins(MimaPlugin)
@@ -343,6 +346,21 @@ lazy val docs = project
     Preprocess / siteSubdirName := s"api/alpakka/${projectInfoVersion.value}",
     Preprocess / sourceDirectory := (LocalRootProject / ScalaUnidoc / unidoc / target).value,
     Preprocess / preprocessRules := Seq(
+        // Java Platform Module System splits
+        ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java/sql/").r,
+         _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.sql/java/sql/"),
+        ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java/").r,
+         _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.base/java/"),
+        ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/javax/net/").r,
+         _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.base/javax/net/"),
+        ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/javax/xml/").r,
+         _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.xml/javax/xml/"),
+        ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/org/w3c/").r,
+         _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.xml/org/w3c/"),
+        // package duplication errors
+        ((s"https://doc\\.akka\\.io/api/akka-grpc/${akka.grpc.gen.BuildInfo.version}/akka/grpc/akka/grpc").r,
+         _ => s"https://doc\\.akka\\.io/api/akka-grpc/${akka.grpc.gen.BuildInfo.version}/akka/grpc/"),
+        // http links
         ("http://www\\.eclipse\\.org/".r, _ => "https://www\\.eclipse\\.org/"),
         ("http://pravega\\.io/".r, _ => "https://pravega\\.io/"),
         ("http://www\\.scala-lang\\.org/".r, _ => "https://www\\.scala-lang\\.org/"),
@@ -380,10 +398,12 @@ lazy val docs = project
         "extref.cassandra-driver.base_url" -> s"https://docs.datastax.com/en/developer/java-driver/${Dependencies.CassandraDriverVersionInDocs}/%s",
         "javadoc.com.datastax.oss.base_url" -> s"https://docs.datastax.com/en/drivers/java/${Dependencies.CassandraDriverVersionInDocs}/",
         // Solr
-        "extref.solr.base_url" -> s"https://lucene.apache.org/solr/guide/${Dependencies.SolrVersionForDocs}/%s",
-        "javadoc.org.apache.solr.base_url" -> s"https://lucene.apache.org/solr/${Dependencies.SolrVersionForDocs}_0/solr-solrj/",
+        "extref.solr.base_url" -> s"https://solr.apache.org/guide/${Dependencies.SolrVersionForDocs}/%s",
+        "javadoc.org.apache.solr.base_url" -> s"https://solr.apache.org/docs/${Dependencies.SolrVersionForDocs}_0/solr-solrj/",
         // Java
-        "javadoc.base_url" -> "https://docs.oracle.com/javase/8/docs/api/",
+        "javadoc.base_url" -> "https://docs.oracle.com/en/java/javase/11/docs/api/java.base/",
+        "javadoc.java.base_url" -> "https://docs.oracle.com/en/java/javase/11/docs/api/java.base/",
+        "javadoc.java.link_style" -> "direct",
         "javadoc.javax.jms.base_url" -> "https://docs.oracle.com/javaee/7/api/",
         "javadoc.com.couchbase.base_url" -> s"https://docs.couchbase.com/sdk-api/couchbase-java-client-${Dependencies.CouchbaseVersion}/",
         "javadoc.io.pravega.base_url" -> s"http://pravega.io/docs/${Dependencies.PravegaVersionForDocs}/javadoc/clients/",

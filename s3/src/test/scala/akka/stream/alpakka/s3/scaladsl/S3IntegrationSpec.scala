@@ -552,7 +552,7 @@ trait S3IntegrationSpec
       _ <- akka.pattern.after(25.seconds)(Future {
         sharedKillSwitch.abort(AbortException)
       })
-      _ <- multiPartUpload.recover {
+      _ <- multiPartUpload.recover[Any] {
         case AbortException => ()
       }
       incomplete <- S3.listMultipartUpload(defaultBucket, None).withAttributes(attributes).runWith(Sink.seq)
@@ -605,7 +605,7 @@ trait S3IntegrationSpec
       _ <- akka.pattern.after(25.seconds)(Future {
         sharedKillSwitch.abort(AbortException)
       })
-      _ <- multiPartUpload.recover {
+      _ <- multiPartUpload.recover[Any] {
         case AbortException => ()
       }
       incomplete <- S3.listMultipartUpload(defaultBucket, None).withAttributes(attributes).runWith(Sink.seq)
@@ -663,7 +663,7 @@ trait S3IntegrationSpec
       _ <- akka.pattern.after(25.seconds)(Future {
         sharedKillSwitch.abort(AbortException)
       })
-      _ <- multiPartUpload.recover {
+      _ <- multiPartUpload.recover[Any] {
         case AbortException => ()
       }
       incomplete <- S3.listMultipartUpload(defaultBucket, None).withAttributes(attributes).runWith(Sink.seq)

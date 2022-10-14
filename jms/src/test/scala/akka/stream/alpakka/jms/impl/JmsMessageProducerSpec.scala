@@ -59,7 +59,7 @@ class JmsMessageProducerSpec extends JmsSpec with MockitoSugar {
     }
 
     "succeed if properties are set as map" in new Setup {
-      val props = Map(
+      val props = Map[String, Any](
         "string" -> "string",
         "int" -> 1,
         "boolean" -> true,

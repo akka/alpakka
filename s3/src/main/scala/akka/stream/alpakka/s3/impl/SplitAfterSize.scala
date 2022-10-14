@@ -33,38 +33,39 @@ import scala.annotation.tailrec
 
   private case object NewStream
 
-  private def insertMarkers(minChunkSize: Long, maxChunkSize: Int) = new GraphStage[FlowShape[ByteString, Any]] {
-    val in = Inlet[ByteString]("SplitAfterSize.in")
-    val out = Outlet[Any]("SplitAfterSize.out")
-    override val shape = FlowShape.of(in, out)
+  private def insertMarkers(minChunkSize: Long, maxChunkSize: Int): GraphStage[FlowShape[ByteString, Any]] =
+    new GraphStage[FlowShape[ByteString, Any]] {
+      val in = Inlet[ByteString]("SplitAfterSize.in")
+      val out = Outlet[Any]("SplitAfterSize.out")
+      override val shape = FlowShape.of(in, out)
 
-    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-      new GraphStageLogic(shape) with OutHandler with InHandler {
-        var count: Int = 0
-        override def onPull(): Unit = pull(in)
+      override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+        new GraphStageLogic(shape) with OutHandler with InHandler {
+          var count: Int = 0
+          override def onPull(): Unit = pull(in)
 
-        override def onPush(): Unit = {
-          val elem = grab(in)
-          count += elem.size
-          if (count > maxChunkSize) {
-            splitElement(elem, elem.size - (count - maxChunkSize))
-          } else if (count >= minChunkSize) {
-            count = 0
-            emitMultiple(out, elem :: NewStream :: Nil)
-          } else emit(out, elem)
-        }
-
-        @tailrec private def splitElement(elem: ByteString, splitPos: Int): Unit =
-          if (elem.size > splitPos) {
-            val (part1, rest) = elem.splitAt(splitPos)
-            emitMultiple(out, part1 :: NewStream :: Nil)
-            splitElement(rest, maxChunkSize)
-          } else {
-            count = elem.size
-            emit(out, elem)
+          override def onPush(): Unit = {
+            val elem = grab(in)
+            count += elem.size
+            if (count > maxChunkSize) {
+              splitElement(elem, elem.size - (count - maxChunkSize))
+            } else if (count >= minChunkSize) {
+              count = 0
+              emitMultiple(out, elem :: NewStream :: Nil)
+            } else emit(out, elem)
           }
 
-        setHandlers(in, out, this)
-      }
-  }
+          @tailrec private def splitElement(elem: ByteString, splitPos: Int): Unit =
+            if (elem.size > splitPos) {
+              val (part1, rest) = elem.splitAt(splitPos)
+              emitMultiple(out, part1 :: NewStream :: Nil)
+              splitElement(rest, maxChunkSize)
+            } else {
+              count = elem.size
+              emit(out, elem)
+            }
+
+          setHandlers(in, out, this)
+        }
+    }
 }
