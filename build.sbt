@@ -383,6 +383,7 @@ lazy val docs = project
         "extref.solr.base_url" -> s"https://solr.apache.org/guide/${Dependencies.SolrVersionForDocs}/%s",
         "javadoc.org.apache.solr.base_url" -> s"https://solr.apache.org/${Dependencies.SolrVersionForDocs}_0/solr-solrj/",
         // Java
+        "javadoc.base_url" -> "https://docs.oracle.com/en/java/javase/11/docs/api/java.base/",
         "javadoc.java.base_url" -> "https://docs.oracle.com/en/java/javase/11/docs/api/java.base/",
         "javadoc.java.link_style" -> "direct",
         "javadoc.javax.jms.base_url" -> "https://docs.oracle.com/javaee/7/api/",
