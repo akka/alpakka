@@ -64,9 +64,10 @@ object Dependencies {
   // CVE issues https://github.com/FasterXML/jackson-databind/issues?utf8=%E2%9C%93&q=+label%3ACVE
   // This should align with the Jackson minor version used in Akka 2.7.x
   // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L29
-  val JacksonDatabindVersion = "2.13.4"
+  val JacksonVersion = "2.13.4"
+  val JacksonDatabindVersion = "2.13.4.1"
   val JacksonDatabindDependencies = Seq(
-    "com.fasterxml.jackson.core" % "jackson-core" % JacksonDatabindVersion,
+    "com.fasterxml.jackson.core" % "jackson-core" % JacksonVersion,
     "com.fasterxml.jackson.core" % "jackson-databind" % JacksonDatabindVersion
   )
 
@@ -208,11 +209,13 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http-jackson" % AkkaHttpVersion % Provided,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         "io.spray" %% "spray-json" % "1.3.6",
-        "com.fasterxml.jackson.core" % "jackson-annotations" % JacksonDatabindVersion,
-        "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % JacksonDatabindVersion % Test,
+        "com.fasterxml.jackson.core" % "jackson-annotations" % JacksonVersion,
+        "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % JacksonVersion % Test, // used from `hoverfly-java`
         "io.specto" % "hoverfly-java" % hoverflyVersion % Test //ApacheV2
       ) ++ Mockito
+      ++ JacksonDatabindDependencies // pick possibly later version then `akka-http-jackson`
   )
+
   val GoogleBigQueryStorage = Seq(
     // see Akka gRPC version in plugins.sbt
     libraryDependencies ++= Seq(
