@@ -210,10 +210,12 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         "io.spray" %% "spray-json" % "1.3.6",
         "com.fasterxml.jackson.core" % "jackson-annotations" % JacksonVersion,
-        "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % JacksonDatabindVersion % Test,
+        "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % JacksonVersion % Test, // used from `hoverfly-java`
         "io.specto" % "hoverfly-java" % hoverflyVersion % Test //ApacheV2
       ) ++ Mockito
+      ++ JacksonDatabindDependencies // pick possibly later version then `akka-http-jackson`
   )
+
   val GoogleBigQueryStorage = Seq(
     // see Akka gRPC version in plugins.sbt
     libraryDependencies ++= Seq(
