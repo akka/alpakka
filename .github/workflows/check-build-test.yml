@@ -17,7 +17,7 @@ concurrency:
 jobs:
   style-compile-mima:
     name: Compile, Code Style, Binary Compatibility
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       JAVA_OPTS: -Xms2G -Xmx2G -Xss2M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8
 
@@ -43,7 +43,7 @@ jobs:
 
   documentation:
     name: ScalaDoc, Documentation with Paradox
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       JAVA_OPTS: -Xms2G -Xmx2G -Xss2M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8
 
@@ -71,7 +71,7 @@ jobs:
         run: cs launch net.runne::site-link-validator:0.2.2 -- scripts/link-validator.conf
 
   connectors:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     strategy:
       fail-fast: false

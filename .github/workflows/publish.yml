@@ -14,7 +14,7 @@ jobs:
     if: github.repository == 'akka/alpakka'
     name: Release
     environment: release
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       JAVA_OPTS: -Xms2G -Xmx2G -Xss2M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8
     steps:
@@ -45,7 +45,7 @@ jobs:
     if: github.repository == 'akka/alpakka'
     name: Documentation
     environment: release
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       JAVA_OPTS: -Xms2G -Xmx2G -Xss2M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8
     steps:
