@@ -9,7 +9,7 @@ object Dependencies {
   val Scala212 = "2.12.17"
   val ScalaVersions = Seq(Scala213, Scala212)
 
-  val AkkaVersion = "2.7.0-M5"
+  val AkkaVersion = "2.7.0"
   val AkkaBinaryVersion = "2.7"
 
   val InfluxDBJavaVersion = "2.15"
@@ -18,9 +18,9 @@ object Dependencies {
   val AwsSpiAkkaHttpVersion = "0.0.11"
   // Sync with plugins.sbt
   val AkkaGrpcBinaryVersion = "2.2"
-  val AkkaHttpVersion = "10.4.0-M2"
+  val AkkaHttpVersion = "10.4.0"
   val AkkaHttpBinaryVersion = "10.4"
-  val AlpakkaKafkaVersion = "3.1.0-M2"
+  val AlpakkaKafkaVersion = "4.0.0"
   val ScalaTestVersion = "3.2.11"
   val TestContainersScalaTestVersion = "0.40.3"
   val mockitoVersion = "4.8.0" // check even https://github.com/scalatest/scalatestplus-mockito/releases
@@ -66,7 +66,7 @@ object Dependencies {
   // This should align with the Jackson minor version used in Akka 2.7.x
   // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L29
   val JacksonVersion = "2.13.4"
-  val JacksonDatabindVersion = "2.13.4.1"
+  val JacksonDatabindVersion = "2.13.4.2"
   val JacksonDatabindDependencies = Seq(
     "com.fasterxml.jackson.core" % "jackson-core" % JacksonVersion,
     "com.fasterxml.jackson.core" % "jackson-databind" % JacksonDatabindVersion
