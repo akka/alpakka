@@ -92,7 +92,7 @@ lazy val alpakka = project
         // springWeb triggers an esoteric ScalaDoc bug (from Java code)
         springWeb
       ),
-    licenses := Seq(("BUSL-1.1", url("https://raw.githubusercontent.com/akka/alpakka/master/LICENSE"))), // FIXME change s/master/v5.0.0/ when released
+    licenses := Seq(("BUSL-1.1", url("https://raw.githubusercontent.com/akka/alpakka/master/LICENSE"))), // FIXME change s/master/v5.0.1/ when released
     crossScalaVersions := List() // workaround for https://github.com/sbt/sbt/issues/3465
   )
 
