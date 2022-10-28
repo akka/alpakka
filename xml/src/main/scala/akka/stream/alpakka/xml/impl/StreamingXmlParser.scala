@@ -22,16 +22,17 @@ private[xml] object StreamingXmlParser {
 /**
  * INTERNAL API
  */
-@InternalApi private[xml] class StreamingXmlParser(ignoreInvalidChars: Boolean,
-                                                   configureFactory: AsyncXMLInputFactory => Unit)
-    extends GraphStage[FlowShape[ByteString, ParseEvent]] {
-  val in: Inlet[ByteString] = Inlet("XMLParser.in")
-  val out: Outlet[ParseEvent] = Outlet("XMLParser.out")
-  override val shape: FlowShape[ByteString, ParseEvent] = FlowShape(in, out)
+@InternalApi private[xml] class StreamingXmlParser[Ctx](ignoreInvalidChars: Boolean,
+                                                        configureFactory: AsyncXMLInputFactory => Unit)
+    extends GraphStage[FlowShape[(ByteString, Ctx), (ParseEvent, Ctx)]] {
+  val in: Inlet[(ByteString, Ctx)] = Inlet("XMLParser.in")
+  val out: Outlet[(ParseEvent, Ctx)] = Outlet("XMLParser.out")
+  override val shape: FlowShape[(ByteString, Ctx), (ParseEvent, Ctx)] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler {
       private var started: Boolean = false
+      private var context: Ctx = _
 
       import javax.xml.stream.XMLStreamConstants
 
@@ -45,7 +46,9 @@ private[xml] object StreamingXmlParser {
       setHandlers(in, out, this)
 
       override def onPush(): Unit = {
-        val array = grab(in).toArray
+        val (bs, ctx) = grab(in)
+        val array = bs.toArray
+        context = ctx
         parser.getInputFeeder.feedInput(array, 0, array.length)
         advanceParser()
       }
@@ -67,10 +70,10 @@ private[xml] object StreamingXmlParser {
 
             case XMLStreamConstants.START_DOCUMENT =>
               started = true
-              push(out, StartDocument)
+              push(out, (StartDocument, context))
 
             case XMLStreamConstants.END_DOCUMENT =>
-              push(out, EndDocument)
+              push(out, (EndDocument, context))
               completeStage()
 
             case XMLStreamConstants.START_ELEMENT =>
@@ -91,27 +94,28 @@ private[xml] object StreamingXmlParser {
               val optNs = optPrefix.flatMap(prefix => Option(parser.getNamespaceURI(prefix)))
               push(
                 out,
-                StartElement(parser.getLocalName,
-                             attributes,
-                             optPrefix.filterNot(_ == ""),
-                             optNs.filterNot(_ == ""),
-                             namespaceCtx = namespaces)
+                (StartElement(parser.getLocalName,
+                              attributes,
+                              optPrefix.filterNot(_ == ""),
+                              optNs.filterNot(_ == ""),
+                              namespaceCtx = namespaces),
+                 context)
               )
 
             case XMLStreamConstants.END_ELEMENT =>
-              push(out, EndElement(parser.getLocalName))
+              push(out, (EndElement(parser.getLocalName), context))
 
             case XMLStreamConstants.CHARACTERS =>
-              push(out, Characters(parser.getText))
+              push(out, (Characters(parser.getText), context))
 
             case XMLStreamConstants.PROCESSING_INSTRUCTION =>
-              push(out, ProcessingInstruction(Option(parser.getPITarget), Option(parser.getPIData)))
+              push(out, (ProcessingInstruction(Option(parser.getPITarget), Option(parser.getPIData)), context))
 
             case XMLStreamConstants.COMMENT =>
-              push(out, Comment(parser.getText))
+              push(out, (Comment(parser.getText), context))
 
             case XMLStreamConstants.CDATA =>
-              push(out, CData(parser.getText))
+              push(out, (CData(parser.getText), context))
 
             // Do not support DTD, SPACE, NAMESPACE, NOTATION_DECLARATION, ENTITY_DECLARATION, PROCESSING_INSTRUCTION
             // ATTRIBUTE is handled in START_ELEMENT implicitly

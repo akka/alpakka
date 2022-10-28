@@ -7,7 +7,7 @@ package akka.stream.alpakka.xml.scaladsl
 import akka.NotUsed
 import akka.stream.alpakka.xml.ParseEvent
 import akka.stream.alpakka.xml.impl
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.{Flow, FlowWithContext}
 import akka.util.ByteString
 import com.fasterxml.aalto.AsyncXMLInputFactory
 import org.w3c.dom.Element
@@ -40,7 +40,20 @@ object XmlParsing {
    */
   def parser(ignoreInvalidChars: Boolean = false,
              configureFactory: AsyncXMLInputFactory => Unit = configureDefault): Flow[ByteString, ParseEvent, NotUsed] =
-    Flow.fromGraph(new impl.StreamingXmlParser(ignoreInvalidChars, configureFactory))
+    Flow[ByteString]
+      .map((_, ()))
+      .via(Flow.fromGraph(new impl.StreamingXmlParser[Unit](ignoreInvalidChars, configureFactory)))
+      .map(_._1)
+
+  /**
+   * Contextual version of a parser Flow that takes a stream of ByteStrings and parses them to XML events similar to
+   * SAX.
+   */
+  def parserWithContext[Ctx](
+      ignoreInvalidChars: Boolean = false,
+      configureFactory: AsyncXMLInputFactory => Unit = configureDefault
+  ): FlowWithContext[ByteString, Ctx, ParseEvent, Ctx, NotUsed] =
+    FlowWithContext.fromTuples(Flow.fromGraph(new impl.StreamingXmlParser[Ctx](ignoreInvalidChars, configureFactory)))
 
   /**
    * A Flow that transforms a stream of XML ParseEvents. This stage coalesces consecutive CData and Characters

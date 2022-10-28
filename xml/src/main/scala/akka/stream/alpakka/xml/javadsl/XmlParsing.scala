@@ -24,10 +24,26 @@ object XmlParsing {
     xml.scaladsl.XmlParsing.parser.asJava
 
   /**
+   * Contextual version of a parser Flow that takes a stream of ByteStrings and parses them to XML events similar to
+   * SAX.
+   */
+  def parserWithContext[Ctx](): akka.stream.javadsl.FlowWithContext[ByteString, Ctx, ParseEvent, Ctx, NotUsed] =
+    xml.scaladsl.XmlParsing.parserWithContext().asJava
+
+  /**
    * Parser Flow that takes a stream of ByteStrings and parses them to XML events similar to SAX.
    */
   def parser(ignoreInvalidChars: Boolean): akka.stream.javadsl.Flow[ByteString, ParseEvent, NotUsed] =
     xml.scaladsl.XmlParsing.parser(ignoreInvalidChars).asJava
+
+  /**
+   * Contextual version of a parser Flow that takes a stream of ByteStrings and parses them to XML events similar to
+   * SAX.
+   */
+  def parserWithContext[Ctx](
+      ignoreInvalidChars: Boolean
+  ): akka.stream.javadsl.FlowWithContext[ByteString, Ctx, ParseEvent, Ctx, NotUsed] =
+    xml.scaladsl.XmlParsing.parserWithContext(ignoreInvalidChars).asJava
 
   /**
    * Parser Flow that takes a stream of ByteStrings and parses them to XML events similar to SAX.
@@ -38,6 +54,15 @@ object XmlParsing {
     xml.scaladsl.XmlParsing.parser(false, configureFactory.accept(_)).asJava
 
   /**
+   * Contextual version of a parser Flow that takes a stream of ByteStrings and parses them to XML events similar to
+   * SAX.
+   */
+  def parserWithContext[Ctx](
+      configureFactory: Consumer[AsyncXMLInputFactory]
+  ): akka.stream.javadsl.FlowWithContext[ByteString, Ctx, ParseEvent, Ctx, NotUsed] =
+    xml.scaladsl.XmlParsing.parserWithContext(false, configureFactory.accept(_)).asJava
+
+  /**
    * Parser Flow that takes a stream of ByteStrings and parses them to XML events similar to SAX.
    */
   def parser(
@@ -45,6 +70,16 @@ object XmlParsing {
       configureFactory: Consumer[AsyncXMLInputFactory]
   ): akka.stream.javadsl.Flow[ByteString, ParseEvent, NotUsed] =
     xml.scaladsl.XmlParsing.parser(ignoreInvalidChars, configureFactory.accept(_)).asJava
+
+  /**
+   * Contextual version of a parser Flow that takes a stream of ByteStrings and parses them to XML events similar to
+   * SAX.
+   */
+  def parserWithContext[Ctx](
+      ignoreInvalidChars: Boolean,
+      configureFactory: Consumer[AsyncXMLInputFactory]
+  ): akka.stream.javadsl.FlowWithContext[ByteString, Ctx, ParseEvent, Ctx, NotUsed] =
+    xml.scaladsl.XmlParsing.parserWithContext(ignoreInvalidChars, configureFactory.accept(_)).asJava
 
   /**
    * A Flow that transforms a stream of XML ParseEvents. This stage coalesces consequitive CData and Characters
