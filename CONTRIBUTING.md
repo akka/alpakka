@@ -21,6 +21,8 @@ Ensure to install the following dependencies:
 - Java JDK
 - [Scala 2.x](https://scala-lang.org/)
 
+When cloning the repository, make sure to clone in a way which pulls the tags such as a regular `git clone` (not a shallow clone). This is needed because the MiMa plugin checks the git history and tags when loading the sbt project. If you have already done a shallow clone of the project, do a regular `git fetch` or `git pull` to pull the tag information.
+
 ## General Workflow
 
 This is the process for committing code into master.
