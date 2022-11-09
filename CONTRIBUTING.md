@@ -17,6 +17,7 @@ You may also check out these [other resources](https://akka.io/get-involved/).
 Ensure to install the following dependencies:
 
 - [Git](https://git-scm.com/) (Make sure the `git` executable is referenced in the `PATH` environment variable)
+  - Having `git` in the `PATH` is important because it is used by the MiMa plugin when loading the sbt project.
 - Java JDK
 - [Scala 2.x](https://scala-lang.org/)
 
