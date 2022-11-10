@@ -12,6 +12,19 @@ You may also check out these [other resources](https://akka.io/get-involved/).
 
 # Contributing to Alpakka
 
+## Development Setup
+
+Ensure to install the following dependencies:
+
+- [Git](https://git-scm.com/) (Make sure the `git` executable is referenced in the `PATH` environment variable)
+  - Having `git` in the `PATH` is important because it is used by the MiMa plugin when loading the sbt project.
+- Java JDK
+- [SBT](https://www.scala-sbt.org/) which can be installed standalone, or bundled with [Scala](https://scala-lang.org/) or IDEs such as [IntelliJ IDEA](https://www.jetbrains.com/idea/).
+
+When cloning or updating the repository, make sure to clone/fetch/pull in a way which gets the git tags (such as a regular `git clone`, `git fetch` or `git pull`).
+This is needed because the MiMa plugin checks the git history and tags when loading the sbt project.
+Doing a shallow clone/fetch/pull will not get the tag information and will interfere with the project loading process.
+
 ## General Workflow
 
 This is the process for committing code into master.
