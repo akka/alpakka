@@ -7,9 +7,14 @@ on:
     - main
     - release-*
 
+permissions:
+  contents: read
+
 jobs:
   update_release_draft:
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write
     steps:
       # Drafts your next Release notes as Pull Requests are merged
       # https://github.com/release-drafter/release-drafter/releases
