@@ -24,8 +24,6 @@ import scala.concurrent.duration._
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.annotation.nowarn
-
 class MongoSinkSpec
     extends AnyWordSpec
     with ScalaFutures
@@ -39,9 +37,7 @@ class MongoSinkSpec
   case class DomainObject(_id: Int, firstProperty: String, secondProperty: String)
 
   val codecRegistry =
-    fromRegistries(fromProviders(classOf[Number], classOf[DomainObject]), DEFAULT_CODEC_REGISTRY): @nowarn(
-      "msg=match may not be exhaustive"
-    )
+    fromRegistries(fromProviders(classOf[Number], classOf[DomainObject]), DEFAULT_CODEC_REGISTRY)
 
   implicit val system = ActorSystem()
 
