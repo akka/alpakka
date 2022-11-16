@@ -8,6 +8,9 @@ on:
       - release-*
     tags: ["v*"]
 
+permissions:
+  contents: read
+
 jobs:
   release:
     # runs on main repo only
@@ -19,18 +22,18 @@ jobs:
       JAVA_OPTS: -Xms2G -Xmx2G -Xss2M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3.1.0
         with:
           # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
           fetch-depth: 0
 
-      - name: Setup Scala with JDK 8
-        uses: olafurpg/setup-scala@v13
-        with:
-          java-version: adopt@1.8.0-275
-
       - name: Cache Coursier cache
-        uses: coursier/cache-action@v6
+        uses: coursier/cache-action@v6.4.0
+
+      - name: Set up JDK 11
+        uses: coursier/setup-action@v1.3.0
+        with:
+          jvm: temurin:1.11.0.17
 
       - name: Publish artifacts for all Scala versions
         env:
@@ -50,15 +53,18 @@ jobs:
       JAVA_OPTS: -Xms2G -Xmx2G -Xss2M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3.1.0
         with:
           # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
           fetch-depth: 0
 
-      - name: Set up JDK 8
-        uses: coursier/setup-action@v1.2.1
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.4.0
+
+      - name: Set up JDK 11
+        uses: coursier/setup-action@v1.3.0
         with:
-          java-version: adopt@1.11.0-9
+          jvm: temurin:1.11
 
       - name: Publish API and reference documentation
         env:
