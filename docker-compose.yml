@@ -238,7 +238,7 @@ services:
     command: username:userpass:${FTP_USER_UID:-2000}:${FTP_USER_GID:-2000}
   squid:
     network_mode: host # required for route back to localhost
-    image: datadog/squid
+    image: ubuntu/squid
     volumes:
       - ./ftp/src/test/resources/squid.conf:/etc/squid/squid.conf
   pravega:
