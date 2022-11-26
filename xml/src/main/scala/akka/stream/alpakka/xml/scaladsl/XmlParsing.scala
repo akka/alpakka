@@ -40,10 +40,15 @@ object XmlParsing {
    */
   def parser(ignoreInvalidChars: Boolean = false,
              configureFactory: AsyncXMLInputFactory => Unit = configureDefault): Flow[ByteString, ParseEvent, NotUsed] =
-    Flow[ByteString]
-      .map((_, ()))
-      .via(Flow.fromGraph(new impl.StreamingXmlParser[Unit](ignoreInvalidChars, configureFactory)))
-      .map(_._1)
+    Flow[ByteString].via(
+      Flow.fromGraph(
+        new impl.StreamingXmlParser[ByteString, ParseEvent, Unit](ignoreInvalidChars,
+                                                                  configureFactory,
+                                                                  getByteString = identity,
+                                                                  getContext = _ => (),
+                                                                  buildOutput = (parseEvent, _) => parseEvent)
+      )
+    )
 
   /**
    * Contextual version of a parser Flow that takes a stream of ByteStrings and parses them to XML events similar to
@@ -53,7 +58,15 @@ object XmlParsing {
       ignoreInvalidChars: Boolean = false,
       configureFactory: AsyncXMLInputFactory => Unit = configureDefault
   ): FlowWithContext[ByteString, Ctx, ParseEvent, Ctx, NotUsed] =
-    FlowWithContext.fromTuples(Flow.fromGraph(new impl.StreamingXmlParser[Ctx](ignoreInvalidChars, configureFactory)))
+    FlowWithContext.fromTuples(
+      Flow.fromGraph(
+        new impl.StreamingXmlParser[(ByteString, Ctx), (ParseEvent, Ctx), Ctx](ignoreInvalidChars,
+                                                                               configureFactory,
+                                                                               getByteString = _._1,
+                                                                               getContext = _._2,
+                                                                               buildOutput = (pe, ctx) => (pe, ctx))
+      )
+    )
 
   /**
    * A Flow that transforms a stream of XML ParseEvents. This stage coalesces consecutive CData and Characters
