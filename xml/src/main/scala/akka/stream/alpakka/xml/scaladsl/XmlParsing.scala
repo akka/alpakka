@@ -44,9 +44,7 @@ object XmlParsing {
       Flow.fromGraph(
         new impl.StreamingXmlParser[ByteString, ParseEvent, Unit](ignoreInvalidChars,
                                                                   configureFactory,
-                                                                  getByteString = identity,
-                                                                  getContext = _ => (),
-                                                                  buildOutput = (parseEvent, _) => parseEvent)
+                                                                  impl.StreamingXmlParser.Transform.uncontextual)
       )
     )
 
@@ -60,11 +58,11 @@ object XmlParsing {
   ): FlowWithContext[ByteString, Ctx, ParseEvent, Ctx, NotUsed] =
     FlowWithContext.fromTuples(
       Flow.fromGraph(
-        new impl.StreamingXmlParser[(ByteString, Ctx), (ParseEvent, Ctx), Ctx](ignoreInvalidChars,
-                                                                               configureFactory,
-                                                                               getByteString = _._1,
-                                                                               getContext = _._2,
-                                                                               buildOutput = (pe, ctx) => (pe, ctx))
+        new impl.StreamingXmlParser[(ByteString, Ctx), (ParseEvent, Ctx), Ctx](
+          ignoreInvalidChars,
+          configureFactory,
+          impl.StreamingXmlParser.Transform.contextual
+        )
       )
     )
 
