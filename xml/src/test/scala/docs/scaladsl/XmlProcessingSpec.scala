@@ -356,7 +356,7 @@ class XmlProcessingSpec extends AnyWordSpec with Matchers with ScalaFutures with
       configWasCalled shouldBe true
     }
 
-    "properly parse XML contextually" in {
+    "parse XML and attach line numbers as context" in {
       val doc = """|<doc>
                    |  <elem>
                    |    elem1
