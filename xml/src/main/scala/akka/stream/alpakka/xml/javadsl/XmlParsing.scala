@@ -54,15 +54,6 @@ object XmlParsing {
     xml.scaladsl.XmlParsing.parser(false, configureFactory.accept(_)).asJava
 
   /**
-   * Parser Flow that takes a stream of ByteStrings and parses them to XML events similar to SAX while keeping
-   * a context attached.
-   */
-  def parserWithContext[Ctx](
-      configureFactory: Consumer[AsyncXMLInputFactory]
-  ): akka.stream.javadsl.FlowWithContext[ByteString, Ctx, ParseEvent, Ctx, NotUsed] =
-    xml.scaladsl.XmlParsing.parserWithContext(false, configureFactory.accept(_)).asJava
-
-  /**
    * Parser Flow that takes a stream of ByteStrings and parses them to XML events similar to SAX.
    */
   def parser(
