@@ -49,8 +49,8 @@ object XmlParsing {
     )
 
   /**
-   * Contextual version of a parser Flow that takes a stream of ByteStrings and parses them to XML events similar to
-   * SAX.
+   * Parser Flow that takes a stream of ByteStrings and parses them to XML events similar to SAX while keeping
+   * a context attached.
    */
   def parserWithContext[Ctx](
       ignoreInvalidChars: Boolean = false,
