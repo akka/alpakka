@@ -18,22 +18,22 @@ import scala.annotation.tailrec
 private[xml] object StreamingXmlParser {
   lazy val withStreamingFinishedException = new IllegalStateException("Stream finished before event was fully parsed.")
 
-  sealed trait Transform[A, B, Ctx] {
+  sealed trait ContextHandler[A, B, Ctx] {
     def getByteString(a: A): ByteString
     def getContext(a: A): Ctx
     def buildOutput(pe: ParseEvent, ctx: Ctx): B
   }
 
-  object Transform {
-    final val uncontextual: Transform[ByteString, ParseEvent, Unit] =
-      new Transform[ByteString, ParseEvent, Unit] {
+  object ContextHandler {
+    final val uncontextual: ContextHandler[ByteString, ParseEvent, Unit] =
+      new ContextHandler[ByteString, ParseEvent, Unit] {
         def getByteString(a: ByteString): ByteString = a
         def getContext(a: ByteString): Unit = ()
         def buildOutput(pe: ParseEvent, ctx: Unit): ParseEvent = pe
       }
 
-    final def contextual[Ctx]: Transform[(ByteString, Ctx), (ParseEvent, Ctx), Ctx] =
-      new Transform[(ByteString, Ctx), (ParseEvent, Ctx), Ctx] {
+    final def contextual[Ctx]: ContextHandler[(ByteString, Ctx), (ParseEvent, Ctx), Ctx] =
+      new ContextHandler[(ByteString, Ctx), (ParseEvent, Ctx), Ctx] {
         def getByteString(a: (ByteString, Ctx)): ByteString = a._1
         def getContext(a: (ByteString, Ctx)): Ctx = a._2
         def buildOutput(pe: ParseEvent, ctx: Ctx): (ParseEvent, Ctx) = (pe, ctx)
@@ -46,7 +46,7 @@ private[xml] object StreamingXmlParser {
  */
 @InternalApi private[xml] class StreamingXmlParser[A, B, Ctx](ignoreInvalidChars: Boolean,
                                                               configureFactory: AsyncXMLInputFactory => Unit,
-                                                              transform: StreamingXmlParser.Transform[A, B, Ctx])
+                                                              transform: StreamingXmlParser.ContextHandler[A, B, Ctx])
     extends GraphStage[FlowShape[A, B]] {
   val in: Inlet[A] = Inlet("XMLParser.in")
   val out: Outlet[B] = Outlet("XMLParser.out")

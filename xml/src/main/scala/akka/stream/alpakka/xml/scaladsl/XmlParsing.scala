@@ -44,7 +44,7 @@ object XmlParsing {
       Flow.fromGraph(
         new impl.StreamingXmlParser[ByteString, ParseEvent, Unit](ignoreInvalidChars,
                                                                   configureFactory,
-                                                                  impl.StreamingXmlParser.Transform.uncontextual)
+                                                                  impl.StreamingXmlParser.ContextHandler.uncontextual)
       )
     )
 
@@ -61,7 +61,7 @@ object XmlParsing {
         new impl.StreamingXmlParser[(ByteString, Ctx), (ParseEvent, Ctx), Ctx](
           ignoreInvalidChars,
           configureFactory,
-          impl.StreamingXmlParser.Transform.contextual
+          impl.StreamingXmlParser.ContextHandler.contextual
         )
       )
     )
