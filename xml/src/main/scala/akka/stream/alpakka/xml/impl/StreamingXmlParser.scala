@@ -17,21 +17,45 @@ import scala.annotation.tailrec
 
 private[xml] object StreamingXmlParser {
   lazy val withStreamingFinishedException = new IllegalStateException("Stream finished before event was fully parsed.")
+
+  sealed trait ContextHandler[A, B, Ctx] {
+    def getByteString(a: A): ByteString
+    def getContext(a: A): Ctx
+    def buildOutput(pe: ParseEvent, ctx: Ctx): B
+  }
+
+  object ContextHandler {
+    final val uncontextual: ContextHandler[ByteString, ParseEvent, Unit] =
+      new ContextHandler[ByteString, ParseEvent, Unit] {
+        def getByteString(a: ByteString): ByteString = a
+        def getContext(a: ByteString): Unit = ()
+        def buildOutput(pe: ParseEvent, ctx: Unit): ParseEvent = pe
+      }
+
+    final def contextual[Ctx]: ContextHandler[(ByteString, Ctx), (ParseEvent, Ctx), Ctx] =
+      new ContextHandler[(ByteString, Ctx), (ParseEvent, Ctx), Ctx] {
+        def getByteString(a: (ByteString, Ctx)): ByteString = a._1
+        def getContext(a: (ByteString, Ctx)): Ctx = a._2
+        def buildOutput(pe: ParseEvent, ctx: Ctx): (ParseEvent, Ctx) = (pe, ctx)
+      }
+  }
 }
 
 /**
  * INTERNAL API
  */
-@InternalApi private[xml] class StreamingXmlParser(ignoreInvalidChars: Boolean,
-                                                   configureFactory: AsyncXMLInputFactory => Unit)
-    extends GraphStage[FlowShape[ByteString, ParseEvent]] {
-  val in: Inlet[ByteString] = Inlet("XMLParser.in")
-  val out: Outlet[ParseEvent] = Outlet("XMLParser.out")
-  override val shape: FlowShape[ByteString, ParseEvent] = FlowShape(in, out)
+@InternalApi private[xml] class StreamingXmlParser[A, B, Ctx](ignoreInvalidChars: Boolean,
+                                                              configureFactory: AsyncXMLInputFactory => Unit,
+                                                              transform: StreamingXmlParser.ContextHandler[A, B, Ctx])
+    extends GraphStage[FlowShape[A, B]] {
+  val in: Inlet[A] = Inlet("XMLParser.in")
+  val out: Outlet[B] = Outlet("XMLParser.out")
+  override val shape: FlowShape[A, B] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler {
       private var started: Boolean = false
+      private var context: Ctx = _
 
       import javax.xml.stream.XMLStreamConstants
 
@@ -45,7 +69,10 @@ private[xml] object StreamingXmlParser {
       setHandlers(in, out, this)
 
       override def onPush(): Unit = {
-        val array = grab(in).toArray
+        val a = grab(in)
+        val bs = transform.getByteString(a)
+        context = transform.getContext(a)
+        val array = bs.toArray
         parser.getInputFeeder.feedInput(array, 0, array.length)
         advanceParser()
       }
@@ -67,10 +94,10 @@ private[xml] object StreamingXmlParser {
 
             case XMLStreamConstants.START_DOCUMENT =>
               started = true
-              push(out, StartDocument)
+              push(out, transform.buildOutput(StartDocument, context))
 
             case XMLStreamConstants.END_DOCUMENT =>
-              push(out, EndDocument)
+              push(out, transform.buildOutput(EndDocument, context))
               completeStage()
 
             case XMLStreamConstants.START_ELEMENT =>
@@ -91,27 +118,30 @@ private[xml] object StreamingXmlParser {
               val optNs = optPrefix.flatMap(prefix => Option(parser.getNamespaceURI(prefix)))
               push(
                 out,
-                StartElement(parser.getLocalName,
-                             attributes,
-                             optPrefix.filterNot(_ == ""),
-                             optNs.filterNot(_ == ""),
-                             namespaceCtx = namespaces)
+                transform.buildOutput(StartElement(parser.getLocalName,
+                                                   attributes,
+                                                   optPrefix.filterNot(_ == ""),
+                                                   optNs.filterNot(_ == ""),
+                                                   namespaceCtx = namespaces),
+                                      context)
               )
 
             case XMLStreamConstants.END_ELEMENT =>
-              push(out, EndElement(parser.getLocalName))
+              push(out, transform.buildOutput(EndElement(parser.getLocalName), context))
 
             case XMLStreamConstants.CHARACTERS =>
-              push(out, Characters(parser.getText))
+              push(out, transform.buildOutput(Characters(parser.getText), context))
 
             case XMLStreamConstants.PROCESSING_INSTRUCTION =>
-              push(out, ProcessingInstruction(Option(parser.getPITarget), Option(parser.getPIData)))
+              push(out,
+                   transform.buildOutput(ProcessingInstruction(Option(parser.getPITarget), Option(parser.getPIData)),
+                                         context))
 
             case XMLStreamConstants.COMMENT =>
-              push(out, Comment(parser.getText))
+              push(out, transform.buildOutput(Comment(parser.getText), context))
 
             case XMLStreamConstants.CDATA =>
-              push(out, CData(parser.getText))
+              push(out, transform.buildOutput(CData(parser.getText), context))
 
             // Do not support DTD, SPACE, NAMESPACE, NOTATION_DECLARATION, ENTITY_DECLARATION, PROCESSING_INSTRUCTION
             // ATTRIBUTE is handled in START_ELEMENT implicitly
