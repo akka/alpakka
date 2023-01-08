@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.stream.alpakka.kinesis.sink
 
 import akka.stream.alpakka.kinesis.KinesisLimits._
@@ -6,7 +10,6 @@ import software.amazon.awssdk.core.SdkBytes
 import software.amazon.kinesis.retrieval.kpl.Messages.{AggregatedRecord, Record}
 
 import java.math.BigInteger
-import java.nio.charset.StandardCharsets
 import scala.collection.mutable
 
 case class Aggregated(
