@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.stream.alpakka.kinesis.sink
 
 import java.security.MessageDigest
