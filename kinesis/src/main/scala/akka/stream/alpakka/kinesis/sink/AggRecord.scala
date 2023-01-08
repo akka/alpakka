@@ -1,14 +1,21 @@
-package akka.stream.alpakka.kinesis.sink.aggregation
+package akka.stream.alpakka.kinesis.sink
 
 import akka.stream.alpakka.kinesis.KinesisLimits._
-import akka.stream.alpakka.kinesis.sink.MD5
 import com.google.protobuf.{ByteString, CodedOutputStream}
 import software.amazon.awssdk.core.SdkBytes
-import software.amazon.awssdk.services.kinesis.model.PutRecordsRequestEntry
 import software.amazon.kinesis.retrieval.kpl.Messages.{AggregatedRecord, Record}
 
 import java.math.BigInteger
+import java.nio.charset.StandardCharsets
 import scala.collection.mutable
+
+case class Aggregated(
+  partitionKey: String,
+  explicitHashKey: Option[String],
+  data: SdkBytes,
+  aggregatedRecords: Int,
+  payloadBytes: Int
+)
 
 object AggRecord {
   val MagicBytes: Array[Byte] = Array[Byte](0xf3.toByte, 0x89.toByte, 0x9a.toByte, 0xc2.toByte)
@@ -29,11 +36,12 @@ class AggRecord(preferredRecordSize: Int = MaxBytesPerRecord) {
 
   private var aggregatedMessageSize = 0
   private var aggRecordPartitionKey: Option[String] = None
+  private var aggRecordPartitionKeyBytes: Int = 0
   private var aggRecordExplicitHashKey: Option[String] = None
 
   def addUserRecord(partitionKey: String,
                     explicitHashCode: Option[BigInteger],
-                    data: ByteString): Seq[PutRecordsRequestEntry] = {
+                    data: ByteString): Seq[Aggregated] = {
     require(
       ValidPartitionKeyLength.contains(partitionKey.length),
       s"Expected partition key length [1, 256], but got ${partitionKey.length}"
@@ -50,17 +58,20 @@ class AggRecord(preferredRecordSize: Int = MaxBytesPerRecord) {
 
     require(
       partitionKeyBytes.size() + data.size() <= MaxBytesPerRecord,
-      s"Payload larger than 1 MB (Partition key length: ${partitionKeyBytes.size()}, data length: ${data.size()}"
+      s"Payload larger than 1 MB (Partition key length: ${partitionKeyBytes.size()}, data length: ${data.size()})"
     )
 
     val explicitHashKey = explicitHashCode.map(_.toString)
 
-    def tryAddUserRecord(): Seq[PutRecordsRequestEntry] = {
+    def tryAddUserRecord(): Seq[Aggregated] = {
       val newRecordSize = calculateRecordSize(partitionKeyBytes, explicitHashKey, data)
-      if (aggregatedMessageSize + newRecordSize > MaxAggregatedMessageSize && aggregatedRecordBuilder.getRecordsCount == 0) {
-        Seq(buildRequest(partitionKey, explicitHashKey, SdkBytes.fromByteBuffer(data.asReadOnlyByteBuffer())))
-      } else if (aggregatedMessageSize + newRecordSize > preferredAggregatedMessageSize) {
-        buildRequest().get +: tryAddUserRecord()
+      val aggregatedPayloadBytes = aggRecordPartitionKeyBytes + aggregatedMessageSize + newRecordSize
+      if (aggregatedPayloadBytes > MaxAggregatedMessageSize && aggregatedRecordBuilder.getRecordsCount == 0) {
+        val sdkBytes = SdkBytes.fromByteBuffer(data.asReadOnlyByteBuffer())
+        val payloadBytes = partitionKeyBytes.size() + data.size()
+        Seq(buildAggregated(partitionKey, explicitHashKey, sdkBytes, 1, payloadBytes))
+      } else if (aggregatedPayloadBytes > preferredAggregatedMessageSize) {
+        aggregate() +: tryAddUserRecord()
       } else {
         val newRecord = Record
           .newBuilder()
@@ -83,7 +94,10 @@ class AggRecord(preferredRecordSize: Int = MaxBytesPerRecord) {
 
         aggregatedRecordBuilder.addRecords(newRecord)
         aggregatedMessageSize += newRecordSize
-        if (aggRecordPartitionKey.isEmpty) aggRecordPartitionKey = Some(partitionKey)
+        if (aggRecordPartitionKey.isEmpty) {
+          aggRecordPartitionKey = Some(partitionKey)
+          aggRecordPartitionKeyBytes = partitionKeyBytes.size()
+        }
         if (aggRecordExplicitHashKey.isEmpty) aggRecordExplicitHashKey = explicitHashKey
         Nil
       }
@@ -126,25 +140,24 @@ class AggRecord(preferredRecordSize: Int = MaxBytesPerRecord) {
     bitsNeeded / 7 + (if (bitsNeeded % 7 > 0) 1 else 0)
   }
 
-  def buildRequest(): Option[PutRecordsRequestEntry] = {
-    if (aggregatedMessageSize == 0) None
-    else {
-      val request =
-        buildRequest(aggRecordPartitionKey.get, aggRecordExplicitHashKey, SdkBytes.fromByteArrayUnsafe(recordBytes()))
-      clear()
-      Some(request)
-    }
+  def aggregate(): Aggregated = {
+    assert(aggregatedRecords > 0)
+    val partitionKey = aggRecordPartitionKey.get
+    val explicitHashKey = aggRecordExplicitHashKey
+    val data = SdkBytes.fromByteArrayUnsafe(recordBytes())
+    val payloadBytes = aggregatedBytes + aggRecordPartitionKeyBytes
+    val aggregated = buildAggregated(partitionKey, explicitHashKey, data, aggregatedRecords, payloadBytes)
+    clear()
+    aggregated
   }
 
-  private def buildRequest(partitionKey: String,
-                           explicitHashKey: Option[String],
-                           data: SdkBytes): PutRecordsRequestEntry = {
-    PutRecordsRequestEntry
-      .builder()
-      .partitionKey(partitionKey)
-      .explicitHashKey(explicitHashKey.orNull)
-      .data(data)
-      .build()
+  private def buildAggregated(partitionKey: String,
+                              explicitHashKey: Option[String],
+                              data: SdkBytes,
+                              aggregatedRecords: Int,
+                              payloadBytes: Int): Aggregated = {
+    assert(payloadBytes <= MaxBytesPerRecord)
+    Aggregated(partitionKey, explicitHashKey, data, aggregatedRecords, payloadBytes)
   }
 
   private def recordBytes(): Array[Byte] = {
@@ -162,10 +175,20 @@ class AggRecord(preferredRecordSize: Int = MaxBytesPerRecord) {
 
   private def clear(): Unit = {
     aggRecordPartitionKey = None
+    aggRecordPartitionKeyBytes = 0
     aggRecordExplicitHashKey = None
     aggregatedMessageSize = 0
     partitionKeys.clear()
     explicitHashKeys.clear()
     aggregatedRecordBuilder.clear()
+  }
+
+  def aggregatedBytes: Int = {
+    if (aggregatedMessageSize == 0) 0
+    else MagicBytes.length + aggregatedMessageSize + DigestLength
+  }
+
+  def aggregatedRecords: Int = {
+    aggregatedRecordBuilder.getRecordsCount
   }
 }

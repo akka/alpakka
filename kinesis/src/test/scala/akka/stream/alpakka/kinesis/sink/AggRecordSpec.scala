@@ -1,7 +1,7 @@
-package akka.stream.alpakka.kinesis.sink.aggregation
+package akka.stream.alpakka.kinesis.sink
 
 import akka.stream.alpakka.kinesis.KinesisLimits._
-import akka.stream.alpakka.kinesis.sink.aggregation.AggRecord._
+import akka.stream.alpakka.kinesis.sink.AggRecord._
 import com.google.protobuf.{ByteString, CodedInputStream}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -52,11 +52,11 @@ class AggRecordSpec extends AnyWordSpec with Matchers {
           aggRecord.addUserRecord(key, hash, ByteString.copyFromUtf8(value)) mustBe empty
       }
 
-      val request = aggRecord.buildRequest().get
-      request.partitionKey() mustBe "key1"
-      request.explicitHashKey() mustBe "0"
+      val aggregated = aggRecord.aggregate()
+      aggregated.partitionKey mustBe "key1"
+      aggregated.explicitHashKey mustBe Some("0")
 
-      val data = request.data().asByteArray()
+      val data = aggregated.data.asByteArray()
       val input = CodedInputStream.newInstance(data, MagicBytes.length, data.length - MagicBytes.length - DigestLength)
       val aggregatedRecord = AggregatedRecord.parseFrom(input)
       aggregatedRecord.getPartitionKeyTableCount mustBe 4
@@ -86,7 +86,7 @@ class AggRecordSpec extends AnyWordSpec with Matchers {
       val key = "key"
       val value = "0" * (MaxBytesPerRecord - key.length)
       aggRecord.addUserRecord(key, None, ByteString.copyFromUtf8(value)) mustBe Seq(
-        PutRecordsRequestEntry.builder().partitionKey(key).data(SdkBytes.fromUtf8String(value)).build()
+        Aggregated(key, None, SdkBytes.fromUtf8String(value), 1, MaxBytesPerRecord)
       )
     }
 
@@ -96,10 +96,10 @@ class AggRecordSpec extends AnyWordSpec with Matchers {
       val key = "key"
       val value = ByteString.copyFromUtf8("0" * (preferredRecordSize / 2))
       aggRecord.addUserRecord(key, None, value) mustBe empty
-      val request = aggRecord.buildRequest().get
+      val aggregated = aggRecord.aggregate()
       aggRecord.addUserRecord(key, None, value) mustBe empty
-      aggRecord.addUserRecord(key, None, value) mustBe Seq(request)
-      aggRecord.buildRequest() mustBe Some(request)
+      aggRecord.addUserRecord(key, None, value) mustBe Seq(aggregated)
+      aggRecord.aggregate() mustBe aggregated
     }
 
     "build one request for existing data and one for the user record" in {
@@ -109,12 +109,19 @@ class AggRecordSpec extends AnyWordSpec with Matchers {
       val value = ByteString.copyFromUtf8("0" * (preferredRecordSize / 2))
       val largeValue = "0" * (MaxBytesPerRecord - key.length)
       aggRecord.addUserRecord(key, None, value) mustBe empty
-      val request = aggRecord.buildRequest().get
+      val aggregated = aggRecord.aggregate()
       aggRecord.addUserRecord(key, None, value) mustBe empty
       aggRecord.addUserRecord(key, None, ByteString.copyFromUtf8(largeValue)) mustBe Seq(
-        request,
-        PutRecordsRequestEntry.builder().partitionKey(key).data(SdkBytes.fromUtf8String(largeValue)).build()
+        aggregated,
+        Aggregated(key, None, SdkBytes.fromUtf8String(largeValue), 1, MaxBytesPerRecord)
       )
+    }
+
+    "" in {
+      val aggRecord = new AggRecord
+      val key = "key"
+      val value = ByteString.copyFromUtf8("0" * (MaxBytesPerRecord - key.length))
+      println(aggRecord.addUserRecord(key, None, value).map(_.payloadBytes))
     }
   }
 }
