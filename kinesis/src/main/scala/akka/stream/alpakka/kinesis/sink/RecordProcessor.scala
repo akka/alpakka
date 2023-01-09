@@ -2,6 +2,7 @@ package akka.stream.alpakka.kinesis.sink
 
 import akka.stream.alpakka.kinesis.KinesisMetrics
 import akka.stream.alpakka.kinesis.KinesisMetrics._
+import akka.stream.alpakka.kinesis.sink.KinesisSink._
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.stream.{Attributes, Inlet, Outlet, Shape}
 
@@ -10,12 +11,12 @@ import scala.collection.immutable
 
 private[sink] class ProcessorShape[In: Aggregatable](
     val in: Inlet[In],
-    val retry: Inlet[Aggregated],
+    val result: Inlet[Result],
     val out: Outlet[Aggregated]
 ) extends Shape {
-  override def inlets: immutable.Seq[Inlet[_]] = immutable.Seq(in, retry)
+  override def inlets: immutable.Seq[Inlet[_]] = immutable.Seq(in, result)
   override def outlets: immutable.Seq[Outlet[_]] = immutable.Seq(out)
-  override def deepCopy(): Shape = new ProcessorShape(in.carbonCopy(), retry.carbonCopy(), out.carbonCopy())
+  override def deepCopy(): Shape = new ProcessorShape(in.carbonCopy(), result.carbonCopy(), out.carbonCopy())
 }
 
 private[sink] class RecordProcessor[In: Aggregatable](
@@ -32,10 +33,10 @@ private[sink] class RecordProcessor[In: Aggregatable](
   private val inType = implicitly[Aggregatable[In]]
 
   val in: Inlet[In] = Inlet("in")
-  val retry: Inlet[Aggregated] = Inlet("retry")
+  val result: Inlet[Result] = Inlet("result")
   val out: Outlet[Aggregated] = Outlet("out")
 
-  override def shape: ProcessorShape[In] = new ProcessorShape(in, retry, out)
+  override def shape: ProcessorShape[In] = new ProcessorShape(in, result, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) {
@@ -47,7 +48,6 @@ private[sink] class RecordProcessor[In: Aggregatable](
 
       private def addToBuffer(elem: Aggregated): Unit = {
         buffer.add(elem)
-        // memoryLimit.add(elem.payloadBytes)
       }
 
       private def takeFromBuffer(): Aggregated = {
@@ -74,7 +74,7 @@ private[sink] class RecordProcessor[In: Aggregatable](
       }
 
       private def maybeComplete(): Unit = {
-        if (isClosed(in) && buffer.isEmpty && aggregator.isEmpty) {
+        if (isClosed(in) && buffer.isEmpty && aggregator.isEmpty && pending == 0) {
           failure match {
             case None => completeStage()
             case Some(ex) => failStage(ex)
@@ -87,6 +87,18 @@ private[sink] class RecordProcessor[In: Aggregatable](
         val aggregated = takeFromBuffer()
         memoryLimit.sync(metrics)
         aggregated
+      }
+
+      override def preStart(): Unit = {
+        tryPull(in)
+        tryPull(result)
+      }
+
+      var pending = 0
+
+      def emit(aggregated: Aggregated): Unit = {
+        push(out, aggregated)
+        pending += 1
       }
 
       setHandler(
@@ -102,7 +114,7 @@ private[sink] class RecordProcessor[In: Aggregatable](
               case util.Success(aggregated) =>
                 aggregated.foreach(addToBuffer)
                 if (isAvailable(out)) {
-                  push(out, buildToPush())
+                  emit(buildToPush())
                   pull(in)
                 } else if (!dropOrBackpressure()) {
                   pull(in)
@@ -110,13 +122,9 @@ private[sink] class RecordProcessor[In: Aggregatable](
             }
           }
 
-          override def onUpstreamFinish(): Unit = {
-            if (!isClosed(retry)) cancel(retry)
-            maybeComplete()
-          }
+          override def onUpstreamFinish(): Unit = maybeComplete()
 
           override def onUpstreamFailure(ex: Throwable): Unit = {
-            if (!isClosed(retry)) cancel(retry)
             failure = Some(ex)
             maybeComplete()
           }
@@ -124,15 +132,22 @@ private[sink] class RecordProcessor[In: Aggregatable](
       )
 
       setHandler(
-        retry,
+        result,
         new InHandler {
           override def onPush(): Unit = {
-            addToBuffer(grab(retry))
-            if (isAvailable(out)) push(out, buildToPush())
-            else dropOrBackpressure()
-            // Unlike the `in` handler, we always pull `retry` for the next
-            // element to not block the put records flow
-            pull(retry)
+            grab(result) match {
+              case Succeeded(record) => ResultStats.onSuccess(record)
+              case Failed(record) => ResultStats.onFailure(record)
+              case Retryable(record) =>
+                ResultStats.onRetryable(record)
+                addToBuffer(record)
+                memoryLimit.add(record.payloadBytes)
+                if (isAvailable(out)) emit(buildToPush())
+                else dropOrBackpressure()
+            }
+            pending -= 1
+            maybeComplete()
+            tryPull(result)
           }
         }
       )
@@ -141,16 +156,9 @@ private[sink] class RecordProcessor[In: Aggregatable](
         out,
         new OutHandler {
           override def onPull(): Unit = {
-            if (!aggregator.isEmpty || !buffer.isEmpty) push(out, buildToPush())
+            if (!aggregator.isEmpty || !buffer.isEmpty) emit(buildToPush())
             else maybeComplete()
-            // In case this shard buffered more data than average and the buffers
-            // are overflown, we drop elements here to release space faster.
-            if (!dropOrBackpressure() && !isClosed(in) && !hasBeenPulled(in)) pull(in)
-            // Again, `retry` never backpressure to avoid blocking the records put flow.
-            if (!isClosed(retry) && !hasBeenPulled(retry)) {
-              println("PULL RETRY")
-              pull(retry)
-            }
+            if (!hasBeenPulled(in)) tryPull(in)
           }
 
           override def onDownstreamFinish(cause: Throwable): Unit = {
@@ -161,4 +169,23 @@ private[sink] class RecordProcessor[In: Aggregatable](
         }
       )
     }
+
+  private object ResultStats {
+    def onSuccess(record: Aggregated)(implicit metrics: KinesisMetrics): Unit = {
+      metrics.increment(AggRecordSuccess, record.group.tags)
+      metrics.count(UserRecordSuccess, record.aggregatedRecords, record.group.tags)
+      metrics.count(BytesSuccess, record.payloadBytes, record.group.tags)
+    }
+
+    def onFailure(record: Aggregated)(implicit metrics: KinesisMetrics): Unit = {
+      metrics.increment(AggRecordFailure, record.group.tags)
+      metrics.count(UserRecordFailure, record.aggregatedRecords, record.group.tags)
+      metrics.count(BytesFailure, record.payloadBytes, record.group.tags)
+    }
+
+    def onRetryable(record: Aggregated)(implicit metrics: KinesisMetrics): Unit = {
+      metrics.increment(AggRecordRetryable)
+      metrics.count(BytesRetryable, record.payloadBytes)
+    }
+  }
 }

@@ -11,7 +11,6 @@ import org.scalatest.Inside
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import software.amazon.awssdk.core.SdkBytes
-import software.amazon.awssdk.services.kinesis.model.PutRecordsRequestEntry
 import software.amazon.kinesis.retrieval.kpl.Messages.AggregatedRecord
 
 import java.math.BigInteger

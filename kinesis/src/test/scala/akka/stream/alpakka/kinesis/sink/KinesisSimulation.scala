@@ -110,7 +110,7 @@ object KinesisSimulation {
       queue
         .offer((request, p))
         .andThen {
-          case util.Failure(_) => p.success(request.map(Retryable(_)))
+          case util.Failure(_) => p.success(request.map(Retryable))
         }(parasitic)
       p.future
     }

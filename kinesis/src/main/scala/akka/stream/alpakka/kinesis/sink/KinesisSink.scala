@@ -5,7 +5,7 @@ import akka.stream._
 import akka.stream.alpakka.kinesis.KinesisLimits._
 import akka.stream.alpakka.kinesis.KinesisMetrics
 import akka.stream.alpakka.kinesis.KinesisMetrics._
-import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Partition, Sink}
+import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, Partition, Sink}
 import akka.{Done, NotUsed}
 import software.amazon.awssdk.core.exception.{
   AbortedException,
@@ -38,27 +38,10 @@ object KinesisSink {
       metrics.count(BytesSent, totalBytes)
     }
 
-    def onSuccess(record: Aggregated)(implicit metrics: KinesisMetrics): Unit = {
-      metrics.increment(AggRecordSuccess, record.group.tags)
-      metrics.count(UserRecordSuccess, record.aggregatedRecords, record.group.tags)
-      metrics.count(BytesSuccess, record.payloadBytes, record.group.tags)
-    }
-
-    def onFailure(record: Aggregated)(implicit metrics: KinesisMetrics): Unit = {
-      metrics.increment(AggRecordFailure, record.group.tags)
-      metrics.count(UserRecordFailure, record.aggregatedRecords, record.group.tags)
-      metrics.count(BytesFailure, record.payloadBytes, record.group.tags)
-    }
-
     def onDrop(record: Aggregated)(implicit metrics: KinesisMetrics): Unit = {
       metrics.increment(AggRecordDropped, record.group.tags)
       metrics.count(UserRecordDropped, record.aggregatedRecords, record.group.tags)
       metrics.count(BytesDropped, record.payloadBytes, record.group.tags)
-    }
-
-    def onRetryable(record: Aggregated)(implicit metrics: KinesisMetrics): Unit = {
-      metrics.increment(AggRecordRetryable)
-      metrics.count(BytesRetryable, record.payloadBytes)
     }
   }
 
@@ -154,7 +137,7 @@ object KinesisSink {
   )(implicit metrics: KinesisMetrics): SinkType[In] = {
 
     val inType = implicitly[Aggregatable[In]]
-    val ignore = new DropOnClose[Aggregated](record => Stats.onDrop(record))
+    val ignore = Sink.ignore
 
     val maxRecordsPerSecondPerShard = MaxRecordsPerSecondPerShard / settings.nrOfInstance
     val maxBytesPerSecondPerShard = MaxBytesPerSecondPerShard / settings.nrOfInstance
@@ -177,32 +160,18 @@ object KinesisSink {
 
       val inPart = b.add(Partition[In](sharding.nrOfShards, partitioner))
 
-      val retryPart = b.add(Partition[Aggregated](sharding.nrOfShards, _.shardIndex))
+      val retryPart = b.add(Partition[Result](sharding.nrOfShards, _.record.shardIndex))
 
       val merge = b.add(Merge[Aggregated](sharding.nrOfShards))
 
+      val broadcast = b.add(Broadcast[Aggregated](2))
+
       val viaPutRecords = b.add(
         Flow[Aggregated]
-        // .groupedWeighted(maxBatchRequestBytes)(_.payloadBytes)
           .groupedWeightedWithin(maxBatchRequestBytes, 100.millis)(_.payloadBytes)
           .addAttributes(Attributes.asyncBoundary and Attributes.inputBuffer(1, 1))
           .alsoTo(Sink.foreach(Stats.onBatch))
           .via(putRecords)
-          .divertTo(
-            Sink.foreach(
-              result =>
-                (result: @unchecked) match {
-                  case Succeeded(record) => Stats.onSuccess(record)
-                  case Failed(record) => Stats.onFailure(record)
-                }
-            ),
-            result => !result.isInstanceOf[Retryable]
-          )
-          .collect {
-            case Retryable(record) =>
-              Stats.onRetryable(record)
-              record
-          }
       )
 
       val totalBufferedBytes = new AtomicLong(0)
@@ -229,11 +198,15 @@ object KinesisSink {
         }
 
         inPart.out(shardIndex) ~> processor.in
-        retryPart.out(shardIndex) ~> processor.retry
+        retryPart.out(shardIndex) ~> processor.result
         processor.out ~> throttle ~> merge.in(shardIndex)
       }
 
-      merge ~> viaPutRecords ~> ignore ~> retryPart.in
+      // format: off
+      merge ~> broadcast.in
+               broadcast.out(0) ~> viaPutRecords ~> retryPart.in
+               broadcast.out(1) ~> ignore
+      // format: on
 
       SinkShape(inPart.in)
     })

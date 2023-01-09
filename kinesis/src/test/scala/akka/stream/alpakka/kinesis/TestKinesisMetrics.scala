@@ -115,11 +115,16 @@ class TestKinesisMetrics(nrOfShards: Int) extends KinesisMetrics {
         success / elapsed / (MaxBytesPerSecondPerShard * nrOfShards) * 100
       )
 
-      gauges.foreach { case (m, (cur, _)) => printf("%-36s: %9d\n", m, cur) }
+      gauges.foreach { case (m, (cur, _)) => printf("%-36s: %9d\n", m.name, cur) }
 
       records.foreach {
         case (m, s) =>
-          printf(s"%-36s: %4d records, min/mean/max: %7d / %10.2f / %7d\n", m, s.size(), s.getMin, s.getMean, s.getMax)
+          printf(s"%-36s: %4d records, min/mean/max: %7d / %10.2f / %7d\n",
+                 m.name,
+                 s.size(),
+                 s.getMin,
+                 s.getMean,
+                 s.getMax)
       }
       println("-" * 96)
     }

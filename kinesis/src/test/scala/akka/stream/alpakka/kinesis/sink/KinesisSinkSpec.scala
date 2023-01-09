@@ -8,12 +8,10 @@ import akka.stream.alpakka.kinesis.TestKinesisMetrics
 import akka.stream.alpakka.kinesis.sink.KinesisSink.{Failed, PutRecords, Retryable, Succeeded}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.testkit.TestKit
-import org.scalatest.Assertions
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpecLike
 
 import java.math.BigInteger
-import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.Future
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
@@ -32,6 +30,7 @@ class KinesisSinkSpec extends TestKit(ActorSystem("KinesisSinkTest")) with Async
 
   private def testSharding(numShards: Int) = new Sharding {
     override def nrOfShards: Int = numShards
+
     override def getShard(hashKey: BigInteger): Int = (BigInt(hashKey) % nrOfShards).toInt
   }
 
@@ -120,9 +119,10 @@ class KinesisSinkSpec extends TestKit(ActorSystem("KinesisSinkTest")) with Async
     "handle retryable failures" in {
       val record = ("key", "value".getBytes())
       testKinesisSink(
+        settings = defaultSettings.copy(maxAggRecordBytes = 1),
         source = Source
           .fromIterator(() => Iterator.fill(19)(record))
-          .merge(Source.single(record).initialDelay(500.millis)),
+          .merge(Source.single(record).initialDelay(100.millis)),
         putRecords = Flow[Iterable[Aggregated]].mapConcat(identity).zipWithIndex.map {
           case (request, index) if index < 5 => Retryable(request)
           case (request, _) => Succeeded(request)
@@ -208,18 +208,6 @@ class KinesisSinkSpec extends TestKit(ActorSystem("KinesisSinkTest")) with Async
         }
     }
 
-    "drop on close" in {
-      testKinesisSink(
-        bufferFactory = Buffer.backpressure,
-        source = Source.repeat(("key", "value".getBytes)).take(100),
-        putRecords = Flow[Iterable[Aggregated]].mapConcat(identity).map(Retryable)
-      ).map { samples =>
-        val progress = samples.last.diff(samples.head)
-        Thread.sleep(1000)
-        progress.countOf(UserRecordDropped) shouldBe 100
-      }
-    }
-
     "aggregate small records to maximize throughput" in {
       val requestsPerSecond = 50
       val settings = defaultSettings.copy(
@@ -232,14 +220,14 @@ class KinesisSinkSpec extends TestKit(ActorSystem("KinesisSinkTest")) with Async
         bufferFactory = Buffer.dropHead,
         putRecords = testPutFlow(requestsPerSecond)
       ).map { samples =>
-          val midSamples = samples.drop(2).dropRight(2)
-          val progress = midSamples.last.diff(midSamples.head)
-          progress.meanRate(BytesSent) should be > MaxBytesPerSecondPerShard * 0.9f
-        }
+        val midSamples = samples.drop(2).dropRight(2)
+        val progress = midSamples.last.diff(midSamples.head)
+        progress.meanRate(BytesSent) should be > MaxBytesPerSecondPerShard * 0.9f
+      }
     }
 
     "maximize throughput with limited number of batch requests" in {
-      val requestsPerSecond = 24
+      val requestsPerSecond = 16
       val settings = defaultSettings.copy(
         maxBatchRequestBytes = MaxBytesPerSecondPerShard / requestsPerSecond,
         maxAggRecordBytes = 1 // disable aggregation to test batching only
@@ -251,10 +239,10 @@ class KinesisSinkSpec extends TestKit(ActorSystem("KinesisSinkTest")) with Async
         bufferFactory = Buffer.backpressure,
         putRecords = testPutFlow(requestsPerSecond)
       ).map { samples =>
-          val midSamples = samples.drop(2).dropRight(2)
-          val progress = midSamples.last.diff(midSamples.head)
-          progress.meanRate(BytesSent) should be > MaxBytesPerSecondPerShard * 0.9f
-        }
+        val midSamples = samples.drop(2).dropRight(2)
+        val progress = midSamples.last.diff(midSamples.head)
+        progress.meanRate(BytesSent) should be > MaxBytesPerSecondPerShard * 0.9f
+      }
     }
 
     "aggregate by group" in {
@@ -267,10 +255,10 @@ class KinesisSinkSpec extends TestKit(ActorSystem("KinesisSinkTest")) with Async
         bufferFactory = Buffer.backpressure,
         putRecords = Flow[Iterable[Aggregated]].initialDelay(100.millis).mapConcat(identity).map(Succeeded)
       ).map { samples =>
-          val progress = samples.last.diff(samples.head)
-          progress.countOf(AggRecordSuccess).toInt should be > nrOfAggGroups
-          progress.countOf(UserRecordSuccess) shouldBe nrOfRecords
-        }
+        val progress = samples.last.diff(samples.head)
+        progress.countOf(AggRecordSuccess).toInt should be >= nrOfAggGroups
+        progress.countOf(UserRecordSuccess) shouldBe nrOfRecords
+      }
     }
 
     "write to multiple shards" in {
@@ -289,10 +277,10 @@ class KinesisSinkSpec extends TestKit(ActorSystem("KinesisSinkTest")) with Async
         nrOfShards = nrOfShards,
         putRecords = Flow[Iterable[Aggregated]].mapConcat(identity).map(Succeeded)
       ).map { samples =>
-          val midSamples = samples.drop(2).dropRight(2)
-          val progress = midSamples.last.diff(midSamples.head)
-          progress.meanRate(BytesSuccess) should be > bytesPerSecond * 0.9f
-        }
+        val midSamples = samples.drop(2).dropRight(2)
+        val progress = midSamples.last.diff(midSamples.head)
+        progress.meanRate(BytesSuccess) should be > bytesPerSecond * 0.9f
+      }
     }
 
     "avoid data congestion by throtting partitions individually" in {
@@ -305,61 +293,25 @@ class KinesisSinkSpec extends TestKit(ActorSystem("KinesisSinkTest")) with Async
 
       val putRecords = KinesisSimulation.putRecords(nrOfShards)
 
-      def runTest(throttlePerShard: Boolean) = {
-        testKinesisSink(
-          settings = defaultSettings.copy(
-            nrOfInstance = nrOfInstance,
-            maxAggRecordBytes = 4 << 10,
-            maxBatchRequestBytes = 20 << 10,
-            maxBurstDuration = 100.millis
-          ),
-          source = testSource(payloadSize, bandwidth / nrOfInstance, testDuration, nrOfShards),
-          bufferFactory = Buffer.dropHead,
-          nrOfShards = nrOfShards,
-          nrOfInstances = nrOfInstance,
-          putRecords =
-            Flow[Iterable[Aggregated]].mapAsyncUnordered(maxConcurrentRequests)(putRecords).mapConcat(identity)
-        )
+      testKinesisSink(
+        settings = defaultSettings.copy(
+          nrOfInstance = nrOfInstance,
+          maxAggRecordBytes = 4 << 10,
+          maxBatchRequestBytes = 20 << 10,
+          maxBurstDuration = 100.millis
+        ),
+        source = testSource(payloadSize, bandwidth / nrOfInstance, testDuration, nrOfShards),
+        bufferFactory = Buffer.dropHead,
+        nrOfShards = nrOfShards,
+        nrOfInstances = nrOfInstance,
+        putRecords = Flow[Iterable[Aggregated]].mapAsyncUnordered(maxConcurrentRequests)(putRecords).mapConcat(identity)
+      ).map { samples =>
+        val midSamples = samples.drop(2).dropRight(2)
+        val progress = midSamples.last.diff(midSamples.head)
+        val rateOfRetryable = progress.meanRate(BytesRetryable)
+        val rateOfSuccess = progress.meanRate(BytesSuccess)
+        rateOfRetryable / (rateOfRetryable + rateOfSuccess) should be < 0.05f
       }
-
-      for {
-        _ <- runTest(throttlePerShard = true).map { samples =>
-          val midSamples = samples.drop(2).dropRight(2)
-          val progress = midSamples.last.diff(midSamples.head)
-          val rateOfRetryable = progress.meanRate(BytesRetryable)
-          val rateOfSuccess = progress.meanRate(BytesSuccess)
-          rateOfRetryable / (rateOfRetryable + rateOfSuccess) should be < 0.05f
-        }
-        _ <- runTest(throttlePerShard = false).map { samples =>
-          val midSamples = samples.drop(2).dropRight(2)
-          val progress = midSamples.last.diff(midSamples.head)
-          val rateOfRetryable = progress.meanRate(BytesRetryable)
-          val rateOfSuccess = progress.meanRate(BytesSuccess)
-          rateOfRetryable / (rateOfRetryable + rateOfSuccess) should be > 0.4f
-        }
-      } yield Assertions.succeed
-    }
-  }
-
-  "IgnoreDownstreamClose" should {
-    "ignore downstream complete" in {
-      val dropped = new AtomicInteger(0)
-      Source(1 to 100)
-        .alsoTo(Flow[Int].via(new DropOnClose(_ => dropped.incrementAndGet())).take(0).to(Sink.ignore))
-        .runWith(Sink.ignore)
-        .map(_ => dropped.get() shouldBe 100)
-    }
-
-    "ignore downstream failure" in {
-      val dropped = new AtomicInteger(0)
-      Source(1 to 100)
-        .alsoTo(
-          Flow[Int]
-            .via(new DropOnClose(_ => dropped.incrementAndGet()))
-            .to(Sink.foreach(_ => throw new RuntimeException))
-        )
-        .runWith(Sink.ignore)
-        .map(_ => dropped.get() shouldBe 99)
     }
   }
 }

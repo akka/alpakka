@@ -14,7 +14,7 @@ object Buffer {
       }
 
   private class DefaultBuffer extends Buffer {
-    protected val buffer = mutable.Queue.empty[Aggregated]
+    protected val buffer: mutable.Queue[Aggregated] = mutable.Queue.empty
     override def add(elem: Aggregated): Unit = {
       buffer.enqueue(elem)
     }
