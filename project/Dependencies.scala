@@ -347,6 +347,8 @@ object Dependencies {
           ExclusionRule("software.amazon.awssdk", "apache-client"),
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         )
+      ) ++ Seq(
+        "io.dropwizard.metrics" % "metrics-core" % "4.0.5"
       ) ++ Mockito
   )
 
