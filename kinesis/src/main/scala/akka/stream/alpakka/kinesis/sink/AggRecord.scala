@@ -7,17 +7,18 @@ package akka.stream.alpakka.kinesis.sink
 import akka.stream.alpakka.kinesis.KinesisLimits._
 import com.google.protobuf.{ByteString, CodedOutputStream}
 import software.amazon.awssdk.core.SdkBytes
+import software.amazon.awssdk.services.kinesis.model.PutRecordsRequestEntry
 import software.amazon.kinesis.retrieval.kpl.Messages.{AggregatedRecord, Record}
 
 import java.math.BigInteger
 import scala.collection.mutable
 
 case class Aggregated(
-  partitionKey: String,
-  explicitHashKey: Option[String],
-  data: SdkBytes,
-  aggregatedRecords: Int,
-  payloadBytes: Int
+    shardIndex: Int,
+    group: AggGroup,
+    request: PutRecordsRequestEntry,
+    aggregatedRecords: Int,
+    payloadBytes: Int
 )
 
 object AggRecord {
@@ -27,7 +28,7 @@ object AggRecord {
   private val MaxAggregatedMessageSize = MaxBytesPerRecord - MagicBytes.length - DigestLength
 }
 
-class AggRecord(preferredRecordSize: Int = MaxBytesPerRecord) {
+class AggRecord(shardId: Int, group: AggGroup, preferredRecordSize: Int = MaxBytesPerRecord) {
   import AggRecord._
 
   require(preferredRecordSize <= MaxBytesPerRecord)
@@ -42,9 +43,7 @@ class AggRecord(preferredRecordSize: Int = MaxBytesPerRecord) {
   private var aggRecordPartitionKeyBytes: Int = 0
   private var aggRecordExplicitHashKey: Option[String] = None
 
-  def addUserRecord(partitionKey: String,
-                    explicitHashCode: Option[BigInteger],
-                    data: ByteString): Seq[Aggregated] = {
+  def addUserRecord(partitionKey: String, explicitHashCode: Option[BigInteger], data: ByteString): Seq[Aggregated] = {
     require(
       ValidPartitionKeyLength.contains(partitionKey.length),
       s"Expected partition key length [1, 256], but got ${partitionKey.length}"
@@ -69,11 +68,11 @@ class AggRecord(preferredRecordSize: Int = MaxBytesPerRecord) {
     def tryAddUserRecord(): Seq[Aggregated] = {
       val newRecordSize = calculateRecordSize(partitionKeyBytes, explicitHashKey, data)
       val aggregatedPayloadBytes = aggRecordPartitionKeyBytes + aggregatedMessageSize + newRecordSize
-      if (aggregatedPayloadBytes > MaxAggregatedMessageSize && aggregatedRecordBuilder.getRecordsCount == 0) {
+      if (aggregatedPayloadBytes > MaxAggregatedMessageSize && aggregatedRecords == 0) {
         val sdkBytes = SdkBytes.fromByteBuffer(data.asReadOnlyByteBuffer())
         val payloadBytes = partitionKeyBytes.size() + data.size()
         Seq(buildAggregated(partitionKey, explicitHashKey, sdkBytes, 1, payloadBytes))
-      } else if (aggregatedPayloadBytes > preferredAggregatedMessageSize) {
+      } else if (aggregatedPayloadBytes > preferredAggregatedMessageSize && aggregatedRecords > 0) {
         aggregate() +: tryAddUserRecord()
       } else {
         val newRecord = Record
@@ -148,7 +147,6 @@ class AggRecord(preferredRecordSize: Int = MaxBytesPerRecord) {
     val partitionKey = aggRecordPartitionKey.get
     val explicitHashKey = aggRecordExplicitHashKey
     val data = SdkBytes.fromByteArrayUnsafe(recordBytes())
-    val payloadBytes = aggregatedBytes + aggRecordPartitionKeyBytes
     val aggregated = buildAggregated(partitionKey, explicitHashKey, data, aggregatedRecords, payloadBytes)
     clear()
     aggregated
@@ -160,7 +158,13 @@ class AggRecord(preferredRecordSize: Int = MaxBytesPerRecord) {
                               aggregatedRecords: Int,
                               payloadBytes: Int): Aggregated = {
     assert(payloadBytes <= MaxBytesPerRecord)
-    Aggregated(partitionKey, explicitHashKey, data, aggregatedRecords, payloadBytes)
+    val request = PutRecordsRequestEntry
+      .builder()
+      .partitionKey(partitionKey)
+      .explicitHashKey(explicitHashKey.orNull)
+      .data(data)
+      .build()
+    Aggregated(shardId, group, request, aggregatedRecords, payloadBytes)
   }
 
   private def recordBytes(): Array[Byte] = {
@@ -186,9 +190,9 @@ class AggRecord(preferredRecordSize: Int = MaxBytesPerRecord) {
     aggregatedRecordBuilder.clear()
   }
 
-  def aggregatedBytes: Int = {
+  def payloadBytes: Int = {
     if (aggregatedMessageSize == 0) 0
-    else MagicBytes.length + aggregatedMessageSize + DigestLength
+    else MagicBytes.length + aggregatedMessageSize + DigestLength + aggRecordPartitionKeyBytes
   }
 
   def aggregatedRecords: Int = {
