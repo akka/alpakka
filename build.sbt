@@ -336,7 +336,7 @@ lazy val xml = alpakkaProject("xml", "xml", Dependencies.Xml)
 val JavaDocLinkVersion = "11"
 
 lazy val docs = project
-  .enablePlugins(AkkaParadoxPlugin, ParadoxSitePlugin, PreprocessPlugin, PublishRsyncPlugin)
+  .enablePlugins(AkkaParadoxPlugin, ParadoxSitePlugin, SitePreviewPlugin, PreprocessPlugin, PublishRsyncPlugin)
   .disablePlugins(MimaPlugin)
   .settings(
     Compile / paradox / name := "Alpakka",
@@ -347,14 +347,17 @@ lazy val docs = project
     Preprocess / sourceDirectory := (LocalRootProject / ScalaUnidoc / unidoc / target).value,
     Preprocess / preprocessRules := Seq(
         // Java Platform Module System splits
+        // java.*
         ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java/sql/").r,
          _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.sql/java/sql/"),
         ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java/").r,
          _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.base/java/"),
+        // javax.*
         ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/javax/net/").r,
          _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.base/javax/net/"),
         ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/javax/xml/").r,
          _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.xml/javax/xml/"),
+        // org.w3c.*
         ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/org/w3c/").r,
          _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.xml/org/w3c/"),
         // package duplication errors
@@ -367,6 +370,11 @@ lazy val docs = project
         ("https://javadoc\\.io/page/".r, _ => "https://javadoc\\.io/static/")
       ),
     Paradox / siteSubdirName := s"docs/alpakka/${projectInfoVersion.value}",
+    // make use of https://github.com/scala/scala/pull/8663
+    Compile / doc / scalacOptions ++= Seq(
+        "-jdk-api-doc-base",
+        s"https://docs.oracle.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java.base/"
+      ),
     paradoxProperties ++= Map(
         "akka.version" -> Dependencies.AkkaVersion,
         "akka-http.version" -> Dependencies.AkkaHttpVersion,
