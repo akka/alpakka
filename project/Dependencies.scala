@@ -17,9 +17,9 @@ object Dependencies {
   val AwsSdk2Version = "2.17.113"
   val AwsSpiAkkaHttpVersion = "0.0.11"
   // Sync with plugins.sbt
-  val AkkaGrpcBinaryVersion = "2.2"
-  val AkkaHttpVersion = "10.4.0"
-  val AkkaHttpBinaryVersion = "10.4"
+  val AkkaGrpcBinaryVersion = "2.3"
+  val AkkaHttpVersion = "10.5.0-M1"
+  val AkkaHttpBinaryVersion = "10.5"
   val AlpakkaKafkaVersion = "4.0.0"
   val ScalaTestVersion = "3.2.11"
   val TestContainersScalaTestVersion = "0.40.3" // pulls Testcontainers 1.16.2
