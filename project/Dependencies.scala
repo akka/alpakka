@@ -23,7 +23,7 @@ object Dependencies {
   val AlpakkaKafkaVersion = "4.0.0"
   val ScalaTestVersion = "3.2.11"
   val TestContainersScalaTestVersion = "0.40.3" // pulls Testcontainers 1.16.2
-  val mockitoVersion = "4.8.0" // check even https://github.com/scalatest/scalatestplus-mockito/releases
+  val mockitoVersion = "4.8.1" // check even https://github.com/scalatest/scalatestplus-mockito/releases
   val hoverflyVersion = "0.14.1"
 
   val CouchbaseVersion = "2.7.16"
@@ -198,8 +198,8 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-        "com.github.jwt-scala" %% "jwt-spray-json" % "7.1.4", // ApacheV2
-        "com.google.auth" % "google-auth-library-credentials" % "0.24.1", // BSD 3-clause
+        "com.github.jwt-scala" %% "jwt-spray-json" % "9.0.2", // ApacheV2
+        "com.google.auth" % "google-auth-library-credentials" % "1.15.0", // BSD 3-clause
         "io.specto" % "hoverfly-java" % hoverflyVersion % Test // ApacheV2
       ) ++ Mockito
   )
