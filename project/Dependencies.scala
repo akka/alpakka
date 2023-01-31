@@ -18,6 +18,7 @@ object Dependencies {
   val AwsSpiAkkaHttpVersion = "0.0.11"
   // Sync with plugins.sbt
   val AkkaGrpcBinaryVersion = "2.3"
+  // sync ignore prefix in scripts/link-validator.conf#L30
   val AkkaHttpVersion = "10.5.0-M1"
   val AkkaHttpBinaryVersion = "10.5"
   val AlpakkaKafkaVersion = "4.0.0"
