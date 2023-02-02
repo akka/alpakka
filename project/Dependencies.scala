@@ -195,12 +195,15 @@ object Dependencies {
       ) ++ JacksonDatabindDependencies
   )
 
+  val GoogleAuthVersion = "1.15.0"
+
   val GoogleCommon = Seq(
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         "com.github.jwt-scala" %% "jwt-spray-json" % "9.0.2", // ApacheV2
-        "com.google.auth" % "google-auth-library-credentials" % "1.15.0", // BSD 3-clause
+        // https://github.com/googleapis/google-auth-library-java
+        "com.google.auth" % "google-auth-library-credentials" % GoogleAuthVersion,
         "io.specto" % "hoverfly-java" % hoverflyVersion % Test // ApacheV2
       ) ++ Mockito
   )
@@ -246,8 +249,9 @@ object Dependencies {
     libraryDependencies ++= Seq(
         // https://github.com/googleapis/java-pubsub/tree/master/proto-google-cloud-pubsub-v1/
         "com.google.cloud" % "google-cloud-pubsub" % "1.112.5" % "protobuf-src", // ApacheV2
-        "io.grpc" % "grpc-auth" % akka.grpc.gen.BuildInfo.grpcVersion, // ApacheV2
-        "com.google.auth" % "google-auth-library-oauth2-http" % "0.22.2", // BSD 3-clause
+        "io.grpc" % "grpc-auth" % akka.grpc.gen.BuildInfo.grpcVersion,
+        // https://github.com/googleapis/google-auth-library-java
+        "com.google.auth" % "google-auth-library-oauth2-http" % GoogleAuthVersion,
         // pull in Akka Discovery for our Akka version
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion
       )
