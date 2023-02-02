@@ -130,7 +130,8 @@ services:
       - ./geode/scripts/:/scripts/
     command: /scripts/geode.sh
   gcloud-pubsub-emulator:
-    image: google/cloud-sdk:311.0.0
+    # https://hub.docker.com/r/google/cloud-sdk/tags
+    image: google/cloud-sdk:416.0.0
     ports:
       - "8538:8538"
     command: gcloud beta emulators pubsub start --project=alpakka --host-port=0.0.0.0:8538
