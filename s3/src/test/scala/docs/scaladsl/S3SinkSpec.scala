@@ -285,7 +285,6 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec with Option
       .withHeader(sseCKeyHeaderMd5, new EqualToPattern(sseCKeyHeaderMd5Value))
       .withoutHeader(requestPayerHeader)
 
-
   }
 
   it should "copy a file from source bucket to target bucket when expected content length is greater then chunk size" in {
