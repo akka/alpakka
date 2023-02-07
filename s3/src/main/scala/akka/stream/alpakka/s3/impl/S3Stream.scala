@@ -1055,7 +1055,7 @@ import scala.util.{Failure, Success, Try}
     import mat.executionContext
     implicit val conf: S3Settings = resolveSettings(attr, mat.system)
 
-    val headers = s3Headers.headersFor(UploadPart)
+    val headers = s3Headers.serverSideEncryption.toIndexedSeq.flatMap(_.headersFor(UploadPart))
 
     Source
       .future(
