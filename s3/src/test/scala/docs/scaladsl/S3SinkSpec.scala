@@ -235,6 +235,8 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec with Option
     val sseCAlgorithmHeader = "x-amz-server-side-encryption-customer-algorithm"
     val sseCAlgorithmHeaderValue = "AES256"
     val sseCKeyHeader = "x-amz-server-side-encryption-customer-key"
+    val sseCKeyHeaderMd5 = "x-amz-server-side-encryption-customer-key-MD5"
+    val sseCKeyHeaderMd5Value = "md5"
     val sseCKeyHeaderValue = sseCustomerKey
     val sseCSourceAlgorithmHeader = "x-amz-copy-source-server-side-encryption-customer-algorithm"
     val sseCSourceAlgorithmHeaderValue = "AES256"
@@ -275,10 +277,13 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec with Option
       .withHeader(sseCSourceKeyHeader, new EqualToPattern(sseCSourceKeyHeaderValue))
       .withHeader(requestPayerHeader, new EqualToPattern(requestPayerHeaderValue))
 
-    // No SSE-C headers required for CompleteMultipartUpload
+    // Only SSE headers possible, no other headers
     mock verifyThat
     postRequestedFor(urlEqualTo(s"/$targetBucketKey?uploadId=$uploadId"))
-      .withHeader(requestPayerHeader, new EqualToPattern(requestPayerHeaderValue))
+      .withHeader(sseCAlgorithmHeader, new EqualToPattern(sseCAlgorithmHeaderValue))
+      .withHeader(sseCKeyHeader, new EqualToPattern(sseCKeyHeaderValue))
+      .withHeader(sseCKeyHeaderMd5, new EqualToPattern(sseCKeyHeaderMd5Value))
+      .withoutHeader(requestPayerHeader)
 
   }
 
