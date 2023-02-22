@@ -15,7 +15,7 @@ import scala.concurrent.duration._
 
 final class CassandraSessionPerformanceSpec extends CassandraSpecBase(ActorSystem("CassandraSessionPerformanceSpec")) {
 
-  val log = Logging(system, this.getClass)
+  val log = Logging(system, this.getClass.asInstanceOf[Class[Any]])
 
   val data = 1 to 5 * 1000 * 1000
 

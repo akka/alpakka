@@ -131,11 +131,12 @@ lazy val azureStorageQueue = alpakkaProject(
 
 lazy val cassandra =
   alpakkaProject("cassandra", "cassandra", Dependencies.Cassandra)
+    .settings(Scala3.settings)
 
 lazy val couchbase =
   alpakkaProject("couchbase", "couchbase", Dependencies.Couchbase)
 
-lazy val csv = alpakkaProject("csv", "csv")
+lazy val csv = alpakkaProject("csv", "csv").settings(Scala3.settings)
 
 lazy val csvBench = internalProject("csv-bench")
   .dependsOn(csv)
@@ -444,6 +445,7 @@ lazy val docs = project
   )
 
 lazy val testkit = internalProject("testkit", Dependencies.testkit)
+  .settings(Scala3.settings) // needed for modules that depend on testKit, e.g. csv
 
 lazy val `doc-examples` = project
   .enablePlugins(AutomateHeaderPlugin)
