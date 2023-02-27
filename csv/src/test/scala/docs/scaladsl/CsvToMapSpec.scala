@@ -460,5 +460,5 @@ class CsvToMapSpec extends CsvSpec {
       )
     )
     // #header-line
-  }(mat)
+  }
 }
