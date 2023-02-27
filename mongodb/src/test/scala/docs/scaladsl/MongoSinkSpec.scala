@@ -16,7 +16,6 @@ import org.bson.Document
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.mongodb.scala.MongoClient.DEFAULT_CODEC_REGISTRY
 import org.mongodb.scala.bson.codecs.Macros._
-import org.scalactic.source.Position
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
@@ -42,8 +41,6 @@ class MongoSinkSpec
 
   implicit val system = ActorSystem()
 
-  override implicit val patienceConfig: PatienceConfig = PatienceConfig(10.seconds, 100.millis)
-
   override protected def beforeAll(): Unit =
     Source.fromPublisher(db.drop()).runWith(Sink.headOption).futureValue
 
@@ -57,7 +54,7 @@ class MongoSinkSpec
   private val domainObjectsDocumentColl = db.getCollection("domainObjectsSink")
 
   implicit val defaultPatience =
-    PatienceConfig(timeout = 5.seconds, interval = 50.millis)
+    PatienceConfig(timeout = 10.seconds, interval = 100.millis)
 
   override def afterEach(): Unit = {
     Source.fromPublisher(numbersDocumentColl.deleteMany(new Document())).runWith(Sink.head).futureValue
