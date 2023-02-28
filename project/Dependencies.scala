@@ -7,7 +7,9 @@ object Dependencies {
 
   val Scala213 = "2.13.10" // update even in link-validator.conf
   val Scala212 = "2.12.17"
-  val ScalaVersions = Seq(Scala213, Scala212)
+  val Scala3 = "3.1.3"
+  val Scala2Versions = Seq(Scala213, Scala212)
+  val ScalaVersions = Dependencies.Scala2Versions :+ Dependencies.Scala3
 
   val AkkaVersion = "2.7.0"
   val AkkaBinaryVersion = "2.7"

@@ -5,10 +5,10 @@
 package docs.scaladsl
 
 import java.nio.file.Paths
-
 import akka.NotUsed
 import akka.stream.alpakka.csv.scaladsl.{CsvParsing, CsvToMap}
 import akka.stream.scaladsl.{FileIO, Flow, Keep, Sink, Source}
+import akka.stream.testkit.{TestPublisher, TestSubscriber}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.{TestSink, TestSource}
 import akka.util.ByteString
@@ -120,7 +120,7 @@ class CsvParsingSpec extends CsvSpec {
     }
 
     "emit completion even without new line at end" in assertAllStagesStopped {
-      val (source, sink) = TestSource[ByteString]()
+      val (source: TestPublisher.Probe[ByteString], sink: TestSubscriber.Probe[List[String]]) = TestSource[ByteString]()
         .via(CsvParsing.lineScanner())
         .map(_.map(_.utf8String))
         .toMat(TestSink[List[String]]())(Keep.both)

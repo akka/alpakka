@@ -54,7 +54,7 @@ class MongoSinkSpec
   private val domainObjectsDocumentColl = db.getCollection("domainObjectsSink")
 
   implicit val defaultPatience =
-    PatienceConfig(timeout = 5.seconds, interval = 50.millis)
+    PatienceConfig(timeout = 10.seconds, interval = 100.millis)
 
   override def afterEach(): Unit = {
     Source.fromPublisher(numbersDocumentColl.deleteMany(new Document())).runWith(Sink.head).futureValue

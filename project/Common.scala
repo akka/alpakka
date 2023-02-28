@@ -41,7 +41,7 @@ object Common extends AutoPlugin {
   override lazy val projectSettings = Dependencies.Common ++ Seq(
       projectInfoVersion := (if (isSnapshot.value) "snapshot" else version.value),
       crossVersion := CrossVersion.binary,
-      crossScalaVersions := Dependencies.ScalaVersions,
+      crossScalaVersions := Dependencies.Scala2Versions,
       scalaVersion := Dependencies.Scala213,
       scalacOptions ++= Seq(
           "-encoding",
@@ -55,7 +55,8 @@ object Common extends AutoPlugin {
           "8"
         ),
       scalacOptions ++= (scalaVersion.value match {
-          case Dependencies.Scala213 if insideCI.value && fatalWarnings.value && !Dependencies.CronBuild =>
+          case Dependencies.Scala213
+              if insideCI.value && fatalWarnings.value && !Dependencies.CronBuild && scalaVersion.value != Dependencies.Scala3 =>
             Seq("-Werror")
           case _ => Seq.empty[String]
         }),
@@ -65,14 +66,20 @@ object Common extends AutoPlugin {
           "-doc-version",
           version.value,
           "-sourcepath",
-          (ThisBuild / baseDirectory).value.toString,
-          "-skip-packages",
-          "akka.pattern:" + // for some reason Scaladoc creates this
-          "org.mongodb.scala:" + // this one is a mystery as well
+          (ThisBuild / baseDirectory).value.toString
+        ) ++ {
           // excluding generated grpc classes, except the model ones (com.google.pubsub)
-          "com.google.api:com.google.cloud:com.google.iam:com.google.logging:" +
-          "com.google.longrunning:com.google.protobuf:com.google.rpc:com.google.type"
-        ),
+          val skip = "akka.pattern:" + // for some reason Scaladoc creates this
+            "org.mongodb.scala:" + // this one is a mystery as well
+            // excluding generated grpc classes, except the model ones (com.google.pubsub)
+            "com.google.api:com.google.cloud:com.google.iam:com.google.logging:" +
+            "com.google.longrunning:com.google.protobuf:com.google.rpc:com.google.type"
+          if (scalaBinaryVersion.value.startsWith("3")) {
+            Seq(s"-skip-packages:$skip") // different usage in scala3
+          } else {
+            Seq("-skip-packages", skip)
+          }
+        },
       Compile / doc / scalacOptions ++=
         Seq(
           "-doc-source-url", {

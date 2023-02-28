@@ -41,8 +41,8 @@ jobs:
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.4.0
 
-      - name: "Code style, compile tests, MiMa. Run locally with: sbt +~2.13 \"verifyCodeStyle; Test/compile; mimaReportBinaryIssues\""
-        run: sbt +~2.13 "verifyCodeStyle; Test/compile; mimaReportBinaryIssues"
+      - name: "Code style, compile tests, MiMa. Run locally with: sbt \"verifyCodeStyle; +Test/compile; mimaReportBinaryIssues\""
+        run: sbt "verifyCodeStyle; +Test/compile; mimaReportBinaryIssues"
 
   documentation:
     name: ScalaDoc, Documentation with Paradox
