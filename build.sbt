@@ -118,7 +118,6 @@ addCommandAlias("verifyCodeStyle", "headerCheck; verifyCodeFmt")
 
 lazy val amqp = alpakkaProject("amqp", "amqp", Dependencies.Amqp, Scala3.settings)
 
-
 lazy val avroparquet =
   alpakkaProject("avroparquet", "avroparquet", Dependencies.AvroParquet)
 

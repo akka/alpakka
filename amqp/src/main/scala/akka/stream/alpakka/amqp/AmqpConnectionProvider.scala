@@ -413,7 +413,8 @@ final class AmqpCachedConnectionProvider private (val provider: AmqpConnectionPr
                 )
             }
           } else {
-            if (!state.compareAndSet(c, Connected(cachedConnection, clients - 1))) releaseRecursive(connectionForRelease, provider)
+            if (!state.compareAndSet(c, Connected(cachedConnection, clients - 1)))
+              releaseRecursive(connectionForRelease, provider)
           }
         case Closing => releaseRecursive(connectionForRelease, provider)
       }

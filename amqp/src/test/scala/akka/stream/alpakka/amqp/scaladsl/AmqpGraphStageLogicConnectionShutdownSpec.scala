@@ -8,7 +8,13 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.atomic.AtomicInteger
 import akka.actor.ActorSystem
 import akka.dispatch.ExecutionContexts
-import akka.stream.alpakka.amqp.{AmqpCachedConnectionProvider, AmqpConnectionFactoryConnectionProvider, AmqpProxyConnection, AmqpWriteSettings, QueueDeclaration}
+import akka.stream.alpakka.amqp.{
+  AmqpCachedConnectionProvider,
+  AmqpConnectionFactoryConnectionProvider,
+  AmqpProxyConnection,
+  AmqpWriteSettings,
+  QueueDeclaration
+}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
