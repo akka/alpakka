@@ -12,10 +12,12 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import scala.concurrent.ExecutionContext
+
 abstract class AmqpSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with ScalaFutures with LogCapturing {
 
-  implicit val system = ActorSystem(this.getClass.getSimpleName)
-  implicit val executionContext = ExecutionContexts.parasitic
+  implicit val system: ActorSystem = ActorSystem(this.getClass.getSimpleName)
+  implicit val executionContext: ExecutionContext = ExecutionContexts.parasitic
 
   override protected def afterAll(): Unit =
     system.terminate()

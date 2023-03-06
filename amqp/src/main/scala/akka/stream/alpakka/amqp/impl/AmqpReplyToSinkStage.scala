@@ -18,7 +18,7 @@ import scala.concurrent.{Future, Promise}
  * the queue named in the replyTo options of the message instead of from settings declared at construction.
  */
 @InternalApi
-private[amqp] final class AmqpReplyToSinkStage(settings: AmqpReplyToSinkSettings)
+private[amqp] final class AmqpReplyToSinkStage(replyToSettings: AmqpReplyToSinkSettings)
     extends GraphStageWithMaterializedValue[SinkShape[WriteMessage], Future[Done]] { stage =>
 
   val in = Inlet[WriteMessage]("AmqpReplyToSink.in")
@@ -31,7 +31,7 @@ private[amqp] final class AmqpReplyToSinkStage(settings: AmqpReplyToSinkSettings
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
     val streamCompletion = Promise[Done]()
     (new GraphStageLogic(shape) with AmqpConnectorLogic {
-      override val settings = stage.settings
+      override val settings = stage.replyToSettings
 
       override def whenConnected(): Unit = pull(in)
 
@@ -73,7 +73,7 @@ private[amqp] final class AmqpReplyToSinkStage(settings: AmqpReplyToSinkSettings
                 elem.properties.orNull,
                 elem.bytes.toArray
               )
-            } else if (settings.failIfReplyToMissing) {
+            } else if (replyToSettings.failIfReplyToMissing) {
               onFailure(new RuntimeException("Reply-to header was not set"))
             }
 

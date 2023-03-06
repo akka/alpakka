@@ -22,7 +22,7 @@ import scala.concurrent.{Future, Promise}
  * instead of complete [[WriteResult]] (possibly it would be less confusing for users), but [[WriteResult]] is used
  * for consistency with other variants and to make the flow ready for any possible future [[WriteResult]] extensions.
  */
-@InternalApi private[amqp] final class AmqpSimpleFlowStage[T](settings: AmqpWriteSettings)
+@InternalApi private[amqp] final class AmqpSimpleFlowStage[T](writeSettings: AmqpWriteSettings)
     extends GraphStageWithMaterializedValue[FlowShape[(WriteMessage, T), (WriteResult, T)], Future[Done]] { stage =>
 
   private val in: Inlet[(WriteMessage, T)] = Inlet(Logging.simpleName(this) + ".in")
@@ -35,13 +35,13 @@ import scala.concurrent.{Future, Promise}
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
     val streamCompletion = Promise[Done]()
-    (new AbstractAmqpFlowStageLogic[T](settings, streamCompletion, shape) {
+    (new AbstractAmqpFlowStageLogic[T](writeSettings, streamCompletion, shape) {
       override def publish(message: WriteMessage, passThrough: T): Unit = {
         log.debug("Publishing message {}.", message)
 
         channel.basicPublish(
           settings.exchange.getOrElse(""),
-          message.routingKey.orElse(settings.routingKey).getOrElse(""),
+          message.routingKey.orElse(writeSettings.routingKey).getOrElse(""),
           message.mandatory,
           message.immediate,
           message.properties.orNull,
