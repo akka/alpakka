@@ -5,6 +5,7 @@ lazy val alpakka = project
   .aggregate(
     amqp,
     avroparquet,
+    avroparquetTests,
     awslambda,
     azureStorageQueue,
     cassandra,
@@ -119,7 +120,12 @@ addCommandAlias("verifyCodeStyle", "headerCheck; verifyCodeFmt")
 lazy val amqp = alpakkaProject("amqp", "amqp", Dependencies.Amqp)
 
 lazy val avroparquet =
-  alpakkaProject("avroparquet", "avroparquet", Dependencies.AvroParquet)
+  alpakkaProject("avroparquet", "avroparquet", Dependencies.AvroParquet, Scala3.settings)
+
+lazy val avroparquetTests =
+  alpakkaProject("avroparquet-tests", "avroparquet", Dependencies.AvroParquetTests, publish / skip := true)
+    .dependsOn(avroparquet)
+    .disablePlugins(MimaPlugin)
 
 lazy val awslambda = alpakkaProject("awslambda", "aws.lambda", Dependencies.AwsLambda)
 
