@@ -81,7 +81,7 @@ jobs:
       matrix:
         include:
           - { connector: amqp,                         pre_cmd: 'docker-compose up -d amqp' }
-          - { connector: avroparquet }
+          - { connector: avroparquet-tests }
           - { connector: awslambda }
           - { connector: aws-event-bridge,             pre_cmd: 'docker-compose up -d amazoneventbridge' }
           - { connector: azure-storage-queue }

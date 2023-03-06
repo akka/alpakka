@@ -167,7 +167,12 @@ object Dependencies {
 
   val AvroParquet = Seq(
     libraryDependencies ++= Seq(
-        "org.apache.parquet" % "parquet-avro" % "1.10.1", //Apache2
+        "org.apache.parquet" % "parquet-avro" % "1.10.1" //Apache2
+      )
+  )
+
+  val AvroParquetTests = Seq(
+    libraryDependencies ++= Seq(
         "org.apache.hadoop" % "hadoop-client" % "3.3.3" % Test exclude ("log4j", "log4j"), //Apache2
         "org.apache.hadoop" % "hadoop-common" % "3.3.3" % Test exclude ("log4j", "log4j"), //Apache2
         "com.sksamuel.avro4s" %% "avro4s-core" % "3.0.9" % Test,
