@@ -7,6 +7,7 @@ package akka.stream.alpakka.amqp.scaladsl
 import akka.Done
 import akka.stream.alpakka.amqp._
 import akka.stream.scaladsl.{Flow, FlowWithContext, Keep, Sink, Source}
+import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.{TestSink, TestSource}
 import akka.util.ByteString
@@ -309,7 +310,7 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
     val input = Vector("one", "two", "three", "four", "five")
     val expectedOutput = input.map(s => (WriteResult.confirmed, s))
 
-    val (completion, probe) =
+    val (completion: Future[Done], probe: TestSubscriber.Probe[(WriteResult, String)]) =
       Source(input)
         .map(s => (WriteMessage(ByteString(s)), s))
         .viaMat(flow)(Keep.right)
