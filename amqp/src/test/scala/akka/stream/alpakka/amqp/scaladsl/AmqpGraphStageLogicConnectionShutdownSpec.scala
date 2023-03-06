@@ -6,16 +6,9 @@ package akka.stream.alpakka.amqp.scaladsl
 
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.atomic.AtomicInteger
-
 import akka.actor.ActorSystem
 import akka.dispatch.ExecutionContexts
-import akka.stream.alpakka.amqp.{
-  AmqpCachedConnectionProvider,
-  AmqpConnectionFactoryConnectionProvider,
-  AmqpProxyConnection,
-  AmqpWriteSettings,
-  QueueDeclaration
-}
+import akka.stream.alpakka.amqp.{AmqpCachedConnectionProvider, AmqpConnectionFactoryConnectionProvider, AmqpProxyConnection, AmqpWriteSettings, QueueDeclaration}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
@@ -23,7 +16,7 @@ import com.rabbitmq.client.{AddressResolver, Connection, ConnectionFactory, Shut
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.BeforeAndAfterEach
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import org.scalatest.matchers.should.Matchers
@@ -41,7 +34,7 @@ class AmqpGraphStageLogicConnectionShutdownSpec
     with LogCapturing {
 
   override implicit val patienceConfig = PatienceConfig(10.seconds)
-  private implicit val executionContext = ExecutionContexts.parasitic
+  private implicit val executionContext: ExecutionContext = ExecutionContexts.parasitic
 
   val shutdownsAdded = new AtomicInteger()
   val shutdownsRemoved = new AtomicInteger()
