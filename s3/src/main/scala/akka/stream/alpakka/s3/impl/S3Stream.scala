@@ -688,7 +688,7 @@ import scala.util.{Failure, Success, Try}
               Source.future {
                 entity.discardBytes().future().map { _ =>
                   val contentLengthHeader = `Content-Length`
-                    .parseFromValueString(entity.contentLengthOption.getOrElse(0).toString)
+                    .parseFromValueString(entity.contentLengthOption.getOrElse(0L).toString)
                     .map(Seq(_))
                     .getOrElse(Nil)
                   ObjectMetadata(h ++ contentLengthHeader)
@@ -1023,7 +1023,7 @@ import scala.util.{Failure, Success, Try}
 
   private def computeMetaData(headers: immutable.Seq[HttpHeader], entity: ResponseEntity): ObjectMetadata = {
     val contentLengthHeader: Seq[HttpHeader] = `Content-Length`
-      .parseFromValueString(entity.contentLengthOption.getOrElse(0).toString)
+      .parseFromValueString(entity.contentLengthOption.getOrElse(0L).toString)
       .map(Seq(_))
       .getOrElse(Nil)
     val contentTypeHeader: Seq[HttpHeader] = `Content-Type`
