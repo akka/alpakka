@@ -62,7 +62,7 @@ import akka.http.scaladsl.model.{HttpHeader, HttpRequest}
   def canonicalQueryString(query: Query): String = {
     def uriEncode(s: String): String = s.flatMap {
       case c if isUnreservedCharacter(c) => c.toString
-      case c => "%" + c.toHexString.toUpperCase
+      case c => "%" + c.toInt.toHexString.toUpperCase
     }
 
     query
@@ -92,7 +92,7 @@ import akka.http.scaladsl.model.{HttpHeader, HttpRequest}
     if (path.isEmpty) "/"
     else {
       path.toString.flatMap {
-        case c if isReservedCharacter(c) => "%" + c.toHexString.toUpperCase
+        case c if isReservedCharacter(c) => "%" + c.toInt.toHexString.toUpperCase
         case c => c.toString
       }
     }

@@ -6,9 +6,7 @@ package akka.stream.alpakka.s3.impl
 
 import java.net.InetSocketAddress
 import java.time.{Instant, ZoneOffset, ZonedDateTime}
-
 import scala.annotation.nowarn
-
 import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
@@ -27,6 +25,7 @@ import akka.stream.{Attributes, Materializer}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
 import software.amazon.awssdk.regions.Region
+
 import scala.collection.immutable
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
@@ -688,7 +687,11 @@ import scala.util.{Failure, Success, Try}
             case HttpResponse(OK, h, entity, _) =>
               Source.future {
                 entity.discardBytes().future().map { _ =>
-                  ObjectMetadata(h :+ `Content-Length`(entity.contentLengthOption.getOrElse(0)))
+                  val contentLengthHeader = `Content-Length`
+                    .parseFromValueString(entity.contentLengthOption.getOrElse(0).toString)
+                    .map(Seq(_))
+                    .getOrElse(Nil)
+                  ObjectMetadata(h ++ contentLengthHeader)
                 }
               }
             case response: HttpResponse =>
@@ -1018,15 +1021,23 @@ import scala.util.{Failure, Success, Try}
       .toMat(completionSink(targetLocation, s3Headers))(Keep.right)
   }
 
-  private def computeMetaData(headers: immutable.Seq[HttpHeader], entity: ResponseEntity): ObjectMetadata =
+  private def computeMetaData(headers: immutable.Seq[HttpHeader], entity: ResponseEntity): ObjectMetadata = {
+    val contentLengthHeader: Seq[HttpHeader] = `Content-Length`
+      .parseFromValueString(entity.contentLengthOption.getOrElse(0).toString)
+      .map(Seq(_))
+      .getOrElse(Nil)
+    val contentTypeHeader: Seq[HttpHeader] = `Content-Type`
+      .parseFromValueString(entity.contentType.value)
+      .map(Seq(_))
+      .getOrElse(Nil)
     ObjectMetadata(
       headers ++
+      contentLengthHeader ++ contentTypeHeader ++
       immutable.Seq(
-        `Content-Length`(entity.contentLengthOption.getOrElse(0)),
-        `Content-Type`(entity.contentType),
         CustomContentTypeHeader(entity.contentType)
       )
     )
+  }
 
   //`Content-Type` header is by design not accessible as header. So need to have a custom
   //header implementation to expose that
@@ -1182,9 +1193,11 @@ import scala.util.{Failure, Success, Try}
 
         import conf.multipartUploadSettings.retrySettings._
 
-        SplitAfterSize(chunkSize, chunkBufferSize)(atLeastOneByteString)
+        val merged = SplitAfterSize(chunkSize, chunkBufferSize)(atLeastOneByteString)
           .via(getChunkBuffer(chunkSize, chunkBufferSize, maxRetries)) //creates the chunks
           .mergeSubstreamsWithParallelism(parallelism)
+
+        merged
           .filter(_.size > 0)
           .via(atLeastOne)
           .zip(requestInfoOrUploadState(s3Location, contentType, s3Headers, initialUploadState))
@@ -1286,9 +1299,11 @@ import scala.util.{Failure, Success, Try}
             Source.single((ByteString.empty, null.asInstanceOf[C]))
           )
 
-        SplitAfterSizeWithContext(chunkSize)(atLeastOneByteStringAndEmptyContext)
+        val merged = SplitAfterSizeWithContext(chunkSize)(atLeastOneByteStringAndEmptyContext)
           .via(getChunk(chunkBufferSize))
           .mergeSubstreamsWithParallelism(parallelism)
+
+        merged
           .filter { case (chunk, _) => chunk.size > 0 }
           .via(atLeastOne)
           .zip(requestInfoOrUploadState(s3Location, contentType, s3Headers, initialUploadState))
@@ -1396,9 +1411,9 @@ import scala.util.{Failure, Success, Try}
         import mat.executionContext
         Sink
           .seq[UploadPartResponse]
-          .mapMaterializedValue { responseFuture: Future[immutable.Seq[UploadPartResponse]] =>
+          .mapMaterializedValue { (responseFuture: Future[immutable.Seq[UploadPartResponse]]) =>
             responseFuture
-              .flatMap { responses: immutable.Seq[UploadPartResponse] =>
+              .flatMap { (responses: immutable.Seq[UploadPartResponse]) =>
                 val successes = responses.collect { case r: SuccessfulUploadPart => r }
                 val failures = responses.collect { case r: FailedUploadPart => r }
                 if (responses.isEmpty) {

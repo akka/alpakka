@@ -76,6 +76,6 @@ class SplitAfterSizeWithContextSpec(_system: ActorSystem)
     )
   }
 
-  def bytes(start: Byte, end: Byte): Array[Byte] = (start to end).map(_.toByte).toArray[Byte]
+  def bytes(start: Byte, end: Byte): Array[Byte] = (start.toInt to end.toInt).map(_.toByte).toArray[Byte]
 
 }
