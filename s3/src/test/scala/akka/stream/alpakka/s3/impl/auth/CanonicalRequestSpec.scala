@@ -13,7 +13,7 @@ import org.scalatest.matchers.should.Matchers
 class CanonicalRequestSpec extends AnyFlatSpec with Matchers {
 
   val contentTypeJson =
-    `Content-Type`.parseFromValueString(ContentTypes.`application/json`.value).map(Seq(_)).getOrElse(Nil)
+    `Content-Type`.parseFromValueString(ContentTypes.`application/json`.value).map(Seq(_)).getOrElse(Nil).head
 
   it should "correctly build a canonicalString for eu-central-1" in {
     val req = HttpRequest(
@@ -21,7 +21,7 @@ class CanonicalRequestSpec extends AnyFlatSpec with Matchers {
       Uri("https://s3.eu-central-1.amazonaws.com/my.test.bucket/test%20folder/test%20file%20(1).txt?uploads")
     ).withHeaders(
       RawHeader("x-amz-content-sha256", "testhash"),
-      contentTypeJson: _*
+      contentTypeJson
     )
     val canonical = CanonicalRequest.from(req)
     canonical.canonicalString should equal(
@@ -43,7 +43,7 @@ class CanonicalRequestSpec extends AnyFlatSpec with Matchers {
         .withQuery(Query("partNumber" -> "2", "uploadId" -> "testUploadId"))
     ).withHeaders(
       RawHeader("x-amz-content-sha256", "testhash"),
-      contentTypeJson: _*
+      contentTypeJson
     )
     val canonical = CanonicalRequest.from(req)
     canonical.canonicalString should equal(
@@ -64,7 +64,7 @@ class CanonicalRequestSpec extends AnyFlatSpec with Matchers {
       Uri("https://mytestbucket.s3.us-east-1.amazonaws.com")
     ).withHeaders(
       RawHeader("x-amz-content-sha256", "testhash"),
-      contentTypeJson: _*
+      contentTypeJson
     )
     val canonical = CanonicalRequest.from(req)
     canonical.canonicalString should equal(
@@ -86,7 +86,7 @@ class CanonicalRequestSpec extends AnyFlatSpec with Matchers {
       Uri("https://mytestbucket.s3.us-east-1.amazonaws.com/f%C3%B8ld%C4%99r%C3%BC/1234()%5B%5D%3E%3C!%3F%20.TXT")
     ).withHeaders(
       RawHeader("x-amz-content-sha256", "testhash"),
-      contentTypeJson: _*
+      contentTypeJson
     )
     val canonical = CanonicalRequest.from(req)
     canonical.canonicalString should equal(
@@ -113,7 +113,7 @@ class CanonicalRequestSpec extends AnyFlatSpec with Matchers {
           .withQuery(Uri.Query(name.toString -> value.toString))
       ).withHeaders(
         RawHeader("x-amz-content-sha256", "testhash"),
-        contentTypeJson: _*
+        contentTypeJson
       )
 
     val canonicalRequest = CanonicalRequest.from(request)
@@ -143,7 +143,7 @@ class CanonicalRequestSpec extends AnyFlatSpec with Matchers {
               .withPath(Uri.Path.Empty / s"file-$char.txt")
           ).withHeaders(
             RawHeader("x-amz-content-sha256", "testhash"),
-            contentTypeJson: _*
+            contentTypeJson
           )
 
         val canonicalRequest = CanonicalRequest.from(request)
@@ -166,9 +166,9 @@ class CanonicalRequestSpec extends AnyFlatSpec with Matchers {
       HttpMethods.GET,
       Uri("https://s3.eu-central-1.amazonaws.com/my.test.bucket/file+name.txt")
     ).withHeaders(
-      Seq(RawHeader("x-amz-content-sha256", "testhash"),
-          `Raw-Request-URI`("/my.test.bucket/file%2Bname.txt"),
-          `X-Forwarded-For`(RemoteAddress.Unknown)) ++
+      RawHeader("x-amz-content-sha256", "testhash"),
+      `Raw-Request-URI`("/my.test.bucket/file%2Bname.txt"),
+      `X-Forwarded-For`(RemoteAddress.Unknown),
       contentTypeJson
     )
     val canonical = CanonicalRequest.from(req)

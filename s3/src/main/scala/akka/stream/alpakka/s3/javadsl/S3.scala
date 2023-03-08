@@ -18,6 +18,7 @@ import akka.stream.alpakka.s3.headers.{CannedAcl, ServerSideEncryption}
 import akka.stream.alpakka.s3._
 import akka.stream.alpakka.s3.impl._
 import akka.stream.javadsl.{RunnableGraph, Sink, Source}
+import akka.stream.scaladsl.SourceToCompletionStage
 import akka.util.ByteString
 
 import scala.collection.JavaConverters._
