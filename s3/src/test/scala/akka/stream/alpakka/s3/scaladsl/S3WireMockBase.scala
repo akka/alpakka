@@ -8,12 +8,12 @@ import akka.actor.ActorSystem
 import akka.stream.alpakka.s3.S3Settings
 import akka.stream.alpakka.s3.headers.ServerSideEncryption
 import akka.stream.alpakka.s3.impl.S3Stream
-import akka.stream.alpakka.s3.scaladsl.S3WireMockBase._
+import akka.stream.alpakka.s3.scaladsl.S3WireMockBase.{config, getCallerName, initServer}
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import akka.testkit.TestKit
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.{ResponseDefinitionBuilder, WireMock}
 import com.github.tomakehurst.wiremock.client.WireMock._
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
 import com.github.tomakehurst.wiremock.http.Fault
 import com.github.tomakehurst.wiremock.matching.{ContainsPattern, EqualToPattern}
 import com.github.tomakehurst.wiremock.stubbing.Scenario
@@ -23,7 +23,8 @@ import software.amazon.awssdk.regions.Region
 abstract class S3WireMockBase(_system: ActorSystem, val _wireMockServer: WireMockServer) extends TestKit(_system) {
 
   private def this(mock: WireMockServer) =
-    this(ActorSystem(getCallerName(getClass), config(mock.port()).withFallback(ConfigFactory.load())), mock)
+    this(ActorSystem(getCallerName(S3WireMockBase.getClass), config(mock.port()).withFallback(ConfigFactory.load())),
+         mock)
 
   def this() = {
     this(initServer())
