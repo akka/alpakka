@@ -5,6 +5,8 @@
 package akka.stream.alpakka.mqtt.streaming
 package javadsl
 
+import java.util.concurrent.CompletionStage
+
 import akka.NotUsed
 import akka.actor.ClassicActorSystemProvider
 import akka.stream.alpakka.mqtt.streaming.scaladsl.{
@@ -14,6 +16,8 @@ import akka.stream.alpakka.mqtt.streaming.scaladsl.{
   MqttServerSession => ScalaMqttServerSession
 }
 import akka.stream.javadsl.Source
+
+import scala.compat.java8.FutureConverters._
 
 /**
  * Represents MQTT session state for both clients or servers. Session
@@ -32,6 +36,18 @@ abstract class MqttSession {
   def tell[A](cp: Command[A]): Unit
 
   /**
+   * Ask the session to perform a command regardless of the state it is
+   * in. This is important for sending Publish messages in particular,
+   * as a connection may not have been established with a session.
+   * @param cp The command to perform
+   * @tparam A The type of any carry for the command.
+   * @return A future indicating when the command has completed. Completion
+   *         is defined as when it has been acknowledged by the recipient
+   *         endpoint.
+   */
+  def ask[A](cp: Command[A]): CompletionStage[A]
+
+  /**
    * Shutdown the session gracefully
    */
   def shutdown(): Unit
@@ -45,6 +61,9 @@ abstract class MqttClientSession extends MqttSession {
 
   override def tell[A](cp: Command[A]): Unit =
     underlying ! cp
+
+  override def ask[A](cp: Command[A]): CompletionStage[A] =
+    (underlying ? cp).toJava
 
   override def shutdown(): Unit =
     underlying.shutdown()
@@ -89,6 +108,9 @@ abstract class MqttServerSession extends MqttSession {
 
   override def tell[A](cp: Command[A]): Unit =
     underlying ! cp
+
+  override def ask[A](cp: Command[A]): CompletionStage[A] =
+    (underlying ? cp).toJava
 
   override def shutdown(): Unit =
     underlying.shutdown()

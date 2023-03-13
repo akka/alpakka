@@ -79,11 +79,14 @@ trait MqttFlowSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll 
 
       commands.offer(Command(Connect(clientId, ConnectFlags.CleanSession)))
       commands.offer(Command(Subscribe(topic)))
-      session ! Command(
-        Publish(ControlPacketFlags.RETAIN | ControlPacketFlags.QoSAtLeastOnceDelivery, topic, ByteString("ohi"))
-      )
+      val publishDone = session ? Command(
+          Publish(ControlPacketFlags.RETAIN | ControlPacketFlags.QoSAtLeastOnceDelivery, topic, ByteString("ohi")),
+          Done
+        )
+
       //#run-streaming-flow
 
+      publishDone.futureValue shouldBe Done
       events.futureValue match {
         case Publish(_, `topic`, _, bytes) => bytes shouldBe ByteString("ohi")
         case e => fail("Unexpected event: " + e)

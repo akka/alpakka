@@ -124,16 +124,20 @@ public class MqttFlowTest {
     SourceQueueWithComplete<Command<Object>> commands = run.first();
     commands.offer(new Command<>(new Connect(clientId, ConnectFlags.CleanSession())));
     commands.offer(new Command<>(new Subscribe(topic)));
-    session.tell(
-        new Command<>(
-            new Publish(
-                ControlPacketFlags.RETAIN() | ControlPacketFlags.QoSAtLeastOnceDelivery(),
-                topic,
-                ByteString.fromString("ohi"))));
+    CompletionStage<Done> publishDone =
+        session.ask(
+            new Command<>(
+                new Publish(
+                    ControlPacketFlags.RETAIN() | ControlPacketFlags.QoSAtLeastOnceDelivery(),
+                    topic,
+                    ByteString.fromString("ohi")),
+                Done.getInstance()));
     // #run-streaming-flow
 
-    CompletionStage<Publish> event = run.second();
-    Publish publishEvent = event.toCompletableFuture().get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    publishDone.toCompletableFuture().get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+    CompletionStage<Publish> events = run.second();
+    Publish publishEvent = events.toCompletableFuture().get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
     assertEquals(publishEvent.topicName(), topic);
     assertEquals(publishEvent.payload(), ByteString.fromString("ohi"));
 
