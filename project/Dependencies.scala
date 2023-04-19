@@ -23,7 +23,7 @@ object Dependencies {
   // sync ignore prefix in scripts/link-validator.conf#L30
   val AkkaHttpVersion = "10.5.0-M1"
   val AkkaHttpBinaryVersion = "10.5"
-  val AlpakkaKafkaVersion = "4.0.0"
+  val AlpakkaKafkaVersion = "4.0.2"
   val ScalaTestVersion = "3.2.11"
   val TestContainersScalaTestVersion = "0.40.3" // pulls Testcontainers 1.16.2
   val mockitoVersion = "4.8.1" // check even https://github.com/scalatest/scalatestplus-mockito/releases
