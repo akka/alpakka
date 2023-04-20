@@ -17,7 +17,7 @@ Key links:
 ### Cutting the release
 
 - [ ] Check that open PRs and issues assigned to the milestone are reasonable
-- [ ] For minor or major versions, update the Change date in the LICENSE file and update the `licenses` url in the build.
+- [ ] Update the Change date and version in the LICENSE file.
 - [ ] Check readiness levels in `/project/project-info.conf`, and put in the release date for any new modules.
 - [ ] Create a new milestone for the [next version](https://github.com/akka/alpakka/milestones)
 - [ ] Close the [$VERSION$ milestone](https://github.com/akka/alpakka/milestones?direction=asc&sort=due_date)
