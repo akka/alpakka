@@ -521,7 +521,7 @@ import scala.util.{Failure, Success}
           case (_, Unsubscribed(unsubscribe)) =>
             clientConnected(data.copy(publishers = data.publishers -- unsubscribe.topicFilters))
           case (_, PublishReceivedFromRemote(publish, local))
-              if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 =>
+              if (publish.flags & PublishQoSFlags.QoSReserved).underlying == 0 =>
             local.success(Consumer.ForwardPublish)
             clientConnected(data)
           case (context, prfr @ PublishReceivedFromRemote(publish @ Publish(_, topicName, Some(packetId), _), local)) =>
@@ -572,7 +572,7 @@ import scala.util.{Failure, Success}
               clientConnected(data.copy(activeConsumers = data.activeConsumers - topicName))
             }
           case (context, PublishReceivedLocally(publish, _))
-              if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 &&
+              if (publish.flags & PublishQoSFlags.QoSReserved).underlying == 0 &&
               data.publishers.exists(Topics.filter(_, publish.topicName)) =>
             QueueOfferState.waitForQueueOfferCompleted(
               data.remote

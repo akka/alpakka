@@ -134,12 +134,12 @@ import scala.util.{Either, Failure, Success}
       Behaviors
         .receive[Event] {
           case (_, PubAckReceivedFromRemote(local))
-              if data.publish.flags.contains(ControlPacketFlags.QoSAtLeastOnceDelivery) =>
+              if data.publish.flags.contains(PublishQoSFlags.QoSAtLeastOnceDelivery) =>
             local.success(ForwardPubAck(data.publishData))
             Behaviors.stopped
 
           case (_, PubRecReceivedFromRemote(local))
-              if data.publish.flags.contains(ControlPacketFlags.QoSAtMostOnceDelivery) =>
+              if data.publish.flags.contains(PublishQoSFlags.QoSAtMostOnceDelivery) =>
             local.success(ForwardPubRec(data.publishData))
             timer.cancel(ReceivePubackrec)
             publishAcknowledged(data)
@@ -296,10 +296,10 @@ import scala.util.{Either, Failure, Success}
     timer.startSingleTimer(ReceivePubackrel, ReceivePubAckRecTimeout, data.settings.consumerPubAckRecTimeout)
     Behaviors
       .receiveMessagePartial[Event] {
-        case PubAckReceivedLocally(remote) if data.publish.flags.contains(ControlPacketFlags.QoSAtLeastOnceDelivery) =>
+        case PubAckReceivedLocally(remote) if data.publish.flags.contains(PublishQoSFlags.QoSAtLeastOnceDelivery) =>
           remote.success(ForwardPubAck)
           Behaviors.stopped
-        case PubRecReceivedLocally(remote) if data.publish.flags.contains(ControlPacketFlags.QoSExactlyOnceDelivery) =>
+        case PubRecReceivedLocally(remote) if data.publish.flags.contains(PublishQoSFlags.QoSExactlyOnceDelivery) =>
           remote.success(ForwardPubRec)
           timer.cancel(ReceivePubackrel)
           consumeReceived(data)

@@ -80,7 +80,7 @@ trait MqttFlowSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll 
       commands.offer(Command(Connect(clientId, ConnectFlags.CleanSession)))
       commands.offer(Command(Subscribe(topic)))
       session ! Command(
-        Publish(ControlPacketFlags.RETAIN | ControlPacketFlags.QoSAtLeastOnceDelivery, topic, ByteString("ohi"))
+        Publish(ControlPacketFlags.RETAIN | PublishQoSFlags.QoSAtLeastOnceDelivery, topic, ByteString("ohi"))
       )
       //#run-streaming-flow
 
@@ -173,7 +173,7 @@ trait MqttFlowSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll 
       commands.offer(Command(Connect(clientId, ConnectFlags.None)))
       commands.offer(Command(Subscribe(topic)))
       clientSession ! Command(
-        Publish(ControlPacketFlags.RETAIN | ControlPacketFlags.QoSAtLeastOnceDelivery, topic, ByteString("ohi"))
+        Publish(ControlPacketFlags.RETAIN | PublishQoSFlags.QoSAtLeastOnceDelivery, topic, ByteString("ohi"))
       )
 
       events.futureValue match {
@@ -191,9 +191,9 @@ trait MqttFlowSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll 
   }
 
   "mqtt client" should {
-    Seq(ControlPacketFlags.QoSAtMostOnceDelivery,
-        ControlPacketFlags.QoSAtLeastOnceDelivery,
-        ControlPacketFlags.QoSExactlyOnceDelivery).foreach { qos =>
+    Seq(SubscribeQoSFlags.QoSAtMostOnceDelivery,
+        SubscribeQoSFlags.QoSAtLeastOnceDelivery,
+        SubscribeQoSFlags.QoSExactlyOnceDelivery).foreach { qos =>
       s"subscribe at QoS ${qos.underlying.toString} level" in assertAllStagesStopped {
         val id = qos.underlying.toString
 

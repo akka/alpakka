@@ -440,7 +440,7 @@ import scala.util.{Either, Failure, Success}
             serverConnected(data, resetPingReqTimer = true)
 
           case (_, PublishReceivedFromRemote(_, publish, local))
-              if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 =>
+              if (publish.flags & PublishQoSFlags.QoSReserved).underlying == 0 =>
             local.success(Consumer.ForwardPublish)
             serverConnected(data, resetPingReqTimer = false)
 
@@ -495,7 +495,7 @@ import scala.util.{Either, Failure, Success}
             }
 
           case (context, PublishReceivedLocally(publish, _))
-              if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 =>
+              if (publish.flags & PublishQoSFlags.QoSReserved).underlying == 0 =>
             QueueOfferState.waitForQueueOfferCompleted(
               data.remote.offer(ForwardPublish(publish, None)),
               result => QueueOfferCompleted(ByteString.empty, result.toEither),

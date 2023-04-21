@@ -207,7 +207,7 @@ class MqttCodecSpec extends AnyWordSpec with Matchers with LogCapturing {
     "encode/decode publish packets" in {
       val bsb: ByteStringBuilder = ByteString.newBuilder
       val packet = Publish(
-        ControlPacketFlags.RETAIN | ControlPacketFlags.QoSAtMostOnceDelivery | ControlPacketFlags.DUP,
+        ControlPacketFlags.RETAIN | PublishQoSFlags.QoSAtMostOnceDelivery | ControlPacketFlags.DUP,
         "some-topic-name",
         ByteString("some-payload")
       )
@@ -226,7 +226,7 @@ class MqttCodecSpec extends AnyWordSpec with Matchers with LogCapturing {
 
     "invalid QoS when decoding publish packets" in {
       val bsb = ByteString.newBuilder
-        .putByte((ControlPacketType.PUBLISH.underlying << 4 | ControlPacketFlags.QoSReserved.underlying).toByte)
+        .putByte((ControlPacketType.PUBLISH.underlying << 4 | PublishQoSFlags.QoSReserved.underlying).toByte)
         .putByte(0)
       bsb
         .result()
@@ -252,7 +252,7 @@ class MqttCodecSpec extends AnyWordSpec with Matchers with LogCapturing {
       bsb
         .result()
         .iterator
-        .decodePublish(0, ControlPacketFlags.QoSAtLeastOnceDelivery) shouldBe Left(MqttCodec.BufferUnderflow)
+        .decodePublish(0, PublishQoSFlags.QoSAtLeastOnceDelivery) shouldBe Left(MqttCodec.BufferUnderflow)
     }
 
     "encode/decode publish ack packets" in {
@@ -306,8 +306,8 @@ class MqttCodecSpec extends AnyWordSpec with Matchers with LogCapturing {
     "encode/decode subscribe packets" in {
       val bsb: ByteStringBuilder = ByteString.newBuilder
       val packet = Subscribe(
-        List("some-head-topic" -> ControlPacketFlags.QoSExactlyOnceDelivery,
-             "some-tail-topic" -> ControlPacketFlags.QoSExactlyOnceDelivery)
+        List("some-head-topic" -> SubscribeQoSFlags.QoSExactlyOnceDelivery,
+             "some-tail-topic" -> SubscribeQoSFlags.QoSExactlyOnceDelivery)
       )
       val bytes = packet.encode(bsb, PacketId(0)).result()
       bytes.size shouldBe 40
@@ -325,15 +325,15 @@ class MqttCodecSpec extends AnyWordSpec with Matchers with LogCapturing {
     "bad subscribe message when decoding subscribe packets given bad QoS" in {
       val bsb: ByteStringBuilder = ByteString.newBuilder
       val packet = Subscribe(
-        List("some-head-topic" -> ControlPacketFlags.QoSExactlyOnceDelivery,
-             "some-tail-topic" -> ControlPacketFlags.QoSReserved)
+        List("some-head-topic" -> SubscribeQoSFlags.QoSExactlyOnceDelivery,
+             "some-tail-topic" -> SubscribeQoSFlags.QoSReserved)
       )
       val bytes = packet.encode(bsb, PacketId(1)).result()
       bytes.iterator
         .decodeControlPacket(MaxPacketSize) shouldBe Left(
         BadSubscribeMessage(PacketId(1),
-                            List(Right("some-head-topic") -> ControlPacketFlags.QoSExactlyOnceDelivery,
-                                 Right("some-tail-topic") -> ControlPacketFlags.QoSReserved))
+                            List(Right("some-head-topic") -> SubscribeQoSFlags.QoSExactlyOnceDelivery,
+                                 Right("some-tail-topic") -> SubscribeQoSFlags.QoSReserved))
       )
     }
 
@@ -354,7 +354,7 @@ class MqttCodecSpec extends AnyWordSpec with Matchers with LogCapturing {
     "encode/decode sub ack packets" in {
       val bsb: ByteStringBuilder = ByteString.newBuilder
       val packet =
-        SubAck(PacketId(1), List(ControlPacketFlags.QoSExactlyOnceDelivery, ControlPacketFlags.QoSExactlyOnceDelivery))
+        SubAck(PacketId(1), List(SubscribeQoSFlags.QoSExactlyOnceDelivery, SubscribeQoSFlags.QoSExactlyOnceDelivery))
       val bytes = packet.encode(bsb).result()
       bytes.size shouldBe 6
       bytes.iterator.decodeControlPacket(MaxPacketSize) shouldBe Right(packet)
@@ -362,11 +362,11 @@ class MqttCodecSpec extends AnyWordSpec with Matchers with LogCapturing {
 
     "regular sub ack message when decoding sub ack packets given failure QoS" in {
       val bsb: ByteStringBuilder = ByteString.newBuilder
-      val packet = SubAck(PacketId(1), List(ControlPacketFlags.QoSExactlyOnceDelivery, ControlPacketFlags.QoSFailure))
+      val packet = SubAck(PacketId(1), List(SubscribeQoSFlags.QoSExactlyOnceDelivery, SubscribeQoSFlags.QoSFailure))
       val bytes = packet.encode(bsb).result()
       bytes.iterator
         .decodeControlPacket(MaxPacketSize) shouldBe Right(
-        SubAck(PacketId(1), List(ControlPacketFlags.QoSExactlyOnceDelivery, ControlPacketFlags.QoSFailure))
+        SubAck(PacketId(1), List(SubscribeQoSFlags.QoSExactlyOnceDelivery, SubscribeQoSFlags.QoSFailure))
       )
     }
 
