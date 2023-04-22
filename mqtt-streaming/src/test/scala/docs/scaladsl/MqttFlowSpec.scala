@@ -189,4 +189,34 @@ trait MqttFlowSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll 
       commands.watchCompletion().foreach(_ => clientSession.shutdown())
     }
   }
+
+  "mqtt client" should {
+    Seq(ControlPacketFlags.QoSAtMostOnceDelivery,
+        ControlPacketFlags.QoSAtLeastOnceDelivery,
+        ControlPacketFlags.QoSExactlyOnceDelivery).foreach { qos =>
+      s"subscribe at QoS ${qos.underlying.toString} level" in assertAllStagesStopped {
+        val id = qos.underlying.toString
+
+        val settings = MqttSessionSettings()
+        val session = ActorMqttClientSession(settings)
+        val conn = Tcp().outgoingConnection("localhost", 1883)
+        val mqttFlow = Mqtt.clientSessionFlow(session, ByteString(id)).join(conn)
+        val (commands, events) = Source
+          .queue(10)
+          .via(mqttFlow)
+          .collect {
+            case Right(Event(p: SubAck, _)) => p
+          }
+          .toMat(Sink.head)(Keep.both)
+          .run()
+
+        commands.offer(Command(Connect(id, ConnectFlags.CleanSession)))
+        commands.offer(Command(Subscribe(Seq(s"topic$id" -> qos))))
+
+        events.futureValue match {
+          case SubAck(packetId, returnCodes) => returnCodes.head.contains(qos)
+        }
+      }
+    }
+  }
 }
