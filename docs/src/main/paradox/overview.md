@@ -25,7 +25,7 @@ If you want to try out a connector that has not yet been released, give @ref[sna
 
 ## Contributing
 
-Please feel free to contribute to Alpakka by reporting issues you identify, or by suggesting changes to the code. Please refer to our [contributing instructions](https://github.com/akka/alpakka/blob/master/CONTRIBUTING.md) and our [contributor advice](https://github.com/akka/alpakka/blob/master/contributor-advice.md) to learn how it can be done. The target structure for Alpakka connectors is illustrated by the @ref[Reference connector](reference.md).
+Please feel free to contribute to Alpakka by reporting issues you identify, or by suggesting changes to the code. Please refer to our [contributing instructions](https://github.com/akka/alpakka/blob/main/CONTRIBUTING.md) and our [contributor advice](https://github.com/akka/alpakka/blob/main/contributor-advice.md) to learn how it can be done. The target structure for Alpakka connectors is illustrated by the @ref[Reference connector](reference.md).
 
 We want Akka and Alpakka to strive in a welcoming and open atmosphere and expect all contributors to respect our [code of conduct](https://www.lightbend.com/conduct).
 
