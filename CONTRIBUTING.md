@@ -27,7 +27,7 @@ Doing a shallow clone/fetch/pull will not get the tag information and will inter
 
 ## General Workflow
 
-This is the process for committing code into master.
+This is the process for committing code into main.
 
 1. Make sure you have signed the Lightbend CLA, if not, [sign it online](https://www.lightbend.com/contribute/cla/akka).
 
@@ -102,7 +102,7 @@ For a Pull Request to be considered at all it has to meet these requirements:
 
 1. Do not use ``@author`` tags since it does not encourage [Collective Code Ownership](http://www.extremeprogramming.org/rules/collective.html). Contributors get the credit they deserve in the release notes.
 
-If these requirements are not met then the code should **not** be merged into master, or even reviewed - regardless of how good or important it is. No exceptions.
+If these requirements are not met then the code should **not** be merged into main, or even reviewed - regardless of how good or important it is. No exceptions.
 
 
 ## Creating Commits And Writing Commit Messages

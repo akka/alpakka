@@ -88,7 +88,7 @@ object Common extends AutoPlugin {
       Compile / doc / scalacOptions ++=
         Seq(
           "-doc-source-url", {
-            val branch = if (isSnapshot.value) "master" else s"v${version.value}"
+            val branch = if (isSnapshot.value) "main" else s"v${version.value}"
             s"https://github.com/akka/alpakka/tree/${branch}€{FILE_PATH_EXT}#L€{FILE_LINE}"
           },
           "-doc-canonical-base-url",
