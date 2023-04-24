@@ -55,7 +55,6 @@ object ControlPacketFlags {
   val ReservedPubRel = ControlPacketFlags(1 << 1)
   val ReservedSubscribe = ControlPacketFlags(1 << 1)
   val ReservedUnsubscribe = ControlPacketFlags(1 << 1)
-  val ReservedUnsubAck = ControlPacketFlags(1 << 1)
   val DUP = ControlPacketFlags(1 << 3)
   val RETAIN = ControlPacketFlags(1)
 }
@@ -458,10 +457,10 @@ final case class Unsubscribe @InternalApi private[streaming] (packetId: PacketId
 
 /**
  * 3.11 UNSUBACK – Unsubscribe acknowledgement
- * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
+ * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718077
  */
 final case class UnsubAck(packetId: PacketId)
-    extends ControlPacket(ControlPacketType.UNSUBACK, ControlPacketFlags.ReservedUnsubAck)
+    extends ControlPacket(ControlPacketType.UNSUBACK, ControlPacketFlags.ReservedGeneral)
 
 /**
  * 3.12 PINGREQ – PING request
@@ -794,6 +793,7 @@ object MqttCodec {
       }
 
     // 2 MQTT Control Packet format
+    // http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718022
     def decodeControlPacket(maxPacketSize: Int): Either[DecodeError, ControlPacket] =
       try {
         val b = v.getByte & 0xff
@@ -824,7 +824,7 @@ object MqttCodec {
                 v.decodeSubAck(l)
               case (ControlPacketType.UNSUBSCRIBE, ControlPacketFlags.ReservedUnsubscribe) =>
                 v.decodeUnsubscribe(l)
-              case (ControlPacketType.UNSUBACK, ControlPacketFlags.ReservedUnsubAck) =>
+              case (ControlPacketType.UNSUBACK, ControlPacketFlags.ReservedGeneral) =>
                 v.decodeUnsubAck()
               case (ControlPacketType.PINGREQ, ControlPacketFlags.ReservedGeneral) =>
                 Right(PingReq)

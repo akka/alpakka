@@ -5,3 +5,7 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.mqtt.str
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.mqtt.streaming.ControlPacketFlags.QoSExactlyOnceDelivery")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.mqtt.streaming.ControlPacketFlags.QoSAtLeastOnceDelivery")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.mqtt.streaming.ControlPacketFlags.QoSAtMostOnceDelivery")
+
+# Wrong decoding of UnsubAck
+# https://github.com/akka/alpakka/issues/2963 (PR https://github.com/akka/alpakka/pull/2971)
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.mqtt.streaming.ControlPacketFlags.ReservedUnsubAck")
