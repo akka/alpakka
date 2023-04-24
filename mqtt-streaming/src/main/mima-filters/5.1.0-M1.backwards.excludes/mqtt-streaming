@@ -1,0 +1,7 @@
+# Values removed to fix different QoS encoding in MQTT streaming Publish and Subscribe
+# https://github.com/akka/alpakka/pull/2969
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.mqtt.streaming.ControlPacketFlags.QoSFailure")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.mqtt.streaming.ControlPacketFlags.QoSReserved")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.mqtt.streaming.ControlPacketFlags.QoSExactlyOnceDelivery")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.mqtt.streaming.ControlPacketFlags.QoSAtLeastOnceDelivery")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.mqtt.streaming.ControlPacketFlags.QoSAtMostOnceDelivery")

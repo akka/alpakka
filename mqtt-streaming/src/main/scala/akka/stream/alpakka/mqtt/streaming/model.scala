@@ -22,7 +22,7 @@ import scala.concurrent.{ExecutionContext, Promise}
 
 /**
  * 2.2.1 MQTT Control Packet type
- * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
+ * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Table_2.1_-
  */
 object ControlPacketType {
   val Reserved1 = ControlPacketType(0)
@@ -46,7 +46,8 @@ final case class ControlPacketType private (underlying: Int) extends AnyVal
 
 /**
  * 2.2.2 Flags
- * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
+ * 3.3.1 Publish message header flags
+ * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718038
  */
 object ControlPacketFlags {
   val None = ControlPacketFlags(0)
@@ -56,12 +57,30 @@ object ControlPacketFlags {
   val ReservedUnsubscribe = ControlPacketFlags(1 << 1)
   val ReservedUnsubAck = ControlPacketFlags(1 << 1)
   val DUP = ControlPacketFlags(1 << 3)
+  val RETAIN = ControlPacketFlags(1)
+}
+
+/**
+ * 3.3.1 Publish QoS flags
+ * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Table_3.11_-
+ */
+object PublishQoSFlags {
   val QoSAtMostOnceDelivery = ControlPacketFlags(0)
   val QoSAtLeastOnceDelivery = ControlPacketFlags(1 << 1)
   val QoSExactlyOnceDelivery = ControlPacketFlags(2 << 1)
   val QoSReserved = ControlPacketFlags(3 << 1)
-  val QoSFailure = ControlPacketFlags(1 << 7)
-  val RETAIN = ControlPacketFlags(1)
+}
+
+/**
+ * 3.8.3 Subscribe payload QoS
+ * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Figure_3.26_-
+ */
+object SubscribeQoSFlags {
+  val QoSAtMostOnceDelivery = ControlPacketFlags(0)
+  val QoSAtLeastOnceDelivery = ControlPacketFlags(1)
+  val QoSExactlyOnceDelivery = ControlPacketFlags(2)
+  val QoSReserved = ControlPacketFlags(3)
+  val QoSFailure = ControlPacketFlags(0x80)
 }
 
 final case class ControlPacketFlags private (underlying: Int) extends AnyVal {
@@ -293,7 +312,7 @@ final case class Publish @InternalApi private[streaming] (override val flags: Co
    * Conveniently create a publish message with at least once delivery
    */
   def this(topicName: String, payload: ByteString) =
-    this(ControlPacketFlags.QoSAtLeastOnceDelivery, topicName, Some(PacketId(0)), payload)
+    this(PublishQoSFlags.QoSAtLeastOnceDelivery, topicName, Some(PacketId(0)), payload)
 
   override def toString: String =
     s"""Publish(flags:$flags,topicName:$topicName,packetId:$packetId,payload:${payload.size}b)"""
@@ -371,7 +390,7 @@ final case class Subscribe @InternalApi private[streaming] (packetId: PacketId,
    * A convenience for subscribing to a single topic with at-least-once semantics
    */
   def this(topicFilter: String) =
-    this(PacketId(0), List(topicFilter -> ControlPacketFlags.QoSAtLeastOnceDelivery))
+    this(PacketId(0), List(topicFilter -> SubscribeQoSFlags.QoSAtLeastOnceDelivery))
 }
 
 /**
@@ -894,12 +913,12 @@ object MqttCodec {
     // 3.3 PUBLISH – Publish message
     def decodePublish(l: Int, flags: ControlPacketFlags): Either[DecodeError, Publish] =
       try {
-        if (!flags.contains(ControlPacketFlags.QoSReserved)) {
+        if (!flags.contains(PublishQoSFlags.QoSReserved)) {
           val packetLen = v.len
           val topicName = v.decodeString()
           val packetId =
-            if (flags.contains(ControlPacketFlags.QoSAtLeastOnceDelivery) ||
-                flags.contains(ControlPacketFlags.QoSExactlyOnceDelivery))
+            if (flags.contains(PublishQoSFlags.QoSAtLeastOnceDelivery) ||
+                flags.contains(PublishQoSFlags.QoSExactlyOnceDelivery))
               Some(PacketId(v.getShort & 0xffff))
             else None
           val payload = v.getByteString(l - (packetLen - v.len))
@@ -971,7 +990,7 @@ object MqttCodec {
           }
         val topicFilters = decodeTopicFilters(l - (packetLen - v.len), Vector.empty)
         val topicFiltersValid = topicFilters.nonEmpty && topicFilters.foldLeft(true) {
-            case (true, (Right(_), tff)) if tff.underlying < ControlPacketFlags.QoSReserved.underlying => true
+            case (true, (Right(_), tff)) if tff.underlying < SubscribeQoSFlags.QoSReserved.underlying => true
             case _ => false
           }
         if (topicFiltersValid) {
