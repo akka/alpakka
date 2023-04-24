@@ -99,7 +99,7 @@ trait MqttFlowSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll 
   }
 
   "mqtt server flow" should {
-    "receive a bidirectional connection and a subscription to a topic" {
+    "receive a bidirectional connection and a subscription to a topic" in assertAllStagesStopped {
 
       val host = "localhost"
 
