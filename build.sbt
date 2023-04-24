@@ -93,7 +93,7 @@ lazy val alpakka = project
         // springWeb triggers an esoteric ScalaDoc bug (from Java code)
         springWeb
       ),
-    licenses := Seq(("BUSL-1.1", url("https://raw.githubusercontent.com/akka/alpakka/master/LICENSE"))), // FIXME change s/master/v5.0.1/ when released
+    licenses := Seq(("BUSL-1.1", url("https://raw.githubusercontent.com/akka/alpakka/main/LICENSE"))), // FIXME change s/master/v5.0.1/ when released
     crossScalaVersions := List() // workaround for https://github.com/sbt/sbt/issues/3465
   )
 
@@ -386,7 +386,7 @@ lazy val docs = project
         "akka.version" -> Dependencies.AkkaVersion,
         "akka-http.version" -> Dependencies.AkkaHttpVersion,
         "hadoop.version" -> Dependencies.HadoopVersion,
-        "extref.github.base_url" -> s"https://github.com/akka/alpakka/tree/${if (isSnapshot.value) "master"
+        "extref.github.base_url" -> s"https://github.com/akka/alpakka/tree/${if (isSnapshot.value) "main"
         else "v" + version.value}/%s",
         "extref.akka.base_url" -> s"https://doc.akka.io/docs/akka/${Dependencies.AkkaBinaryVersion}/%s",
         "scaladoc.akka.base_url" -> s"https://doc.akka.io/api/akka/${Dependencies.AkkaBinaryVersion}",
@@ -469,7 +469,12 @@ def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sb
     .disablePlugins(SitePlugin)
     .settings(
       name := s"akka-stream-alpakka-$projectId",
-      licenses := Seq(("BUSL-1.1", url("https://raw.githubusercontent.com/akka/alpakka/master/LICENSE"))), // FIXME change s/master/v5.0.0/ when released
+      licenses := {
+        val tagOrBranch =
+          if (version.value.endsWith("SNAPSHOT")) "main"
+          else "v" + version.value
+        Seq(("BUSL-1.1", url(s"https://raw.githubusercontent.com/akka/alpakka/${tagOrBranch}/LICENSE")))
+      },
       AutomaticModuleName.settings(s"akka.stream.alpakka.$moduleName"),
       scalacOptions += "-Wconf:cat=deprecation&msg=.*JavaConverters.*:s",
       mimaPreviousArtifacts := Set(
