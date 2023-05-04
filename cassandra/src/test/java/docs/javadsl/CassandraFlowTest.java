@@ -52,7 +52,7 @@ public class CassandraFlowTest {
 
   @AfterClass
   public static void afterAll() {
-    helper.shutdown();
+    if (helper != null) helper.shutdown();
   }
 
   ActorSystem system = helper.system;
