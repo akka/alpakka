@@ -8,13 +8,12 @@ import java.util.concurrent.{Executors, TimeoutException}
 
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
-import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Suite}
 
 import scala.concurrent.duration._
 import scala.concurrent.{blocking, Await, ExecutionContext, ExecutionContextExecutor}
 
-trait DefaultTestContext extends BeforeAndAfterAll with BeforeAndAfterEach with MockitoSugar { this: Suite =>
+trait DefaultTestContext extends BeforeAndAfterAll with BeforeAndAfterEach { this: Suite =>
 
   implicit protected val system: ActorSystem = ActorSystem(
     "KinesisTests",

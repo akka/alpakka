@@ -16,12 +16,11 @@ import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.testkit.TestKit
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.{verify, when}
+import org.mockito.Mockito.{mock, verify, when}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatestplus.mockito.MockitoSugar
 
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
@@ -31,7 +30,6 @@ class HmsTokenApiSpec
     with AnyWordSpecLike
     with Matchers
     with ScalaFutures
-    with MockitoSugar
     with BeforeAndAfterAll
     with LogCapturing {
 
@@ -49,7 +47,7 @@ class HmsTokenApiSpec
 
     "call the api as the docs want to" in {
 
-      val http = mock[HttpExt]
+      val http = mock(classOf[HttpExt])
       when(
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),
@@ -82,7 +80,7 @@ class HmsTokenApiSpec
     }
 
     "return the token" in {
-      val http = mock[HttpExt]
+      val http = mock(classOf[HttpExt])
       when(
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),

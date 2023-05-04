@@ -15,10 +15,9 @@ import akka.stream.alpakka.sqs.SqsAckResultEntry._
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.{spy, times, verify, when}
+import org.mockito.Mockito.{mock, spy, times, verify, when}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import org.scalatestplus.mockito.MockitoSugar.mock
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model._
 
@@ -242,7 +241,7 @@ class SqsAckSpec extends AnyFlatSpec with Matchers with DefaultTestContext with 
   it should "fail if any of the messages in the batch request failed" in {
     val messages = for (i <- 0 until 10) yield Message.builder().body(s"Message - $i").build()
 
-    implicit val mockAwsSqsClient = mock[SqsAsyncClient]
+    implicit val mockAwsSqsClient = mock(classOf[SqsAsyncClient])
 
     when(mockAwsSqsClient.deleteMessageBatch(any[DeleteMessageBatchRequest]))
       .thenReturn(CompletableFuture.completedFuture {
@@ -263,7 +262,7 @@ class SqsAckSpec extends AnyFlatSpec with Matchers with DefaultTestContext with 
   it should "fail if the batch request failed" in {
     val messages = for (i <- 0 until 10) yield Message.builder().body(s"Message - $i").build()
 
-    implicit val mockAwsSqsClient = mock[SqsAsyncClient]
+    implicit val mockAwsSqsClient = mock(classOf[SqsAsyncClient])
 
     when(mockAwsSqsClient.deleteMessageBatch(any[DeleteMessageBatchRequest]))
       .thenReturn(
@@ -284,7 +283,7 @@ class SqsAckSpec extends AnyFlatSpec with Matchers with DefaultTestContext with 
   it should "fail if the client invocation failed" in {
     val messages = for (i <- 0 until 10) yield Message.builder().body(s"Message - $i").build()
 
-    implicit val mockAwsSqsClient = mock[SqsAsyncClient]
+    implicit val mockAwsSqsClient = mock(classOf[SqsAsyncClient])
 
     when(
       mockAwsSqsClient.deleteMessageBatch(any[DeleteMessageBatchRequest])
@@ -354,7 +353,7 @@ class SqsAckSpec extends AnyFlatSpec with Matchers with DefaultTestContext with 
   it should "ignore batch of messages" in {
     val messages = for (i <- 0 until 10) yield Message.builder().body(s"Message - $i").build()
 
-    implicit val mockAwsSqsClient = mock[SqsAsyncClient]
+    implicit val mockAwsSqsClient = mock(classOf[SqsAsyncClient])
 
     val future =
       //#batch-ignore

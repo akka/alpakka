@@ -34,6 +34,9 @@ class MongoSourceSpec
   implicit val system = ActorSystem()
   // #init-system
 
+  override implicit val patienceConfig: PatienceConfig =
+    PatienceConfig(timeout = 5.seconds, interval = 50.millis)
+
   override protected def beforeAll(): Unit =
     Source.fromPublisher(db.drop()).runWith(Sink.headOption).futureValue
 
@@ -61,9 +64,6 @@ class MongoSourceSpec
   // #init-connection
 
   private val numbersDocumentColl = db.getCollection("numbers")
-
-  implicit val defaultPatience =
-    PatienceConfig(timeout = 5.seconds, interval = 50.millis)
 
   override def afterEach(): Unit =
     Source.fromPublisher(numbersDocumentColl.deleteMany(new Document())).runWith(Sink.head).futureValue

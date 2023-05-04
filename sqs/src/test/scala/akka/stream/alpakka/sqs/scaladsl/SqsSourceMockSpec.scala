@@ -15,7 +15,6 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import org.scalatestplus.mockito.MockitoSugar.mock
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{Message, ReceiveMessageRequest, ReceiveMessageResponse}
 
@@ -32,7 +31,7 @@ class SqsSourceMockSpec extends AnyFlatSpec with Matchers with DefaultTestContex
   }
 
   "SqsSource" should "send a request and unwrap the response" in {
-    implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
+    implicit val sqsClient: SqsAsyncClient = mock(classOf[SqsAsyncClient])
     when(sqsClient.receiveMessage(any[ReceiveMessageRequest]))
       .thenReturn(
         CompletableFuture.completedFuture(
@@ -61,7 +60,7 @@ class SqsSourceMockSpec extends AnyFlatSpec with Matchers with DefaultTestContex
   }
 
   it should "buffer messages and acquire them fast with slow sqs" in {
-    implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
+    implicit val sqsClient: SqsAsyncClient = mock(classOf[SqsAsyncClient])
     val timeout = 1.second
     val bufferToBatchRatio = 5
 
@@ -98,7 +97,7 @@ class SqsSourceMockSpec extends AnyFlatSpec with Matchers with DefaultTestContex
   }
 
   it should "enable throttling on emptyReceives and disable throttling when a new message arrives" in {
-    implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
+    implicit val sqsClient: SqsAsyncClient = mock(classOf[SqsAsyncClient])
     val firstWithDataCount = 30
     val thenEmptyCount = 15
     val parallelism = 10

@@ -8,19 +8,18 @@ import akka.stream.alpakka.jms.{Destination, _}
 import javax.jms.{Destination => JmsDestination, _}
 import org.mockito.ArgumentMatchers.{any, anyBoolean, anyInt, anyString}
 import org.mockito.Mockito._
-import org.scalatestplus.mockito.MockitoSugar
 
-class JmsMessageProducerSpec extends JmsSpec with MockitoSugar {
+class JmsMessageProducerSpec extends JmsSpec {
 
   trait Setup {
-    val factory: ConnectionFactory = mock[ConnectionFactory]
-    val connection: Connection = mock[Connection]
-    val session: Session = mock[Session]
-    val destination: JmsDestination = mock[JmsDestination]
-    val producer: MessageProducer = mock[MessageProducer]
-    val textMessage: TextMessage = mock[TextMessage]
-    val mapMessage: MapMessage = mock[MapMessage]
-    val settingsDestination: Destination = mock[Destination]
+    val factory: ConnectionFactory = mock(classOf[ConnectionFactory])
+    val connection: Connection = mock(classOf[Connection])
+    val session: Session = mock(classOf[Session])
+    val destination: JmsDestination = mock(classOf[JmsDestination])
+    val producer: MessageProducer = mock(classOf[MessageProducer])
+    val textMessage: TextMessage = mock(classOf[TextMessage])
+    val mapMessage: MapMessage = mock(classOf[MapMessage])
+    val settingsDestination: Destination = mock(classOf[Destination])
 
     when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)
     when(session.createProducer(any[javax.jms.Destination])).thenReturn(producer)
