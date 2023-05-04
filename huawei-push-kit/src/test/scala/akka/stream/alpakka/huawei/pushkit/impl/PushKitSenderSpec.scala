@@ -16,13 +16,12 @@ import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.testkit.TestKit
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.{verify, when}
+import org.mockito.Mockito.{verify, mock, when}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.SpanSugar.convertIntToGrainOfTime
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatestplus.mockito.MockitoSugar
 
 import scala.concurrent.{Await, ExecutionContext, Future}
 
@@ -31,7 +30,6 @@ class PushKitSenderSpec
     with AnyWordSpecLike
     with Matchers
     with ScalaFutures
-    with MockitoSugar
     with BeforeAndAfterAll
     with LogCapturing {
 
@@ -51,7 +49,7 @@ class PushKitSenderSpec
 
     "call the api as the docs want to" in {
       val sender = new PushKitSender
-      val http = mock[HttpExt]
+      val http = mock(classOf[HttpExt])
       when(
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),
@@ -83,7 +81,7 @@ class PushKitSenderSpec
 
     "parse the success response correctly" in {
       val sender = new PushKitSender
-      val http = mock[HttpExt]
+      val http = mock(classOf[HttpExt])
       when(
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),
@@ -105,7 +103,7 @@ class PushKitSenderSpec
 
     "parse the error response correctly" in {
       val sender = new PushKitSender
-      val http = mock[HttpExt]
+      val http = mock(classOf[HttpExt])
       when(
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),

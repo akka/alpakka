@@ -11,7 +11,7 @@ import akka.stream.alpakka.jms.scaladsl.{JmsConsumer, JmsProducer}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import javax.jms.{JMSException, Message, TextMessage}
 import org.mockito.ArgumentMatchers.{any, anyInt, anyLong}
-import org.mockito.Mockito.when
+import org.mockito.Mockito.{mock, when}
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 
@@ -173,7 +173,7 @@ class JmsProducerRetrySpec extends JmsSpec {
     "retry send as often as configured" in withMockedProducer { ctx =>
       import ctx._
       val sendAttempts = new AtomicInteger()
-      val message = mock[TextMessage]
+      val message = mock(classOf[TextMessage])
 
       when(session.createTextMessage(any[String])).thenReturn(message)
 
@@ -202,7 +202,7 @@ class JmsProducerRetrySpec extends JmsSpec {
     "fail send on first attempt if retry is disabled" in withMockedProducer { ctx =>
       import ctx._
       val sendAttempts = new AtomicInteger()
-      val message = mock[TextMessage]
+      val message = mock(classOf[TextMessage])
 
       when(session.createTextMessage(any[String])).thenReturn(message)
 

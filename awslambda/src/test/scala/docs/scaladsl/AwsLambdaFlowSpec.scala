@@ -21,7 +21,6 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatestplus.mockito.MockitoSugar
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.lambda.LambdaAsyncClient
 import software.amazon.awssdk.services.lambda.model.{InvokeRequest, InvokeResponse}
@@ -36,12 +35,11 @@ class AwsLambdaFlowSpec
     with BeforeAndAfterEach
     with ScalaFutures
     with Matchers
-    with MockitoSugar
     with LogCapturing {
 
   implicit val ec = system.dispatcher
 
-  implicit val awsLambdaClient = mock[LambdaAsyncClient]
+  implicit val awsLambdaClient = mock(classOf[LambdaAsyncClient])
 
   override protected def afterEach(): Unit = {
     reset(awsLambdaClient)

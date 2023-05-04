@@ -21,12 +21,11 @@ import akka.stream.alpakka.google.{GoogleHttpException, GoogleSettings, RequestS
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.testkit.TestKit
 import org.mockito.ArgumentMatchers.{any, anyInt, argThat}
-import org.mockito.Mockito.when
+import org.mockito.Mockito.{when, mock}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatestplus.mockito.MockitoSugar
 import spray.json.{JsObject, JsValue}
 
 import scala.annotation.nowarn
@@ -38,13 +37,12 @@ class GoogleHttpSpec
     with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
-    with ScalaFutures
-    with MockitoSugar {
+    with ScalaFutures {
 
   override def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 
   def mockHttp: HttpExt = {
-    val http = mock[HttpExt]
+    val http = mock(classOf[HttpExt])
     when(http.system) thenReturn system.asInstanceOf[ExtendedActorSystem]
     http
   }
@@ -62,8 +60,8 @@ class GoogleHttpSpec
     ).thenReturn(Flow[Any]
                    .zipWith(response)(Keep.right)
                    .map(Try(_))
-                   .map((_, mock[Nothing]))
-                   .mapMaterializedValue(_ => mock[HostConnectionPool]),
+                   .map((_, mock(classOf[Nothing])))
+                   .mapMaterializedValue(_ => mock(classOf[HostConnectionPool])),
                  Nil: _*): @nowarn("msg=dead code")
     http
   }
@@ -157,7 +155,7 @@ class GoogleHttpSpec
 
       final class AnotherException extends RuntimeException
 
-      val credentials = mock[Credentials]
+      val credentials = mock(classOf[Credentials])
       when(credentials.get()(any[ExecutionContext], any[RequestSettings])).thenReturn(
         Future.failed(GoogleOAuth2Exception(ErrorInfo())),
         Future.failed(new AnotherException)

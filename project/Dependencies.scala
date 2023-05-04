@@ -24,7 +24,7 @@ object Dependencies {
   val AkkaHttpVersion = "10.5.0-M1"
   val AkkaHttpBinaryVersion = "10.5"
   val AlpakkaKafkaVersion = "4.0.2"
-  val ScalaTestVersion = "3.2.11"
+  val ScalaTestVersion = "3.2.15"
   val TestContainersScalaTestVersion = "0.40.3" // pulls Testcontainers 1.16.2
   val mockitoVersion = "4.8.1" // check even https://github.com/scalatest/scalatestplus-mockito/releases
   val hoverflyVersion = "0.14.1"
@@ -58,11 +58,7 @@ object Dependencies {
       )
   )
 
-  val Mockito = Seq(
-    "org.mockito" % "mockito-core" % mockitoVersion % Test,
-    // https://github.com/scalatest/scalatestplus-mockito/releases
-    "org.scalatestplus" %% "mockito-4-2" % (ScalaTestVersion + ".0") % Test
-  )
+  val Mockito = Seq("org.mockito" % "mockito-core" % mockitoVersion % Test)
 
   // Releases https://github.com/FasterXML/jackson-databind/releases
   // CVE issues https://github.com/FasterXML/jackson-databind/issues?utf8=%E2%9C%93&q=+label%3ACVE

@@ -19,14 +19,12 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import org.scalatestplus.mockito.MockitoSugar
 
 import scala.collection.immutable.Seq
 import scala.concurrent.duration._
 
 class GooglePubSubSpec
     extends AnyFlatSpec
-    with MockitoSugar
     with ScalaFutures
     with Matchers
     with LogCapturing
@@ -42,7 +40,7 @@ class GooglePubSubSpec
   }
 
   private trait Fixtures {
-    lazy val mockHttpApi = mock[PubSubApi]
+    lazy val mockHttpApi = mock(classOf[PubSubApi])
     lazy val googlePubSub = new GooglePubSub {
       override val httpApi = mockHttpApi
     }
@@ -52,7 +50,7 @@ class GooglePubSubSpec
     def tokenFlow[T]: Flow[T, (T, Option[String]), NotUsed] =
       Flow[T].map(request => (request, Some("ok")))
 
-    val http: HttpExt = mock[HttpExt]
+    val http: HttpExt = mock(classOf[HttpExt])
     val config = PubSubConfig()
   }
 
