@@ -7,12 +7,12 @@ object Dependencies {
 
   val Scala213 = "2.13.10" // update even in link-validator.conf
   val Scala212 = "2.12.17"
-  val Scala3 = "3.1.3"
+  val Scala3 = "3.2.2"
   val Scala2Versions = Seq(Scala213, Scala212)
   val ScalaVersions = Dependencies.Scala2Versions :+ Dependencies.Scala3
 
-  val AkkaVersion = "2.7.0"
-  val AkkaBinaryVersion = "2.7"
+  val AkkaVersion = "2.8.1"
+  val AkkaBinaryVersion = "2.8"
 
   val InfluxDBJavaVersion = "2.15"
 
@@ -21,7 +21,7 @@ object Dependencies {
   // Sync with plugins.sbt
   val AkkaGrpcBinaryVersion = "2.3"
   // sync ignore prefix in scripts/link-validator.conf#L30
-  val AkkaHttpVersion = "10.5.0-M1"
+  val AkkaHttpVersion = "10.5.1"
   val AkkaHttpBinaryVersion = "10.5"
   val AlpakkaKafkaVersion = "4.0.2"
   val ScalaTestVersion = "3.2.15"
@@ -64,8 +64,8 @@ object Dependencies {
   // CVE issues https://github.com/FasterXML/jackson-databind/issues?utf8=%E2%9C%93&q=+label%3ACVE
   // This should align with the Jackson minor version used in Akka 2.7.x
   // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L29
-  val JacksonVersion = "2.13.4"
-  val JacksonDatabindVersion = "2.13.4.2"
+  val JacksonVersion = "2.13.5"
+  val JacksonDatabindVersion = JacksonVersion
   val JacksonDatabindDependencies = Seq(
     "com.fasterxml.jackson.core" % "jackson-core" % JacksonVersion,
     "com.fasterxml.jackson.core" % "jackson-databind" % JacksonDatabindVersion
@@ -79,7 +79,7 @@ object Dependencies {
 
   val AwsLambda = Seq(
     libraryDependencies ++= Seq(
-        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll // ApacheV2
         (
           ExclusionRule(organization = "com.typesafe.akka")
@@ -128,7 +128,7 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test,
         "com.typesafe.akka" %% "akka-stream-kafka" % AlpakkaKafkaVersion % Test,
         "junit" % "junit" % "4.13.2" % Test, // Eclipse Public License 1.0
-        "org.scalatest" %% "scalatest" % "3.2.11" % Test // ApacheV2
+        "org.scalatest" %% "scalatest" % ScalaTestVersion % Test // ApacheV2
       )
   )
 
@@ -143,7 +143,7 @@ object Dependencies {
           ExclusionRule("software.amazon.awssdk", "apache-client"),
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         ),
-        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion // ApacheV2
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion
       )
   )
 
@@ -342,7 +342,7 @@ object Dependencies {
 
   val Kinesis = Seq(
     libraryDependencies ++= Seq(
-        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll ExclusionRule(
           organization = "com.typesafe.akka"
         )
@@ -380,10 +380,10 @@ object Dependencies {
 
   val MqttStreaming = Seq(
     libraryDependencies ++= Seq(
-        "com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion, // ApacheV2
-        "com.typesafe.akka" %% "akka-actor-testkit-typed" % AkkaVersion % Test, // ApacheV2
-        "com.typesafe.akka" %% "akka-stream-typed" % AkkaVersion, // ApacheV2
-        "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test // ApacheV2
+        "com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion,
+        "com.typesafe.akka" %% "akka-actor-testkit-typed" % AkkaVersion % Test,
+        "com.typesafe.akka" %% "akka-stream-typed" % AkkaVersion,
+        "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test
       )
   )
 
@@ -458,7 +458,7 @@ object Dependencies {
           ExclusionRule("software.amazon.awssdk", "apache-client"),
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         ),
-        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion // ApacheV2
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion
       ) ++ Mockito
   )
 
@@ -473,7 +473,7 @@ object Dependencies {
           ExclusionRule("software.amazon.awssdk", "apache-client"),
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         ),
-        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion // ApacheV2
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion
       ) ++ Mockito
   )
 
@@ -500,7 +500,7 @@ object Dependencies {
           ExclusionRule("software.amazon.awssdk", "apache-client"),
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         ),
-        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "org.mockito" % "mockito-inline" % mockitoVersion % Test // MIT
       ) ++ Mockito
   )
