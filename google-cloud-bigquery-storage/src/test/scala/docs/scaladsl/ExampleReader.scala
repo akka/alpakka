@@ -7,7 +7,12 @@ package docs.scaladsl
 import akka.actor.ActorSystem
 import akka.http.scaladsl.unmarshalling.FromByteStringUnmarshaller
 import akka.stream.alpakka.googlecloud.bigquery.storage.{BigQueryRecord, BigQueryStorageSettings}
-import akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl.{BigQueryArrowStorage, BigQueryAvroStorage, BigQueryStorageAttributes, GrpcBigQueryStorageReader}
+import akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl.{
+  BigQueryArrowStorage,
+  BigQueryAvroStorage,
+  BigQueryStorageAttributes,
+  GrpcBigQueryStorageReader
+}
 import org.mockito.Mockito
 
 //#read-all

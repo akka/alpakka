@@ -21,7 +21,7 @@ import akka.stream.alpakka.google.{GoogleHttpException, GoogleSettings, RequestS
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.testkit.TestKit
 import org.mockito.ArgumentMatchers.{any, anyInt, argThat}
-import org.mockito.Mockito.{when, mock}
+import org.mockito.Mockito.{mock, when}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers

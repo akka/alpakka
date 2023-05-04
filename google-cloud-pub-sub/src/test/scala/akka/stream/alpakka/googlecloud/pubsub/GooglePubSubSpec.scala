@@ -23,12 +23,7 @@ import org.scalatest.matchers.should.Matchers
 import scala.collection.immutable.Seq
 import scala.concurrent.duration._
 
-class GooglePubSubSpec
-    extends AnyFlatSpec
-    with ScalaFutures
-    with Matchers
-    with LogCapturing
-    with BeforeAndAfterAll {
+class GooglePubSubSpec extends AnyFlatSpec with ScalaFutures with Matchers with LogCapturing with BeforeAndAfterAll {
 
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 100.millis)

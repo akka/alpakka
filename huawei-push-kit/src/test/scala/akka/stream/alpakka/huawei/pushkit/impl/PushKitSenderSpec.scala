@@ -16,7 +16,7 @@ import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.testkit.TestKit
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.{verify, mock, when}
+import org.mockito.Mockito.{mock, verify, when}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
