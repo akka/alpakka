@@ -41,6 +41,9 @@ class MongoSinkSpec
 
   implicit val system = ActorSystem()
 
+  override implicit val patienceConfig: PatienceConfig =
+    PatienceConfig(timeout = 10.seconds, interval = 100.millis)
+
   override protected def beforeAll(): Unit =
     Source.fromPublisher(db.drop()).runWith(Sink.headOption).futureValue
 
@@ -52,9 +55,6 @@ class MongoSinkSpec
   private val domainObjectsColl: MongoCollection[DomainObject] =
     db.getCollection("domainObjectsSink", classOf[DomainObject]).withCodecRegistry(codecRegistry)
   private val domainObjectsDocumentColl = db.getCollection("domainObjectsSink")
-
-  implicit val defaultPatience =
-    PatienceConfig(timeout = 10.seconds, interval = 100.millis)
 
   override def afterEach(): Unit = {
     Source.fromPublisher(numbersDocumentColl.deleteMany(new Document())).runWith(Sink.head).futureValue
