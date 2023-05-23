@@ -16,7 +16,8 @@ import akka.util.{ByteString, ByteStringBuilder}
  * INTERNAL API
  */
 @InternalApi private[file] final class ZipArchiveFlowStage(
-    val shape: FlowShape[ByteString, ByteString]
+    val shape: FlowShape[ByteString, ByteString],
+    deflateCompression: Option[Int] = None
 ) extends GraphStageLogic(shape) {
 
   private def in = shape.in
@@ -77,12 +78,14 @@ import akka.util.{ByteString, ByteStringBuilder}
     }
   )
 
+  override def preStart(): Unit =
+    deflateCompression.foreach(l => zip.setLevel(l))
 }
 
 /**
  * INTERNAL API
  */
-@InternalApi private[file] final class ZipArchiveFlow extends GraphStage[FlowShape[ByteString, ByteString]] {
+@InternalApi private[file] final class ZipArchiveFlow(deflateCompression: Option[Int] = None) extends GraphStage[FlowShape[ByteString, ByteString]] {
 
   val in: Inlet[ByteString] = Inlet(Logging.simpleName(this) + ".in")
   val out: Outlet[ByteString] = Outlet(Logging.simpleName(this) + ".out")
@@ -93,5 +96,5 @@ import akka.util.{ByteString, ByteStringBuilder}
   override val shape: FlowShape[ByteString, ByteString] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new ZipArchiveFlowStage(shape)
+    new ZipArchiveFlowStage(shape, deflateCompression)
 }

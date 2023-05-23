@@ -15,8 +15,8 @@ import akka.util.ByteString
  */
 @InternalApi private[file] object ZipArchiveManager {
 
-  def zipFlow(): Flow[(ArchiveMetadata, Source[ByteString, Any]), ByteString, NotUsed] = {
-    val archiveZipFlow = new ZipArchiveFlow()
+  def zipFlow(deflateCompression: Option[Int] = None): Flow[(ArchiveMetadata, Source[ByteString, Any]), ByteString, NotUsed] = {
+    val archiveZipFlow = new ZipArchiveFlow(deflateCompression)
     Flow[(ArchiveMetadata, Source[ByteString, Any])]
       .flatMapConcat {
         case (metadata, stream) =>
