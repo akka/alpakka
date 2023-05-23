@@ -12,6 +12,7 @@ import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.model.StatusCodes.{NoContent, NotFound, OK}
+import akka.http.scaladsl.model.headers.ByteRange.FromOffset
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.{headers => http, _}
 import akka.http.scaladsl.settings.{ClientConnectionSettings, ConnectionPoolSettings}
@@ -20,6 +21,7 @@ import akka.http.scaladsl.{ClientTransport, Http}
 import akka.stream.alpakka.s3.BucketAccess.{AccessDenied, AccessGranted, NotExists}
 import akka.stream.alpakka.s3._
 import akka.stream.alpakka.s3.impl.auth.{CredentialScope, Signer, SigningKey}
+import akka.stream.alpakka.s3.scaladsl.S3
 import akka.stream.scaladsl.{Flow, Keep, RetryFlow, RunnableGraph, Sink, Source, Tcp}
 import akka.stream.{Attributes, Materializer}
 import akka.util.ByteString
@@ -27,6 +29,7 @@ import akka.{Done, NotUsed}
 import software.amazon.awssdk.regions.Region
 
 import scala.collection.immutable
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
 
@@ -37,6 +40,9 @@ import scala.util.{Failure, Success, Try}
     BucketAndKey.validateObjectKey(key, conf)
     this
   }
+
+  def mkString: String =
+    s"s3://$bucket/$key"
 }
 
 /** Internal Api */
@@ -165,6 +171,7 @@ import scala.util.{Failure, Success, Try}
   import Marshalling._
 
   val MinChunkSize: Int = 5 * 1024 * 1024 //in bytes
+  val DefaultByteRangeSize: Long = 8 * 1024 * 1024
   val atLeastOneByteString: Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString].orElse(Source.single(ByteString.empty))
 
@@ -231,6 +238,71 @@ import scala.util.{Failure, Success, Try}
       }
       .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.parasitic))
   }
+
+  def getObjectByRanges(
+                         s3Location: S3Location,
+                         versionId: Option[String],
+                         s3Headers: S3Headers,
+                         rangeSize: Long = DefaultByteRangeSize,
+                         parallelism: Int = 4
+                       ): Source[ByteString, Future[ObjectMetadata]] = {
+    Source.fromMaterializer { (_, _) =>
+      val objectMetadataMat = Promise[ObjectMetadata]()
+      getObjectMetadata(s3Location.bucket, s3Location.key, versionId, s3Headers)
+        .flatMapConcat {
+          case Some(s3Meta) if s3Meta.contentLength == 0 =>
+            objectMetadataMat.success(s3Meta)
+            Source.empty[ByteString]
+          case Some(s3Meta) =>
+            objectMetadataMat.success(s3Meta)
+            val byteRanges = computeByteRanges(s3Meta.contentLength, rangeSize)
+            if (byteRanges.size <= 1) {
+              getObject(s3Location, None, versionId, s3Headers)
+            } else {
+              val rangeSources = prepareRangeSources(s3Location, versionId, s3Headers, byteRanges)
+              Source.combine[ByteString, ByteString](
+                rangeSources.head,
+                rangeSources(1),
+                rangeSources.drop(2): _*
+              )(p => MergeOrderedN(p, parallelism))
+            }
+          case None =>
+            Source.failed(throw new NoSuchElementException(s"Object does not exist at location [${s3Location.mkString}]"))
+        }
+        .mapError {
+          case e: Throwable =>
+            objectMetadataMat.tryFailure(e)
+            e
+        }
+        .mapMaterializedValue(_ => objectMetadataMat.future)
+    }
+      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.parasitic))
+  }
+
+  private def computeByteRanges(contentLength: Long, rangeSize: Long): Seq[ByteRange] = {
+    require(contentLength >= 0, s"contentLength ($contentLength) must be >= 0")
+    require(rangeSize > 0, s"rangeSize ($rangeSize) must be > 0")
+    if (contentLength <= rangeSize)
+      Nil
+    else {
+      val ranges = ListBuffer[ByteRange]()
+      for (i <- 0L until contentLength by rangeSize) {
+        if ((i + rangeSize) >= contentLength)
+          ranges += FromOffset(i)
+        else
+          ranges += ByteRange(i, i + rangeSize - 1)
+      }
+      ranges.result()
+    }
+  }
+
+  private def prepareRangeSources(
+                                   s3Location: S3Location,
+                                   versionId: Option[String],
+                                   s3Headers: S3Headers,
+                                   byteRanges: Seq[ByteRange]
+                                 ): Seq[Source[ByteString, Future[ObjectMetadata]]] =
+    byteRanges.map(br => getObject(s3Location, Some(br), versionId, s3Headers))
 
   /**
    * An ADT that represents the current state of pagination

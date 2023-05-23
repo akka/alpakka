@@ -5,6 +5,7 @@
 package akka.stream.alpakka.s3.scaladsl
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.headers.ByteRange
 import akka.stream.alpakka.s3.S3Settings
 import akka.stream.alpakka.s3.headers.ServerSideEncryption
 import akka.stream.alpakka.s3.impl.S3Stream
@@ -174,6 +175,19 @@ abstract class S3WireMockBase(_system: ActorSystem, val _wireMockServer: WireMoc
           .withHeader("x-amz-server-side-encryption-customer-key-MD5", new EqualToPattern(sseCustomerMd5Key))
           .willReturn(
             aResponse().withStatus(200).withHeader("ETag", s""""$etagSSE"""").withHeader("Content-Length", "8")
+          )
+      )
+
+  def mockRangedDownload(byteRange: ByteRange, range: String): Unit =
+    mock
+      .register(
+        get(urlEqualTo(s"/$bucketKey"))
+          .withHeader("Range", new EqualToPattern(s"bytes=$byteRange"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("ETag", """"fba9dede5f27731c9771645a39863328"""")
+              .withBody(range)
           )
       )
 
