@@ -61,4 +61,4 @@ Our goal is to improve the stability and test coverage for Alpakka APIs over tim
 
 License
 -------
-Akka is licensed under the Business Source License 1.1, see [LICENSE](https://github.com/akka/alpakka/blob/main/LICENSE).
+Alpakka is licensed under the Business Source License 1.1, see [LICENSE](https://github.com/akka/alpakka/blob/main/LICENSE).
