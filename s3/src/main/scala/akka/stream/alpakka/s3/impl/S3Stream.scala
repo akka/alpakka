@@ -4,9 +4,6 @@
 
 package akka.stream.alpakka.s3.impl
 
-import java.net.InetSocketAddress
-import java.time.{Instant, ZoneOffset, ZonedDateTime}
-import scala.annotation.nowarn
 import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
@@ -21,15 +18,17 @@ import akka.http.scaladsl.{ClientTransport, Http}
 import akka.stream.alpakka.s3.BucketAccess.{AccessDenied, AccessGranted, NotExists}
 import akka.stream.alpakka.s3._
 import akka.stream.alpakka.s3.impl.auth.{CredentialScope, Signer, SigningKey}
-import akka.stream.alpakka.s3.scaladsl.S3
 import akka.stream.scaladsl.{Flow, Keep, RetryFlow, RunnableGraph, Sink, Source, Tcp}
 import akka.stream.{Attributes, Materializer}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
 import software.amazon.awssdk.regions.Region
 
-import scala.collection.immutable
+import java.net.InetSocketAddress
+import java.time.{Instant, ZoneOffset, ZonedDateTime}
+import scala.annotation.{nowarn, tailrec}
 import scala.collection.mutable.ListBuffer
+import scala.collection.{immutable, mutable}
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
 
@@ -175,6 +174,8 @@ import scala.util.{Failure, Success, Try}
   val atLeastOneByteString: Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString].orElse(Source.single(ByteString.empty))
 
+  private val RangeEndMarker = "$END$"
+
   // def because tokens can expire
   private def signingKey(implicit settings: S3Settings) = {
     val requestDate = ZonedDateTime.now(ZoneOffset.UTC)
@@ -255,19 +256,11 @@ import scala.util.{Failure, Success, Try}
             Source.empty[ByteString]
           case Some(s3Meta) =>
             objectMetadataMat.success(s3Meta)
-            val byteRanges = computeByteRanges(s3Meta.contentLength, rangeSize)
-            if (byteRanges.size <= 1) {
-              getObject(s3Location, None, versionId, s3Headers)
-            } else {
-              val rangeSources = prepareRangeSources(s3Location, versionId, s3Headers, byteRanges)
-              Source.combine[ByteString, ByteString](
-                rangeSources.head,
-                rangeSources(1),
-                rangeSources.drop(2): _*
-              )(p => MergeOrderedN(p, parallelism))
-            }
+            doGetByRanges(s3Location, versionId, s3Headers, s3Meta.contentLength, rangeSize, parallelism)
           case None =>
-            Source.failed(throw new NoSuchElementException(s"Object does not exist at location [${s3Location.mkString}]"))
+            val exc = new NoSuchElementException(s"Object does not exist at location [${s3Location.mkString}]")
+            objectMetadataMat.failure(exc)
+            Source.failed(exc)
         }
         .mapError {
           case e: Throwable =>
@@ -277,6 +270,29 @@ import scala.util.{Failure, Success, Try}
         .mapMaterializedValue(_ => objectMetadataMat.future)
     }
       .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.parasitic))
+  }
+
+  private def doGetByRanges(
+                             s3Location: S3Location,
+                             versionId: Option[String],
+                             s3Headers: S3Headers,
+                             contentLength: Long,
+                             rangeSize: Long,
+                             parallelism: Int
+                           ): Source[ByteString, Any] = {
+    val byteRanges = computeByteRanges(contentLength, rangeSize)
+    if (byteRanges.size <= 1) {
+      getObject(s3Location, None, versionId, s3Headers)
+    } else {
+      Source(byteRanges)
+        .zipWithIndex
+        .flatMapMerge(parallelism, brToIdx => {
+          val (br, idx) = brToIdx
+          val endMarker = Source.single(ByteString("$END$"))
+          getObject(s3Location, Some(br), versionId, s3Headers).concat(endMarker).map(_ -> idx)
+        })
+        .statefulMapConcat(RangeMapConcat)
+    }
   }
 
   private def computeByteRanges(contentLength: Long, rangeSize: Long): Seq[ByteRange] = {
@@ -296,13 +312,55 @@ import scala.util.{Failure, Success, Try}
     }
   }
 
-  private def prepareRangeSources(
-                                   s3Location: S3Location,
-                                   versionId: Option[String],
-                                   s3Headers: S3Headers,
-                                   byteRanges: Seq[ByteRange]
-                                 ): Seq[Source[ByteString, Future[ObjectMetadata]]] =
-    byteRanges.map(br => getObject(s3Location, Some(br), versionId, s3Headers))
+  private val RangeMapConcat: () => ((ByteString, Long)) => IterableOnce[ByteString] = () => {
+    var currentRangeIdx = 0L
+    var completedRanges = Set.empty[Long]
+    var bufferByRangeIdx = Map.empty[Long, mutable.Queue[ByteString]]
+
+    val isEndMarker: ByteString => Boolean = bs => bs.size == RangeEndMarker.length && bs.utf8String == RangeEndMarker
+
+    def foldRangeBuffers(): Option[ByteString] = {
+      @tailrec
+      def innerFoldRangeBuffers(acc: Option[ByteString]): Option[ByteString] = {
+        bufferByRangeIdx.get(currentRangeIdx) match {
+          case None =>
+            if (completedRanges.contains(currentRangeIdx))
+              currentRangeIdx += 1
+            if (bufferByRangeIdx.contains(currentRangeIdx))
+              innerFoldRangeBuffers(acc)
+            else
+              acc
+          case Some(queue) =>
+            val next = queue.dequeueAll(_ => true).foldLeft(acc.getOrElse(ByteString.empty))(_ ++ _)
+            bufferByRangeIdx -= currentRangeIdx
+            if (completedRanges.contains(currentRangeIdx))
+              currentRangeIdx += 1
+            if (bufferByRangeIdx.contains(currentRangeIdx))
+              innerFoldRangeBuffers(Some(next))
+            else
+              Some(next)
+        }
+      }
+
+      innerFoldRangeBuffers(None)
+    }
+
+    bsToIdx => {
+      val (bs, idx) = bsToIdx
+      if (isEndMarker(bs)) {
+        completedRanges = completedRanges + idx
+        foldRangeBuffers().toList
+      } else if (idx == currentRangeIdx) {
+        bs :: Nil
+      } else {
+        bufferByRangeIdx = bufferByRangeIdx.updatedWith(idx.toInt) {
+          case Some(queue) => Some(queue.enqueue(bs))
+          case None => Some(mutable.Queue(bs))
+        }
+        Nil
+      }
+    }
+  }
 
   /**
    * An ADT that represents the current state of pagination
