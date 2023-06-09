@@ -22,12 +22,22 @@ object Archive {
 
   /**
    * Flow for compressing multiple files into one ZIP file.
+   *
+   * @param deflateCompression see [[java.util.zip.Deflater Deflater]]
    */
-  def zip(): Flow[Pair[ArchiveMetadata, Source[ByteString, NotUsed]], ByteString, NotUsed] =
+  def zip(
+      deflateCompression: Option[Int]
+  ): Flow[Pair[ArchiveMetadata, Source[ByteString, NotUsed]], ByteString, NotUsed] =
     Flow
       .create[Pair[ArchiveMetadata, Source[ByteString, NotUsed]]]()
       .map(func(pair => (pair.first, pair.second.asScala)))
-      .via(scaladsl.Archive.zip().asJava)
+      .via(scaladsl.Archive.zip(deflateCompression).asJava)
+
+  /**
+   * Flow for compressing multiple files into one ZIP file.
+   */
+  def zip(): Flow[Pair[ArchiveMetadata, Source[ByteString, NotUsed]], ByteString, NotUsed] =
+    zip(None)
 
   /**
    * Flow for reading ZIP files.

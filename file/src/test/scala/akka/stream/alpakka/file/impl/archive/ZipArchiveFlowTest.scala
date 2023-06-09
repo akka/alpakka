@@ -13,6 +13,8 @@ import akka.util.ByteString
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.wordspec.AnyWordSpecLike
 
+import java.util.zip.Deflater
+
 class ZipArchiveFlowTest
     extends TestKit(ActorSystem("ziparchive"))
     with AnyWordSpecLike
@@ -25,6 +27,27 @@ class ZipArchiveFlowTest
         val (upstream, downstream) =
           TestSource[ByteString]()
             .via(new ZipArchiveFlow())
+            .toMat(TestSink())(Keep.both)
+            .run()
+
+        upstream.sendNext(FileByteStringSeparators.createStartingByteString("test"))
+        upstream.sendNext(ByteString(1))
+        upstream.sendNext(FileByteStringSeparators.createEndingByteString())
+        upstream.sendComplete()
+
+        downstream.request(2)
+        downstream.expectNextN(2)
+        downstream.request(1)
+        downstream.expectNextN(1)
+        downstream.expectComplete()
+      }
+    }
+
+    "compression flag given and stream ends" should {
+      "emit element only when downstream requests" in {
+        val (upstream, downstream) =
+          TestSource[ByteString]()
+            .via(new ZipArchiveFlow(Some(Deflater.NO_COMPRESSION)))
             .toMat(TestSink())(Keep.both)
             .run()
 

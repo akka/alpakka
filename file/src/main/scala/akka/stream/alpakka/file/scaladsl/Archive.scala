@@ -20,9 +20,17 @@ object Archive {
 
   /**
    * Flow for compressing multiple files into one ZIP file.
+   *
+   * @param deflateCompression see [[java.util.zip.Deflater Deflater]]
+   */
+  def zip(deflateCompression: Option[Int]): Flow[(ArchiveMetadata, Source[ByteString, Any]), ByteString, NotUsed] =
+    ZipArchiveManager.zipFlow(deflateCompression)
+
+  /**
+   * Flow for compressing multiple files into one ZIP file.
    */
   def zip(): Flow[(ArchiveMetadata, Source[ByteString, Any]), ByteString, NotUsed] =
-    ZipArchiveManager.zipFlow()
+    zip(None)
 
   /**
    * Flow for reading ZIP files.
