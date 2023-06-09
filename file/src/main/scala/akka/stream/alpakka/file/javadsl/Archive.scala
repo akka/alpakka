@@ -25,7 +25,9 @@ object Archive {
    *
    * @param deflateCompression see [[java.util.zip.Deflater Deflater]]
    */
-  def zip(deflateCompression: Option[Int]): Flow[Pair[ArchiveMetadata, Source[ByteString, NotUsed]], ByteString, NotUsed] =
+  def zip(
+      deflateCompression: Option[Int]
+  ): Flow[Pair[ArchiveMetadata, Source[ByteString, NotUsed]], ByteString, NotUsed] =
     Flow
       .create[Pair[ArchiveMetadata, Source[ByteString, NotUsed]]]()
       .map(func(pair => (pair.first, pair.second.asScala)))

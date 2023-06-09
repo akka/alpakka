@@ -85,7 +85,8 @@ import akka.util.{ByteString, ByteStringBuilder}
 /**
  * INTERNAL API
  */
-@InternalApi private[file] final class ZipArchiveFlow(deflateCompression: Option[Int] = None) extends GraphStage[FlowShape[ByteString, ByteString]] {
+@InternalApi private[file] final class ZipArchiveFlow(deflateCompression: Option[Int] = None)
+    extends GraphStage[FlowShape[ByteString, ByteString]] {
 
   val in: Inlet[ByteString] = Inlet(Logging.simpleName(this) + ".in")
   val out: Outlet[ByteString] = Outlet(Logging.simpleName(this) + ".out")
