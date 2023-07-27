@@ -16,7 +16,7 @@ Alpakka Cassandra offers an @extref:[Akka Streams](akka:/stream/index.html) API 
 
 The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
 
-@@repository [Maven,sbt,Gradle] {
+@@repository [sbt,Maven,Gradle] {
 id="akka-repository"
 name="Akka library repository"
 url="https://repo.akka.io/maven"
