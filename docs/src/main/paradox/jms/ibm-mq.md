@@ -13,7 +13,7 @@ MQ settings for this image are shown here: https://github.com/ibm-messaging/mq-d
 
 The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
 
-@@repository [Maven,sbt,Gradle] {
+@@repository [sbt,Maven,Gradle] {
 id="akka-repository"
 name="Akka library repository"
 url="https://repo.akka.io/maven"
