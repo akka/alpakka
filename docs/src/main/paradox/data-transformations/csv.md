@@ -22,6 +22,16 @@ Lines are separated by either Line Feed (`\n` = ASCII 10) or Carriage Return and
 
 ## Artifacts
 
+The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
+
+@@repository [Maven,sbt,Gradle] {
+id="akka-repository"
+name="Akka library repository"
+url="https://repo.akka.io/maven"
+}
+
+Additionally, add the dependencies as below.
+
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
   artifact=akka-stream-alpakka-csv_$scala.binary.version$

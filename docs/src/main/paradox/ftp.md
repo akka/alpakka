@@ -9,6 +9,16 @@ The FTP connector provides Akka Stream sources to connect to FTP, FTPs and SFTP 
 
 ## Artifacts
 
+The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
+
+@@repository [Maven,sbt,Gradle] {
+id="akka-repository"
+name="Akka library repository"
+url="https://repo.akka.io/maven"
+}
+
+Additionally, add the dependencies as below.
+
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
   artifact=akka-stream-alpakka-ftp_$scala.binary.version$

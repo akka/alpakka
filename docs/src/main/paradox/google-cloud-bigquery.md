@@ -14,6 +14,16 @@ Alpakka Google Cloud BigQuery was added in Alpakka 2.0.2 in July 2020 and is mar
 
 ## Artifacts
 
+The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
+
+@@repository [Maven,sbt,Gradle] {
+id="akka-repository"
+name="Akka library repository"
+url="https://repo.akka.io/maven"
+}
+
+Additionally, add the dependencies as below.
+
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
   artifact=akka-stream-alpakka-google-cloud-bigquery_$scala.binary.version$
