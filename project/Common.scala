@@ -113,7 +113,9 @@ object Common extends AutoPlugin {
           "-Xlint:static",
           "-Xlint:try",
           "-Xlint:unchecked",
-          "-Xlint:varargs"
+          "-Xlint:varargs",
+          "--release",
+          "8"
         ),
       compile / javacOptions ++= (scalaVersion.value match {
           case Dependencies.Scala213 if insideCI.value && fatalWarnings.value && !Dependencies.CronBuild =>
