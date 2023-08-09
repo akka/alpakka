@@ -113,7 +113,7 @@ object Common extends AutoPlugin {
           "-Xlint:static",
           "-Xlint:try",
           "-Xlint:unchecked",
-          "-Xlint:varargs",
+          "-Xlint:varargs"
           // Release must be with JDK 8 because this flag prevents access to com.sun.nio.file.SensitivityWatchEventModifier
           // "--release",
           // "8"
