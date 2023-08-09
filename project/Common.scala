@@ -114,8 +114,9 @@ object Common extends AutoPlugin {
           "-Xlint:try",
           "-Xlint:unchecked",
           "-Xlint:varargs",
-          "--release",
-          "8"
+          // Release must be with JDK 8 because this flag prevents access to com.sun.nio.file.SensitivityWatchEventModifier
+          // "--release",
+          // "8"
         ),
       compile / javacOptions ++= (scalaVersion.value match {
           case Dependencies.Scala213 if insideCI.value && fatalWarnings.value && !Dependencies.CronBuild =>
