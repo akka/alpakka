@@ -19,6 +19,10 @@ private[ftp] trait FtpOperations extends CommonFtpOperations { _: FtpLike[FTPCli
   def connect(connectionSettings: FtpSettings)(implicit ftpClient: FTPClient): Try[Handler] = Try {
     connectionSettings.proxy.foreach(ftpClient.setProxy)
 
+    if (ftpClient.getAutodetectUTF8() != connectionSettings.autodetectUTF8) {
+      ftpClient.setAutodetectUTF8(connectionSettings.autodetectUTF8)
+    }
+
     try {
       ftpClient.connect(connectionSettings.host, connectionSettings.port)
     } catch {
