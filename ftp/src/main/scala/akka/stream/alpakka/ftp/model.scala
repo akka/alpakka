@@ -130,7 +130,7 @@ final class FtpSettings private (
     s"credentials=$credentials," +
     s"binary=$binary," +
     s"passiveMode=$passiveMode," +
-    s"autodetectUTF8=$autodetectUTF8" +
+    s"autodetectUTF8=$autodetectUTF8," +
     s"configureConnection=$configureConnection," +
     s"proxy=$proxy)"
 }
