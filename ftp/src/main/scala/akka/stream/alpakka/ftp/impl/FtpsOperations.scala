@@ -21,6 +21,9 @@ private[ftp] trait FtpsOperations extends CommonFtpOperations {
     Try {
       connectionSettings.proxy.foreach(ftpClient.setProxy)
 
+      connectionSettings.keyManager.foreach(ftpClient.setKeyManager)
+      connectionSettings.trustManager.foreach(ftpClient.setTrustManager)
+
       ftpClient.connect(connectionSettings.host, connectionSettings.port)
 
       connectionSettings.configureConnection(ftpClient)
