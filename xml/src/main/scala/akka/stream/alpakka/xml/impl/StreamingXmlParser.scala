@@ -50,9 +50,7 @@ private[xml] object StreamingXmlParser {
           parser.getInputFeeder.feedInput(array, 0, array.length)
           advanceParser()
         } catch {
-          case xmlException: javax.xml.stream.XMLStreamException =>
-            println("FAILED")
-            failStage(xmlException)
+          case xmlException: javax.xml.stream.XMLStreamException => failStage(xmlException)
         }
       }
 
