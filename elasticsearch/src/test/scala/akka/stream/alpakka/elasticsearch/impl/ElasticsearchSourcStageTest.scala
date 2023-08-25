@@ -38,7 +38,7 @@ class ElasticsearchSourcStageTest
               (json: String) => ScrollResponse(Some(json), None)
             )
           )
-          .toMat(TestSink.probe)(Keep.right)
+          .toMat(TestSink())(Keep.right)
           .run()
 
         downstream.request(1)

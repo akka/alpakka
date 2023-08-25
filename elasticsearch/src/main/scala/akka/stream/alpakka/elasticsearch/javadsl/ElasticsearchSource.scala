@@ -13,7 +13,7 @@ import akka.stream.{Attributes, Materializer}
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.{ArrayNode, NumericNode}
 
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
 
 /**
@@ -27,7 +27,7 @@ object ElasticsearchSource {
    */
   def create(elasticsearchParams: ElasticsearchParams,
              query: String,
-             settings: ElasticsearchSourceSettings): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
+             settings: SourceSettingsBase[_, _]): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
     create(elasticsearchParams, query, settings, new ObjectMapper())
 
   /**
@@ -36,7 +36,7 @@ object ElasticsearchSource {
    */
   def create(elasticsearchParams: ElasticsearchParams,
              query: String,
-             settings: ElasticsearchSourceSettings,
+             settings: SourceSettingsBase[_, _],
              objectMapper: ObjectMapper): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
     Source
       .fromMaterializer { (mat: Materializer, _: Attributes) =>
@@ -70,7 +70,7 @@ object ElasticsearchSource {
    */
   def create(elasticsearchParams: ElasticsearchParams,
              searchParams: java.util.Map[String, String],
-             settings: ElasticsearchSourceSettings,
+             settings: SourceSettingsBase[_, _],
              objectMapper: ObjectMapper): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
     Source
       .fromMaterializer { (mat: Materializer, _: Attributes) =>
@@ -97,7 +97,7 @@ object ElasticsearchSource {
    */
   def typed[T](elasticsearchParams: ElasticsearchParams,
                query: String,
-               settings: ElasticsearchSourceSettings,
+               settings: SourceSettingsBase[_, _],
                clazz: Class[T]): Source[ReadResult[T], NotUsed] =
     typed[T](elasticsearchParams, query, settings, clazz, new ObjectMapper())
 
@@ -107,7 +107,7 @@ object ElasticsearchSource {
    */
   def typed[T](elasticsearchParams: ElasticsearchParams,
                query: String,
-               settings: ElasticsearchSourceSettings,
+               settings: SourceSettingsBase[_, _],
                clazz: Class[T],
                objectMapper: ObjectMapper): Source[ReadResult[T], NotUsed] =
     Source
@@ -141,7 +141,7 @@ object ElasticsearchSource {
    */
   def typed[T](elasticsearchParams: ElasticsearchParams,
                searchParams: java.util.Map[String, String],
-               settings: ElasticsearchSourceSettings,
+               settings: SourceSettingsBase[_, _],
                clazz: Class[T],
                objectMapper: ObjectMapper): Source[ReadResult[T], NotUsed] =
     Source

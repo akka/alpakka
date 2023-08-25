@@ -32,7 +32,7 @@ class SignerSpec(_system: ActorSystem)
     with LogCapturing {
   def this() = this(ActorSystem("SignerSpec"))
 
-  implicit val defaultPatience =
+  implicit val defaultPatience: PatienceConfig =
     PatienceConfig(timeout = Span(2, Seconds), interval = Span(5, Millis))
 
   val credentials = StaticCredentialsProvider.create(

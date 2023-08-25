@@ -19,7 +19,7 @@ import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSink
 import com.datastax.oss.driver.api.core.cql.Row
 
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
@@ -28,7 +28,7 @@ import scala.concurrent.duration._
 
 final class CassandraSessionSpec extends CassandraSpecBase(ActorSystem("CassandraSessionSpec")) {
 
-  val log = Logging(system, this.getClass)
+  val log = Logging(system, classOf[CassandraSessionSpec])
   val javadslSessionRegistry = javadsl.CassandraSessionRegistry.get(system)
 
   val data = 1 until 103
@@ -103,7 +103,7 @@ final class CassandraSessionSpec extends CassandraSpecBase(ActorSystem("Cassandr
       val stmt = await(session.prepare(s"SELECT count FROM $dataTable WHERE partition = ?"))
       val bound = stmt.bind("A")
       val rows = session.select(bound).asScala
-      val probe = rows.map(_.getLong("count")).runWith(TestSink.probe[Long])
+      val probe = rows.map(_.getLong("count")).runWith(TestSink[Long]())
       probe.within(10.seconds) {
         probe.request(10).expectNextUnordered(1L, 2L, 3L, 4L).expectComplete()
       }
@@ -111,7 +111,7 @@ final class CassandraSessionSpec extends CassandraSpecBase(ActorSystem("Cassandr
 
     "select and bind as Source" in {
       val rows = session.select(s"SELECT count FROM $dataTable WHERE partition = ?", "B").asScala
-      val probe = rows.map(_.getLong("count")).runWith(TestSink.probe[Long])
+      val probe = rows.map(_.getLong("count")).runWith(TestSink[Long]())
       probe.within(10.seconds) {
         probe.request(10).expectNextUnordered(5L, 6L).expectComplete()
       }

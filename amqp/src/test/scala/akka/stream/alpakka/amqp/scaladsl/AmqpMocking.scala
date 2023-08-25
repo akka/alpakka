@@ -6,17 +6,17 @@ package akka.stream.alpakka.amqp.scaladsl
 
 import com.rabbitmq.client.{Address, Channel, ConfirmCallback, ConfirmListener, Connection, ConnectionFactory}
 import org.mockito.ArgumentMatchers._
-import org.scalatestplus.mockito.MockitoSugar
+import org.mockito.Mockito.mock
 import org.mockito.Mockito.when
 
-trait AmqpMocking extends MockitoSugar {
+trait AmqpMocking {
 
-  val channelMock: Channel = mock[Channel]
+  val channelMock: Channel = mock(classOf[Channel])
 
-  val connectionMock: Connection = mock[Connection]
+  val connectionMock: Connection = mock(classOf[Connection])
 
   def connectionFactoryMock: ConnectionFactory = {
-    val connectionFactory = mock[ConnectionFactory]
+    val connectionFactory = mock(classOf[ConnectionFactory])
 
     when(connectionFactory.newConnection(any[java.util.List[Address]]))
       .thenReturn(connectionMock)
@@ -25,7 +25,7 @@ trait AmqpMocking extends MockitoSugar {
       .thenReturn(channelMock)
 
     when(channelMock.addConfirmListener(any[ConfirmCallback](), any[ConfirmCallback]()))
-      .thenReturn(mock[ConfirmListener])
+      .thenReturn(mock(classOf[ConfirmListener]))
 
     connectionFactory
   }

@@ -10,7 +10,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import scala.annotation.nowarn
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 
 class GCStorageSettingsSpec extends AnyFlatSpec with Matchers with LogCapturing {
   "GCStorageSettings" should "create settings from application config" in {

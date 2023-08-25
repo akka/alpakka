@@ -6,7 +6,7 @@ package akka.stream.alpakka.cassandra.scaladsl
 
 import java.util.concurrent.ConcurrentHashMap
 
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import akka.Done

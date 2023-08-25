@@ -10,7 +10,7 @@ import akka.stream.alpakka.cassandra.CassandraWriteSettings
 import akka.stream.scaladsl.{Flow, FlowWithContext}
 import com.datastax.oss.driver.api.core.cql.{BatchStatement, BoundStatement, PreparedStatement}
 
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 import scala.concurrent.Future
 
 /**

@@ -4,6 +4,8 @@
 
 package akka.stream.alpakka.solr.impl
 
+import scala.annotation.nowarn
+
 import akka.annotation.InternalApi
 import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream._
@@ -14,12 +16,10 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient
 import org.apache.solr.client.solrj.request.UpdateRequest
 import org.apache.solr.client.solrj.response.UpdateResponse
 import org.apache.solr.common.SolrInputDocument
-
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
-
 import scala.collection.immutable
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 
 /**
  * Internal API
@@ -93,6 +93,7 @@ private final class SolrFlowLogic[T, C](
     client.add(collection, docs.asJava, settings.commitWithin)
   }
 
+  @nowarn("msg=deprecated") // FIXME #2917 Deprecated getIdField in Solrj 8.11.x
   private def atomicUpdateBulkToSolr(messages: immutable.Seq[WriteMessage[T, C]]): UpdateResponse = {
     val docs = messages.map { message =>
       val doc = new SolrInputDocument()

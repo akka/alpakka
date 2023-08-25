@@ -1,0 +1,2 @@
+# Allow change to FtpsSettings
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.ftp.FtpsSettings.this")

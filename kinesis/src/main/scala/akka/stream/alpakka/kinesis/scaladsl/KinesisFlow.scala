@@ -22,7 +22,7 @@ import software.amazon.awssdk.services.kinesis.model.{
   PutRecordsResultEntry
 }
 
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 import scala.collection.immutable.Queue
 import scala.concurrent.duration._
 import scala.compat.java8.FutureConverters._

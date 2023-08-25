@@ -6,7 +6,7 @@ package akka.stream.alpakka.s3.impl
 
 import java.net.InetSocketAddress
 import java.time.{Instant, ZoneOffset, ZonedDateTime}
-
+import scala.annotation.nowarn
 import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
@@ -27,8 +27,7 @@ import akka.{Done, NotUsed}
 import software.amazon.awssdk.regions.Region
 
 import scala.collection.immutable
-import scala.collection.immutable.Seq
-import scala.concurrent.Future
+import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
 
 /** Internal Api */
@@ -48,10 +47,15 @@ import scala.util.{Failure, Success, Try}
                                                                           versionId: Option[String] = None)
 
 /** Internal Api */
-@InternalApi private[impl] final case class ListBucketResult(isTruncated: Boolean,
-                                                             continuationToken: Option[String],
-                                                             contents: Seq[ListBucketResultContents],
-                                                             commonPrefixes: Seq[ListBucketResultCommonPrefixes])
+@InternalApi private[impl] final case class ListBucketsResult(buckets: immutable.Seq[ListBucketsResultContents])
+
+/** Internal Api */
+@InternalApi private[impl] final case class ListBucketResult(
+    isTruncated: Boolean,
+    continuationToken: Option[String],
+    contents: immutable.Seq[ListBucketResultContents],
+    commonPrefixes: immutable.Seq[ListBucketResultCommonPrefixes]
+)
 
 /** Internal Api */
 @InternalApi private[impl] final case class ListMultipartUploadContinuationToken(nextKeyMarker: Option[String],
@@ -67,8 +71,8 @@ import scala.util.{Failure, Success, Try}
     delimiter: Option[String],
     maxUploads: Int,
     isTruncated: Boolean,
-    uploads: Seq[ListMultipartUploadResultUploads],
-    commonPrefixes: Seq[CommonPrefixes]
+    uploads: immutable.Seq[ListMultipartUploadResultUploads],
+    commonPrefixes: immutable.Seq[CommonPrefixes]
 ) {
 
   /**
@@ -100,9 +104,9 @@ import scala.util.{Failure, Success, Try}
     delimiter: Option[String],
     maxKeys: Int,
     isTruncated: Boolean,
-    versions: Seq[ListObjectVersionsResultVersions],
-    commonPrefixes: Seq[CommonPrefixes],
-    deleteMarkers: Seq[DeleteMarkers]
+    versions: immutable.Seq[ListObjectVersionsResultVersions],
+    commonPrefixes: immutable.Seq[CommonPrefixes],
+    deleteMarkers: immutable.Seq[DeleteMarkers]
 ) {
 
   /**
@@ -125,7 +129,7 @@ import scala.util.{Failure, Success, Try}
                                                             nextPartNumberMarker: Option[Int],
                                                             maxParts: Int,
                                                             isTruncated: Boolean,
-                                                            parts: Seq[ListPartsResultParts],
+                                                            parts: immutable.Seq[ListPartsResultParts],
                                                             initiator: Option[AWSIdentity],
                                                             owner: Option[AWSIdentity],
                                                             storageClass: String) {
@@ -198,6 +202,36 @@ import scala.util.{Failure, Success, Try}
       }
   }.mapMaterializedValue(_ => NotUsed)
 
+  def getObject(
+      s3Location: S3Location,
+      range: Option[ByteRange],
+      versionId: Option[String],
+      s3Headers: S3Headers
+  ): Source[ByteString, Future[ObjectMetadata]] = {
+    val headers = s3Headers.headersFor(GetObject)
+
+    Source
+      .fromMaterializer { (mat, attr) =>
+        val objectMetadataMat = Promise[ObjectMetadata]()
+        implicit val materializer: Materializer = mat
+        issueRequest(s3Location, rangeOption = range, versionId = versionId, s3Headers = headers)(mat, attr)
+          .map(response => response.withEntity(response.entity.withoutSizeLimit))
+          .mapAsync(parallelism = 1)(entityForSuccess)
+          .flatMapConcat {
+            case (entity, headers) =>
+              objectMetadataMat.success(computeMetaData(headers, entity))
+              entity.dataBytes
+          }
+          .mapError {
+            case e: Throwable =>
+              objectMetadataMat.tryFailure(e)
+              e
+          }
+          .mapMaterializedValue(_ => objectMetadataMat.future)
+      }
+      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.parasitic))
+  }
+
   /**
    * An ADT that represents the current state of pagination
    */
@@ -251,7 +285,7 @@ import scala.util.{Failure, Success, Try}
         implicit val materializer: Materializer = mat
         implicit val attributes: Attributes = attr
         Source
-          .unfoldAsync[ListBucketState, Seq[ListBucketResultContents]](Starting()) {
+          .unfoldAsync[ListBucketState, immutable.Seq[ListBucketResultContents]](Starting()) {
             case Finished() => Future.successful(None)
             case Starting() => listBucketCallOnlyContents(None)
             case Running(token) => listBucketCallOnlyContents(Some(token))
@@ -281,7 +315,8 @@ import scala.util.{Failure, Success, Try}
         implicit val materializer: Materializer = mat
         implicit val attributes: Attributes = attr
         Source
-          .unfoldAsync[ListBucketState, (Seq[ListBucketResultContents], Seq[ListBucketResultCommonPrefixes])](
+          .unfoldAsync[ListBucketState,
+                       (immutable.Seq[ListBucketResultContents], immutable.Seq[ListBucketResultCommonPrefixes])](
             Starting()
           ) {
             case Finished() => Future.successful(None)
@@ -291,6 +326,25 @@ import scala.util.{Failure, Success, Try}
       }
       .mapMaterializedValue(_ => NotUsed)
   }
+
+  def listBuckets(s3Headers: S3Headers): Source[ListBucketsResultContents, NotUsed] =
+    Source
+      .fromMaterializer { (mat, attr) =>
+        implicit val materializer: Materializer = mat
+        implicit val attributes: Attributes = attr
+        implicit val conf: S3Settings = resolveSettings(attr, mat.system)
+
+        Source
+          .future {
+            signAndGetAs[ListBucketsResult](
+              HttpRequests.listBuckets(s3Headers.headers)
+            ).map { (res: ListBucketsResult) =>
+              res.buckets
+            }(ExecutionContexts.parasitic)
+          }
+          .flatMapConcat(results => Source(results))
+      }
+      .mapMaterializedValue(_ => NotUsed)
 
   type ListMultipartUploadState = S3PaginationState[ListMultipartUploadContinuationToken]
 
@@ -339,7 +393,8 @@ import scala.util.{Failure, Success, Try}
         implicit val materializer: Materializer = mat
         implicit val attributes: Attributes = attr
         Source
-          .unfoldAsync[ListMultipartUploadState, (Seq[ListMultipartUploadResultUploads], Seq[CommonPrefixes])](
+          .unfoldAsync[ListMultipartUploadState,
+                       (immutable.Seq[ListMultipartUploadResultUploads], immutable.Seq[CommonPrefixes])](
             Starting()
           ) {
             case Finished() => Future.successful(None)
@@ -364,7 +419,7 @@ import scala.util.{Failure, Success, Try}
         implicit val materializer: Materializer = mat
         implicit val attributes: Attributes = attr
         Source
-          .unfoldAsync[ListMultipartUploadState, Seq[ListMultipartUploadResultUploads]](Starting()) {
+          .unfoldAsync[ListMultipartUploadState, immutable.Seq[ListMultipartUploadResultUploads]](Starting()) {
             case Finished() => Future.successful(None)
             case Starting() => listMultipartUploadCallOnlyUploads(None)
             case Running(token) => listMultipartUploadCallOnlyUploads(Some(token))
@@ -414,7 +469,7 @@ import scala.util.{Failure, Success, Try}
         implicit val materializer: Materializer = mat
         implicit val attributes: Attributes = attr
         Source
-          .unfoldAsync[ListPartsState, Seq[ListPartsResultParts]](Starting()) {
+          .unfoldAsync[ListPartsState, immutable.Seq[ListPartsResultParts]](Starting()) {
             case Finished() => Future.successful(None)
             case Starting() => listMultipartUploadCallOnlyUploads(None)
             case Running(token) => listMultipartUploadCallOnlyUploads(Some(token))
@@ -480,7 +535,9 @@ import scala.util.{Failure, Success, Try}
         implicit val attributes: Attributes = attr
         Source
           .unfoldAsync[ListObjectVersionsState,
-                       (Seq[ListObjectVersionsResultVersions], Seq[DeleteMarkers], Seq[CommonPrefixes])](
+                       (immutable.Seq[ListObjectVersionsResultVersions],
+                        immutable.Seq[DeleteMarkers],
+                        immutable.Seq[CommonPrefixes])](
             Starting()
           ) {
             case Finished() => Future.successful(None)
@@ -514,7 +571,8 @@ import scala.util.{Failure, Success, Try}
         implicit val materializer: Materializer = mat
         implicit val attributes: Attributes = attr
         Source
-          .unfoldAsync[ListObjectVersionsState, (Seq[ListObjectVersionsResultVersions], Seq[DeleteMarkers])](Starting()) {
+          .unfoldAsync[ListObjectVersionsState,
+                       (immutable.Seq[ListObjectVersionsResultVersions], immutable.Seq[DeleteMarkers])](Starting()) {
             case Finished() => Future.successful(None)
             case Starting() => listObjectVersionsCallOnlyVersions(None)
             case Running(token) => listObjectVersionsCallOnlyVersions(Some(token))
@@ -629,7 +687,11 @@ import scala.util.{Failure, Success, Try}
             case HttpResponse(OK, h, entity, _) =>
               Source.future {
                 entity.discardBytes().future().map { _ =>
-                  ObjectMetadata(h :+ `Content-Length`(entity.contentLengthOption.getOrElse(0)))
+                  val contentLengthHeader = `Content-Length`
+                    .parseFromValueString(entity.contentLengthOption.getOrElse(0L).toString)
+                    .map(Seq(_))
+                    .getOrElse(Nil)
+                  ObjectMetadata(h ++ contentLengthHeader)
                 }
               }
             case response: HttpResponse =>
@@ -645,7 +707,7 @@ import scala.util.{Failure, Success, Try}
               method: HttpMethod = HttpMethods.GET,
               rangeOption: Option[ByteRange] = None,
               versionId: Option[String] = None,
-              s3Headers: Seq[HttpHeader] = Seq.empty): Source[HttpResponse, NotUsed] =
+              s3Headers: immutable.Seq[HttpHeader] = immutable.Seq.empty): Source[HttpResponse, NotUsed] =
     Source
       .fromMaterializer { (mat, attr) =>
         issueRequest(s3Location, method, rangeOption, versionId, s3Headers)(mat, attr)
@@ -657,7 +719,7 @@ import scala.util.{Failure, Success, Try}
       method: HttpMethod = HttpMethods.GET,
       rangeOption: Option[ByteRange] = None,
       versionId: Option[String],
-      s3Headers: Seq[HttpHeader]
+      s3Headers: immutable.Seq[HttpHeader]
   )(implicit mat: Materializer, attr: Attributes): Source[HttpResponse, NotUsed] = {
     implicit val sys: ActorSystem = mat.system
     implicit val conf: S3Settings = resolveSettings(attr, sys)
@@ -749,7 +811,7 @@ import scala.util.{Failure, Success, Try}
       bucket: String,
       method: HttpMethod,
       httpRequest: (HttpMethod, S3Settings) => HttpRequest,
-      headers: Seq[HttpHeader],
+      headers: immutable.Seq[HttpHeader],
       process: (HttpResponse, Materializer) => Future[T],
       httpEntity: Option[Future[RequestEntity]] = None
   ): Source[T, NotUsed] =
@@ -909,7 +971,7 @@ import scala.util.{Failure, Success, Try}
 
   private def initiateMultipartUpload(s3Location: S3Location,
                                       contentType: ContentType,
-                                      s3Headers: Seq[HttpHeader]): Source[MultipartUpload, NotUsed] =
+                                      s3Headers: immutable.Seq[HttpHeader]): Source[MultipartUpload, NotUsed] =
     Source
       .fromMaterializer { (mat, attr) =>
         implicit val materializer: Materializer = mat
@@ -959,15 +1021,23 @@ import scala.util.{Failure, Success, Try}
       .toMat(completionSink(targetLocation, s3Headers))(Keep.right)
   }
 
-  private def computeMetaData(headers: Seq[HttpHeader], entity: ResponseEntity): ObjectMetadata =
+  private def computeMetaData(headers: immutable.Seq[HttpHeader], entity: ResponseEntity): ObjectMetadata = {
+    val contentLengthHeader: Seq[HttpHeader] = `Content-Length`
+      .parseFromValueString(entity.contentLengthOption.getOrElse(0L).toString)
+      .map(Seq(_))
+      .getOrElse(Nil)
+    val contentTypeHeader: Seq[HttpHeader] = `Content-Type`
+      .parseFromValueString(entity.contentType.value)
+      .map(Seq(_))
+      .getOrElse(Nil)
     ObjectMetadata(
       headers ++
-      Seq(
-        `Content-Length`(entity.contentLengthOption.getOrElse(0)),
-        `Content-Type`(entity.contentType),
+      contentLengthHeader ++ contentTypeHeader ++
+      immutable.Seq(
         CustomContentTypeHeader(entity.contentType)
       )
     )
+  }
 
   //`Content-Type` header is by design not accessible as header. So need to have a custom
   //header implementation to expose that
@@ -981,12 +1051,14 @@ import scala.util.{Failure, Success, Try}
     override def renderInResponses(): Boolean = true
   }
 
-  private def completeMultipartUpload(s3Location: S3Location, parts: Seq[SuccessfulUploadPart], s3Headers: S3Headers)(
+  private def completeMultipartUpload(s3Location: S3Location,
+                                      parts: immutable.Seq[SuccessfulUploadPart],
+                                      s3Headers: S3Headers)(
       implicit mat: Materializer,
       attr: Attributes
   ): Future[CompleteMultipartUploadResult] = {
     def populateResult(result: CompleteMultipartUploadResult,
-                       headers: Seq[HttpHeader]): CompleteMultipartUploadResult = {
+                       headers: immutable.Seq[HttpHeader]): CompleteMultipartUploadResult = {
       val versionId = headers.find(_.lowercaseName() == "x-amz-version-id").map(_.value())
       result.copy(versionId = versionId)
     }
@@ -994,7 +1066,7 @@ import scala.util.{Failure, Success, Try}
     import mat.executionContext
     implicit val conf: S3Settings = resolveSettings(attr, mat.system)
 
-    val headers = s3Headers.headersFor(UploadPart)
+    val headers = s3Headers.serverSideEncryption.toIndexedSeq.flatMap(_.headersFor(UploadPart))
 
     Source
       .future(
@@ -1007,13 +1079,14 @@ import scala.util.{Failure, Success, Try}
   /**
    * Initiates a multipart upload. Returns a source of the initiated upload with upload part indicess
    */
+  @nowarn("msg=deprecated") // Stream => LazyList
   private def initiateUpload(s3Location: S3Location,
                              contentType: ContentType,
-                             s3Headers: Seq[HttpHeader]): Source[(MultipartUpload, Int), NotUsed] =
+                             s3Headers: immutable.Seq[HttpHeader]): Source[(MultipartUpload, Int), NotUsed] =
     Source
       .single(s3Location)
       .flatMapConcat(initiateMultipartUpload(_, contentType, s3Headers))
-      .mapConcat(r => LazyList.continually(r))
+      .mapConcat(r => Stream.continually(r))
       .zip(Source.fromIterator(() => Iterator.from(1)))
 
   private def poolSettings(implicit settings: S3Settings, system: ActorSystem) =
@@ -1120,9 +1193,11 @@ import scala.util.{Failure, Success, Try}
 
         import conf.multipartUploadSettings.retrySettings._
 
-        SplitAfterSize(chunkSize, chunkBufferSize)(atLeastOneByteString)
+        val merged = SplitAfterSize(chunkSize, chunkBufferSize)(atLeastOneByteString)
           .via(getChunkBuffer(chunkSize, chunkBufferSize, maxRetries)) //creates the chunks
           .mergeSubstreamsWithParallelism(parallelism)
+
+        merged
           .filter(_.size > 0)
           .via(atLeastOne)
           .zip(requestInfoOrUploadState(s3Location, contentType, s3Headers, initialUploadState))
@@ -1224,9 +1299,11 @@ import scala.util.{Failure, Success, Try}
             Source.single((ByteString.empty, null.asInstanceOf[C]))
           )
 
-        SplitAfterSizeWithContext(chunkSize)(atLeastOneByteStringAndEmptyContext)
+        val merged = SplitAfterSizeWithContext(chunkSize)(atLeastOneByteStringAndEmptyContext)
           .via(getChunk(chunkBufferSize))
           .mergeSubstreamsWithParallelism(parallelism)
+
+        merged
           .filter { case (chunk, _) => chunk.size > 0 }
           .via(atLeastOne)
           .zip(requestInfoOrUploadState(s3Location, contentType, s3Headers, initialUploadState))
@@ -1261,6 +1338,7 @@ import scala.util.{Failure, Success, Try}
       .mapMaterializedValue(_ => NotUsed)
   }
 
+  @nowarn("msg=deprecated") // Stream => LazyList
   private def requestInfoOrUploadState(s3Location: S3Location,
                                        contentType: ContentType,
                                        s3Headers: S3Headers,
@@ -1272,7 +1350,7 @@ import scala.util.{Failure, Success, Try}
         Source
           .single(s3Location)
           .flatMapConcat(_ => Source.single(MultipartUpload(s3Location.bucket, s3Location.key, uploadId)))
-          .mapConcat(r => LazyList.continually(r))
+          .mapConcat(r => Stream.continually(r))
           .zip(Source.fromIterator(() => Iterator.from(initialIndex)))
       case None =>
         // First step of the multi part upload process is made.
@@ -1333,9 +1411,9 @@ import scala.util.{Failure, Success, Try}
         import mat.executionContext
         Sink
           .seq[UploadPartResponse]
-          .mapMaterializedValue { responseFuture: Future[Seq[UploadPartResponse]] =>
+          .mapMaterializedValue { (responseFuture: Future[immutable.Seq[UploadPartResponse]]) =>
             responseFuture
-              .flatMap { responses: Seq[UploadPartResponse] =>
+              .flatMap { (responses: immutable.Seq[UploadPartResponse]) =>
                 val successes = responses.collect { case r: SuccessfulUploadPart => r }
                 val failures = responses.collect { case r: FailedUploadPart => r }
                 if (responses.isEmpty) {
@@ -1366,7 +1444,7 @@ import scala.util.{Failure, Success, Try}
 
   private def signAndGetAs[T](
       request: HttpRequest,
-      f: (T, Seq[HttpHeader]) => T
+      f: (T, immutable.Seq[HttpHeader]) => T
   )(implicit um: Unmarshaller[ResponseEntity, T], mat: Materializer, attr: Attributes): Source[T, NotUsed] = {
     import mat.executionContext
     implicit val sys: ActorSystem = mat.system
@@ -1412,7 +1490,7 @@ import scala.util.{Failure, Success, Try}
 
   private def entityForSuccess(
       resp: HttpResponse
-  )(implicit mat: Materializer): Future[(ResponseEntity, Seq[HttpHeader])] = {
+  )(implicit mat: Materializer): Future[(ResponseEntity, immutable.Seq[HttpHeader])] = {
     resp match {
       case HttpResponse(status, headers, entity, _) if status.isSuccess() && !status.isRedirection() =>
         Future.successful((entity, headers))

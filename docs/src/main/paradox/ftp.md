@@ -9,6 +9,16 @@ The FTP connector provides Akka Stream sources to connect to FTP, FTPs and SFTP 
 
 ## Artifacts
 
+The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
+
+@@repository [sbt,Maven,Gradle] {
+id="akka-repository"
+name="Akka library repository"
+url="https://repo.akka.io/maven"
+}
+
+Additionally, add the dependencies as below.
+
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
   artifact=akka-stream-alpakka-ftp_$scala.binary.version$
@@ -88,7 +98,7 @@ Scala
 Java
 : @@snip [snip](/ftp/src/test/java/docs/javadsl/FtpRetrievingExample.java) { #retrieving }
 
-This source will emit @scaladoc[ByteString](akka.util.ByteString) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @javadoc[CompletionStage](java/util/concurrent/CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
+This source will emit @scaladoc[ByteString](akka.util.ByteString) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @javadoc[CompletionStage](java.util.concurrent.CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
 
 For both FTPs and SFTP servers, you will need to use the `FTPs` and `SFTP` API respectively.
 
@@ -102,7 +112,7 @@ Scala
 Java
 : @@snip [snip](/ftp/src/test/java/docs/javadsl/FtpWritingTest.java) { #storing }
 
-This sink will consume @scaladoc[ByteString](akka.util.ByteString) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @javadoc[CompletionStage](java/util/concurrent/CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
+This sink will consume @scaladoc[ByteString](akka.util.ByteString) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @javadoc[CompletionStage](java.util.concurrent.CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
 
 For both FTPs and SFTP servers, you will need to use the `FTPs` and `SFTP` API respectively.
 
@@ -116,7 +126,7 @@ Scala
 Java
 : @@snip [snip](/ftp/src/test/java/docs/javadsl/FtpRemovingExample.java) { #removing }
 
-This sink will consume @scaladoc[FtpFile](akka.stream.alpakka.ftp.FtpFile) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @javadoc[CompletionStage](java/util/concurrent/CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
+This sink will consume @scaladoc[FtpFile](akka.stream.alpakka.ftp.FtpFile) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @javadoc[CompletionStage](java.util.concurrent.CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
 
 ## Moving files
 
@@ -128,7 +138,7 @@ Scala
 Java
 : @@snip [snip](/ftp/src/test/java/docs/javadsl/FtpMovingExample.java) { #moving }
 
-This sink will consume @scaladoc[FtpFile](akka.stream.alpakka.ftp.FtpFile) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @javadoc[CompletionStage](java/util/concurrent/CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
+This sink will consume @scaladoc[FtpFile](akka.stream.alpakka.ftp.FtpFile) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @javadoc[CompletionStage](java.util.concurrent.CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
 
 Typical use-case for this would be listing files from a ftp location, do some processing and move the files when done. An example of this use case can be found below.
 

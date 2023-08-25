@@ -11,14 +11,14 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.matchers.should.Matchers
 
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 
 class S3ExtSpec extends AnyFlatSpecLike with Matchers {
   it should "reuse application config from actor system" in {
     val config = ConfigFactory.parseMap(
       Map(
         "alpakka.s3.endpoint-url" -> "http://localhost:8001",
-        "alpakka.s3.path-style-access" -> true
+        "alpakka.s3.path-style-access" -> "true"
       ).asJava
     )
     implicit val system: ActorSystem = ActorSystem.create("s3", config)

@@ -13,21 +13,7 @@ import akka.stream.KillSwitches;
 import akka.stream.OverflowStrategy;
 import akka.stream.SystemMaterializer;
 import akka.stream.UniqueKillSwitch;
-import akka.stream.alpakka.mqtt.streaming.Command;
-import akka.stream.alpakka.mqtt.streaming.ConnAck;
-import akka.stream.alpakka.mqtt.streaming.ConnAckFlags;
-import akka.stream.alpakka.mqtt.streaming.ConnAckReturnCode;
-import akka.stream.alpakka.mqtt.streaming.Connect;
-import akka.stream.alpakka.mqtt.streaming.ConnectFlags;
-import akka.stream.alpakka.mqtt.streaming.ControlPacket;
-import akka.stream.alpakka.mqtt.streaming.ControlPacketFlags;
-import akka.stream.alpakka.mqtt.streaming.DecodeErrorOrEvent;
-import akka.stream.alpakka.mqtt.streaming.Event;
-import akka.stream.alpakka.mqtt.streaming.MqttSessionSettings;
-import akka.stream.alpakka.mqtt.streaming.PubAck;
-import akka.stream.alpakka.mqtt.streaming.Publish;
-import akka.stream.alpakka.mqtt.streaming.SubAck;
-import akka.stream.alpakka.mqtt.streaming.Subscribe;
+import akka.stream.alpakka.mqtt.streaming.*;
 import akka.stream.alpakka.mqtt.streaming.javadsl.ActorMqttClientSession;
 import akka.stream.alpakka.mqtt.streaming.javadsl.ActorMqttServerSession;
 import akka.stream.alpakka.mqtt.streaming.javadsl.Mqtt;
@@ -127,7 +113,7 @@ public class MqttFlowTest {
     session.tell(
         new Command<>(
             new Publish(
-                ControlPacketFlags.RETAIN() | ControlPacketFlags.QoSAtLeastOnceDelivery(),
+                ControlPacketFlags.RETAIN() | PublishQoSFlags.QoSAtLeastOnceDelivery(),
                 topic,
                 ByteString.fromString("ohi"))));
     // #run-streaming-flow
@@ -265,7 +251,7 @@ public class MqttFlowTest {
     clientSession.tell(
         new Command<>(
             new Publish(
-                ControlPacketFlags.RETAIN() | ControlPacketFlags.QoSAtLeastOnceDelivery(),
+                ControlPacketFlags.RETAIN() | PublishQoSFlags.QoSAtLeastOnceDelivery(),
                 topic,
                 ByteString.fromString("ohi"))));
 

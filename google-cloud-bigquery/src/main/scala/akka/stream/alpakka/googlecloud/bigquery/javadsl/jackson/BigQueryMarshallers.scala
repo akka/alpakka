@@ -11,12 +11,13 @@ import akka.http.javadsl.unmarshalling.Unmarshaller
 import akka.stream.alpakka.googlecloud.bigquery.model.QueryResponse
 import akka.stream.alpakka.googlecloud.bigquery.model.{TableDataInsertAllRequest, TableDataListResponse}
 import com.fasterxml.jackson.databind.{JavaType, MapperFeature, ObjectMapper}
-
 import java.io.IOException
+
+import com.fasterxml.jackson.databind.json.JsonMapper
 
 object BigQueryMarshallers {
 
-  private val defaultObjectMapper = new ObjectMapper().enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
+  private val defaultObjectMapper = JsonMapper.builder().enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY).build()
 
   /**
    * [[akka.http.javadsl.unmarshalling.Unmarshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataListResponse]]

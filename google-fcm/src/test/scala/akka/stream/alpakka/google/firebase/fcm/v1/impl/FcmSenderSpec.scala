@@ -17,9 +17,8 @@ import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.testkit.TestKit
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.{doReturn, verify, when}
+import org.mockito.Mockito.{doReturn, mock, verify, when}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
@@ -33,7 +32,6 @@ class FcmSenderSpec
     with AnyWordSpecLike
     with Matchers
     with ScalaFutures
-    with MockitoSugar
     with BeforeAndAfterAll
     with LogCapturing {
 
@@ -54,7 +52,7 @@ class FcmSenderSpec
 
     "call the api as the docs want to" in {
       val sender = new FcmSender
-      val http = mock[HttpExt]
+      val http = mock(classOf[HttpExt])
       when(
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),
@@ -81,7 +79,7 @@ class FcmSenderSpec
 
     "parse the success response correctly" in {
       val sender = new FcmSender
-      val http = mock[HttpExt]
+      val http = mock(classOf[HttpExt])
       when(
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),
@@ -99,7 +97,7 @@ class FcmSenderSpec
 
     "parse the error response correctly" in {
       val sender = new FcmSender
-      val http = mock[HttpExt]
+      val http = mock(classOf[HttpExt])
       when(
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),

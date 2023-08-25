@@ -9,7 +9,7 @@ import com.google.cloud.bigquery.storage.v1.ReadSession.TableReadOptions
 import com.google.cloud.bigquery.storage.v1.stream.ReadSession
 import scalapb.UnknownFieldSet
 
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 
 /**
  * Internal API

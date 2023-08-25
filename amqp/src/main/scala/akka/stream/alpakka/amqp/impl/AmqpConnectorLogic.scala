@@ -32,7 +32,7 @@ private trait AmqpConnectorLogic { this: GraphStageLogic =>
       connection.addShutdownListener(shutdownListener)
       channel.addShutdownListener(shutdownListener)
 
-      import scala.jdk.CollectionConverters._
+      import scala.collection.JavaConverters._
 
       settings.declarations.foreach {
         case d: QueueDeclaration =>

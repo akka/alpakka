@@ -10,7 +10,7 @@ import java.util.concurrent.{CompletionStage, Executor}
 import java.util.function.{Function => JFunction}
 
 import scala.annotation.varargs
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.ExecutionContext
@@ -74,7 +74,7 @@ final class CassandraSession(@InternalApi private[akka] val delegate: scaladsl.C
            onClose: java.lang.Runnable) =
     this(system.classicSystem, sessionProvider, executionContext, log, metricsCategory, init, onClose)
 
-  implicit private val ec = delegate.ec
+  implicit private val ec: ExecutionContext = delegate.ec
 
   /**
    * Closes the underlying Cassandra session.

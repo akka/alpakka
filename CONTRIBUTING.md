@@ -12,11 +12,24 @@ You may also check out these [other resources](https://akka.io/get-involved/).
 
 # Contributing to Alpakka
 
+## Development Setup
+
+Ensure to install the following dependencies:
+
+- [Git](https://git-scm.com/) (Make sure the `git` executable is referenced in the `PATH` environment variable)
+  - Having `git` in the `PATH` is important because it is used by the MiMa plugin when loading the sbt project.
+- Java JDK
+- [SBT](https://www.scala-sbt.org/) which can be installed standalone, or bundled with [Scala](https://scala-lang.org/) or IDEs such as [IntelliJ IDEA](https://www.jetbrains.com/idea/).
+
+When cloning or updating the repository, make sure to clone/fetch/pull in a way which gets the git tags (such as a regular `git clone`, `git fetch` or `git pull`).
+This is needed because the MiMa plugin checks the git history and tags when loading the sbt project.
+Doing a shallow clone/fetch/pull will not get the tag information and will interfere with the project loading process.
+
 ## General Workflow
 
-This is the process for committing code into master.
+This is the process for committing code into main.
 
-1. Make sure you have signed the Lightbend CLA, if not, [sign it online](http://www.lightbend.com/contribute/cla).
+1. Make sure you have signed the Lightbend CLA, if not, [sign it online](https://www.lightbend.com/contribute/cla/akka).
 
 1. To avoid duplicated effort, it might be good to check the [issue tracker](https://github.com/akka/alpakka/issues) and [existing pull requests](https://github.com/akka/alpakka/pulls) for existing work.
    - If there is no ticket yet, feel free to [create one](https://github.com/akka/alpakka/issues/new) to discuss the problem and the approach you want to take to solve it.
@@ -89,7 +102,7 @@ For a Pull Request to be considered at all it has to meet these requirements:
 
 1. Do not use ``@author`` tags since it does not encourage [Collective Code Ownership](http://www.extremeprogramming.org/rules/collective.html). Contributors get the credit they deserve in the release notes.
 
-If these requirements are not met then the code should **not** be merged into master, or even reviewed - regardless of how good or important it is. No exceptions.
+If these requirements are not met then the code should **not** be merged into main, or even reviewed - regardless of how good or important it is. No exceptions.
 
 
 ## Creating Commits And Writing Commit Messages

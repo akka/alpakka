@@ -8,6 +8,16 @@ Streams provide exactly-once semantics, and atomicity for groups of events using
 
 ## Artifacts
 
+The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
+
+@@repository [sbt,Maven,Gradle] {
+id="akka-repository"
+name="Akka library repository"
+url="https://repo.akka.io/maven"
+}
+
+Additionally, add the dependencies as below.
+
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
   artifact=akka-stream-alpakka-pravega_$scala.binary.version$
@@ -181,4 +191,4 @@ Scala
 
 ## Support
 
-In addition to our regular Alpakka community support on [![gitter: akka/akka](https://img.shields.io/badge/gitter%3A-akka%2Fakka-blue.svg?style=flat-square)](https://gitter.im/akka/akka) and Lightbend's [discuss.lightbend.com](https://discuss.lightbend.com/c/akka/streams-and-alpakka), you can also visit the `#akka-streams-connector` channel on the [Pravega slack](https://pravega-slack-invite.herokuapp.com) for assistance with Pravega integration itself.
+In addition to our regular Alpakka community support on [![gitter: akka/akka](https://img.shields.io/badge/gitter%3A-akka%2Fakka-blue.svg?style=flat-square)](https://gitter.im/akka/akka) and Lightbend's [discuss.lightbend.com](https://discuss.lightbend.com/c/akka/streams-and-alpakka).

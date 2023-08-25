@@ -22,7 +22,7 @@ import org.scalatest.matchers.should.Matchers
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.firehose.model._
 
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 
 class KinesisFirehoseFlowSpec extends AnyWordSpec with Matchers with KinesisFirehoseMock with LogCapturing {
 
@@ -71,10 +71,9 @@ class KinesisFirehoseFlowSpec extends AnyWordSpec with Matchers with KinesisFire
     val requestError = new RuntimeException("kinesisfirehose-error")
 
     val (sourceProbe, sinkProbe) =
-      TestSource
-        .probe[Record]
+      TestSource[Record]()
         .via(KinesisFirehoseFlow(streamName, settings))
-        .toMat(TestSink.probe)(Keep.both)
+        .toMat(TestSink())(Keep.both)
         .run()
   }
 

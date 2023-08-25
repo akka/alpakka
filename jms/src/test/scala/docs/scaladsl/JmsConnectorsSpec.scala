@@ -24,7 +24,7 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 
 import scala.annotation.tailrec
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.collection.mutable
 import scala.concurrent.Future
@@ -866,7 +866,7 @@ class JmsConnectorsSpec extends JmsSpec {
     "produce elements in order" in withMockedProducer { ctx =>
       import ctx._
       val delays = new AtomicInteger()
-      val textMessage = mock[TextMessage]
+      val textMessage = mock(classOf[TextMessage])
 
       val delayedSend = new Answer[Unit] {
         override def answer(invocation: InvocationOnMock): Unit = {
@@ -895,7 +895,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val sendLatch = new CountDownLatch(3)
       val receiveLatch = new CountDownLatch(3)
 
-      val messages = (1 to 10).map(i => mock[TextMessage] -> i).toMap
+      val messages = (1 to 10).map(i => mock(classOf[TextMessage]) -> i).toMap
       messages.foreach {
         case (msg, i) => when(session.createTextMessage(i.toString)).thenReturn(msg)
       }
@@ -939,7 +939,7 @@ class JmsConnectorsSpec extends JmsSpec {
     "put back JmsProducer to the pool when send fails" in withMockedProducer { ctx =>
       import ctx._
 
-      val messages = (1 to 10).map(i => mock[TextMessage] -> i).toMap
+      val messages = (1 to 10).map(i => mock(classOf[TextMessage]) -> i).toMap
       messages.foreach {
         case (msg, i) => when(session.createTextMessage(i.toString)).thenReturn(msg)
       }
@@ -974,7 +974,7 @@ class JmsConnectorsSpec extends JmsSpec {
       override def answer(invocation: InvocationOnMock): Unit = {
         val listener = invocation.getArgument[MessageListener](0)
         mockMessages.foreach { s =>
-          val message = mock[TextMessage]
+          val message = mock(classOf[TextMessage])
           when(message.getText).thenReturn(s)
           listener.onMessage(message)
         }
@@ -982,10 +982,10 @@ class JmsConnectorsSpec extends JmsSpec {
     }
 
     "reconnect when timing out establishing a connection" in {
-      val factory = mock[ConnectionFactory]
-      val connection = mock[Connection]
-      val session = mock[Session]
-      val consumer = mock[MessageConsumer]
+      val factory = mock(classOf[ConnectionFactory])
+      val connection = mock(classOf[Connection])
+      val session = mock(classOf[Session])
+      val consumer = mock(classOf[MessageConsumer])
       @volatile var connectCount = 0
       val connectTimeout = 2.seconds
       val connectDelay = 10.seconds
@@ -1020,10 +1020,10 @@ class JmsConnectorsSpec extends JmsSpec {
     }
 
     "reconnect when timing out starting a connection" in {
-      val factory = mock[ConnectionFactory]
-      val connection = mock[Connection]
-      val session = mock[Session]
-      val consumer = mock[MessageConsumer]
+      val factory = mock(classOf[ConnectionFactory])
+      val connection = mock(classOf[Connection])
+      val session = mock(classOf[Session])
+      val consumer = mock(classOf[MessageConsumer])
       @volatile var connectStartCount = 0
       val connectTimeout = 2.seconds
       val connectStartDelay = 10.seconds
@@ -1059,10 +1059,10 @@ class JmsConnectorsSpec extends JmsSpec {
     }
 
     "reconnect when runtime connection exception occurs" in {
-      val factory = mock[ConnectionFactory]
-      val connection = mock[Connection]
-      val session = mock[Session]
-      val consumer = mock[MessageConsumer]
+      val factory = mock(classOf[ConnectionFactory])
+      val connection = mock(classOf[Connection])
+      val session = mock(classOf[Session])
+      val consumer = mock(classOf[MessageConsumer])
       @volatile var connectCount = 0
       @volatile var exceptionListener: Option[ExceptionListener] = None
       val messageGroups = mockMessages.grouped(3)
@@ -1088,7 +1088,7 @@ class JmsConnectorsSpec extends JmsSpec {
           val listener = invocation.getArgument[MessageListener](0)
           val thisMessageGroup = messageGroups.next()
           thisMessageGroup.foreach { s =>
-            val message = mock[TextMessage]
+            val message = mock(classOf[TextMessage])
             when(message.getText).thenReturn(s)
             listener.onMessage(message)
           }
@@ -1140,11 +1140,11 @@ class JmsConnectorsSpec extends JmsSpec {
     }
 
     "pass through empty envelopes" in {
-      val connectionFactory = mock[ConnectionFactory]
-      val connection = mock[Connection]
-      val session = mock[Session]
-      val producer = mock[MessageProducer]
-      val message = mock[TextMessage]
+      val connectionFactory = mock(classOf[ConnectionFactory])
+      val connection = mock(classOf[Connection])
+      val session = mock(classOf[Session])
+      val producer = mock(classOf[MessageProducer])
+      val message = mock(classOf[TextMessage])
 
       when(connectionFactory.createConnection()).thenReturn(connection)
       when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)

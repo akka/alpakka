@@ -400,7 +400,7 @@ class JmsBufferedAckConnectorsSpec extends JmsSharedServerSpec {
 
           }
         }
-        .toMat(TestSink.probe)(Keep.both)
+        .toMat(TestSink())(Keep.both)
         .run()
 
       probe.requestNext(convertSpanToDuration(patienceConfig.timeout)) shouldBe Some(aMessage)
@@ -413,7 +413,7 @@ class JmsBufferedAckConnectorsSpec extends JmsSharedServerSpec {
       probe.expectComplete()
 
       // Consuming again should give us no elements, as msg was acked and therefore removed from the broker
-      val (emptyConsumerControl, emptySourceProbe) = source.toMat(TestSink.probe)(Keep.both).run()
+      val (emptyConsumerControl, emptySourceProbe) = source.toMat(TestSink())(Keep.both).run()
       emptySourceProbe.ensureSubscription().expectNoMessage()
       emptyConsumerControl.shutdown()
       emptySourceProbe.expectComplete()

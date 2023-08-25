@@ -15,7 +15,7 @@ import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
 import software.amazon.awssdk.services.kinesis.model._
 
 import scala.collection.mutable
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
 import scala.compat.java8.FutureConverters._

@@ -20,7 +20,7 @@ object PravegaTable {
   /**
    * Messages are read from a Pravega stream.
    *
-   * Materialized value is a [[Future]] which completes to [[Done]] as soon as the Pravega reader is open.
+   * Materialized value is a [[scala.concurrent.Future]] which completes to [[Done]] as soon as the Pravega reader is open.
    */
   def source[K, V](scope: String,
                    tableName: String,

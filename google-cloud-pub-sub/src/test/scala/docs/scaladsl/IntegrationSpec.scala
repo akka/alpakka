@@ -116,7 +116,7 @@ class IntegrationSpec
       // the acknowledged message should not arrive again
       val (stream, result2) = GooglePubSub
         .subscribe(topic2subscription, config)
-        .toMat(TestSink.probe)(Keep.both)
+        .toMat(TestSink())(Keep.both)
         .run()
 
       result2.ensureSubscription()

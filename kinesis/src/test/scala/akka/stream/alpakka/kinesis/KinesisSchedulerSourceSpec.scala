@@ -37,7 +37,7 @@ import software.amazon.kinesis.processor.{
 import software.amazon.kinesis.retrieval.KinesisClientRecord
 import software.amazon.kinesis.retrieval.kpl.ExtendedSequenceNumber
 
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Random
@@ -280,7 +280,7 @@ class KinesisSchedulerSourceSpec
         .viaMat(Valve(switchMode))(Keep.right)
         .viaMat(KillSwitches.single)(Keep.both)
         .watchTermination()(Keep.both)
-        .toMat(TestSink.probe)(Keep.both)
+        .toMat(TestSink())(Keep.both)
         .run()
 
     watch.onComplete(_ => lock.release())
@@ -459,15 +459,14 @@ class KinesisSchedulerSourceSpec
 
   private trait KinesisSchedulerCheckpointContext {
     val (sourceProbe, sinkProbe) =
-      TestSource
-        .probe[CommittableRecord]
+      TestSource[CommittableRecord]()
         .via(
           KinesisSchedulerSource
             .checkpointRecordsFlow(
               KinesisSchedulerCheckpointSettings(maxBatchSize = 100, maxBatchWait = 500.millis)
             )
         )
-        .toMat(TestSink.probe)(Keep.both)
+        .toMat(TestSink())(Keep.both)
         .run()
     val recordProcessor = new ShardProcessor(_ => ())
   }

@@ -5,23 +5,28 @@ object Dependencies {
 
   val CronBuild = sys.env.get("GITHUB_EVENT_NAME").contains("schedule")
 
-  val Scala213 = "2.13.8" // update even in link-validator.conf
-  val ScalaVersions = Seq(Scala213)
+  val Scala213 = "2.13.10" // update even in link-validator.conf
+  val Scala212 = "2.12.17"
+  val Scala3 = "3.2.2"
+  val Scala2Versions = Seq(Scala213, Scala212)
+  val ScalaVersions = Dependencies.Scala2Versions :+ Dependencies.Scala3
 
-  val AkkaVersion = "2.6.19"
-  val AkkaBinaryVersion = "2.6"
+  val AkkaVersion = "2.8.1"
+  val AkkaBinaryVersion = "2.8"
 
   val InfluxDBJavaVersion = "2.15"
 
   val AwsSdk2Version = "2.17.113"
   val AwsSpiAkkaHttpVersion = "0.0.11"
   // Sync with plugins.sbt
-  val AkkaGrpcBinaryVersion = "1.0"
-  val AkkaHttpVersion = "10.2.9"
-  val AkkaHttpBinaryVersion = "10.2"
-  val ScalaTestVersion = "3.2.11"
-  val TestContainersScalaTestVersion = "0.40.3"
-  val mockitoVersion = "4.2.0" // check even https://github.com/scalatest/scalatestplus-mockito/releases
+  val AkkaGrpcBinaryVersion = "2.3"
+  // sync ignore prefix in scripts/link-validator.conf#L30
+  val AkkaHttpVersion = "10.5.1"
+  val AkkaHttpBinaryVersion = "10.5"
+  val AlpakkaKafkaVersion = "4.0.2"
+  val ScalaTestVersion = "3.2.15"
+  val TestContainersScalaTestVersion = "0.40.3" // pulls Testcontainers 1.16.2
+  val mockitoVersion = "4.8.1" // check even https://github.com/scalatest/scalatestplus-mockito/releases
   val hoverflyVersion = "0.14.1"
 
   val CouchbaseVersion = "2.7.16"
@@ -41,32 +46,28 @@ object Dependencies {
 
   val testkit = Seq(
     libraryDependencies := Seq(
-        "org.scala-lang.modules" %% "scala-collection-compat" % "2.2.0",
+        "org.scala-lang.modules" %% "scala-collection-compat" % "2.7.0",
         "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
         "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion,
         "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
-        "ch.qos.logback" % "logback-classic" % "1.2.3", // Eclipse Public License 1.0
+        "ch.qos.logback" % "logback-classic" % "1.2.11", // Eclipse Public License 1.0
         "org.scalatest" %% "scalatest" % ScalaTestVersion,
         "com.dimafeng" %% "testcontainers-scala-scalatest" % TestContainersScalaTestVersion,
         "com.novocode" % "junit-interface" % "0.11", // BSD-style
-        "ch.qos.logback" % "logback-classic" % "1.2.3", // Eclipse Public License 1.0
         "junit" % "junit" % "4.13" // Eclipse Public License 1.0
       )
   )
 
-  val Mockito = Seq(
-    "org.mockito" % "mockito-core" % mockitoVersion % Test,
-    // https://github.com/scalatest/scalatestplus-mockito/releases
-    "org.scalatestplus" %% "mockito-4-2" % (ScalaTestVersion + ".0") % Test
-  )
+  val Mockito = Seq("org.mockito" % "mockito-core" % mockitoVersion % Test)
 
   // Releases https://github.com/FasterXML/jackson-databind/releases
   // CVE issues https://github.com/FasterXML/jackson-databind/issues?utf8=%E2%9C%93&q=+label%3ACVE
-  // This should align with the Jackson minor version used in Akka 2.6.x
-  // https://github.com/akka/akka/blob/master/project/Dependencies.scala#L23
-  val JacksonDatabindVersion = "2.11.4"
+  // This should align with the Jackson minor version used in Akka 2.7.x
+  // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L29
+  val JacksonVersion = "2.13.5"
+  val JacksonDatabindVersion = JacksonVersion
   val JacksonDatabindDependencies = Seq(
-    "com.fasterxml.jackson.core" % "jackson-core" % JacksonDatabindVersion,
+    "com.fasterxml.jackson.core" % "jackson-core" % JacksonVersion,
     "com.fasterxml.jackson.core" % "jackson-databind" % JacksonDatabindVersion
   )
 
@@ -78,7 +79,7 @@ object Dependencies {
 
   val AwsLambda = Seq(
     libraryDependencies ++= Seq(
-        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll // ApacheV2
         (
           ExclusionRule(organization = "com.typesafe.akka")
@@ -98,8 +99,8 @@ object Dependencies {
   )
 
   val CassandraVersionInDocs = "4.0"
-  val CassandraDriverVersion = "4.13.0"
-  val CassandraDriverVersionInDocs = "4.13"
+  val CassandraDriverVersion = "4.14.1"
+  val CassandraDriverVersionInDocs = "4.14"
 
   val Cassandra = Seq(
     libraryDependencies ++= Seq(
@@ -108,7 +109,7 @@ object Dependencies {
           .exclude("org.apache.tinkerpop", "*") //https://github.com/akka/alpakka/issues/2200
           .exclude("com.esri.geometry", "esri-geometry-api"), //https://github.com/akka/alpakka/issues/2225
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion % Provided
-      )
+      ) ++ JacksonDatabindDependencies // evict Jackson version from "com.datastax.oss" % "java-driver-core"
   )
 
   val Couchbase = Seq(
@@ -125,9 +126,9 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
         "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test,
-        "com.typesafe.akka" %% "akka-stream-kafka" % "3.0.0" % Test,
+        "com.typesafe.akka" %% "akka-stream-kafka" % AlpakkaKafkaVersion % Test,
         "junit" % "junit" % "4.13.2" % Test, // Eclipse Public License 1.0
-        "org.scalatest" %% "scalatest" % "3.2.11" % Test // ApacheV2
+        "org.scalatest" %% "scalatest" % ScalaTestVersion % Test // ApacheV2
       )
   )
 
@@ -142,7 +143,7 @@ object Dependencies {
           ExclusionRule("software.amazon.awssdk", "apache-client"),
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         ),
-        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion // ApacheV2
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion
       )
   )
 
@@ -162,9 +163,14 @@ object Dependencies {
 
   val AvroParquet = Seq(
     libraryDependencies ++= Seq(
-        "org.apache.parquet" % "parquet-avro" % "1.10.1", //Apache2
-        "org.apache.hadoop" % "hadoop-client" % "3.2.1" % Test exclude ("log4j", "log4j"), //Apache2
-        "org.apache.hadoop" % "hadoop-common" % "3.2.1" % Test exclude ("log4j", "log4j"), //Apache2
+        "org.apache.parquet" % "parquet-avro" % "1.10.1" //Apache2
+      )
+  )
+
+  val AvroParquetTests = Seq(
+    libraryDependencies ++= Seq(
+        "org.apache.hadoop" % "hadoop-client" % "3.3.3" % Test exclude ("log4j", "log4j"), //Apache2
+        "org.apache.hadoop" % "hadoop-common" % "3.3.3" % Test exclude ("log4j", "log4j"), //Apache2
         "com.sksamuel.avro4s" %% "avro4s-core" % "3.0.9" % Test,
         "org.scalacheck" %% "scalacheck" % "1.15.4" % Test,
         "org.specs2" %% "specs2-core" % "4.8.3" % Test, //MIT like: https://github.com/etorreborre/specs2/blob/master/LICENSE.txt
@@ -174,13 +180,14 @@ object Dependencies {
 
   val Ftp = Seq(
     libraryDependencies ++= Seq(
-        "commons-net" % "commons-net" % "3.6", // ApacheV2
-        "com.hierynomus" % "sshj" % "0.27.0" // ApacheV2
+        "commons-net" % "commons-net" % "3.8.0", // ApacheV2
+        "com.hierynomus" % "sshj" % "0.33.0", // ApacheV2
+        "io.github.hakky54" % "sslcontext-kickstart-for-pem" % "6.8.0" % Test
       )
   )
 
-  val GeodeVersion = "1.14.3"
-  val GeodeVersionForDocs = "114"
+  val GeodeVersion = "1.15.0"
+  val GeodeVersionForDocs = "115"
 
   val Geode = Seq(
     libraryDependencies ++=
@@ -192,12 +199,15 @@ object Dependencies {
       ) ++ JacksonDatabindDependencies
   )
 
+  val GoogleAuthVersion = "1.15.0"
+
   val GoogleCommon = Seq(
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-        "com.github.jwt-scala" %% "jwt-spray-json" % "7.1.4", // ApacheV2
-        "com.google.auth" % "google-auth-library-credentials" % "0.24.1", // BSD 3-clause
+        "com.github.jwt-scala" %% "jwt-spray-json" % "9.0.2", // ApacheV2
+        // https://github.com/googleapis/google-auth-library-java
+        "com.google.auth" % "google-auth-library-credentials" % GoogleAuthVersion,
         "io.specto" % "hoverfly-java" % hoverflyVersion % Test // ApacheV2
       ) ++ Mockito
   )
@@ -208,11 +218,13 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http-jackson" % AkkaHttpVersion % Provided,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         "io.spray" %% "spray-json" % "1.3.6",
-        "com.fasterxml.jackson.core" % "jackson-annotations" % JacksonDatabindVersion,
-        "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % JacksonDatabindVersion % Test,
+        "com.fasterxml.jackson.core" % "jackson-annotations" % JacksonVersion,
+        "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % JacksonVersion % Test, // used from `hoverfly-java`
         "io.specto" % "hoverfly-java" % hoverflyVersion % Test //ApacheV2
       ) ++ Mockito
+      ++ JacksonDatabindDependencies // pick possibly later version then `akka-http-jackson`
   )
+
   val GoogleBigQueryStorage = Seq(
     // see Akka gRPC version in plugins.sbt
     libraryDependencies ++= Seq(
@@ -240,9 +252,10 @@ object Dependencies {
     // see Akka gRPC version in plugins.sbt
     libraryDependencies ++= Seq(
         // https://github.com/googleapis/java-pubsub/tree/master/proto-google-cloud-pubsub-v1/
-        "com.google.api.grpc" % "grpc-google-cloud-pubsub-v1" % "1.85.1" % "protobuf-src", // ApacheV2
-        "io.grpc" % "grpc-auth" % akka.grpc.gen.BuildInfo.grpcVersion, // ApacheV2
-        "com.google.auth" % "google-auth-library-oauth2-http" % "0.20.0", // BSD 3-clause
+        "com.google.cloud" % "google-cloud-pubsub" % "1.123.1" % "protobuf-src", // ApacheV2
+        "io.grpc" % "grpc-auth" % akka.grpc.gen.BuildInfo.grpcVersion,
+        // https://github.com/googleapis/google-auth-library-java
+        "com.google.auth" % "google-auth-library-oauth2-http" % GoogleAuthVersion,
         // pull in Akka Discovery for our Akka version
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion
       )
@@ -265,7 +278,7 @@ object Dependencies {
 
   val HBase = {
     val hbaseVersion = "1.4.13"
-    val hadoopVersion = "2.7.7"
+    val hadoopVersion = "3.3.3"
     Seq(
       libraryDependencies ++= Seq(
           "org.apache.hbase" % "hbase-shaded-client" % hbaseVersion exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2,
@@ -277,7 +290,7 @@ object Dependencies {
     )
   }
 
-  val HadoopVersion = "3.2.1"
+  val HadoopVersion = "3.3.3"
   val Hdfs = Seq(
     libraryDependencies ++= Seq(
         "org.apache.hadoop" % "hadoop-client" % HadoopVersion exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2
@@ -286,7 +299,7 @@ object Dependencies {
         "org.apache.hadoop" % "hadoop-common" % HadoopVersion % Test exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2
         "org.apache.hadoop" % "hadoop-minicluster" % HadoopVersion % Test exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2
         "org.slf4j" % "log4j-over-slf4j" % log4jOverSlf4jVersion % Test // MIT like: http://www.slf4j.org/license.html
-      )
+      ) ++ Mockito
   )
 
   val HuaweiPushKit = Seq(
@@ -330,7 +343,7 @@ object Dependencies {
 
   val Kinesis = Seq(
     libraryDependencies ++= Seq(
-        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll ExclusionRule(
           organization = "com.typesafe.akka"
         )
@@ -356,7 +369,7 @@ object Dependencies {
 
   val MongoDb = Seq(
     libraryDependencies ++= Seq(
-        "org.mongodb.scala" %% "mongo-scala-driver" % "4.4.0" // ApacheV2
+        "org.mongodb.scala" %% "mongo-scala-driver" % "4.7.2" // ApacheV2
       )
   )
 
@@ -368,10 +381,10 @@ object Dependencies {
 
   val MqttStreaming = Seq(
     libraryDependencies ++= Seq(
-        "com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion, // ApacheV2
-        "com.typesafe.akka" %% "akka-actor-testkit-typed" % AkkaVersion % Test, // ApacheV2
-        "com.typesafe.akka" %% "akka-stream-typed" % AkkaVersion, // ApacheV2
-        "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test // ApacheV2
+        "com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion,
+        "com.typesafe.akka" %% "akka-actor-testkit-typed" % AkkaVersion % Test,
+        "com.typesafe.akka" %% "akka-stream-typed" % AkkaVersion,
+        "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test
       )
   )
 
@@ -383,7 +396,7 @@ object Dependencies {
       )
   )
 
-  val PravegaVersion = "0.10.1"
+  val PravegaVersion = "0.10.2"
   val PravegaVersionForDocs = s"v${PravegaVersion}"
 
   val Pravega = {
@@ -413,8 +426,8 @@ object Dependencies {
   )
 
   val SpringWeb = {
-    val SpringVersion = "5.1.17.RELEASE"
-    val SpringBootVersion = "2.1.16.RELEASE"
+    val SpringVersion = "5.2.22.RELEASE"
+    val SpringBootVersion = "2.2.12.RELEASE"
     Seq(
       libraryDependencies ++= Seq(
           "org.springframework" % "spring-core" % SpringVersion,
@@ -427,7 +440,7 @@ object Dependencies {
     )
   }
 
-  val SlickVersion = "3.3.3"
+  val SlickVersion = "3.4.1"
   val Slick = Seq(
     libraryDependencies ++= Seq(
         "com.typesafe.slick" %% "slick" % SlickVersion, // BSD 2-clause "Simplified" License
@@ -446,7 +459,7 @@ object Dependencies {
           ExclusionRule("software.amazon.awssdk", "apache-client"),
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         ),
-        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion // ApacheV2
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion
       ) ++ Mockito
   )
 
@@ -461,12 +474,12 @@ object Dependencies {
           ExclusionRule("software.amazon.awssdk", "apache-client"),
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         ),
-        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion // ApacheV2
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion
       ) ++ Mockito
   )
 
-  val SolrjVersion = "7.7.3"
-  val SolrVersionForDocs = "7_7"
+  val SolrjVersion = "8.11.1"
+  val SolrVersionForDocs = "8_11"
 
   val Solr = Seq(
     libraryDependencies ++= Seq(
@@ -488,7 +501,7 @@ object Dependencies {
           ExclusionRule("software.amazon.awssdk", "apache-client"),
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         ),
-        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "org.mockito" % "mockito-inline" % mockitoVersion % Test // MIT
       ) ++ Mockito
   )

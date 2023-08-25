@@ -1,0 +1,2 @@
+# ScalaPB-generated classes
+ProblemFilters.exclude[Problem]("io.grpc.*")

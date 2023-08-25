@@ -20,7 +20,8 @@ import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-import scala.jdk.CollectionConverters._
+import java.util.zip.Deflater
+import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 
 class ArchiveSpec
@@ -104,6 +105,19 @@ class ArchiveSpec
         val inputFiles = generateInputFiles(5, 100)
         val inputStream = filesToStream(inputFiles)
         val zipFlow = Archive.zip()
+
+        val akkaZipped: Future[ByteString] =
+          inputStream
+            .via(zipFlow)
+            .runWith(Sink.fold(ByteString.empty)(_ ++ _))
+
+        archiveHelper.unzip(akkaZipped.futureValue).asScala shouldBe inputFiles
+      }
+
+      "archive files with compression flag" in {
+        val inputFiles = generateInputFiles(5, 100)
+        val inputStream = filesToStream(inputFiles)
+        val zipFlow = Archive.zip(Some(Deflater.NO_COMPRESSION))
 
         val akkaZipped: Future[ByteString] =
           inputStream

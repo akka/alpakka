@@ -11,7 +11,7 @@ import akka.stream.alpakka.s3.BucketAccess.{AccessDenied, AccessGranted, NotExis
 import akka.stream.alpakka.s3._
 import akka.stream.alpakka.s3.headers.ServerSideEncryption
 import akka.stream.alpakka.s3.scaladsl.{S3, S3ClientIntegrationSpec, S3WireMockBase}
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
 import software.amazon.awssdk.regions.Region
@@ -31,17 +31,17 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     mockDownload()
 
     //#download
-    val s3File: Source[Option[(Source[ByteString, NotUsed], ObjectMetadata)], NotUsed] =
-      S3.download(bucket, bucketKey)
+    val s3Source: Source[ByteString, Future[ObjectMetadata]] =
+      S3.getObject(bucket, bucketKey)
 
-    val Some((data: Source[ByteString, _], metadata)) =
-      s3File.runWith(Sink.head).futureValue: @nowarn("msg=match may not be exhaustive")
-
-    val result: Future[String] =
-      data.map(_.utf8String).runWith(Sink.head)
+    val (metadataFuture, dataFuture) =
+      s3Source.toMat(Sink.head)(Keep.both).run()
     //#download
 
-    result.futureValue shouldBe body
+    val data = dataFuture.futureValue
+    val metadata = metadataFuture.futureValue
+
+    data.utf8String shouldBe body
 
     //#downloadToAkkaHttp
     HttpResponse(
@@ -50,7 +50,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
           .flatMap(ContentType.parse(_).toOption)
           .getOrElse(ContentTypes.`application/octet-stream`),
         metadata.contentLength,
-        data
+        s3Source
       )
     )
     //#downloadToAkkaHttp
@@ -67,11 +67,9 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
         override def getRegion: Region = region
       })
 
-    val Some((data: Source[ByteString, _], _)) = S3
-      .download(bucket, bucketKey)
+    val data = S3
+      .getObject(bucket, bucketKey)
       .withAttributes(S3Attributes.settings(customRegion))
-      .runWith(Sink.head)
-      .futureValue: @nowarn("msg=match may not be exhaustive")
 
     data.map(_.utf8String).runWith(Sink.head).futureValue shouldBe body
   }
@@ -95,7 +93,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
   "S3Source" should "download a metadata from S3 for a big file" in {
 
-    val contentLength = Long.MaxValue
+    val contentLength = 999999999999999999L
     mockHead(contentLength)
 
     val metadata = S3.getObjectMetadata(bucket, bucketKey)
@@ -140,11 +138,9 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     mockRangedDownload()
 
     //#rangedDownload
-    val downloadResult = S3.download(bucket, bucketKey, Some(ByteRange(bytesRangeStart, bytesRangeEnd)))
+    val s3Source = S3.getObject(bucket, bucketKey, Some(ByteRange(bytesRangeStart, bytesRangeEnd)))
     //#rangedDownload
 
-    val Some((s3Source: Source[ByteString, _], _)) =
-      downloadResult.runWith(Sink.head).futureValue: @nowarn("msg=match may not be exhaustive")
     val result: Future[Array[Byte]] = s3Source.map(_.toArray).runWith(Sink.head)
 
     result.futureValue shouldBe rangeOfBody
@@ -154,10 +150,8 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
     mockDownloadSSEC()
 
-    val downloadResult = S3.download(bucket, bucketKey, sse = Some(sseCustomerKeys))
+    val s3Source = S3.getObject(bucket, bucketKey, sse = Some(sseCustomerKeys))
 
-    val Some((s3Source: Source[ByteString, _], _)) =
-      downloadResult.runWith(Sink.head).futureValue: @nowarn("msg=match may not be exhaustive")
     val result = s3Source.map(_.utf8String).runWith(Sink.head)
 
     result.futureValue shouldBe bodySSE
@@ -167,29 +161,28 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     val versionId = "3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo"
     mockDownloadSSECWithVersion(versionId)
 
-    val downloadResult =
-      S3.download(bucket, bucketKey, versionId = Some(versionId), sse = Some(sseCustomerKeys))
+    val s3Source =
+      S3.getObject(bucket, bucketKey, versionId = Some(versionId), sse = Some(sseCustomerKeys))
 
-    val Some((s3Source: Source[ByteString, _], metadata)) =
-      downloadResult.runWith(Sink.head).futureValue: @nowarn("msg=match may not be exhaustive")
-    val result = s3Source.map(_.utf8String).runWith(Sink.head)
+    val (metadata, result) = s3Source.map(_.utf8String).toMat(Sink.head)(Keep.both).run()
 
     result.futureValue shouldBe bodySSE
-    metadata.versionId.fold(fail("unable to get versionId from S3")) { vId =>
+    metadata.futureValue.versionId.fold(fail("unable to get versionId from S3")) { vId =>
       vId shouldEqual versionId
     }
   }
 
-  it should "fail if request returns 404" in {
+  it should "throw the correct S3Exception if a request returns 404" in {
 
     mock404s()
 
     val download = S3
-      .download("nonexisting-bucket", "nonexisting_file.xml")
+      .getObject("nonexisting-bucket", "nonexisting_file.xml")
       .runWith(Sink.head)
-      .futureValue
 
-    download shouldBe None
+    download.failed.futureValue should matchPattern {
+      case s3Exception: S3Exception if s3Exception.code == "NoSuchKey" =>
+    }
   }
 
   it should "fail for illegal bucket names" in {
@@ -198,7 +191,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
       .withEndpointUrl(null)
 
     val download = S3
-      .download("path/../with-dots", "unused")
+      .getObject("path/../with-dots", "unused")
       .withAttributes(S3Attributes.settings(dnsStyleAccess))
       .runWith(Sink.head)
 
@@ -209,20 +202,11 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
     mockSSEInvalidRequest()
 
-    import system.dispatcher
-
     val sse = ServerSideEncryption.customerKeys("encoded-key").withMd5("md5-encoded-key")
     val result = S3
-      .download(bucket, bucketKey, sse = Some(sse))
+      .getObject(bucket, bucketKey, sse = Some(sse))
+      .map(_.decodeString("utf8"))
       .runWith(Sink.head)
-      .flatMap {
-        case Some((downloadSource, _)) =>
-          downloadSource
-            .map(_.decodeString("utf8"))
-            .runWith(Sink.head)
-            .map(Some.apply)
-        case None => Future.successful(None)
-      }
 
     whenReady(result.failed) { e =>
       e shouldBe a[S3Exception]

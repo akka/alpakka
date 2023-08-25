@@ -5,6 +5,7 @@ lazy val alpakka = project
   .aggregate(
     amqp,
     avroparquet,
+    avroparquetTests,
     awslambda,
     azureStorageQueue,
     cassandra,
@@ -92,6 +93,7 @@ lazy val alpakka = project
         // springWeb triggers an esoteric ScalaDoc bug (from Java code)
         springWeb
       ),
+    licenses := Seq(("BUSL-1.1", url("https://raw.githubusercontent.com/akka/alpakka/main/LICENSE"))), // FIXME change s/master/v5.0.1/ when released
     crossScalaVersions := List() // workaround for https://github.com/sbt/sbt/issues/3465
   )
 
@@ -115,10 +117,15 @@ TaskKey[Unit]("verifyCodeFmt") := {
 
 addCommandAlias("verifyCodeStyle", "headerCheck; verifyCodeFmt")
 
-lazy val amqp = alpakkaProject("amqp", "amqp", Dependencies.Amqp)
+lazy val amqp = alpakkaProject("amqp", "amqp", Dependencies.Amqp, Scala3.settings)
 
 lazy val avroparquet =
-  alpakkaProject("avroparquet", "avroparquet", Dependencies.AvroParquet)
+  alpakkaProject("avroparquet", "avroparquet", Dependencies.AvroParquet, Scala3.settings)
+
+lazy val avroparquetTests =
+  alpakkaProject("avroparquet-tests", "avroparquet", Dependencies.AvroParquetTests, publish / skip := true)
+    .dependsOn(avroparquet)
+    .disablePlugins(MimaPlugin)
 
 lazy val awslambda = alpakkaProject("awslambda", "aws.lambda", Dependencies.AwsLambda)
 
@@ -130,11 +137,12 @@ lazy val azureStorageQueue = alpakkaProject(
 
 lazy val cassandra =
   alpakkaProject("cassandra", "cassandra", Dependencies.Cassandra)
+    .settings(Scala3.settings)
 
 lazy val couchbase =
   alpakkaProject("couchbase", "couchbase", Dependencies.Couchbase)
 
-lazy val csv = alpakkaProject("csv", "csv")
+lazy val csv = alpakkaProject("csv", "csv").settings(Scala3.settings)
 
 lazy val csvBench = internalProject("csv-bench")
   .dependsOn(csv)
@@ -191,8 +199,9 @@ lazy val googleCloudBigQueryStorage = alpakkaProject(
   Dependencies.GoogleBigQueryStorage,
   akkaGrpcCodeGeneratorSettings ~= { _.filterNot(_ == "flat_package") },
   akkaGrpcCodeGeneratorSettings += "server_power_apis",
-  akkaGrpcGeneratedSources := Seq(AkkaGrpc.Client),
-  Test / akkaGrpcGeneratedSources := Seq(AkkaGrpc.Server),
+  // FIXME only generate the server for the tests again
+  akkaGrpcGeneratedSources := Seq(AkkaGrpc.Client, AkkaGrpc.Server),
+  // Test / akkaGrpcGeneratedSources := Seq(AkkaGrpc.Server),
   akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala, AkkaGrpc.Java),
   Compile / scalacOptions ++= Seq(
       "-Wconf:src=.+/akka-grpc/main/.+:s",
@@ -217,7 +226,6 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
   akkaGrpcCodeGeneratorSettings ~= { _.filterNot(_ == "flat_package") },
   akkaGrpcGeneratedSources := Seq(AkkaGrpc.Client),
   akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala, AkkaGrpc.Java),
-  Compile / PB.protoSources += (Compile / PB.externalIncludePath).value,
   // for the ExampleApp in the tests
   run / connectInput := true,
   Compile / scalacOptions ++= Seq(
@@ -292,7 +300,7 @@ lazy val orientdb =
 lazy val reference = internalProject("reference", Dependencies.Reference)
   .dependsOn(testkit % Test)
 
-lazy val s3 = alpakkaProject("s3", "aws.s3", Dependencies.S3)
+lazy val s3 = alpakkaProject("s3", "aws.s3", Dependencies.S3, Scala3.settings)
 
 lazy val pravega = alpakkaProject(
   "pravega",
@@ -331,8 +339,11 @@ lazy val unixdomainsocket =
 
 lazy val xml = alpakkaProject("xml", "xml", Dependencies.Xml)
 
+// Java Platform version for JavaDoc creation
+val JavaDocLinkVersion = "11"
+
 lazy val docs = project
-  .enablePlugins(AkkaParadoxPlugin, ParadoxSitePlugin, PreprocessPlugin, PublishRsyncPlugin)
+  .enablePlugins(AkkaParadoxPlugin, ParadoxSitePlugin, SitePreviewPlugin, PreprocessPlugin, PublishRsyncPlugin)
   .disablePlugins(MimaPlugin)
   .settings(
     Compile / paradox / name := "Alpakka",
@@ -342,17 +353,40 @@ lazy val docs = project
     Preprocess / siteSubdirName := s"api/alpakka/${projectInfoVersion.value}",
     Preprocess / sourceDirectory := (LocalRootProject / ScalaUnidoc / unidoc / target).value,
     Preprocess / preprocessRules := Seq(
+        // Java Platform Module System splits
+        // java.*
+        ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java/sql/").r,
+         _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.sql/java/sql/"),
+        ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java/").r,
+         _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.base/java/"),
+        // javax.*
+        ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/javax/net/").r,
+         _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.base/javax/net/"),
+        ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/javax/xml/").r,
+         _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.xml/javax/xml/"),
+        // org.w3c.*
+        ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/org/w3c/").r,
+         _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.xml/org/w3c/"),
+        // package duplication errors
+        ((s"https://doc\\.akka\\.io/api/akka-grpc/${akka.grpc.gen.BuildInfo.version}/akka/grpc/akka/grpc").r,
+         _ => s"https://doc\\.akka\\.io/api/akka-grpc/${akka.grpc.gen.BuildInfo.version}/akka/grpc/"),
+        // http links
         ("http://www\\.eclipse\\.org/".r, _ => "https://www\\.eclipse\\.org/"),
         ("http://pravega\\.io/".r, _ => "https://pravega\\.io/"),
         ("http://www\\.scala-lang\\.org/".r, _ => "https://www\\.scala-lang\\.org/"),
         ("https://javadoc\\.io/page/".r, _ => "https://javadoc\\.io/static/")
       ),
     Paradox / siteSubdirName := s"docs/alpakka/${projectInfoVersion.value}",
+    // make use of https://github.com/scala/scala/pull/8663
+    Compile / doc / scalacOptions ++= Seq(
+        "-jdk-api-doc-base",
+        s"https://docs.oracle.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java.base/"
+      ),
     paradoxProperties ++= Map(
         "akka.version" -> Dependencies.AkkaVersion,
         "akka-http.version" -> Dependencies.AkkaHttpVersion,
         "hadoop.version" -> Dependencies.HadoopVersion,
-        "extref.github.base_url" -> s"https://github.com/akka/alpakka/tree/${if (isSnapshot.value) "master"
+        "extref.github.base_url" -> s"https://github.com/akka/alpakka/tree/${if (isSnapshot.value) "main"
         else "v" + version.value}/%s",
         "extref.akka.base_url" -> s"https://doc.akka.io/docs/akka/${Dependencies.AkkaBinaryVersion}/%s",
         "scaladoc.akka.base_url" -> s"https://doc.akka.io/api/akka/${Dependencies.AkkaBinaryVersion}",
@@ -379,10 +413,12 @@ lazy val docs = project
         "extref.cassandra-driver.base_url" -> s"https://docs.datastax.com/en/developer/java-driver/${Dependencies.CassandraDriverVersionInDocs}/%s",
         "javadoc.com.datastax.oss.base_url" -> s"https://docs.datastax.com/en/drivers/java/${Dependencies.CassandraDriverVersionInDocs}/",
         // Solr
-        "extref.solr.base_url" -> s"https://lucene.apache.org/solr/guide/${Dependencies.SolrVersionForDocs}/%s",
-        "javadoc.org.apache.solr.base_url" -> s"https://lucene.apache.org/solr/${Dependencies.SolrVersionForDocs}_0/solr-solrj/",
+        "extref.solr.base_url" -> s"https://solr.apache.org/guide/${Dependencies.SolrVersionForDocs}/%s",
+        "javadoc.org.apache.solr.base_url" -> s"https://solr.apache.org/docs/${Dependencies.SolrVersionForDocs}_0/solr-solrj/",
         // Java
-        "javadoc.base_url" -> "https://docs.oracle.com/javase/8/docs/api/",
+        "javadoc.base_url" -> "https://docs.oracle.com/en/java/javase/11/docs/api/java.base/",
+        "javadoc.java.base_url" -> "https://docs.oracle.com/en/java/javase/11/docs/api/java.base/",
+        "javadoc.java.link_style" -> "direct",
         "javadoc.javax.jms.base_url" -> "https://docs.oracle.com/javaee/7/api/",
         "javadoc.com.couchbase.base_url" -> s"https://docs.couchbase.com/sdk-api/couchbase-java-client-${Dependencies.CouchbaseVersion}/",
         "javadoc.io.pravega.base_url" -> s"http://pravega.io/docs/${Dependencies.PravegaVersionForDocs}/javadoc/clients/",
@@ -415,6 +451,7 @@ lazy val docs = project
   )
 
 lazy val testkit = internalProject("testkit", Dependencies.testkit)
+  .settings(Scala3.settings) // needed for modules that depend on testKit, e.g. csv
 
 lazy val `doc-examples` = project
   .enablePlugins(AutomateHeaderPlugin)
@@ -426,18 +463,29 @@ lazy val `doc-examples` = project
   )
 
 def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sbt.Def.SettingsDefinition*): Project = {
-  import com.typesafe.tools.mima.core.{Problem, ProblemFilters}
+  import com.typesafe.tools.mima.core._
   Project(id = projectId, base = file(projectId))
     .enablePlugins(AutomateHeaderPlugin)
     .disablePlugins(SitePlugin)
     .settings(
       name := s"akka-stream-alpakka-$projectId",
+      licenses := {
+        val tagOrBranch =
+          if (version.value.endsWith("SNAPSHOT")) "main"
+          else "v" + version.value
+        Seq(("BUSL-1.1", url(s"https://raw.githubusercontent.com/akka/alpakka/${tagOrBranch}/LICENSE")))
+      },
       AutomaticModuleName.settings(s"akka.stream.alpakka.$moduleName"),
+      scalacOptions += "-Wconf:cat=deprecation&msg=.*JavaConverters.*:s",
       mimaPreviousArtifacts := Set(
           organization.value %% name.value % previousStableVersion.value
             .getOrElse(throw new Error("Unable to determine previous version"))
         ),
-      mimaBinaryIssueFilters += ProblemFilters.exclude[Problem]("*.impl.*"),
+      mimaBinaryIssueFilters ++= Seq(
+          ProblemFilters.exclude[Problem]("*.impl.*"),
+          // generated code
+          ProblemFilters.exclude[Problem]("com.google.*")
+        ),
       Test / parallelExecution := false
     )
     .settings(additionalSettings: _*)
@@ -448,10 +496,9 @@ def internalProject(projectId: String, additionalSettings: sbt.Def.SettingsDefin
   Project(id = projectId, base = file(projectId))
     .enablePlugins(AutomateHeaderPlugin)
     .disablePlugins(SitePlugin, MimaPlugin)
-    .settings(
-      name := s"akka-stream-alpakka-$projectId",
-      publish / skip := true
-    )
+    .settings(name := s"akka-stream-alpakka-$projectId",
+              publish / skip := true,
+              scalacOptions += "-Wconf:cat=deprecation&msg=.*JavaConverters.*:s")
     .settings(additionalSettings: _*)
 
 Global / onLoad := (Global / onLoad).value.andThen { s =>

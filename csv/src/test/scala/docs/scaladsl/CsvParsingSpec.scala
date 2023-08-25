@@ -5,10 +5,10 @@
 package docs.scaladsl
 
 import java.nio.file.Paths
-
 import akka.NotUsed
 import akka.stream.alpakka.csv.scaladsl.{CsvParsing, CsvToMap}
 import akka.stream.scaladsl.{FileIO, Flow, Keep, Sink, Source}
+import akka.stream.testkit.{TestPublisher, TestSubscriber}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.{TestSink, TestSource}
 import akka.util.ByteString
@@ -120,11 +120,10 @@ class CsvParsingSpec extends CsvSpec {
     }
 
     "emit completion even without new line at end" in assertAllStagesStopped {
-      val (source, sink) = TestSource
-        .probe[ByteString]
+      val (source: TestPublisher.Probe[ByteString], sink: TestSubscriber.Probe[List[String]]) = TestSource[ByteString]()
         .via(CsvParsing.lineScanner())
         .map(_.map(_.utf8String))
-        .toMat(TestSink.probe[List[String]])(Keep.both)
+        .toMat(TestSink[List[String]]())(Keep.both)
         .run()
       source.sendNext(ByteString("eins,zwei,drei\nuno,dos,tres\n1,2,3"))
       sink.request(3)
@@ -180,7 +179,7 @@ class CsvParsingSpec extends CsvSpec {
           .fromPath(Paths.get("csv/src/test/resources/correctness.csv"))
           .via(CsvParsing.lineScanner())
           .via(CsvToMap.toMap())
-          .map(_.view.mapValues(_.utf8String).toIndexedSeq)
+          .map(_.iterator.map { case (k, v) => k -> v.utf8String }.toIndexedSeq)
           .runWith(Sink.seq)
       val res = fut.futureValue
       res(0) should contain allElementsOf (

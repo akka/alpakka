@@ -8,19 +8,18 @@ import akka.stream.alpakka.jms.{Destination, _}
 import javax.jms.{Destination => JmsDestination, _}
 import org.mockito.ArgumentMatchers.{any, anyBoolean, anyInt, anyString}
 import org.mockito.Mockito._
-import org.scalatestplus.mockito.MockitoSugar
 
-class JmsMessageProducerSpec extends JmsSpec with MockitoSugar {
+class JmsMessageProducerSpec extends JmsSpec {
 
   trait Setup {
-    val factory: ConnectionFactory = mock[ConnectionFactory]
-    val connection: Connection = mock[Connection]
-    val session: Session = mock[Session]
-    val destination: JmsDestination = mock[JmsDestination]
-    val producer: MessageProducer = mock[MessageProducer]
-    val textMessage: TextMessage = mock[TextMessage]
-    val mapMessage: MapMessage = mock[MapMessage]
-    val settingsDestination: Destination = mock[Destination]
+    val factory: ConnectionFactory = mock(classOf[ConnectionFactory])
+    val connection: Connection = mock(classOf[Connection])
+    val session: Session = mock(classOf[Session])
+    val destination: JmsDestination = mock(classOf[JmsDestination])
+    val producer: MessageProducer = mock(classOf[MessageProducer])
+    val textMessage: TextMessage = mock(classOf[TextMessage])
+    val mapMessage: MapMessage = mock(classOf[MapMessage])
+    val settingsDestination: Destination = mock(classOf[Destination])
 
     when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)
     when(session.createProducer(any[javax.jms.Destination])).thenReturn(producer)
@@ -45,6 +44,7 @@ class JmsMessageProducerSpec extends JmsSpec with MockitoSugar {
           .withProperty("short", 3.toShort)
           .withProperty("long", 4L)
           .withProperty("double", 5.0)
+          .withProperty("bytearray", Array[Byte](1, 1, 0))
       )
 
       verify(textMessage).setStringProperty("string", "string")
@@ -54,10 +54,11 @@ class JmsMessageProducerSpec extends JmsSpec with MockitoSugar {
       verify(textMessage).setShortProperty("short", 3.toByte)
       verify(textMessage).setLongProperty("long", 4L)
       verify(textMessage).setDoubleProperty("double", 5.0)
+      verify(textMessage).setObjectProperty("bytearray", Array[Byte](1, 1, 0))
     }
 
     "succeed if properties are set as map" in new Setup {
-      val props = Map(
+      val props = Map[String, Any](
         "string" -> "string",
         "int" -> 1,
         "boolean" -> true,
@@ -67,7 +68,8 @@ class JmsMessageProducerSpec extends JmsSpec with MockitoSugar {
         "Java-boxed float" -> java.lang.Float.valueOf(4.35f),
         "long" -> 4L,
         "Java-boxed long" -> java.lang.Long.valueOf(44L),
-        "double" -> 5.0
+        "double" -> 5.0,
+        "bytearray" -> Array[Byte](1, 1, 0)
       )
 
       val jmsProducer = JmsMessageProducer(jmsSession, settings, 0)
@@ -87,6 +89,7 @@ class JmsMessageProducerSpec extends JmsSpec with MockitoSugar {
       verify(textMessage).setLongProperty("long", 4L)
       verify(textMessage).setLongProperty("Java-boxed long", 44L)
       verify(textMessage).setDoubleProperty("double", 5.0)
+      verify(textMessage).setObjectProperty("bytearray", Array[Byte](1, 1, 0))
     }
 
     "fail if a property is set to an unsupported type" in new Setup {

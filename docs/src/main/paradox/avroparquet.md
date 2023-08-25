@@ -8,6 +8,16 @@ For more information about Apache Parquet please visit the [official documentati
 
 ## Artifacts
 
+The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
+
+@@repository [sbt,Maven,Gradle] {
+id="akka-repository"
+name="Akka library repository"
+url="https://repo.akka.io/maven"
+}
+
+Additionally, add the dependencies as below.
+
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
   artifact=akka-stream-alpakka-avroparquet_$scala.binary.version$
@@ -29,19 +39,19 @@ Sometimes it might be useful to use a Parquet file as stream Source. For this we
 instance which will produce records as subtypes of `GenericRecord`, the Avro record's abstract representation.
  
 Scala
-: @@snip (/avroparquet/src/test/scala/docs/scaladsl/AbstractAvroParquet.scala) { #prepare-source #init-reader }
+: @@snip (/avroparquet-tests/src/test/scala/docs/scaladsl/AbstractAvroParquet.scala) { #prepare-source #init-reader }
 
 Java
-: @@snip (/avroparquet/src/test/java/docs/javadsl/Examples.java) { #init-reader }
+: @@snip (/avroparquet-tests/src/test/java/docs/javadsl/Examples.java) { #init-reader }
 
 After that, you can create the Parquet Source from the initialisation of `AvroParquetReader`. This object requires an instance of 
   a `org.apache.parquet.hadoop.ParquetReader` typed by a subtype of `GenericRecord`.
 
 Scala
-: @@snip (/avroparquet/src/test/scala/docs/scaladsl/AvroParquetSourceSpec.scala) { #init-source }
+: @@snip (/avroparquet-tests/src/test/scala/docs/scaladsl/AvroParquetSourceSpec.scala) { #init-source }
 
 Java
-: @@snip (/avroparquet/src/test/java/docs/javadsl/Examples.java) { #init-source }
+: @@snip (/avroparquet-tests/src/test/java/docs/javadsl/Examples.java) { #init-source }
 
 ## Sink Initiation
 
@@ -49,10 +59,10 @@ On the other hand, you can use `AvroParquetWriter` as the Akka Streams Sink impl
 In that case, its initialisation would require an instance of `org.apache.parquet.hadoop.ParquetWriter`. It will also expect any subtype of `GenericRecord` to be passed.
  
 Scala
-: @@snip (/avroparquet/src/test/scala/docs/scaladsl/AbstractAvroParquet.scala) { #prepare-sink }
+: @@snip (/avroparquet-tests/src/test/scala/docs/scaladsl/AbstractAvroParquet.scala) { #prepare-sink }
 
 Java
-: @@snip (/avroparquet/src/test/java/docs/javadsl/AvroParquetSinkTest.java) { #init-writer }
+: @@snip (/avroparquet-tests/src/test/java/docs/javadsl/AvroParquetSinkTest.java) { #init-writer }
 
 After that, the AvroParquet Sink can already be used. 
 
@@ -64,10 +74,10 @@ See [Avro4s](https://github.com/sksamuel/avro4s) or [Avrohugger](https://github.
 @@@
  
 Scala
-: @@snip (/avroparquet/src/test/scala/docs/scaladsl//AvroParquetSinkSpec.scala) { #init-sink }
+: @@snip (/avroparquet-tests/src/test/scala/docs/scaladsl//AvroParquetSinkSpec.scala) { #init-sink }
 
 Java
-: @@snip (/avroparquet/src/test/java/docs/javadsl/AvroParquetSinkTest.java) { #init-sink }
+: @@snip (/avroparquet-tests/src/test/java/docs/javadsl/AvroParquetSinkTest.java) { #init-sink }
 
 ## Flow Initiation
 
@@ -75,11 +85,11 @@ The representation of a `ParquetWriter` as a Flow is also available to use as a 
  As a result, it writes into a Parquet file and returns the same `GenericRecord`s. Such a Flow stage can be easily created by using the `AvroParquetFlow` and providing an `AvroParquetWriter` instance as a parameter.
 
 Scala
-: @@snip (/avroparquet/src/test/scala/docs/scaladsl/AvroParquetFlowSpec.scala) { #init-flow }
+: @@snip (/avroparquet-tests/src/test/scala/docs/scaladsl/AvroParquetFlowSpec.scala) { #init-flow }
 This is all the preparation that we are going to need.
 
 Java
-: @@snip (/avroparquet/src/test/java/docs/javadsl/Examples.java) { #init-flow }
+: @@snip (/avroparquet-tests/src/test/java/docs/javadsl/Examples.java) { #init-flow }
 
 ## Running the example code
 

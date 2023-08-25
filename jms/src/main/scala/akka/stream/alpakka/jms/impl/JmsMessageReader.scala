@@ -10,7 +10,7 @@ import akka.annotation.InternalApi
 import akka.stream.alpakka.jms._
 import akka.util.ByteString
 import scala.annotation.tailrec
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 
 @InternalApi
 private[jms] object JmsMessageReader {

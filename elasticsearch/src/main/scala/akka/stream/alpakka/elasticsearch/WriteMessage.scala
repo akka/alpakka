@@ -7,7 +7,7 @@ package akka.stream.alpakka.elasticsearch
 import akka.NotUsed
 import akka.annotation.InternalApi
 
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 import scala.compat.java8.OptionConverters._
 
 /**

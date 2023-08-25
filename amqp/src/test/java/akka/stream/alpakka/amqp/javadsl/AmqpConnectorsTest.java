@@ -140,7 +140,7 @@ public class AmqpConnectorsTest {
             .map(WriteMessage::create)
             .viaMat(ampqRpcFlow, Keep.right())
             .mapAsync(1, cm -> cm.ack().thenApply(unused -> cm.message()))
-            .toMat(TestSink.probe(system), Keep.both())
+            .toMat(TestSink.create(system), Keep.both())
             .run(system);
 
     result.first().toCompletableFuture().get(5, TimeUnit.SECONDS);

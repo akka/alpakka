@@ -296,24 +296,19 @@ class GCStorageSourceSpec
         mockGetExistingStorageObject(Some(generation))
       )
 
-      //#objectMetadata
+      assertExistingStorageObject
 
-      val getObjectSource: Source[Option[StorageObject], NotUsed] = GCStorage.getObject(bucketName, fileName)
+    }
 
-      val getObjectGenerationSource: Source[Option[StorageObject], NotUsed] =
-        GCStorage.getObject(bucketName, fileName, Some(generation))
+    "get existing storage object when md5Hash and crc32c are not defined (composite objects)" in {
 
-      //#objectMetadata
+      mock.simulate(
+        mockTokenApi,
+        mockGetExistingStorageObject(maybeMd5Hash = None, maybeCrc32c = None),
+        mockGetExistingStorageObject(generation = Some(generation), maybeMd5Hash = None, maybeCrc32c = None)
+      )
 
-      val result = getObjectSource.runWith(Sink.head).futureValue
-      val resultGeneration = getObjectGenerationSource.runWith(Sink.head).futureValue
-
-      result.map(_.name) shouldBe Some(fileName)
-      result.map(_.bucket) shouldBe Some(bucketName)
-
-      resultGeneration.map(_.name) shouldBe Some(fileName)
-      resultGeneration.map(_.bucket) shouldBe Some(bucketName)
-      resultGeneration.map(_.generation) shouldBe Some(generation)
+      assertExistingStorageObject
     }
 
     "get None if storage object doesn't exist" in {
@@ -574,6 +569,27 @@ class GCStorageSourceSpec
       val deleteObjectsByPrefixSource = GCStorage.deleteObjectsByPrefix(bucketName, Some(prefix))
       deleteObjectsByPrefixSource.runWith(Sink.seq).failed.futureValue.getMessage shouldBe "[400] Delete object failed"
     }
+  }
+
+  private def assertExistingStorageObject = {
+    //#objectMetadata
+
+    val getObjectSource: Source[Option[StorageObject], NotUsed] = GCStorage.getObject(bucketName, fileName)
+
+    val getObjectGenerationSource: Source[Option[StorageObject], NotUsed] =
+      GCStorage.getObject(bucketName, fileName, Some(generation))
+
+    //#objectMetadata
+
+    val result = getObjectSource.runWith(Sink.head).futureValue
+    val resultGeneration = getObjectGenerationSource.runWith(Sink.head).futureValue
+
+    result.map(_.name) shouldBe Some(fileName)
+    result.map(_.bucket) shouldBe Some(bucketName)
+
+    resultGeneration.map(_.name) shouldBe Some(fileName)
+    resultGeneration.map(_.bucket) shouldBe Some(bucketName)
+    resultGeneration.map(_.generation) shouldBe Some(generation)
   }
 }
 

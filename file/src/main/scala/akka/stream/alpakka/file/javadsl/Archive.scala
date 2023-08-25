@@ -13,6 +13,7 @@ import akka.stream.alpakka.file.impl.archive.{TarReaderStage, ZipSource}
 import akka.stream.javadsl.Source
 
 import java.io.File
+import java.nio.charset.{Charset, StandardCharsets}
 
 /**
  * Java API.
@@ -21,25 +22,49 @@ object Archive {
 
   /**
    * Flow for compressing multiple files into one ZIP file.
+   *
+   * @param deflateCompression see [[java.util.zip.Deflater Deflater]]
    */
-  def zip(): Flow[Pair[ArchiveMetadata, Source[ByteString, NotUsed]], ByteString, NotUsed] =
+  def zip(
+      deflateCompression: Option[Int]
+  ): Flow[Pair[ArchiveMetadata, Source[ByteString, NotUsed]], ByteString, NotUsed] =
     Flow
       .create[Pair[ArchiveMetadata, Source[ByteString, NotUsed]]]()
       .map(func(pair => (pair.first, pair.second.asScala)))
-      .via(scaladsl.Archive.zip().asJava)
+      .via(scaladsl.Archive.zip(deflateCompression).asJava)
+
+  /**
+   * Flow for compressing multiple files into one ZIP file.
+   */
+  def zip(): Flow[Pair[ArchiveMetadata, Source[ByteString, NotUsed]], ByteString, NotUsed] =
+    zip(None)
 
   /**
    * Flow for reading ZIP files.
    */
-  def zipReader(file: File, chunkSize: Int): Source[Pair[ZipArchiveMetadata, Source[ByteString, NotUsed]], NotUsed] =
+  def zipReader(
+      file: File,
+      chunkSize: Int,
+      fileCharset: Charset
+  ): Source[Pair[ZipArchiveMetadata, Source[ByteString, NotUsed]], NotUsed] =
     Source
-      .fromGraph(new ZipSource(file, chunkSize))
+      .fromGraph(new ZipSource(file, chunkSize, fileCharset))
       .map(func {
         case (metadata, source) =>
           Pair(metadata, source.asJava)
       })
   def zipReader(file: File): Source[Pair[ZipArchiveMetadata, Source[ByteString, NotUsed]], NotUsed] =
     zipReader(file, 8192)
+  def zipReader(
+      file: File,
+      chunkSize: Int
+  ): Source[Pair[ZipArchiveMetadata, Source[ByteString, NotUsed]], NotUsed] =
+    Source
+      .fromGraph(new ZipSource(file, chunkSize, StandardCharsets.UTF_8))
+      .map(func {
+        case (metadata, source) =>
+          Pair(metadata, source.asJava)
+      })
 
   /**
    * Flow for packaging multiple files into one TAR file.

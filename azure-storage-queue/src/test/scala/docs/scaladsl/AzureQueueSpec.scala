@@ -15,7 +15,7 @@ import com.microsoft.azure.storage._
 import com.microsoft.azure.storage.queue._
 import org.scalatest._
 
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.util.Properties

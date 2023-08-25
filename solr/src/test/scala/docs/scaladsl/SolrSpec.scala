@@ -8,6 +8,8 @@ import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.{Arrays, Optional}
 
+import scala.annotation.nowarn
+
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.alpakka.solr._
@@ -26,10 +28,10 @@ import org.apache.solr.common.SolrInputDocument
 import org.junit.Assert.assertTrue
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.BeforeAndAfterAll
-
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -365,7 +367,7 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
       val deleteDocuments = SolrSource
         .fromTupleStream(stream2)
         .map { tuple: Tuple =>
-          val id = tuple.fields.get("title").toString
+          val id = tuple.getFields.get("title").toString
           WriteMessage.createDeleteMessage[SolrInputDocument](id)
         }
         .groupedWithin(5, 10.millis)
@@ -421,8 +423,8 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
       val updateCollection = SolrSource
         .fromTupleStream(stream2)
         .map { tuple: Tuple =>
-          val id = tuple.fields.get("title").toString
-          val comment = tuple.fields.get("comment").toString
+          val id = tuple.getFields.get("title").toString
+          val comment = tuple.getFields.get("comment").toString
           WriteMessage.createUpdateMessage[SolrInputDocument](
             idField = "title",
             idValue = id,
@@ -495,7 +497,7 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
       val deleteElements = SolrSource
         .fromTupleStream(stream2)
         .map { tuple: Tuple =>
-          val title = tuple.fields.get("title").toString
+          val title = tuple.getFields.get("title").toString
           WriteMessage.createDeleteMessage[Book](title)
         }
         .groupedWithin(5, 10.millis)
@@ -554,8 +556,8 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
           WriteMessage
             .createUpdateMessage[Book](
               idField = "title",
-              tuple.fields.get("title").toString,
-              updates = Map("comment" -> Map("set" -> (s"${tuple.fields.get("comment")} It is a good book!!!")))
+              tuple.getFields.get("title").toString,
+              updates = Map("comment" -> Map("set" -> (s"${tuple.getFields.get("comment")} It is a good book!!!")))
             )
             .withRoutingFieldValue("router-value")
         }
@@ -623,7 +625,7 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
       val deleteByQuery = SolrSource
         .fromTupleStream(stream2)
         .map { tuple: Tuple =>
-          val title = tuple.fields.get("title").toString
+          val title = tuple.getFields.get("title").toString
           WriteMessage.createDeleteByQueryMessage[SolrInputDocument](
             s"""title:"$title" """
           )
@@ -746,6 +748,7 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
     TestKit.shutdownActorSystem(system)
   }
 
+  @nowarn("msg=deprecated") // FIXME #2917 Deprecated getIdField in Solrj 8.11.x
   private def setupCluster(): Unit = {
     val targetDir = new File("solr/target")
     val testWorkingDir =
@@ -755,7 +758,7 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
 
     val confDir = new File("solr/src/test/resources/conf")
 
-    val zkDir = testWorkingDir.toPath.resolve("zookeeper/server/data").toString
+    val zkDir = testWorkingDir.toPath.resolve("zookeeper/server/data")
     zkTestServer = new ZkTestServer(zkDir, zookeeperPort)
     zkTestServer.run()
 

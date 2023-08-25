@@ -13,7 +13,7 @@ import akka.stream.alpakka.s3.AccessStyle.PathAccessStyle
 import scala.annotation.nowarn
 import scala.collection.immutable.Seq
 import scala.collection.immutable
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 import scala.compat.java8.OptionConverters._
 
 final class MultipartUpload private (val bucket: String, val key: String, val uploadId: String) {
@@ -195,10 +195,6 @@ final class MultipartUploadResult private (
     val versionId: Option[String]
 ) {
 
-  /** Scala API */
-  @deprecated("Use eTag", "3.0.3")
-  val etag: String = eTag
-
   /** Java API */
   def getLocation: akka.http.javadsl.model.Uri = akka.http.javadsl.model.Uri.create(location)
 
@@ -212,18 +208,12 @@ final class MultipartUploadResult private (
   def getETag: String = eTag
 
   /** Java API */
-  @deprecated("Use getETag", "3.0.3")
-  def getEtag: String = eTag
-
-  /** Java API */
   def getVersionId: Optional[String] = versionId.asJava
 
   def withLocation(value: Uri): MultipartUploadResult = copy(location = value)
   def withBucket(value: String): MultipartUploadResult = copy(bucket = value)
   def withKey(value: String): MultipartUploadResult = copy(key = value)
   def withETag(value: String): MultipartUploadResult = copy(eTag = value)
-  @deprecated("Use withETag", "3.0.3")
-  def withEtag(value: String): MultipartUploadResult = copy(eTag = value)
   def withVersionId(value: String): MultipartUploadResult =
     // See https://docs.aws.amazon.com/AmazonS3/latest/userguide/AddingObjectstoVersionSuspendedBuckets.html for more
     // info.
@@ -845,6 +835,64 @@ object FailedUpload {
 
   /** Java API */
   def create(reasons: Seq[Throwable]): FailedUpload = FailedUpload(reasons)
+}
+
+final class ListBucketsResultContents private (val creationDate: java.time.Instant, val name: String) {
+
+  /** Java API */
+  def getCreationDate: java.time.Instant = creationDate
+
+  /** Java API */
+  def getName: String = name
+
+  def withCreationDate(value: java.time.Instant): ListBucketsResultContents = copy(creationDate = value)
+
+  def withName(value: String): ListBucketsResultContents = copy(name = value)
+
+  private def copy(
+      name: String = name,
+      creationDate: java.time.Instant = creationDate
+  ): ListBucketsResultContents = new ListBucketsResultContents(
+    name = name,
+    creationDate = creationDate
+  )
+
+  override def toString: String =
+    "ListBucketsResultContents(" +
+    s"creationDate=$creationDate," +
+    s"name=$name" +
+    ")"
+
+  override def equals(other: Any): Boolean = other match {
+    case that: ListBucketsResultContents =>
+      Objects.equals(this.name, that.name) &&
+      Objects.equals(this.creationDate, that.creationDate)
+    case _ => false
+  }
+
+  override def hashCode(): Int =
+    Objects.hash(name, creationDate)
+}
+
+object ListBucketsResultContents {
+
+  /** Scala API */
+  def apply(
+      creationDate: java.time.Instant,
+      name: String
+  ): ListBucketsResultContents = new ListBucketsResultContents(
+    creationDate,
+    name
+  )
+
+  /** Java API */
+  def create(
+      creationDate: java.time.Instant,
+      name: String
+  ): ListBucketsResultContents = apply(
+    creationDate,
+    name
+  )
 }
 
 /**

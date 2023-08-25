@@ -30,7 +30,16 @@ object Common extends AutoPlugin {
                             "Contributors",
                             "https://gitter.im/akka/dev",
                             url("https://github.com/akka/alpakka/graphs/contributors")),
-    licenses := Seq(("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0"))),
+    releaseNotesURL := (
+        if ((ThisBuild / isSnapshot).value) None
+        else Some(url(s"https://github.com/akka/alpakka/releases/tag/v${version.value}"))
+      ),
+    licenses := {
+      val tagOrBranch =
+        if (version.value.endsWith("SNAPSHOT")) "main"
+        else "v" + version.value
+      Seq(("BUSL-1.1", url(s"https://raw.githubusercontent.com/akka/alpakka/${tagOrBranch}/LICENSE")))
+    },
     description := "Alpakka is a Reactive Enterprise Integration library for Java and Scala, based on Reactive Streams and Akka.",
     fatalWarnings := true,
     mimaReportSignatureProblems := true,
@@ -41,7 +50,7 @@ object Common extends AutoPlugin {
   override lazy val projectSettings = Dependencies.Common ++ Seq(
       projectInfoVersion := (if (isSnapshot.value) "snapshot" else version.value),
       crossVersion := CrossVersion.binary,
-      crossScalaVersions := Dependencies.ScalaVersions,
+      crossScalaVersions := Dependencies.Scala2Versions,
       scalaVersion := Dependencies.Scala213,
       scalacOptions ++= Seq(
           "-encoding",
@@ -51,10 +60,12 @@ object Common extends AutoPlugin {
           "-deprecation",
           "-Xlint",
           "-Ywarn-dead-code",
-          "-target:jvm-1.8"
+          "-release",
+          "8"
         ),
       scalacOptions ++= (scalaVersion.value match {
-          case Dependencies.Scala213 if insideCI.value && fatalWarnings.value && !Dependencies.CronBuild =>
+          case Dependencies.Scala213
+              if insideCI.value && fatalWarnings.value && !Dependencies.CronBuild && scalaVersion.value != Dependencies.Scala3 =>
             Seq("-Werror")
           case _ => Seq.empty[String]
         }),
@@ -64,18 +75,24 @@ object Common extends AutoPlugin {
           "-doc-version",
           version.value,
           "-sourcepath",
-          (ThisBuild / baseDirectory).value.toString,
-          "-skip-packages",
-          "akka.pattern:" + // for some reason Scaladoc creates this
-          "org.mongodb.scala:" + // this one is a mystery as well
+          (ThisBuild / baseDirectory).value.toString
+        ) ++ {
           // excluding generated grpc classes, except the model ones (com.google.pubsub)
-          "com.google.api:com.google.cloud:com.google.iam:com.google.logging:" +
-          "com.google.longrunning:com.google.protobuf:com.google.rpc:com.google.type"
-        ),
+          val skip = "akka.pattern:" + // for some reason Scaladoc creates this
+            "org.mongodb.scala:" + // this one is a mystery as well
+            // excluding generated grpc classes, except the model ones (com.google.pubsub)
+            "com.google.api:com.google.cloud:com.google.iam:com.google.logging:" +
+            "com.google.longrunning:com.google.protobuf:com.google.rpc:com.google.type"
+          if (scalaBinaryVersion.value.startsWith("3")) {
+            Seq(s"-skip-packages:$skip") // different usage in scala3
+          } else {
+            Seq("-skip-packages", skip)
+          }
+        },
       Compile / doc / scalacOptions ++=
         Seq(
           "-doc-source-url", {
-            val branch = if (isSnapshot.value) "master" else s"v${version.value}"
+            val branch = if (isSnapshot.value) "main" else s"v${version.value}"
             s"https://github.com/akka/alpakka/tree/${branch}€{FILE_PATH_EXT}#L€{FILE_LINE}"
           },
           "-doc-canonical-base-url",
@@ -97,6 +114,9 @@ object Common extends AutoPlugin {
           "-Xlint:try",
           "-Xlint:unchecked",
           "-Xlint:varargs"
+          // Release must be with JDK 8 because this flag prevents access to com.sun.nio.file.SensitivityWatchEventModifier
+          // "--release",
+          // "8"
         ),
       compile / javacOptions ++= (scalaVersion.value match {
           case Dependencies.Scala213 if insideCI.value && fatalWarnings.value && !Dependencies.CronBuild =>

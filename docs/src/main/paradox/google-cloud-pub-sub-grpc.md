@@ -14,7 +14,15 @@ look at the alternative @ref[Alpakka Google Cloud Pub/Sub](google-cloud-pub-sub.
 
 ## Artifacts
 
-Akka gRPC uses Akka Discovery internally. Make sure to add Akka Discovery with the same Akka version that the application uses.
+The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
+
+@@repository [sbt,Maven,Gradle] {
+id="akka-repository"
+name="Akka library repository"
+url="https://repo.akka.io/maven"
+}
+
+Additionally, add the dependencies as below. Since Akka gRPC uses Akka Discovery internally. Make sure to add Akka Discovery with the same Akka version that the application uses.
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka

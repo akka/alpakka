@@ -125,6 +125,80 @@ class PubSubApiSpec extends AnyFlatSpec with BeforeAndAfterAll with ScalaFutures
     result.futureValue._2 shouldBe (())
   }
 
+  it should "publish with ordering key" in {
+
+    val publishMessage =
+      PublishMessage(
+        data = new String(Base64.getEncoder.encode("Hello Google!".getBytes)),
+        attributes = Some(Map("row_id" -> "7")),
+        orderingKey = Some("my-ordering-key")
+      )
+    val publishRequest = PublishRequest(Seq(publishMessage))
+
+    val expectedPublishRequest =
+      """{"messages":[{"data":"SGVsbG8gR29vZ2xlIQ==","attributes":{"row_id":"7"},"orderingKey":"my-ordering-key"}]}"""
+    val publishResponse = """{"messageIds":["1"]}"""
+
+    mock.register(
+      WireMock
+        .post(
+          urlEqualTo(s"/v1/projects/${TestCredentials.projectId}/topics/topic1:publish?prettyPrint=false")
+        )
+        .withRequestBody(WireMock.equalToJson(expectedPublishRequest))
+        .withHeader("Authorization", WireMock.equalTo("Bearer " + accessToken))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withBody(publishResponse)
+            .withHeader("Content-Type", "application/json")
+        )
+    )
+    val flow = TestHttpApi.publish[Unit]("topic1", 1)
+    val result =
+      Source.single((publishRequest, ())).via(flow).toMat(Sink.head)(Keep.right).run()
+    result.futureValue._1.messageIds shouldBe Seq("1")
+    result.futureValue._2 shouldBe (())
+  }
+
+  it should "publish to overridden host" in {
+    val httpApiWithHostToOverride = new PubSubApi {
+      val isEmulated = false
+      val PubSubGoogleApisHost = "invalid-host" //this host must be override to complete the test
+      val PubSubGoogleApisPort = wiremockServer.httpsPort()
+    }
+
+    val publishMessage =
+      PublishMessage(
+        data = new String(Base64.getEncoder.encode("Hello Google!".getBytes))
+      )
+
+    val publishRequest = PublishRequest(Seq(publishMessage))
+
+    val expectedPublishRequest =
+      """{"messages":[{"data":"SGVsbG8gR29vZ2xlIQ=="}]}"""
+    val publishResponse = """{"messageIds":["1"]}"""
+
+    mock.register(
+      WireMock
+        .post(
+          urlEqualTo(s"/v1/projects/${TestCredentials.projectId}/topics/topic1:publish?prettyPrint=false")
+        )
+        .withRequestBody(WireMock.equalToJson(expectedPublishRequest))
+        .withHeader("Authorization", WireMock.equalTo("Bearer " + accessToken))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withBody(publishResponse)
+            .withHeader("Content-Type", "application/json")
+        )
+    )
+    val flow = httpApiWithHostToOverride.publish[Unit]("topic1", 1, Some("localhost"))
+    val result =
+      Source.single((publishRequest, ())).via(flow).toMat(Sink.head)(Keep.right).run()
+    result.futureValue._1.messageIds shouldBe Seq("1")
+    result.futureValue._2 shouldBe (())
+  }
+
   it should "publish without Authorization header to emulator" in {
 
     val publishMessage =
@@ -168,6 +242,39 @@ class PubSubApiSpec extends AnyFlatSpec with BeforeAndAfterAll with ScalaFutures
 
     val pullResponse =
       """{"receivedMessages":[{"ackId":"ack1","message":{"data":"SGVsbG8gR29vZ2xlIQ==","messageId":"1","publishTime":"2019-07-04T08:10:00.111Z"}}]}"""
+
+    val pullRequest = """{"returnImmediately":true,"maxMessages":1000}"""
+
+    mock.register(
+      WireMock
+        .post(
+          urlEqualTo(
+            s"/v1/projects/${TestCredentials.projectId}/subscriptions/sub1:pull?prettyPrint=false"
+          )
+        )
+        .withRequestBody(WireMock.equalToJson(pullRequest))
+        .withHeader("Authorization", WireMock.equalTo("Bearer " + accessToken))
+        .willReturn(aResponse().withStatus(200).withBody(pullResponse).withHeader("Content-Type", "application/json"))
+    )
+
+    val flow = TestHttpApi.pull("sub1", true, 1000)
+    val result = Source.single(Done).via(flow).toMat(Sink.last)(Keep.right).run()
+    result.futureValue shouldBe PullResponse(Some(Seq(ReceivedMessage("ack1", message))))
+
+  }
+
+  it should "Pull with results with ordering key" in {
+
+    val ts = Instant.parse("2019-07-04T08:10:00.111Z")
+
+    val message =
+      PubSubMessage(messageId = "1",
+                    data = Some(new String(Base64.getEncoder.encode("Hello Google!".getBytes))),
+                    publishTime = ts,
+                    orderingKey = Some("my-ordering-key"))
+
+    val pullResponse =
+      """{"receivedMessages":[{"ackId":"ack1","message":{"data":"SGVsbG8gR29vZ2xlIQ==","messageId":"1","publishTime":"2019-07-04T08:10:00.111Z","orderingKey":"my-ordering-key"}}]}"""
 
     val pullRequest = """{"returnImmediately":true,"maxMessages":1000}"""
 

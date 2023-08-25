@@ -297,7 +297,7 @@ class LogRotatorSinkSpec
     "upstream fail before first file creation" in assertAllStagesStopped {
       val (triggerFunctionCreator, files) = fileLengthTriggerCreator()
       val (probe, completion) =
-        TestSource.probe[ByteString].toMat(LogRotatorSink(triggerFunctionCreator))(Keep.both).run()
+        TestSource[ByteString]().toMat(LogRotatorSink(triggerFunctionCreator))(Keep.both).run()
 
       val ex = new Exception("my-exception")
       probe.sendError(ex)
@@ -308,7 +308,7 @@ class LogRotatorSinkSpec
     "upstream fail after first file creation" in assertAllStagesStopped {
       val (triggerFunctionCreator, files) = fileLengthTriggerCreator()
       val (probe, completion) =
-        TestSource.probe[ByteString].toMat(LogRotatorSink(triggerFunctionCreator))(Keep.both).run()
+        TestSource[ByteString]().toMat(LogRotatorSink(triggerFunctionCreator))(Keep.both).run()
 
       val ex = new Exception("my-exception")
       probe.sendNext(ByteString("test"))
@@ -326,7 +326,7 @@ class LogRotatorSinkSpec
         }
       }
       val (probe, completion) =
-        TestSource.probe[ByteString].toMat(LogRotatorSink(triggerFunctionCreator))(Keep.both).run()
+        TestSource[ByteString]().toMat(LogRotatorSink(triggerFunctionCreator))(Keep.both).run()
       probe.sendNext(ByteString("test"))
       the[Exception] thrownBy Await.result(completion, 3.seconds) shouldBe ex
     }
@@ -339,8 +339,7 @@ class LogRotatorSinkSpec
         }
       }
       val (probe, completion) =
-        TestSource
-          .probe[ByteString]
+        TestSource[ByteString]()
           .toMat(LogRotatorSink(triggerFunctionCreator, Set(StandardOpenOption.READ)))(Keep.both)
           .run()
       probe.sendNext(ByteString("test"))
@@ -368,8 +367,7 @@ class LogRotatorSinkSpec
       }
     }
     val (probe, completion) =
-      TestSource
-        .probe[ByteString]
+      TestSource[ByteString]()
         .toMat(
           LogRotatorSink.withSinkFactory(
             triggerGeneratorCreator = triggerFunctionCreator,

@@ -12,6 +12,7 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.alpakka.elasticsearch._
 import akka.stream.stage._
 import akka.stream._
+import akka.stream.alpakka.elasticsearch
 
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
@@ -24,7 +25,7 @@ import scala.concurrent.{ExecutionContext, Future}
 @InternalApi
 private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
     elasticsearchParams: ElasticsearchParams,
-    settings: ElasticsearchWriteSettings,
+    settings: WriteSettingsBase[_, _],
     writer: MessageWriter[T]
 )(implicit http: HttpExt, mat: Materializer, ec: ExecutionContext)
     extends GraphStage[
@@ -45,6 +46,10 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
                               writer)
     case ApiVersion.V7 =>
       new RestBulkApiV7[T, C](elasticsearchParams.indexName, settings.versionType, settings.allowExplicitIndex, writer)
+
+    case elasticsearch.OpensearchApiVersion.V1 =>
+      new RestBulkApiV7[T, C](elasticsearchParams.indexName, settings.versionType, settings.allowExplicitIndex, writer)
+
     case other => throw new IllegalArgumentException(s"API version $other is not supported")
   }
 

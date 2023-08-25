@@ -19,7 +19,7 @@ import net.schmizz.sshj.userauth.password.{PasswordFinder, PasswordUtils, Resour
 import net.schmizz.sshj.xfer.FilePermission
 import org.apache.commons.net.DefaultSocketFactory
 
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.util.{Failure, Try}
 
@@ -133,7 +133,7 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
       val remoteFile = handler.open(name, java.util.EnumSet.of(OpenMode.READ))
       val is = maxUnconfirmedReads match {
         case m if m > 1 =>
-          new remoteFile.ReadAheadRemoteFileInputStream(m, offset) {
+          new remoteFile.ReadAheadRemoteFileInputStream(m, offset, 2048L) {
 
             override def close(): Unit =
               try {

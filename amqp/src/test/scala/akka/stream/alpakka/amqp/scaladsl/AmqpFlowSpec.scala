@@ -7,6 +7,7 @@ package akka.stream.alpakka.amqp.scaladsl
 import akka.Done
 import akka.stream.alpakka.amqp._
 import akka.stream.scaladsl.{Flow, FlowWithContext, Keep, Sink, Source}
+import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.{TestSink, TestSource}
 import akka.util.ByteString
@@ -151,7 +152,7 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
           .map(s => WriteMessage(ByteString(s)))
           .viaMat(mockedFlowWithContextAndConfirm)(Keep.right)
           .asSource
-          .toMat(TestSink.probe)(Keep.both)
+          .toMat(TestSink())(Keep.both)
           .run()
 
       probe.request(input.size)
@@ -238,7 +239,7 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
           .map(s => WriteMessage(ByteString(s)))
           .viaMat(mockedUnorderedFlowWithPassThrough)(Keep.right)
           .asSource
-          .toMat(TestSink.probe)(Keep.both)
+          .toMat(TestSink())(Keep.both)
           .run()
 
       probe.request(input.size)
@@ -278,7 +279,7 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
       Source(input)
         .map(s => WriteMessage(ByteString(s)))
         .viaMat(flow)(Keep.right)
-        .toMat(TestSink.probe)(Keep.both)
+        .toMat(TestSink())(Keep.both)
         .run()
 
     val messages = probe.request(input.size).expectNextN(input.size)
@@ -296,7 +297,7 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
         .asSourceWithContext(identity)
         .map(s => WriteMessage(ByteString(s)))
         .viaMat(flow)(Keep.right)
-        .toMat(TestSink.probe)(Keep.both)
+        .toMat(TestSink())(Keep.both)
         .run()
 
     val messages = probe.request(input.size).expectNextN(input.size)
@@ -309,11 +310,11 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
     val input = Vector("one", "two", "three", "four", "five")
     val expectedOutput = input.map(s => (WriteResult.confirmed, s))
 
-    val (completion, probe) =
+    val (completion: Future[Done], probe: TestSubscriber.Probe[(WriteResult, String)]) =
       Source(input)
         .map(s => (WriteMessage(ByteString(s)), s))
         .viaMat(flow)(Keep.right)
-        .toMat(TestSink.probe)(Keep.both)
+        .toMat(TestSink())(Keep.both)
         .run()
 
     val messages = probe.request(input.size).expectNextN(input.size)
@@ -351,7 +352,7 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
       Source(input)
         .map(s => WriteMessage(ByteString(s)))
         .viaMat(flow)(Keep.right)
-        .toMat(TestSink.probe)(Keep.both)
+        .toMat(TestSink())(Keep.both)
         .run()
 
     probe.request(input.size)
@@ -379,7 +380,7 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
       Source(input)
         .map(s => WriteMessage(ByteString(s)))
         .viaMat(flow)(Keep.right)
-        .toMat(TestSink.probe)(Keep.both)
+        .toMat(TestSink())(Keep.both)
         .run()
 
     val messages = probe.request(input.size).expectNextN(input.size)
@@ -398,7 +399,7 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
       Source(input)
         .map(s => WriteMessage(ByteString(s)))
         .viaMat(flow)(Keep.right)
-        .toMat(TestSink.probe)(Keep.both)
+        .toMat(TestSink())(Keep.both)
         .run()
 
     probe.request(input.size)
@@ -437,7 +438,7 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
       Source(1 to sourceElements)
         .map(s => WriteMessage(ByteString(s)))
         .viaMat(flow)(Keep.right)
-        .toMat(TestSink.probe)(Keep.right)
+        .toMat(TestSink())(Keep.right)
         .run()
 
     probe.request(sourceElements)
@@ -453,11 +454,10 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
     val input = Vector("one", "two")
 
     val (sourceProbe, sinkProbe) =
-      TestSource
-        .probe[String]
+      TestSource[String]()
         .map(s => WriteMessage(ByteString(s)))
         .viaMat(flow)(Keep.left)
-        .toMat(TestSink.probe)(Keep.both)
+        .toMat(TestSink())(Keep.both)
         .run()
 
     sinkProbe.request(input.size)

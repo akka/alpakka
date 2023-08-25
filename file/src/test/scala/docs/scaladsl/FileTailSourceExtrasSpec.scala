@@ -58,7 +58,7 @@ class FileTailSourceExtrasSpec
 
       // #shutdown-on-delete
 
-      val probe = stream.toMat(TestSink.probe)(Keep.right).run()
+      val probe = stream.toMat(TestSink())(Keep.right).run()
 
       val result = probe.requestNext()
       result shouldEqual "a"
@@ -84,7 +84,7 @@ class FileTailSourceExtrasSpec
 
       // #shutdown-on-idle-timeout
 
-      val probe = stream.toMat(TestSink.probe)(Keep.right).run()
+      val probe = stream.toMat(TestSink())(Keep.right).run()
 
       val result = probe.requestNext()
       result shouldEqual "a"

@@ -12,7 +12,7 @@ The JMS message model supports several types of message bodies in (see @javadoc[
 |-----------------------------------------------------------|--------------------------|
 | `String`                                                  | [`JmsProducer.textSink`](#text-sinks)   |
 | @scala[`Array[Byte]`]@java[`byte[]`]                      | [`JmsProducer.bytesSink`](#byte-array-sinks)  |
-| @scala[`Map[String, AnyRef]`]@java[`Map<String, Object>`] | [`JmsProducer.mapSink`](#map-messages-sinks)  |
+| @scala[`Map[String, AnyRef]`]@java[`Map<String, Object>`] | [`JmsProducer.mapSink`](#map-messages-sink)  |
 | `Object` (`java.io.Serializable`)                         | [`JmsProducer.objectSink`](#object-sinks)     |
 | `JmsTextMessage`                                          | [`JmsProducer.sink`](#a-jmsmessage-sub-type-sink) or [`JmsProducer.flow`](#sending-messages-as-a-flow) |
 | `JmsByteMessage`                                          | [`JmsProducer.sink`](#a-jmsmessage-sub-type-sink) or [`JmsProducer.flow`](#sending-messages-as-a-flow) |

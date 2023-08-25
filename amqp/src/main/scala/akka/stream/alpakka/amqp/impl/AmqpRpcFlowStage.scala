@@ -27,7 +27,9 @@ import scala.util.Success
  *                            can be overridden per message by including `expectedReplies` in the the header of the [[akka.stream.alpakka.amqp.WriteMessage]]
  */
 @InternalApi
-private[amqp] final class AmqpRpcFlowStage(settings: AmqpWriteSettings, bufferSize: Int, responsesPerMessage: Int = 1)
+private[amqp] final class AmqpRpcFlowStage(writeSettings: AmqpWriteSettings,
+                                           bufferSize: Int,
+                                           responsesPerMessage: Int = 1)
     extends GraphStageWithMaterializedValue[FlowShape[WriteMessage, CommittableReadResult], Future[String]] {
   stage =>
 
@@ -43,9 +45,9 @@ private[amqp] final class AmqpRpcFlowStage(settings: AmqpWriteSettings, bufferSi
     val streamCompletion = Promise[String]()
     (new GraphStageLogic(shape) with AmqpConnectorLogic {
 
-      override val settings = stage.settings
-      private val exchange = settings.exchange.getOrElse("")
-      private val routingKey = settings.routingKey.getOrElse("")
+      override val settings = stage.writeSettings
+      private val exchange = writeSettings.exchange.getOrElse("")
+      private val routingKey = writeSettings.routingKey.getOrElse("")
       private val queue = mutable.Queue[CommittableReadResult]()
       private var queueName: String = _
       private var unackedMessages = 0

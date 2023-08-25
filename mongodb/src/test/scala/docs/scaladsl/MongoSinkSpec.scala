@@ -19,12 +19,10 @@ import org.mongodb.scala.bson.codecs.Macros._
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-
-import scala.annotation.nowarn
 
 class MongoSinkSpec
     extends AnyWordSpec
@@ -39,11 +37,12 @@ class MongoSinkSpec
   case class DomainObject(_id: Int, firstProperty: String, secondProperty: String)
 
   val codecRegistry =
-    fromRegistries(fromProviders(classOf[Number], classOf[DomainObject]), DEFAULT_CODEC_REGISTRY): @nowarn(
-      "msg=match may not be exhaustive"
-    )
+    fromRegistries(fromProviders(classOf[Number], classOf[DomainObject]), DEFAULT_CODEC_REGISTRY)
 
   implicit val system = ActorSystem()
+
+  override implicit val patienceConfig: PatienceConfig =
+    PatienceConfig(timeout = 10.seconds, interval = 100.millis)
 
   override protected def beforeAll(): Unit =
     Source.fromPublisher(db.drop()).runWith(Sink.headOption).futureValue
@@ -56,9 +55,6 @@ class MongoSinkSpec
   private val domainObjectsColl: MongoCollection[DomainObject] =
     db.getCollection("domainObjectsSink", classOf[DomainObject]).withCodecRegistry(codecRegistry)
   private val domainObjectsDocumentColl = db.getCollection("domainObjectsSink")
-
-  implicit val defaultPatience =
-    PatienceConfig(timeout = 5.seconds, interval = 50.millis)
 
   override def afterEach(): Unit = {
     Source.fromPublisher(numbersDocumentColl.deleteMany(new Document())).runWith(Sink.head).futureValue

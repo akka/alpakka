@@ -1,0 +1,8 @@
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.s3.MultipartUploadResult.etag")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.s3.MultipartUploadResult.getEtag")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.s3.MultipartUploadResult.withEtag")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.s3.S3Settings.pathStyleAccessWarning")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.s3.javadsl.S3.checkIfBucketExists")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.s3.javadsl.S3.deleteBucket")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.s3.javadsl.S3.makeBucket")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.s3.javadsl.S3.checkIfBucketExists")

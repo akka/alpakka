@@ -29,6 +29,23 @@ import scala.concurrent.{ExecutionContext, Future}
 
   private final val BucketPattern = "{bucket}"
 
+  def listBuckets(headers: Seq[HttpHeader] = Nil)(implicit conf: S3Settings): HttpRequest = {
+    val awsHost = Authority(Uri.Host(s"s3.amazonaws.com"))
+    val (authority, scheme) = conf.endpointUrl match {
+      case Some(endpointUrl) =>
+        val customUri = Uri(endpointUrl)
+        (customUri.authority, customUri.scheme)
+      case None =>
+        (awsHost, "https")
+    }
+
+    val uri = Uri(authority = authority, scheme = scheme)
+
+    HttpRequest(HttpMethods.GET)
+      .withHeaders(Host(awsHost) +: headers)
+      .withUri(uri)
+  }
+
   def listBucket(
       bucket: String,
       prefix: Option[String] = None,

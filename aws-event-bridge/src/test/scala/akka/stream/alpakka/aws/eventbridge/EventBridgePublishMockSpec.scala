@@ -47,7 +47,7 @@ class EventBridgePublishMockSpec extends AnyFlatSpec with DefaultTestContext wit
     when(eventBridgeClient.putEvents(putRequest)).thenReturn(CompletableFuture.completedFuture(putResult))
 
     val (probe, future) =
-      TestSource.probe[PutEventsRequestEntry].via(EventBridgePublisher.flow()).toMat(Sink.seq)(Keep.both).run()
+      TestSource[PutEventsRequestEntry]().via(EventBridgePublisher.flow()).toMat(Sink.seq)(Keep.both).run()
 
     probe.sendNext(putRequestEntry).sendComplete()
 
@@ -62,7 +62,7 @@ class EventBridgePublishMockSpec extends AnyFlatSpec with DefaultTestContext wit
     when(eventBridgeClient.putEvents(any[PutEventsRequest]())).thenReturn(CompletableFuture.completedFuture(putResult))
 
     val (probe, future) =
-      TestSource.probe[PutEventsRequestEntry].via(EventBridgePublisher.flow()).toMat(Sink.seq)(Keep.both).run()
+      TestSource[PutEventsRequestEntry]().via(EventBridgePublisher.flow()).toMat(Sink.seq)(Keep.both).run()
 
     probe
       .sendNext(entryDetail("eb-message-1"))
@@ -88,7 +88,7 @@ class EventBridgePublishMockSpec extends AnyFlatSpec with DefaultTestContext wit
     when(eventBridgeClient.putEvents(any[PutEventsRequest]())).thenReturn(CompletableFuture.completedFuture(putResult))
 
     val (probe, future) =
-      TestSource.probe[Seq[PutEventsRequestEntry]].via(EventBridgePublisher.flowSeq()).toMat(Sink.seq)(Keep.both).run()
+      TestSource[Seq[PutEventsRequestEntry]]().via(EventBridgePublisher.flowSeq()).toMat(Sink.seq)(Keep.both).run()
     probe
       .sendNext(Seq(entryDetail("eb-message-1"), entryDetail("eb-message-2"), entryDetail("eb-message-3")))
       .sendComplete()
@@ -109,7 +109,7 @@ class EventBridgePublishMockSpec extends AnyFlatSpec with DefaultTestContext wit
     when(eventBridgeClient.putEvents(meq(publishRequest))).thenReturn(promise)
 
     val (probe, future) =
-      TestSource.probe[Seq[PutEventsRequestEntry]].via(EventBridgePublisher.flowSeq()).toMat(Sink.seq)(Keep.both).run()
+      TestSource[Seq[PutEventsRequestEntry]]().via(EventBridgePublisher.flowSeq()).toMat(Sink.seq)(Keep.both).run()
     probe.sendNext(Seq(entryDetail("eb-message"))).sendComplete()
 
     a[RuntimeException] should be thrownBy {
@@ -123,7 +123,7 @@ class EventBridgePublishMockSpec extends AnyFlatSpec with DefaultTestContext wit
     case class MyCustomException(message: String) extends Exception(message)
 
     val (probe, future) =
-      TestSource.probe[Seq[PutEventsRequestEntry]].via(EventBridgePublisher.flowSeq()).toMat(Sink.seq)(Keep.both).run()
+      TestSource[Seq[PutEventsRequestEntry]]().via(EventBridgePublisher.flowSeq()).toMat(Sink.seq)(Keep.both).run()
     probe.sendError(MyCustomException("upstream failure"))
 
     a[MyCustomException] should be thrownBy {

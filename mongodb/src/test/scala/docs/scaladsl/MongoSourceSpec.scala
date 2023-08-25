@@ -15,14 +15,12 @@ import org.bson.Document
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 import scala.collection.immutable.Seq
 import scala.concurrent._
 import scala.concurrent.duration._
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-
-import scala.annotation.nowarn
 
 class MongoSourceSpec
     extends AnyWordSpec
@@ -35,6 +33,9 @@ class MongoSourceSpec
   // #init-system
   implicit val system = ActorSystem()
   // #init-system
+
+  override implicit val patienceConfig: PatienceConfig =
+    PatienceConfig(timeout = 5.seconds, interval = 50.millis)
 
   override protected def beforeAll(): Unit =
     Source.fromPublisher(db.drop()).runWith(Sink.headOption).futureValue
@@ -51,7 +52,7 @@ class MongoSourceSpec
   import org.mongodb.scala.bson.codecs.Macros._
 
   val codecRegistry =
-    fromRegistries(fromProviders(classOf[Number]: @nowarn("msg=match may not be exhaustive")), DEFAULT_CODEC_REGISTRY)
+    fromRegistries(fromProviders(classOf[Number]), DEFAULT_CODEC_REGISTRY)
   // #codecs
 
   // #init-connection
@@ -63,9 +64,6 @@ class MongoSourceSpec
   // #init-connection
 
   private val numbersDocumentColl = db.getCollection("numbers")
-
-  implicit val defaultPatience =
-    PatienceConfig(timeout = 5.seconds, interval = 50.millis)
 
   override def afterEach(): Unit =
     Source.fromPublisher(numbersDocumentColl.deleteMany(new Document())).runWith(Sink.head).futureValue

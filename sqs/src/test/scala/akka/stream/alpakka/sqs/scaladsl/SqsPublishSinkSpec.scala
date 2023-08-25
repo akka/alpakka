@@ -17,7 +17,6 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import org.scalatestplus.mockito.MockitoSugar.mock
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model._
 
@@ -27,11 +26,11 @@ import scala.concurrent.duration._
 class SqsPublishSinkSpec extends AnyFlatSpec with Matchers with DefaultTestContext with LogCapturing {
 
   "SqsPublishSink" should "send a message" in {
-    implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
+    implicit val sqsClient: SqsAsyncClient = mock(classOf[SqsAsyncClient])
     when(sqsClient.sendMessage(any[SendMessageRequest]))
       .thenReturn(CompletableFuture.completedFuture(SendMessageResponse.builder().build()))
 
-    val (probe, future) = TestSource.probe[String].toMat(SqsPublishSink("notused"))(Keep.both).run()
+    val (probe, future) = TestSource[String]().toMat(SqsPublishSink("notused"))(Keep.both).run()
     probe.sendNext("notused").sendComplete()
     Await.result(future, 1.second) shouldBe Done
 
@@ -40,7 +39,7 @@ class SqsPublishSinkSpec extends AnyFlatSpec with Matchers with DefaultTestConte
   }
 
   it should "fail stage on client failure and fail the promise" in {
-    implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
+    implicit val sqsClient: SqsAsyncClient = mock(classOf[SqsAsyncClient])
 
     when(sqsClient.sendMessage(any[SendMessageRequest]()))
       .thenReturn(
@@ -49,7 +48,7 @@ class SqsPublishSinkSpec extends AnyFlatSpec with Matchers with DefaultTestConte
         })
       )
 
-    val (probe, future) = TestSource.probe[String].toMat(SqsPublishSink("notused"))(Keep.both).run()
+    val (probe, future) = TestSource[String]().toMat(SqsPublishSink("notused"))(Keep.both).run()
     probe.sendNext("notused").sendComplete()
 
     a[RuntimeException] should be thrownBy {
@@ -87,8 +86,8 @@ class SqsPublishSinkSpec extends AnyFlatSpec with Matchers with DefaultTestConte
   }
 
   it should "failure the promise on upstream failure" in {
-    implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
-    val (probe, future) = TestSource.probe[String].toMat(SqsPublishSink("notused"))(Keep.both).run()
+    implicit val sqsClient: SqsAsyncClient = mock(classOf[SqsAsyncClient])
+    val (probe, future) = TestSource[String]().toMat(SqsPublishSink("notused"))(Keep.both).run()
 
     probe.sendError(new RuntimeException("Fake upstream failure"))
 
@@ -98,12 +97,12 @@ class SqsPublishSinkSpec extends AnyFlatSpec with Matchers with DefaultTestConte
   }
 
   it should "complete promise after all messages have been sent" in {
-    implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
+    implicit val sqsClient: SqsAsyncClient = mock(classOf[SqsAsyncClient])
 
     when(sqsClient.sendMessage(any[SendMessageRequest]))
       .thenReturn(CompletableFuture.completedFuture(SendMessageResponse.builder().build()))
 
-    val (probe, future) = TestSource.probe[String].toMat(SqsPublishSink("notused"))(Keep.both).run()
+    val (probe, future) = TestSource[String]().toMat(SqsPublishSink("notused"))(Keep.both).run()
     probe
       .sendNext("test-101")
       .sendNext("test-102")
@@ -118,7 +117,7 @@ class SqsPublishSinkSpec extends AnyFlatSpec with Matchers with DefaultTestConte
   }
 
   it should "send batch of messages" in {
-    implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
+    implicit val sqsClient: SqsAsyncClient = mock(classOf[SqsAsyncClient])
 
     when(sqsClient.sendMessageBatch(any[SendMessageBatchRequest]))
       .thenReturn(
@@ -132,7 +131,7 @@ class SqsPublishSinkSpec extends AnyFlatSpec with Matchers with DefaultTestConte
         )
       )
 
-    val (probe, future) = TestSource.probe[String].toMat(SqsPublishSink.grouped("notused"))(Keep.both).run()
+    val (probe, future) = TestSource[String]().toMat(SqsPublishSink.grouped("notused"))(Keep.both).run()
     probe.sendNext("notused").sendComplete()
     Await.result(future, 1.second) shouldBe Done
 
@@ -142,7 +141,7 @@ class SqsPublishSinkSpec extends AnyFlatSpec with Matchers with DefaultTestConte
   }
 
   it should "send all messages in batches of given size" in {
-    implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
+    implicit val sqsClient: SqsAsyncClient = mock(classOf[SqsAsyncClient])
 
     when(sqsClient.sendMessageBatch(any[SendMessageBatchRequest]))
       .thenReturn(
@@ -162,7 +161,7 @@ class SqsPublishSinkSpec extends AnyFlatSpec with Matchers with DefaultTestConte
 
     val settings = SqsPublishGroupedSettings.create().withMaxBatchSize(5)
 
-    val (probe, future) = TestSource.probe[String].toMat(SqsPublishSink.grouped("notused", settings))(Keep.both).run()
+    val (probe, future) = TestSource[String]().toMat(SqsPublishSink.grouped("notused", settings))(Keep.both).run()
     probe
       .sendNext("notused - 1")
       .sendNext("notused - 2")
@@ -184,7 +183,7 @@ class SqsPublishSinkSpec extends AnyFlatSpec with Matchers with DefaultTestConte
   }
 
   it should "fail if any of the messages in batch failed" in {
-    implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
+    implicit val sqsClient: SqsAsyncClient = mock(classOf[SqsAsyncClient])
 
     when(sqsClient.sendMessageBatch(any[SendMessageBatchRequest]))
       .thenReturn(
@@ -202,7 +201,7 @@ class SqsPublishSinkSpec extends AnyFlatSpec with Matchers with DefaultTestConte
         )
       )
 
-    val (probe, future) = TestSource.probe[String].toMat(SqsPublishSink.grouped("notused"))(Keep.both).run()
+    val (probe, future) = TestSource[String]().toMat(SqsPublishSink.grouped("notused"))(Keep.both).run()
     probe
       .sendNext("notused - 1")
       .sendNext("notused - 2")
@@ -221,7 +220,7 @@ class SqsPublishSinkSpec extends AnyFlatSpec with Matchers with DefaultTestConte
   }
 
   it should "fail if whole batch is failed" in {
-    implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
+    implicit val sqsClient: SqsAsyncClient = mock(classOf[SqsAsyncClient])
     when(
       sqsClient.sendMessageBatch(any[SendMessageBatchRequest]())
     ).thenReturn(
@@ -231,7 +230,7 @@ class SqsPublishSinkSpec extends AnyFlatSpec with Matchers with DefaultTestConte
     )
 
     val settings = SqsPublishGroupedSettings().withMaxBatchSize(5)
-    val (probe, future) = TestSource.probe[String].toMat(SqsPublishSink.grouped("notused", settings))(Keep.both).run()
+    val (probe, future) = TestSource[String]().toMat(SqsPublishSink.grouped("notused", settings))(Keep.both).run()
     probe
       .sendNext("notused - 1")
       .sendNext("notused - 2")
@@ -250,7 +249,7 @@ class SqsPublishSinkSpec extends AnyFlatSpec with Matchers with DefaultTestConte
   }
 
   it should "send all batches of messages" in {
-    implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
+    implicit val sqsClient: SqsAsyncClient = mock(classOf[SqsAsyncClient])
 
     when(sqsClient.sendMessageBatch(any[SendMessageBatchRequest]))
       .thenReturn(
@@ -267,7 +266,7 @@ class SqsPublishSinkSpec extends AnyFlatSpec with Matchers with DefaultTestConte
         )
       )
 
-    val (probe, future) = TestSource.probe[Seq[String]].toMat(SqsPublishSink.batch("notused"))(Keep.both).run()
+    val (probe, future) = TestSource[Seq[String]]().toMat(SqsPublishSink.batch("notused"))(Keep.both).run()
     probe
       .sendNext(
         Seq(

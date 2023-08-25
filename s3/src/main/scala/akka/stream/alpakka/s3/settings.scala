@@ -368,9 +368,6 @@ final class S3Settings private (
 
   def pathStyleAccess: Boolean = accessStyle == PathAccessStyle
 
-  @deprecated("This is no longer configurable.", since = "2.0.2")
-  def pathStyleAccessWarning: Boolean = true
-
   /** Java API */
   def getEndpointUrl: java.util.Optional[String] = endpointUrl.asJava
 
