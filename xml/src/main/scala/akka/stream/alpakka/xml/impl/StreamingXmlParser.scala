@@ -13,6 +13,7 @@ import com.fasterxml.aalto.{AsyncByteArrayFeeder, AsyncXMLInputFactory, AsyncXML
 import com.fasterxml.aalto.stax.InputFactoryImpl
 import com.fasterxml.aalto.util.IllegalCharHandler.ReplacingIllegalCharHandler
 
+import javax.xml.stream.XMLStreamException
 import scala.annotation.tailrec
 
 private[xml] object StreamingXmlParser {
@@ -50,14 +51,14 @@ private[xml] object StreamingXmlParser {
           parser.getInputFeeder.feedInput(array, 0, array.length)
           advanceParser()
         } catch {
-          case xmlException: javax.xml.stream.XMLStreamException => failStage(xmlException)
+          case xmlException: XMLStreamException => failStage(xmlException)
         }
       }
 
       override def onPull(): Unit = try {
         advanceParser()
       } catch {
-        case xmlException: javax.xml.stream.XMLStreamException => failStage(xmlException)
+        case xmlException: XMLStreamException => failStage(xmlException)
       }
 
       override def onUpstreamFinish(): Unit = {
@@ -66,7 +67,7 @@ private[xml] object StreamingXmlParser {
         else if (isAvailable(out)) try {
           advanceParser()
         } catch {
-          case xmlException: javax.xml.stream.XMLStreamException => failStage(xmlException)
+          case xmlException: XMLStreamException => failStage(xmlException)
         }
       }
 
