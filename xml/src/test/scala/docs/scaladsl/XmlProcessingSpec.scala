@@ -12,12 +12,15 @@ import akka.stream.scaladsl.{Flow, Framing, Keep, Sink, Source}
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.BeforeAndAfterAll
+import org.scalatest.exceptions.TestFailedException
 
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import javax.xml.stream.XMLStreamException
 
 class XmlProcessingSpec extends AnyWordSpec with Matchers with ScalaFutures with BeforeAndAfterAll with LogCapturing {
   implicit val system: ActorSystem = ActorSystem("Test")
@@ -34,6 +37,12 @@ class XmlProcessingSpec extends AnyWordSpec with Matchers with ScalaFutures with
 
     "properly parse empty XML" in {
       Source.single("").runWith(parse).futureValue should ===(Vector())
+    }
+
+    "fail if invalid XML" in {
+      val doubleDocType = "<!DOCTYPE><!DOCTYPE>"
+      val failure = intercept[TestFailedException] { Source.single(doubleDocType).runWith(parse).futureValue }
+      failure.cause.get shouldBe a[XMLStreamException]
     }
 
     "properly parse simple XML" in {
