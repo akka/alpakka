@@ -21,6 +21,9 @@ private[ftp] trait FtpsOperations extends CommonFtpOperations {
     Try {
       connectionSettings.proxy.foreach(ftpClient.setProxy)
 
+      connectionSettings.keyManager.foreach(ftpClient.setKeyManager)
+      connectionSettings.trustManager.foreach(ftpClient.setTrustManager)
+
       if (ftpClient.getAutodetectUTF8() != connectionSettings.autodetectUTF8) {
         ftpClient.setAutodetectUTF8(connectionSettings.autodetectUTF8)
       }

@@ -6,6 +6,8 @@ package akka.stream.alpakka.ftp
 
 import java.net.InetAddress
 import java.net.Proxy
+import javax.net.ssl.KeyManager
+import javax.net.ssl.TrustManager
 import java.nio.file.attribute.PosixFilePermission
 
 import akka.annotation.{DoNotInherit, InternalApi}
@@ -183,7 +185,9 @@ final class FtpsSettings private (
     val passiveMode: Boolean,
     val autodetectUTF8: Boolean,
     val configureConnection: FTPSClient => Unit,
-    val proxy: Option[Proxy]
+    val proxy: Option[Proxy],
+    val keyManager: Option[KeyManager],
+    val trustManager: Option[TrustManager]
 ) extends FtpFileSettings {
 
   def withHost(value: java.net.InetAddress): FtpsSettings = copy(host = value)
@@ -195,6 +199,8 @@ final class FtpsSettings private (
   def withAutodetectUTF8(value: Boolean): FtpsSettings =
     if (autodetectUTF8 == value) this else copy(autodetectUTF8 = value)
   def withProxy(value: Proxy): FtpsSettings = copy(proxy = Some(value))
+  def withKeyManager(value: KeyManager): FtpsSettings = copy(keyManager = Some(value))
+  def withTrustManager(value: TrustManager): FtpsSettings = copy(trustManager = Some(value))
 
   /**
    * Scala API:
@@ -220,7 +226,9 @@ final class FtpsSettings private (
       passiveMode: Boolean = passiveMode,
       autodetectUTF8: Boolean = autodetectUTF8,
       configureConnection: FTPSClient => Unit = configureConnection,
-      proxy: Option[Proxy] = proxy
+      proxy: Option[Proxy] = proxy,
+      keyManager: Option[KeyManager] = keyManager,
+      trustManager: Option[TrustManager] = trustManager
   ): FtpsSettings = new FtpsSettings(
     host = host,
     port = port,
@@ -229,7 +237,9 @@ final class FtpsSettings private (
     passiveMode = passiveMode,
     autodetectUTF8 = autodetectUTF8,
     configureConnection = configureConnection,
-    proxy = proxy
+    proxy = proxy,
+    keyManager = keyManager,
+    trustManager = trustManager
   )
 
   override def toString =
@@ -241,7 +251,9 @@ final class FtpsSettings private (
     s"passiveMode=$passiveMode," +
     s"autodetectUTF8=$autodetectUTF8," +
     s"configureConnection=$configureConnection," +
-    s"proxy=$proxy)"
+    s"proxy=$proxy," +
+    s"keyManager=$keyManager," +
+    s"trustManager=$trustManager)"
 }
 
 /**
@@ -261,7 +273,9 @@ object FtpsSettings {
     passiveMode = false,
     autodetectUTF8 = false,
     configureConnection = _ => (),
-    proxy = None
+    proxy = None,
+    keyManager = None,
+    trustManager = None
   )
 
   /** Java API */
