@@ -82,11 +82,12 @@ private[xml] object StreamingXmlParser {
         }
       }
 
-      override def onPull(): Unit = try {
-        advanceParser()
-      } catch {
-        case xmlException: XMLStreamException => failStage(xmlException)
-      }
+      override def onPull(): Unit =
+        try {
+          advanceParser()
+        } catch {
+          case xmlException: XMLStreamException => failStage(xmlException)
+        }
 
       override def onUpstreamFinish(): Unit = {
         parser.getInputFeeder.endOfInput()

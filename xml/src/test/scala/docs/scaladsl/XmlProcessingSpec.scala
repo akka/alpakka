@@ -41,7 +41,7 @@ class XmlProcessingSpec extends AnyWordSpec with Matchers with ScalaFutures with
 
     "fail if invalid XML" in {
       val doubleDocType = "<!DOCTYPE><!DOCTYPE>"
-      val failure = intercept[TestFailedException] {Source.single(doubleDocType).runWith(parse).futureValue}
+      val failure = intercept[TestFailedException] { Source.single(doubleDocType).runWith(parse).futureValue }
       failure.cause.get shouldBe a[XMLStreamException]
     }
 
