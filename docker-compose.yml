@@ -214,11 +214,11 @@ services:
     ports:
       - "8086:8086"
   mqtt:
-    image: toke/mosquitto
+    image: eclipse-mosquitto
     ports:
       - "1883:1883"
     volumes:
-      - ./mqtt/src/test/travis:/mqtt/config/conf.d
+      - ./mqtt/src/test/ci:/mqtt/config/conf.d
   orientdb:
     image: orientdb:3.1.9
     ports:
