@@ -62,6 +62,8 @@ abstract sealed class FtpFileSettings extends RemoteFileSettings {
  * @param credentials credentials (username and password)
  * @param binary specifies the file transfer mode, BINARY or ASCII. Default is ASCII (false)
  * @param passiveMode specifies whether to use passive mode connections. Default is active mode (false)
+ * @param autodetectUTF8 enables or disables automatic server encoding detection (only UTF-8 supported).
+ *                       Disabled by default (false).
  * @param configureConnection A function which will be called after connecting to the server. Use this for
  *                            any custom configuration required by the server you are connecting to.
  * @param proxy An optional proxy to use when connecting with these settings
@@ -72,6 +74,7 @@ final class FtpSettings private (
     val credentials: FtpCredentials,
     val binary: Boolean,
     val passiveMode: Boolean,
+    val autodetectUTF8: Boolean,
     val configureConnection: FTPClient => Unit,
     val proxy: Option[Proxy]
 ) extends FtpFileSettings {
@@ -82,6 +85,8 @@ final class FtpSettings private (
   def withBinary(value: Boolean): FtpSettings = if (binary == value) this else copy(binary = value)
   def withPassiveMode(value: Boolean): FtpSettings =
     if (passiveMode == value) this else copy(passiveMode = value)
+  def withAutodetectUTF8(value: Boolean): FtpSettings =
+    if (autodetectUTF8 == value) this else copy(autodetectUTF8 = value)
   def withProxy(value: Proxy): FtpSettings = copy(proxy = Some(value))
 
   /**
@@ -106,6 +111,7 @@ final class FtpSettings private (
       credentials: FtpCredentials = credentials,
       binary: Boolean = binary,
       passiveMode: Boolean = passiveMode,
+      autodetectUTF8: Boolean = autodetectUTF8,
       configureConnection: FTPClient => Unit = configureConnection,
       proxy: Option[Proxy] = proxy
   ): FtpSettings = new FtpSettings(
@@ -114,6 +120,7 @@ final class FtpSettings private (
     credentials = credentials,
     binary = binary,
     passiveMode = passiveMode,
+    autodetectUTF8 = autodetectUTF8,
     configureConnection = configureConnection,
     proxy = proxy
   )
@@ -125,6 +132,7 @@ final class FtpSettings private (
     s"credentials=$credentials," +
     s"binary=$binary," +
     s"passiveMode=$passiveMode," +
+    s"autodetectUTF8=$autodetectUTF8," +
     s"configureConnection=$configureConnection," +
     s"proxy=$proxy)"
 }
@@ -144,6 +152,7 @@ object FtpSettings {
     credentials = FtpCredentials.AnonFtpCredentials,
     binary = false,
     passiveMode = false,
+    autodetectUTF8 = false,
     configureConnection = _ => (),
     proxy = None
   )
@@ -162,6 +171,8 @@ object FtpSettings {
  * @param credentials credentials (username and password)
  * @param binary specifies the file transfer mode, BINARY or ASCII. Default is ASCII (false)
  * @param passiveMode specifies whether to use passive mode connections. Default is active mode (false)
+ * @param autodetectUTF8 enables or disables automatic server encoding detection (only UTF-8 supported).
+ *                       Disabled by default (false).
  * @param configureConnection A function which will be called after connecting to the server. Use this for
  *                            any custom configuration required by the server you are connecting to.
  * @param proxy An optional proxy to use when connecting with these settings
@@ -172,6 +183,7 @@ final class FtpsSettings private (
     val credentials: FtpCredentials,
     val binary: Boolean,
     val passiveMode: Boolean,
+    val autodetectUTF8: Boolean,
     val configureConnection: FTPSClient => Unit,
     val proxy: Option[Proxy],
     val keyManager: Option[KeyManager],
@@ -184,6 +196,8 @@ final class FtpsSettings private (
   def withBinary(value: Boolean): FtpsSettings = if (binary == value) this else copy(binary = value)
   def withPassiveMode(value: Boolean): FtpsSettings =
     if (passiveMode == value) this else copy(passiveMode = value)
+  def withAutodetectUTF8(value: Boolean): FtpsSettings =
+    if (autodetectUTF8 == value) this else copy(autodetectUTF8 = value)
   def withProxy(value: Proxy): FtpsSettings = copy(proxy = Some(value))
   def withKeyManager(value: KeyManager): FtpsSettings = copy(keyManager = Some(value))
   def withTrustManager(value: TrustManager): FtpsSettings = copy(trustManager = Some(value))
@@ -210,6 +224,7 @@ final class FtpsSettings private (
       credentials: FtpCredentials = credentials,
       binary: Boolean = binary,
       passiveMode: Boolean = passiveMode,
+      autodetectUTF8: Boolean = autodetectUTF8,
       configureConnection: FTPSClient => Unit = configureConnection,
       proxy: Option[Proxy] = proxy,
       keyManager: Option[KeyManager] = keyManager,
@@ -220,6 +235,7 @@ final class FtpsSettings private (
     credentials = credentials,
     binary = binary,
     passiveMode = passiveMode,
+    autodetectUTF8 = autodetectUTF8,
     configureConnection = configureConnection,
     proxy = proxy,
     keyManager = keyManager,
@@ -233,6 +249,7 @@ final class FtpsSettings private (
     s"credentials=$credentials," +
     s"binary=$binary," +
     s"passiveMode=$passiveMode," +
+    s"autodetectUTF8=$autodetectUTF8," +
     s"configureConnection=$configureConnection," +
     s"proxy=$proxy," +
     s"keyManager=$keyManager," +
@@ -254,6 +271,7 @@ object FtpsSettings {
     FtpCredentials.AnonFtpCredentials,
     binary = false,
     passiveMode = false,
+    autodetectUTF8 = false,
     configureConnection = _ => (),
     proxy = None,
     keyManager = None,
