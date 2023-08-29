@@ -2,7 +2,7 @@
 # To start all docker containers required to execute the tests locally run:
 # docker-compose up
 
-version: '2.2'
+version: '3.7'
 services:
   amazoneventbridge:
     image: localstack/localstack:0.10.6
@@ -214,11 +214,14 @@ services:
     ports:
       - "8086:8086"
   mqtt:
-    image: toke/mosquitto
+    image: eclipse-mosquitto:2.0
+    user: 1000:1000
     ports:
       - "1883:1883"
     volumes:
-      - ./mqtt/src/test/travis:/mqtt/config/conf.d
+      - ./mqtt/src/test/mosquitto:/mosquitto:rw
+    networks:
+      - default
   orientdb:
     image: orientdb:3.1.9
     ports:
