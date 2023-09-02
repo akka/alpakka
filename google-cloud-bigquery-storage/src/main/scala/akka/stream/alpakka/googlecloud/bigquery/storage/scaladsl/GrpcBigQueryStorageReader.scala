@@ -34,7 +34,7 @@ object GrpcBigQueryStorageReader {
  * An extension that manages a single gRPC scala reader client per actor system.
  */
 final class GrpcBigQueryStorageReaderExt private (sys: ExtendedActorSystem) extends Extension {
-  implicit val reader = GrpcBigQueryStorageReader()(sys)
+  implicit val reader: GrpcBigQueryStorageReader = GrpcBigQueryStorageReader()(sys)
 }
 
 object GrpcBigQueryStorageReaderExt extends ExtensionId[GrpcBigQueryStorageReaderExt] with ExtensionIdProvider {

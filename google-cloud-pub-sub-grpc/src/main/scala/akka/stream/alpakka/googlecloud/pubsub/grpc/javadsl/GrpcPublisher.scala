@@ -64,11 +64,11 @@ object GrpcPublisher {
  * An extension that manages a single gRPC java publisher client per actor system.
  */
 final class GrpcPublisherExt private (sys: ExtendedActorSystem) extends Extension {
-  implicit val publisher = GrpcPublisher.create(sys)
+  implicit val publisher: GrpcPublisher = GrpcPublisher.create(sys)
 }
 
 object GrpcPublisherExt extends ExtensionId[GrpcPublisherExt] with ExtensionIdProvider {
-  override def lookup = GrpcPublisherExt
+  override def lookup: GrpcPublisherExt.type = GrpcPublisherExt
   override def createExtension(system: ExtendedActorSystem) = new GrpcPublisherExt(system)
 
   /**

@@ -26,7 +26,7 @@ private[hbase] class HBaseFlowStage[A](settings: HTableSettings[A]) extends Grap
 
       override protected def logSource = classOf[HBaseFlowStage[A]]
 
-      implicit val connection = connect(settings.conf)
+      implicit val connection: Connection = connect(settings.conf)
 
       lazy val table: Table = getOrCreateTable(settings.tableName, settings.columnFamilies).get
 

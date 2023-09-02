@@ -269,7 +269,7 @@ lazy val ironmq = alpakkaProject(
   Test / fork := true
 )
 
-lazy val jms = alpakkaProject("jms", "jms", Dependencies.Jms)
+lazy val jms = alpakkaProject("jms", "jms", Dependencies.Jms, Scala3.settings)
 
 lazy val jsonStreaming = alpakkaProject("json-streaming", "json.streaming", Dependencies.JsonStreaming)
 

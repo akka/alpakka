@@ -5,7 +5,6 @@
 package docs.scaladsl
 
 import java.util.concurrent.CompletableFuture
-
 import akka.actor.ActorSystem
 import akka.stream.alpakka.awslambda.scaladsl.AwsLambdaFlow
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
@@ -25,7 +24,7 @@ import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.lambda.LambdaAsyncClient
 import software.amazon.awssdk.services.lambda.model.{InvokeRequest, InvokeResponse}
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, ExecutionContextExecutor}
 import scala.concurrent.duration._
 
 class AwsLambdaFlowSpec
@@ -37,9 +36,9 @@ class AwsLambdaFlowSpec
     with Matchers
     with LogCapturing {
 
-  implicit val ec = system.dispatcher
+  implicit val ec: ExecutionContextExecutor = system.dispatcher
 
-  implicit val awsLambdaClient = mock(classOf[LambdaAsyncClient])
+  implicit val awsLambdaClient: LambdaAsyncClient = mock(classOf[LambdaAsyncClient])
 
   override protected def afterEach(): Unit = {
     reset(awsLambdaClient)
