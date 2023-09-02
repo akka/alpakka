@@ -67,8 +67,8 @@ protected[ftp] trait UnconfirmedReads { _: FtpLike[_, _] =>
 @InternalApi
 object FtpLike {
   // type class instances
-  implicit val ftpLikeInstance = new FtpLike[FTPClient, FtpSettings] with RetrieveOffset with FtpOperations
-  implicit val ftpsLikeInstance = new FtpLike[FTPSClient, FtpsSettings] with RetrieveOffset with FtpsOperations
-  implicit val sFtpLikeInstance =
+  implicit val ftpLikeInstance: FtpLike[FTPClient, FtpSettings] with RetrieveOffset with FtpOperations = new FtpLike[FTPClient, FtpSettings] with RetrieveOffset with FtpOperations
+  implicit val ftpsLikeInstance: FtpLike[FTPSClient, FtpsSettings] with RetrieveOffset with FtpsOperations = new FtpLike[FTPSClient, FtpsSettings] with RetrieveOffset with FtpsOperations
+  implicit val sFtpLikeInstance: FtpLike[SSHClient, SftpSettings] with RetrieveOffset with SftpOperations with UnconfirmedReads =
     new FtpLike[SSHClient, SftpSettings] with RetrieveOffset with SftpOperations with UnconfirmedReads
 }

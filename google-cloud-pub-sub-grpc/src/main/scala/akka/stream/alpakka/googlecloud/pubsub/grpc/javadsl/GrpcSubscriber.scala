@@ -65,7 +65,7 @@ object GrpcSubscriber {
  * An extension that manages a single gRPC java subscriber client per actor system.
  */
 final class GrpcSubscriberExt private (sys: ExtendedActorSystem) extends Extension {
-  implicit val subscriber = GrpcSubscriber.create(sys)
+  implicit val subscriber: GrpcSubscriber = GrpcSubscriber.create(sys)
 }
 
 object GrpcSubscriberExt extends ExtensionId[GrpcSubscriberExt] with ExtensionIdProvider {

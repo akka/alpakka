@@ -59,7 +59,7 @@ private[pubsub] trait PubSubApi {
   def PubSubGoogleApisPort: Int
   def isEmulated: Boolean
 
-  private implicit val instantFormat = new RootJsonFormat[Instant] {
+  private implicit val instantFormat: RootJsonFormat[Instant] = new RootJsonFormat[Instant] {
     override def read(jsValue: JsValue): Instant = jsValue match {
       case JsString(time) => Instant.parse(time)
       case _ => deserializationError("Instant required as a string of RFC3339 UTC Zulu format.")
@@ -67,7 +67,7 @@ private[pubsub] trait PubSubApi {
     override def write(instant: Instant): JsValue = JsString(instant.toString)
   }
 
-  private implicit val pubSubMessageFormat =
+  private implicit val pubSubMessageFormat: RootJsonFormat[PubSubMessage] =
     new RootJsonFormat[PubSubMessage] {
       override def read(json: JsValue): PubSubMessage = {
         val fields = json.asJsObject.fields
@@ -91,7 +91,7 @@ private[pubsub] trait PubSubApi {
         )
     }
 
-  private implicit val publishMessageFormat = new RootJsonFormat[PublishMessage] {
+  private implicit val publishMessageFormat: RootJsonFormat[PublishMessage] = new RootJsonFormat[PublishMessage] {
     def read(json: JsValue): PublishMessage = {
       val data = json.asJsObject.fields("data").convertTo[String]
       val attributes = json.asJsObject.fields("attributes").convertTo[immutable.Map[String, String]]
@@ -106,37 +106,37 @@ private[pubsub] trait PubSubApi {
       )
   }
 
-  private implicit val pubSubRequestFormat = new RootJsonFormat[PublishRequest] {
+  private implicit val pubSubRequestFormat: RootJsonFormat[PublishRequest] = new RootJsonFormat[PublishRequest] {
     def read(json: JsValue): PublishRequest =
       PublishRequest(json.asJsObject.fields("messages").convertTo[immutable.Seq[PublishMessage]])
     def write(pr: PublishRequest): JsValue = JsObject("messages" -> pr.messages.toJson)
   }
-  private implicit val gcePubSubResponseFormat = new RootJsonFormat[PublishResponse] {
+  private implicit val gcePubSubResponseFormat: RootJsonFormat[PublishResponse] = new RootJsonFormat[PublishResponse] {
     def read(json: JsValue): PublishResponse =
       PublishResponse(json.asJsObject.fields("messageIds").convertTo[immutable.Seq[String]])
     def write(pr: PublishResponse): JsValue = JsObject("messageIds" -> pr.messageIds.toJson)
   }
 
-  private implicit val receivedMessageFormat = new RootJsonFormat[ReceivedMessage] {
+  private implicit val receivedMessageFormat: RootJsonFormat[ReceivedMessage] = new RootJsonFormat[ReceivedMessage] {
     def read(json: JsValue): ReceivedMessage =
       ReceivedMessage(json.asJsObject.fields("ackId").convertTo[String],
                       json.asJsObject.fields("message").convertTo[PubSubMessage])
     def write(rm: ReceivedMessage): JsValue =
       JsObject("ackId" -> rm.ackId.toJson, "message" -> rm.message.toJson)
   }
-  private implicit val pubSubPullResponseFormat = new RootJsonFormat[PullResponse] {
+  private implicit val pubSubPullResponseFormat: RootJsonFormat[PullResponse] = new RootJsonFormat[PullResponse] {
     def read(json: JsValue): PullResponse =
       PullResponse(json.asJsObject.fields.get("receivedMessages").map(_.convertTo[immutable.Seq[ReceivedMessage]]))
     def write(pr: PullResponse): JsValue =
       pr.receivedMessages.map(rm => JsObject("receivedMessages" -> rm.toJson)).getOrElse(JsObject.empty)
   }
 
-  private implicit val acknowledgeRequestFormat = new RootJsonFormat[AcknowledgeRequest] {
+  private implicit val acknowledgeRequestFormat: RootJsonFormat[AcknowledgeRequest] = new RootJsonFormat[AcknowledgeRequest] {
     def read(json: JsValue): AcknowledgeRequest =
       AcknowledgeRequest(json.asJsObject.fields("ackIds").convertTo[immutable.Seq[String]]: _*)
     def write(ar: AcknowledgeRequest): JsValue = JsObject("ackIds" -> ar.ackIds.toJson)
   }
-  private implicit val pullRequestFormat = DefaultJsonProtocol.jsonFormat2(PullRequest)
+  private implicit val pullRequestFormat: RootJsonFormat[PullRequest] = DefaultJsonProtocol.jsonFormat2(PullRequest)
 
   private def scheme: String = if (isEmulated) "http" else "https"
 

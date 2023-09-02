@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.google.http
 
-import akka.actor.ClassicActorSystemProvider
+import akka.actor.{ClassicActorSystemProvider, ExtendedActorSystem, Scheduler}
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.Http.HostConnectionPool
@@ -16,7 +16,7 @@ import akka.stream.alpakka.google.{GoogleAttributes, GoogleSettings, RequestSett
 import akka.stream.alpakka.google.util.Retry
 import akka.stream.scaladsl.{Flow, FlowWithContext, Keep, RetryFlow}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success, Try}
 
 @InternalApi
@@ -35,9 +35,9 @@ private[alpakka] object GoogleHttp {
 @InternalApi
 private[alpakka] final class GoogleHttp private (val http: HttpExt) extends AnyVal {
 
-  private implicit def system = http.system
-  private implicit def ec = system.dispatcher
-  private implicit def scheduler = system.scheduler
+  private implicit def system: ExtendedActorSystem = http.system
+  private implicit def ec: ExecutionContextExecutor = system.dispatcher
+  private implicit def scheduler: Scheduler = system.scheduler
 
   /**
    * Sends a single [[HttpRequest]] and returns the raw [[HttpResponse]].
