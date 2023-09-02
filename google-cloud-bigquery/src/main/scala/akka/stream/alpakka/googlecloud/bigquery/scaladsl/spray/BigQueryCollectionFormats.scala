@@ -7,7 +7,6 @@ package akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray
 import spray.json._
 
 import scala.collection.immutable
-import scala.collection.immutable.LinearSeq
 import scala.reflect.ClassTag
 
 trait BigQueryCollectionFormats {
@@ -38,9 +37,9 @@ trait BigQueryCollectionFormats {
   import collection.{immutable => imm}
 
   implicit def immIterableFormat[T: BigQueryJsonFormat]: BigQueryJsonFormat[immutable.Iterable[T]] = viaSeq[imm.Iterable[T], T](seq => imm.Iterable(seq: _*))
-  implicit def immSeqFormat[T: BigQueryJsonFormat]: BigQueryJsonFormat[Seq[T]] = viaSeq[imm.Seq[T], T](seq => imm.Seq(seq: _*))
-  implicit def immIndexedSeqFormat[T: BigQueryJsonFormat]: BigQueryJsonFormat[IndexedSeq[T]] = viaSeq[imm.IndexedSeq[T], T](seq => imm.IndexedSeq(seq: _*))
-  implicit def immLinearSeqFormat[T: BigQueryJsonFormat]: BigQueryJsonFormat[LinearSeq[T]] = viaSeq[imm.LinearSeq[T], T](seq => imm.LinearSeq(seq: _*))
+  implicit def immSeqFormat[T: BigQueryJsonFormat]: BigQueryJsonFormat[imm.Seq[T]] = viaSeq[imm.Seq[T], T](seq => imm.Seq(seq: _*))
+  implicit def immIndexedSeqFormat[T: BigQueryJsonFormat]: BigQueryJsonFormat[imm.IndexedSeq[T]] = viaSeq[imm.IndexedSeq[T], T](seq => imm.IndexedSeq(seq: _*))
+  implicit def immLinearSeqFormat[T: BigQueryJsonFormat]: BigQueryJsonFormat[imm.LinearSeq[T]] = viaSeq[imm.LinearSeq[T], T](seq => imm.LinearSeq(seq: _*))
   implicit def vectorFormat[T: BigQueryJsonFormat]: BigQueryJsonFormat[Vector[T]] = viaSeq[Vector[T], T](seq => Vector(seq: _*))
 
 
