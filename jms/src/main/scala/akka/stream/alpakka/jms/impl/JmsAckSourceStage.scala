@@ -32,7 +32,7 @@ private[jms] final class JmsAckSourceStage(settings: JmsConsumerSettings, destin
   override protected def initialAttributes: Attributes = Attributes.name("JmsAckConsumer")
 
   private final class JmsAckSourceStageLogic(inheritedAttributes: Attributes)
-      extends SourceStageLogic[AckEnvelope](shape, out, settings, destination, inheritedAttributes) {
+      extends SourceStageLogic[AckEnvelope](shape, out, settings, destination, inheritedAttributes) { self =>
     private val maxPendingAcks = settings.maxPendingAcks
     private val maxAckInterval = settings.maxAckInterval
 
@@ -40,7 +40,7 @@ private[jms] final class JmsAckSourceStage(settings: JmsConsumerSettings, destin
                                 createDestination: jms.Session => javax.jms.Destination): JmsAckSession = {
       val session =
         connection.createSession(false, settings.acknowledgeMode.getOrElse(AcknowledgeMode.ClientAcknowledge).mode)
-      new JmsAckSession(connection, session, createDestination(session), destination, maxPendingAcks)
+      new JmsAckSession(connection, session, createDestination(session), self.destination, maxPendingAcks)
     }
 
     protected def pushMessage(msg: AckEnvelope): Unit = push(out, msg)
