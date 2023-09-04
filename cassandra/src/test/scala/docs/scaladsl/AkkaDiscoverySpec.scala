@@ -60,7 +60,7 @@ class AkkaDiscoverySpec extends CassandraSpecBase(ActorSystem("AkkaDiscoverySpec
     "show referencing config in docs" in {
       // #discovery
       val sessionSettings = CassandraSessionSettings("example-with-akka-discovery")
-      implicit val session = CassandraSessionRegistry.get(system).sessionFor(sessionSettings)
+      implicit val session: CassandraSession = CassandraSessionRegistry.get(system).sessionFor(sessionSettings)
       // #discovery
       session.close(system.dispatcher)
     }

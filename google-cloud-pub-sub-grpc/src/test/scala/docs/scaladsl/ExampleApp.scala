@@ -27,7 +27,7 @@ object ExampleApp {
         |akka.loglevel = INFO
       """.stripMargin)
 
-    implicit val sys = ActorSystem("ExampleApp", config)
+    implicit val sys: ActorSystem = ActorSystem("ExampleApp", config)
 
     import sys.dispatcher
 

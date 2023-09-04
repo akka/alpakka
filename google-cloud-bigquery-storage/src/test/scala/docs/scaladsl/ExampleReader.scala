@@ -29,7 +29,7 @@ import scala.concurrent.Future
 
 class ExampleReader {
 
-  implicit val sys = ActorSystem("ExampleReader")
+  implicit val sys: ActorSystem = ActorSystem("ExampleReader")
 
   //#read-all
   val sourceOfSources: Source[(ReadSession.Schema, Seq[Source[ReadRowsResponse.Rows, NotUsed]]), Future[NotUsed]] =

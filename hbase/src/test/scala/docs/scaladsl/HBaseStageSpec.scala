@@ -31,7 +31,7 @@ class HBaseStageSpec
     with BeforeAndAfterAll
     with LogCapturing {
 
-  implicit val defaultPatience =
+  implicit val defaultPatience: PatienceConfig =
     PatienceConfig(timeout = 5.seconds, interval = 500.millis)
 
   //#create-converter-put

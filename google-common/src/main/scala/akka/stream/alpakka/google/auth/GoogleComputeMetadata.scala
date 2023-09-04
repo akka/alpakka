@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.google.auth
 
+import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
@@ -33,7 +34,7 @@ private[auth] object GoogleComputeMetadata {
   ): Future[AccessToken] = {
     import SprayJsonSupport._
     import mat.executionContext
-    implicit val system = mat.system
+    implicit val system: ActorSystem = mat.system
     for {
       response <- Http().singleRequest(tokenRequest)
       token <- Unmarshal(response.entity).to[AccessToken]
@@ -44,7 +45,7 @@ private[auth] object GoogleComputeMetadata {
       implicit mat: Materializer
   ): Future[String] = {
     import mat.executionContext
-    implicit val system = mat.system
+    implicit val system: ActorSystem = mat.system
     for {
       response <- Http().singleRequest(projectIdRequest)
       projectId <- Unmarshal(response.entity).to[String]

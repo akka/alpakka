@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.google.http
 
-import akka.actor.ClassicActorSystemProvider
+import akka.actor.{ClassicActorSystemProvider, ExtendedActorSystem, Scheduler}
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.Http.HostConnectionPool
@@ -16,7 +16,7 @@ import akka.stream.alpakka.google.{GoogleAttributes, GoogleSettings, RequestSett
 import akka.stream.alpakka.google.util.Retry
 import akka.stream.scaladsl.{Flow, FlowWithContext, Keep, RetryFlow}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success, Try}
 
 @InternalApi
@@ -35,9 +35,9 @@ private[alpakka] object GoogleHttp {
 @InternalApi
 private[alpakka] final class GoogleHttp private (val http: HttpExt) extends AnyVal {
 
-  private implicit def system = http.system
-  private implicit def ec = system.dispatcher
-  private implicit def scheduler = system.scheduler
+  private implicit def system: ExtendedActorSystem = http.system
+  private implicit def ec: ExecutionContextExecutor = system.dispatcher
+  private implicit def scheduler: Scheduler = system.scheduler
 
   /**
    * Sends a single [[HttpRequest]] and returns the raw [[HttpResponse]].
@@ -68,7 +68,7 @@ private[alpakka] final class GoogleHttp private (val http: HttpExt) extends AnyV
       implicit settings: GoogleSettings,
       um: FromResponseUnmarshaller[T]
   ): Future[T] = Retry(settings.requestSettings.retrySettings) {
-    implicit val requestSettings = settings.requestSettings
+    implicit val requestSettings: RequestSettings = settings.requestSettings
     addAuth(request).flatMap(singleRequest(_))(ExecutionContexts.parasitic)
   }
 
@@ -104,7 +104,7 @@ private[alpakka] final class GoogleHttp private (val http: HttpExt) extends AnyV
       parallelism: Int = 1
   ): FlowWithContext[HttpRequest, Ctx, Try[T], Ctx, Future[HostConnectionPool]] = FlowWithContext.fromTuples {
     Flow.fromMaterializer { (mat, attr) =>
-      implicit val settings = GoogleAttributes.resolveSettings(mat, attr)
+      implicit val settings: GoogleSettings = GoogleAttributes.resolveSettings(mat, attr)
       val p = if (port == -1) if (https) 443 else 80 else port
 
       val uriFlow = FlowWithContext[HttpRequest, Ctx].map(addStandardQuery)
@@ -160,7 +160,7 @@ private[alpakka] final class GoogleHttp private (val http: HttpExt) extends AnyV
     )
 
   private def addAuth(request: HttpRequest)(implicit settings: GoogleSettings): Future[HttpRequest] = {
-    implicit val requestSettings = settings.requestSettings
+    implicit val requestSettings: RequestSettings = settings.requestSettings
     settings.credentials
       .get()
       .map { token =>

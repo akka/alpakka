@@ -28,7 +28,7 @@ import scala.concurrent.Future
 
 class PushKitExamples {
 
-  implicit val system = ActorSystem()
+  implicit val system: ActorSystem = ActorSystem()
 
   //#simple-send
   val config = HmsSettings()
