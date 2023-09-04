@@ -58,7 +58,7 @@ import scala.collection.mutable.Queue
     setHandler(
       out,
       new OutHandler {
-        override def onPull: Unit =
+        override def onPull(): Unit =
           if (!buffer.isEmpty) {
             push(out, buffer.dequeue())
           } else {

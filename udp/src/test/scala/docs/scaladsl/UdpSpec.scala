@@ -31,8 +31,8 @@ class UdpSpec
     with BeforeAndAfterAll
     with LogCapturing {
 
-  implicit val mat = Materializer(system)
-  implicit val pat = PatienceConfig(3.seconds, 50.millis)
+  implicit val mat: Materializer = Materializer(system)
+  implicit val pat: PatienceConfig = PatienceConfig(3.seconds, 50.millis)
 
   // #bind-address
   val bindToLocal = new InetSocketAddress("localhost", 0)

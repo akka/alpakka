@@ -25,7 +25,7 @@ import scala.util.{Failure, Success}
 
 class JmsBufferedAckConnectorsSpec extends JmsSharedServerSpec {
 
-  override implicit val patienceConfig = PatienceConfig(2.minutes)
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(2.minutes)
 
   "The JMS Ack Connectors" should {
     "publish and consume strings through a queue" in withConnectionFactory() { connectionFactory =>

@@ -4,6 +4,8 @@
 
 package docs.scaladsl
 
+import akka.actor
+import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.stream.alpakka.mqtt.streaming.MqttSessionSettings
 import akka.stream.alpakka.mqtt.streaming.scaladsl.{ActorMqttClientSession, ActorMqttServerSession}
@@ -11,7 +13,7 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class MqttTypedActorSystemSpec extends AnyWordSpec {
 
-  implicit val actorSystem = akka.actor.typed.ActorSystem(Behaviors.ignore, "MqttTypedActorSystemSpec")
+  implicit val actorSystem: ActorSystem[Nothing] = akka.actor.typed.ActorSystem(Behaviors.ignore, "MqttTypedActorSystemSpec")
 
   "A typed actor system" should {
     "allow client creation" in {
@@ -31,7 +33,7 @@ class MqttTypedActorSystemSpec extends AnyWordSpec {
 
 class MqttClassicActorSystemSpec extends AnyWordSpec {
 
-  implicit val actorSystem = akka.actor.ActorSystem("MqttClassicActorSystemSpec")
+  implicit val actorSystem: actor.ActorSystem = akka.actor.ActorSystem("MqttClassicActorSystemSpec")
 
   "A typed actor system" should {
     "allow client creation" in {

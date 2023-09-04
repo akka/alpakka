@@ -40,13 +40,13 @@ class FcmSenderSpec
   override def afterAll(): Unit =
     TestKit.shutdownActorSystem(system)
 
-  implicit val defaultPatience =
+  implicit val defaultPatience: PatienceConfig =
     PatienceConfig(timeout = 2.seconds, interval = 50.millis)
 
   implicit val executionContext: ExecutionContext = system.dispatcher
 
-  implicit val conf = FcmSettings()
-  implicit val settings = GoogleSettings().copy(projectId = "projectId")
+  implicit val conf: FcmSettings = FcmSettings()
+  implicit val settings: GoogleSettings = GoogleSettings().copy(projectId = "projectId")
 
   "FcmSender" should {
 

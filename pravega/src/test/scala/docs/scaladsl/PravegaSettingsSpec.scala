@@ -22,9 +22,9 @@ import io.pravega.client.tables.TableKey
 
 class PravegaSettingsSpec extends PravegaBaseSpec with Matchers {
 
-  implicit val serializer = new UTF8StringSerializer
+  implicit val serializer: UTF8StringSerializer = new UTF8StringSerializer
 
-  implicit val intSerializer = new Serializer[Int] {
+  implicit val intSerializer: Serializer[Int] = new Serializer[Int] {
     override def serialize(value: Int): ByteBuffer = {
       val buff = ByteBuffer.allocate(4).putInt(value)
       buff.position(0)

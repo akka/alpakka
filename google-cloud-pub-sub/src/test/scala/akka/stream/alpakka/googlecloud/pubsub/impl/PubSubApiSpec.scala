@@ -43,7 +43,7 @@ class NoopTrustManager extends X509TrustManager {
 
 class PubSubApiSpec extends AnyFlatSpec with BeforeAndAfterAll with ScalaFutures with Matchers with LogCapturing {
 
-  implicit val system = ActorSystem(
+  implicit val system: ActorSystem = ActorSystem(
     "PubSubApiSpec",
     ConfigFactory
       .parseString(
@@ -52,7 +52,7 @@ class PubSubApiSpec extends AnyFlatSpec with BeforeAndAfterAll with ScalaFutures
       .withFallback(ConfigFactory.load())
   )
 
-  implicit val defaultPatience =
+  implicit val defaultPatience: PatienceConfig =
     PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 
   def createInsecureSslEngine(host: String, port: Int): SSLEngine = {

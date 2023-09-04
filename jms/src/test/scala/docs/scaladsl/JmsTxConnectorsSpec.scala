@@ -25,7 +25,7 @@ class JmsTxConnectorsSpec extends JmsSharedServerSpec {
 
   private final val log = LoggerFactory.getLogger(classOf[JmsTxConnectorsSpec])
 
-  override implicit val patienceConfig = PatienceConfig(2.minutes)
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(2.minutes)
 
   "The JMS Transactional Connectors" should {
     "publish and consume strings through a queue" in withConnectionFactory() { connectionFactory =>

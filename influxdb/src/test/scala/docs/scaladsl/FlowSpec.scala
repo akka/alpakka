@@ -33,7 +33,7 @@ class FlowSpec
     with ScalaFutures
     with LogCapturing {
 
-  implicit val system = ActorSystem()
+  implicit val system: ActorSystem = ActorSystem()
 
   final val DatabaseName = this.getClass.getSimpleName
 

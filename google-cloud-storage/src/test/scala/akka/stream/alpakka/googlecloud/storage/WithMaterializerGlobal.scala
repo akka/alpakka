@@ -10,7 +10,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, ExecutionContextExecutor}
 import scala.concurrent.duration._
 
 trait WithMaterializerGlobal
@@ -20,8 +20,8 @@ trait WithMaterializerGlobal
     with ScalaFutures
     with IntegrationPatience
     with Matchers {
-  implicit val actorSystem = ActorSystem("test")
-  implicit val ec = actorSystem.dispatcher
+  implicit val actorSystem: ActorSystem = ActorSystem("test")
+  implicit val ec: ExecutionContextExecutor = actorSystem.dispatcher
 
   override protected def afterAll(): Unit = {
     super.afterAll()
