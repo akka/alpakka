@@ -24,7 +24,7 @@ private[ftp] abstract class FtpGraphStageLogic[T, FtpClient, S <: RemoteFileSett
     val ftpClient: () => FtpClient
 ) extends GraphStageLogic(shape) {
 
-  protected[this] implicit val client = ftpClient()
+  protected[this] implicit val client: FtpClient = ftpClient()
   protected[this] var handler: Option[ftpLike.Handler] = Option.empty[ftpLike.Handler]
   protected[this] var failed = false
 

@@ -7,12 +7,11 @@ package akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray
 import spray.json._
 
 import scala.collection.immutable
-import scala.collection.immutable.LinearSeq
 import scala.reflect.ClassTag
 
 trait BigQueryCollectionFormats {
 
-  /**
+  /**Ø
    * Supplies the BigQueryJsonFormat for Lists.
    */
   implicit def listFormat[T: BigQueryJsonFormat]: BigQueryJsonFormat[List[T]] = new BigQueryJsonFormat[List[T]] {
