@@ -40,38 +40,38 @@ class BigQueryQueriesSpec
     jsonFormat10(QueryResponse[T])
   }
 
-  implicit val settings = GoogleSettings().copy(credentials = NoCredentials("", ""))
+  implicit val settings: GoogleSettings = GoogleSettings().copy(credentials = NoCredentials("", ""))
 
   val jobId = "jobId"
   val pageToken = "pageToken"
 
-  val incompleteQuery = QueryResponse[JsValue](
+  val incompleteQuery: QueryResponse[JsValue] = QueryResponse[JsValue](
     None,
     JobReference(Some(settings.projectId), Some(jobId), None),
     None,
     None,
     None,
     None,
-    false,
+    jobComplete = false,
     None,
     None,
     None
   )
 
-  val completeQuery = incompleteQuery.copy[JsValue](
+  val completeQuery: QueryResponse[JsValue] = incompleteQuery.copy[JsValue](
     jobComplete = true,
     rows = Some(JsString("firstPage") :: Nil)
   )
 
-  val completeQueryWith2ndPage = completeQuery.copy[JsValue](
+  val completeQueryWith2ndPage: QueryResponse[JsValue] = completeQuery.copy[JsValue](
     pageToken = Some(pageToken)
   )
 
-  val query2ndPage = completeQuery.copy[JsValue](
+  val query2ndPage: QueryResponse[JsValue] = completeQuery.copy[JsValue](
     rows = Some(JsString("secondPage") :: Nil)
   )
 
-  val completeQueryWithoutJobId = completeQuery.copy[JsValue](
+  val completeQueryWithoutJobId: QueryResponse[JsValue] = completeQuery.copy[JsValue](
     jobReference = JobReference(None, None, None)
   )
 

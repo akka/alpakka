@@ -39,13 +39,13 @@ class AmqpGraphStageLogicConnectionShutdownSpec
     with BeforeAndAfterEach
     with LogCapturing {
 
-  override implicit val patienceConfig = PatienceConfig(10.seconds)
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(10.seconds)
   private implicit val executionContext: ExecutionContext = ExecutionContexts.parasitic
 
   val shutdownsAdded = new AtomicInteger()
   val shutdownsRemoved = new AtomicInteger()
 
-  override def beforeEach() = {
+  override def beforeEach(): Unit = {
     shutdownsAdded.set(0)
     shutdownsRemoved.set(0)
   }
@@ -65,7 +65,7 @@ class AmqpGraphStageLogicConnectionShutdownSpec
   "registers and unregisters a single connection shutdown hook per graph" in {
     // actor system is within this test as it has to be shut down in order
     // to verify graph stage termination
-    implicit val system = ActorSystem(this.getClass.getSimpleName + System.currentTimeMillis())
+    implicit val system: ActorSystem = ActorSystem(this.getClass.getSimpleName + System.currentTimeMillis())
 
     val connectionFactory = new ConnectionFactory() {
       override def newConnection(es: ExecutorService, ar: AddressResolver, name: String): Connection =

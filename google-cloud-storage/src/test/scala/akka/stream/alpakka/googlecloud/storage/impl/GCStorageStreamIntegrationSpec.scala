@@ -43,7 +43,7 @@ class GCStorageStreamIntegrationSpec
     with ScalaFutures
     with LogCapturing {
 
-  private implicit val defaultPatience =
+  private implicit val defaultPatience: PatienceConfig =
     PatienceConfig(timeout = 60.seconds, interval = 60.millis)
 
   var folderName: String = _
@@ -55,9 +55,9 @@ class GCStorageStreamIntegrationSpec
 
   def bucket = "alpakka"
   def rewriteBucket = "alpakka-rewrite"
-  def projectId = settings.projectId
-  def clientEmail = settings.clientEmail
-  def privateKey = settings.privateKey
+  def projectId: String = settings.projectId
+  def clientEmail: String = settings.clientEmail
+  def privateKey: String = settings.privateKey
 
   before {
     folderName = classOf[GCStorageStreamIntegrationSpec].getSimpleName + UUID.randomUUID().toString + "/"
