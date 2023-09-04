@@ -33,7 +33,7 @@ private[jms] final class JmsConsumerStage(settings: JmsConsumerSettings, destina
   }
 
   private final class JmsConsumerStageLogic(inheritedAttributes: Attributes)
-      extends SourceStageLogic[jms.Message](shape, out, settings, destination, inheritedAttributes) {
+      extends SourceStageLogic[jms.Message](shape, out, settings, destination, inheritedAttributes) { self =>
 
     private val bufferSize = (settings.bufferSize + 1) * settings.sessionCount
 
@@ -43,7 +43,7 @@ private[jms] final class JmsConsumerStage(settings: JmsConsumerSettings, destina
                                 createDestination: jms.Session => javax.jms.Destination): JmsConsumerSession = {
       val session =
         connection.createSession(false, settings.acknowledgeMode.getOrElse(AcknowledgeMode.AutoAcknowledge).mode)
-      new JmsConsumerSession(connection, session, createDestination(session), destination)
+      new JmsConsumerSession(connection, session, createDestination(session), self.destination)
     }
 
     protected def pushMessage(msg: jms.Message): Unit = {

@@ -33,11 +33,11 @@ private[jms] final class JmsTxSourceStage(settings: JmsConsumerSettings, destina
   }
 
   private final class JmsTxSourceStageLogic(inheritedAttributes: Attributes)
-      extends SourceStageLogic[TxEnvelope](shape, out, settings, destination, inheritedAttributes) {
+      extends SourceStageLogic[TxEnvelope](shape, out, settings, destination, inheritedAttributes) { self =>
     protected def createSession(connection: jms.Connection, createDestination: jms.Session => javax.jms.Destination) = {
       val session =
         connection.createSession(true, settings.acknowledgeMode.getOrElse(AcknowledgeMode.SessionTransacted).mode)
-      new JmsConsumerSession(connection, session, createDestination(session), destination)
+      new JmsConsumerSession(connection, session, createDestination(session), self.destination)
     }
 
     protected def pushMessage(msg: TxEnvelope): Unit = push(out, msg)

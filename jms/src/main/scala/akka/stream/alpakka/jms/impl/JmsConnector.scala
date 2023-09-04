@@ -26,9 +26,7 @@ import scala.util.{Failure, Success, Try}
  * Internal API.
  */
 @InternalApi
-private[jms] trait JmsConnector[S <: JmsSession] {
-  this: TimerGraphStageLogic with StageLogging =>
-
+private[jms] trait JmsConnector[S <: JmsSession] extends TimerGraphStageLogic with StageLogging {
   import JmsConnector._
 
   implicit protected var ec: ExecutionContext = _
