@@ -10,8 +10,9 @@ import java.nio.file.attribute.PosixFilePermission
 import java.nio.file.{Files, Paths}
 import java.time.Instant
 import java.util.concurrent.TimeUnit
-import akka.stream.{IOOperationIncompleteException, IOResult}
+import akka.stream.{IOOperationIncompleteException, IOResult, Materializer}
 import BaseSftpSupport.{CLIENT_PRIVATE_KEY_PASSPHRASE => ClientPrivateKeyPassphrase}
+import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSink
@@ -84,14 +85,14 @@ final class UnconfirmedReadsSftpSourceSpec extends BaseSftpSpec with CommonFtpSt
 
 trait CommonFtpStageSpec extends BaseSpec with Eventually {
 
-  implicit val system = getSystem
-  implicit val mat = getMaterializer
-  implicit val defaultPatience =
+  implicit val system: ActorSystem = getSystem
+  implicit val mat: Materializer = getMaterializer
+  implicit val defaultPatience: PatienceConfig =
     PatienceConfig(timeout = Span(30, Seconds), interval = Span(600, Millis))
 
   "FtpBrowserSource" should {
     "complete with a failed Future, when the credentials supplied were wrong" in assertAllStagesStopped {
-      implicit val ec = system.getDispatcher
+      implicit val ec: ExecutionContextExecutor = system.getDispatcher
       listFilesWithWrongCredentials("")
         .toMat(Sink.seq)(Keep.right)
         .run()

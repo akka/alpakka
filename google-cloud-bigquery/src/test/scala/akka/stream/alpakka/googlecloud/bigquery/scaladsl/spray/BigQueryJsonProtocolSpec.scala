@@ -50,8 +50,8 @@ class BigQueryJsonProtocolSpec extends BigQueryJsonProtocol with AnyWordSpecLike
   case class Record(name: Option[String], addresses: Seq[Address])
   case class Address(street: Option[String], city: Option[String])
 
-  implicit val addressFormat = bigQueryJsonFormat2(Address)
-  implicit val recordFormat = bigQueryJsonFormat2(Record)
+  implicit val addressFormat: BigQueryRootJsonFormat[Address] = bigQueryJsonFormat2(Address)
+  implicit val recordFormat: BigQueryRootJsonFormat[Record] = bigQueryJsonFormat2(Record)
 
   "BigQueryJsonProtocol" should {
 

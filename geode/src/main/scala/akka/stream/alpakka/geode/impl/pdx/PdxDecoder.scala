@@ -135,7 +135,7 @@ object PdxDecoder {
       Try(reader.readObjectArray(fieldName.name).toList.asInstanceOf[List[T]])
   }
 
-  implicit def setDecoder[T <: AnyRef](): PdxDecoder[Set[T]] = instance {
+  implicit def setDecoder[T <: AnyRef]: PdxDecoder[Set[T]] = instance {
     case (reader, fieldName) =>
       Try(reader.readObjectArray(fieldName.name).toSet.asInstanceOf[Set[T]])
   }

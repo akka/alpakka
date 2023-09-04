@@ -19,7 +19,7 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class PassThroughExamples extends AnyWordSpec with BeforeAndAfterAll with Matchers with ScalaFutures {
 
-  implicit val system = ActorSystem("Test")
+  implicit val system: ActorSystem = ActorSystem("Test")
 
   "PassThroughFlow" should {
     " original message is maintained " in {
@@ -93,7 +93,7 @@ object PassThroughFlow {
 //#PassThrough
 
 object PassThroughFlowKafkaCommitExample {
-  implicit val system = ActorSystem("Test")
+  implicit val system: ActorSystem = ActorSystem("Test")
 
   def dummy(): Unit = {
     // #passThroughKafkaFlow
