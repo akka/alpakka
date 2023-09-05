@@ -163,7 +163,7 @@ object Dependencies {
 
   val AvroParquet = Seq(
     libraryDependencies ++= Seq(
-        "org.apache.parquet" % "parquet-avro" % "1.13.1" //Apache2
+        "org.apache.parquet" % "parquet-avro" % "1.11.2" //Apache2
       )
   )
 
@@ -350,7 +350,7 @@ object Dependencies {
       ) ++ Seq(
         "software.amazon.awssdk" % "kinesis" % AwsSdk2Version, // ApacheV2
         "software.amazon.awssdk" % "firehose" % AwsSdk2Version, // ApacheV2
-        "software.amazon.kinesis" % "amazon-kinesis-client" % "2.4.8" // ApacheV2
+        "software.amazon.kinesis" % "amazon-kinesis-client" % "2.4.0" // ApacheV2
       ).map(
         _.excludeAll(
           ExclusionRule("software.amazon.awssdk", "apache-client"),
@@ -359,7 +359,7 @@ object Dependencies {
       ) ++ Mockito
   )
 
-  val KuduVersion = "1.14.0"
+  val KuduVersion = "1.7.1"
   val Kudu = Seq(
     libraryDependencies ++= Seq(
         "org.apache.kudu" % "kudu-client-tools" % KuduVersion, // ApacheV2
@@ -390,9 +390,9 @@ object Dependencies {
 
   val OrientDB = Seq(
     libraryDependencies ++= Seq(
-        ("com.orientechnologies" % "orientdb-graphdb" % "3.2.22")
+        ("com.orientechnologies" % "orientdb-graphdb" % "3.1.20")
           .exclude("com.tinkerpop.blueprints", "blueprints-core"),
-        "com.orientechnologies" % "orientdb-object" % "3.2.22" // ApacheV2
+        "com.orientechnologies" % "orientdb-object" % "3.1.20" // ApacheV2
       )
   )
 
