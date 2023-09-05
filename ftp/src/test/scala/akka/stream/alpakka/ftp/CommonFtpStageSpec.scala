@@ -4,25 +4,25 @@
 
 package akka.stream.alpakka.ftp
 
+import akka.actor.ActorSystem
+import akka.stream.alpakka.ftp.BaseSftpSupport.{CLIENT_PRIVATE_KEY_PASSPHRASE => ClientPrivateKeyPassphrase}
+import akka.stream.scaladsl.{Keep, Sink, Source}
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
+import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.{IOOperationIncompleteException, IOResult, Materializer}
+import akka.util.ByteString
+import org.scalatest.concurrent.Eventually
+import org.scalatest.time.{Millis, Seconds, Span}
+
 import java.io.IOException
 import java.net.InetAddress
 import java.nio.file.attribute.PosixFilePermission
 import java.nio.file.{Files, Paths}
 import java.time.Instant
 import java.util.concurrent.TimeUnit
-import akka.stream.{IOOperationIncompleteException, IOResult, Materializer}
-import BaseSftpSupport.{CLIENT_PRIVATE_KEY_PASSPHRASE => ClientPrivateKeyPassphrase}
-import akka.actor.ActorSystem
-import akka.stream.scaladsl.{Keep, Sink, Source}
-import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
-import akka.stream.testkit.scaladsl.TestSink
-import akka.util.ByteString
-import org.scalatest.concurrent.Eventually
-import org.scalatest.time.{Millis, Seconds, Span}
-
 import scala.collection.immutable
-import scala.concurrent.{Await, ExecutionContextExecutor}
 import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext}
 import scala.util.Random
 
 final class FtpStageSpec extends BaseFtpSpec with CommonFtpStageSpec
@@ -92,7 +92,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
 
   "FtpBrowserSource" should {
     "complete with a failed Future, when the credentials supplied were wrong" in assertAllStagesStopped {
-      implicit val ec: ExecutionContextExecutor = system.getDispatcher
+      implicit val ec: ExecutionContext = system.getDispatcher
       listFilesWithWrongCredentials("")
         .toMat(Sink.seq)(Keep.right)
         .run()
@@ -495,7 +495,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       val source = mkdir(basePath, name)
       val innerSource = mkdir(innerDirPath, innerDirName)
 
-      implicit val ec: ExecutionContextExecutor = mat.executionContext
+      implicit val ec: ExecutionContext = mat.executionContext
 
       val res = for {
         x <- source.runWith(Sink.head)

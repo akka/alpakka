@@ -12,14 +12,14 @@ import akka.stream.scaladsl._
 import akka.testkit.TestKit
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
 import slick.jdbc.{GetResult, JdbcProfile}
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContextExecutor, Future}
-import org.scalatest.matchers.must.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 /**
  * This unit test is run using a local H2 database using
@@ -49,7 +49,7 @@ class SlickSpec
     def * = (id, name)
   }
 
-  implicit val ec: ExecutionContextExecutor = system.dispatcher
+  implicit val ec: ExecutionContext = system.dispatcher
   implicit val defaultPatience: PatienceConfig = PatienceConfig(timeout = 3.seconds, interval = 50.millis)
   implicit val getUserResult: GetResult[User] = GetResult(r => User(r.nextInt(), r.nextString()))
 

@@ -18,11 +18,11 @@ import org.apache.hadoop.io.Text
 import org.apache.hadoop.io.compress._
 import org.apache.hadoop.io.compress.zlib.ZlibCompressor.CompressionLevel
 import org.scalatest._
-
-import scala.concurrent.duration.{Duration, _}
-import scala.concurrent.{Await, ExecutionContextExecutor}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.duration.{Duration, _}
 
 class HdfsWriterSpec
     extends AnyWordSpecLike
@@ -45,7 +45,7 @@ class HdfsWriterSpec
   val fs: FileSystem = FileSystem.get(conf)
   //#init-client
 
-  implicit val ec: ExecutionContextExecutor = system.dispatcher
+  implicit val ec: ExecutionContext = system.dispatcher
 
   fs.getConf.setEnum("zlib.compress.level", CompressionLevel.BEST_SPEED)
 

@@ -4,20 +4,20 @@
 
 package akka.stream.alpakka.ironmq
 
-import java.util.UUID
 import akka.actor.ActorSystem
+import akka.stream.Materializer
 import akka.stream.alpakka.ironmq.impl.IronMqClient
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
-import akka.stream.Materializer
 import com.typesafe.config.{Config, ConfigFactory}
-import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.BeforeAndAfterEach
-
-import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor}
-import scala.concurrent.duration._
-import scala.util.hashing.MurmurHash3
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import java.util.UUID
+import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext}
+import scala.util.hashing.MurmurHash3
 
 abstract class IronMqSpec
     extends AnyWordSpec
@@ -29,7 +29,7 @@ abstract class IronMqSpec
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(timeout = 15.seconds, interval = 1.second)
   val DefaultActorSystemTerminateTimeout: Duration = 10.seconds
 
-  private implicit val ec: ExecutionContextExecutor = ExecutionContext.global
+  private implicit val ec: ExecutionContext = ExecutionContext.global
   private var mutableIronMqClient = Option.empty[IronMqClient]
 
   private var mutableConfig = Option.empty[Config]

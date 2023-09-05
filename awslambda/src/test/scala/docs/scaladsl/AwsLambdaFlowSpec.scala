@@ -4,7 +4,6 @@
 
 package docs.scaladsl
 
-import java.util.concurrent.CompletableFuture
 import akka.actor.ActorSystem
 import akka.stream.alpakka.awslambda.scaladsl.AwsLambdaFlow
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
@@ -16,16 +15,17 @@ import org.mockito.ArgumentMatchers.{any => mockitoAny, eq => mockitoEq}
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.lambda.LambdaAsyncClient
 import software.amazon.awssdk.services.lambda.model.{InvokeRequest, InvokeResponse}
 
-import scala.concurrent.{Await, ExecutionContext}
+import java.util.concurrent.CompletableFuture
 import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext}
 
 class AwsLambdaFlowSpec
     extends TestKit(ActorSystem("AwsLambdaFlowSpec"))

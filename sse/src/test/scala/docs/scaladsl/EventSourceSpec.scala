@@ -4,8 +4,6 @@
 
 package docs.scaladsl
 
-import java.net.InetSocketAddress
-import java.nio.charset.StandardCharsets.UTF_8
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props, Status}
 import akka.http.scaladsl.coding.Coders
 import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling
@@ -14,15 +12,17 @@ import akka.http.scaladsl.model.StatusCodes.BadRequest
 import akka.http.scaladsl.model.headers.`Last-Event-ID`
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.pattern.pipe
-import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.ThrottleMode
+import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.SocketUtil
 import akka.{Done, NotUsed}
 import org.scalatest.BeforeAndAfterAll
 
+import java.net.InetSocketAddress
+import java.nio.charset.StandardCharsets.UTF_8
 import scala.collection.immutable
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContextExecutor, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 //#event-source
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.sse.ServerSentEvent
@@ -140,7 +140,7 @@ final class EventSourceSpec extends AsyncWordSpec with Matchers with BeforeAndAf
   import EventSourceSpec._
 
   private implicit val system: ActorSystem = ActorSystem()
-  private implicit val ec: ExecutionContextExecutor = system.dispatcher
+  private implicit val ec: ExecutionContext = system.dispatcher
 
   "EventSource" should {
     "communicate correctly with an instable HTTP server" in {

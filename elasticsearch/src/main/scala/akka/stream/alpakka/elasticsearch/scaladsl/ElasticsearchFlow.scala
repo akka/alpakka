@@ -8,12 +8,12 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.annotation.{ApiMayChange, InternalApi}
 import akka.http.scaladsl.{Http, HttpExt}
-import akka.stream.alpakka.elasticsearch.{impl, _}
+import akka.stream.alpakka.elasticsearch._
 import akka.stream.scaladsl.{Flow, FlowWithContext, RetryFlow}
 import spray.json._
 
 import scala.collection.immutable
-import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.ExecutionContext
 
 /**
  * Scala API to create Elasticsearch flows.
@@ -210,7 +210,7 @@ object ElasticsearchFlow {
       .fromMaterializer { (mat, _) =>
         implicit val system: ActorSystem = mat.system
         implicit val http: HttpExt = Http()
-        implicit val ec: ExecutionContextExecutor = mat.executionContext
+        implicit val ec: ExecutionContext = mat.executionContext
 
         Flow.fromGraph {
           new impl.ElasticsearchSimpleFlowStage[T, C](elasticsearchParams, settings, writer)

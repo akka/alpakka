@@ -14,11 +14,9 @@ import akka.util.ByteString
 import com.google.cloud.bigquery.storage.v1.DataFormat
 import com.google.cloud.bigquery.storage.v1.storage.{BigQueryReadClient, CreateReadSessionRequest, ReadRowsResponse}
 import com.google.cloud.bigquery.storage.v1.stream.ReadSession.TableReadOptions
-import com.google.cloud.bigquery.storage.v1.stream.ReadSession
+import com.google.cloud.bigquery.storage.v1.stream.{ReadSession, DataFormat => StreamDataFormat}
 
-import com.google.cloud.bigquery.storage.v1.stream.{DataFormat => StreamDataFormat}
-
-import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
  * Google BigQuery Storage Api Akka Stream operator factory.
@@ -54,7 +52,7 @@ object BigQueryStorage {
     Source.fromMaterializer { (mat, attr) =>
       {
         implicit val materializer: Materializer = mat
-        implicit val executionContext: ExecutionContextExecutor = materializer.executionContext
+        implicit val executionContext: ExecutionContext = materializer.executionContext
         val client = reader(mat.system, attr).client
         readSession(client, projectId, datasetId, tableId, dataFormat, readOptions, maxNumStreams)
           .map { session =>

@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.google.http
 
-import akka.actor.{ClassicActorSystemProvider, ExtendedActorSystem, Scheduler}
+import akka.actor.{ActorSystem, ClassicActorSystemProvider, Scheduler}
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.Http.HostConnectionPool
@@ -12,11 +12,11 @@ import akka.http.scaladsl.model.headers.Authorization
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.unmarshalling.{FromResponseUnmarshaller, Unmarshal}
 import akka.http.scaladsl.{Http, HttpExt}
-import akka.stream.alpakka.google.{GoogleAttributes, GoogleSettings, RequestSettings, RetrySettings}
 import akka.stream.alpakka.google.util.Retry
+import akka.stream.alpakka.google.{GoogleAttributes, GoogleSettings, RequestSettings, RetrySettings}
 import akka.stream.scaladsl.{Flow, FlowWithContext, Keep, RetryFlow}
 
-import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 @InternalApi
@@ -35,8 +35,8 @@ private[alpakka] object GoogleHttp {
 @InternalApi
 private[alpakka] final class GoogleHttp private (val http: HttpExt) extends AnyVal {
 
-  private implicit def system: ExtendedActorSystem = http.system
-  private implicit def ec: ExecutionContextExecutor = system.dispatcher
+  private implicit def system: ActorSystem = http.system
+  private implicit def ec: ExecutionContext = system.dispatcher
   private implicit def scheduler: Scheduler = system.scheduler
 
   /**
