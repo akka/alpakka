@@ -169,11 +169,11 @@ object Dependencies {
 
   val AvroParquetTests = Seq(
     libraryDependencies ++= Seq(
-        "org.apache.hadoop" % "hadoop-client" % "3.3.6" % Test exclude ("log4j", "log4j"), //Apache2
-        "org.apache.hadoop" % "hadoop-common" % "3.3.6" % Test exclude ("log4j", "log4j"), //Apache2
-        "com.sksamuel.avro4s" %% "avro4s-core" % "4.1.1" % Test,
-        "org.scalacheck" %% "scalacheck" % "1.17.0" % Test,
-        "org.specs2" %% "specs2-core" % "4.20.2" % Test, //MIT like: https://github.com/etorreborre/specs2/blob/master/LICENSE.txt
+        "org.apache.hadoop" % "hadoop-client" % "3.3.3" % Test exclude ("log4j", "log4j"), //Apache2
+        "org.apache.hadoop" % "hadoop-common" % "3.3.3" % Test exclude ("log4j", "log4j"), //Apache2
+        "com.sksamuel.avro4s" %% "avro4s-core" % "3.0.9" % Test,
+        "org.scalacheck" %% "scalacheck" % "1.15.4" % Test,
+        "org.specs2" %% "specs2-core" % "4.8.3" % Test, //MIT like: https://github.com/etorreborre/specs2/blob/master/LICENSE.txt
         "org.slf4j" % "log4j-over-slf4j" % log4jOverSlf4jVersion % Test // MIT like: http://www.slf4j.org/license.html
       )
   )
@@ -277,7 +277,7 @@ object Dependencies {
   )
 
   val HBase = {
-    val hbaseVersion = "2.4.17"
+    val hbaseVersion = "1.4.13"
     val hadoopVersion = "3.3.6"
     Seq(
       libraryDependencies ++= Seq(
@@ -350,7 +350,7 @@ object Dependencies {
       ) ++ Seq(
         "software.amazon.awssdk" % "kinesis" % AwsSdk2Version, // ApacheV2
         "software.amazon.awssdk" % "firehose" % AwsSdk2Version, // ApacheV2
-        "software.amazon.kinesis" % "amazon-kinesis-client" % "2.5.2" // ApacheV2
+        "software.amazon.kinesis" % "amazon-kinesis-client" % "2.4.8" // ApacheV2
       ).map(
         _.excludeAll(
           ExclusionRule("software.amazon.awssdk", "apache-client"),
