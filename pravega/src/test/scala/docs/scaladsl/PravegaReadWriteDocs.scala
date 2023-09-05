@@ -5,7 +5,14 @@
 package docs.scaladsl
 
 import akka.actor.ActorSystem
-import akka.stream.alpakka.pravega.{PravegaEvent, ReaderSettingsBuilder, TableReaderSettingsBuilder, TableWriterSettings, TableWriterSettingsBuilder, WriterSettingsBuilder}
+import akka.stream.alpakka.pravega.{
+  PravegaEvent,
+  ReaderSettingsBuilder,
+  TableReaderSettingsBuilder,
+  TableWriterSettings,
+  TableWriterSettingsBuilder,
+  WriterSettingsBuilder
+}
 import akka.stream.scaladsl.{Sink, Source}
 import io.pravega.client.ClientConfig
 import io.pravega.client.stream.Serializer

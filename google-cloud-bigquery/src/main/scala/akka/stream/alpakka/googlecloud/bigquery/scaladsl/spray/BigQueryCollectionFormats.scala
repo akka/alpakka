@@ -36,17 +36,25 @@ trait BigQueryCollectionFormats {
 
   import collection.{immutable => imm}
 
-  implicit def immIterableFormat[T: BigQueryJsonFormat]: BigQueryJsonFormat[immutable.Iterable[T]] = viaSeq[imm.Iterable[T], T](seq => imm.Iterable(seq: _*))
-  implicit def immSeqFormat[T: BigQueryJsonFormat]: BigQueryJsonFormat[imm.Seq[T]] = viaSeq[imm.Seq[T], T](seq => imm.Seq(seq: _*))
-  implicit def immIndexedSeqFormat[T: BigQueryJsonFormat]: BigQueryJsonFormat[imm.IndexedSeq[T]] = viaSeq[imm.IndexedSeq[T], T](seq => imm.IndexedSeq(seq: _*))
-  implicit def immLinearSeqFormat[T: BigQueryJsonFormat]: BigQueryJsonFormat[imm.LinearSeq[T]] = viaSeq[imm.LinearSeq[T], T](seq => imm.LinearSeq(seq: _*))
-  implicit def vectorFormat[T: BigQueryJsonFormat]: BigQueryJsonFormat[imm.Vector[T]] = viaSeq[imm.Vector[T], T](seq => imm.Vector(seq: _*))
+  implicit def immIterableFormat[T: BigQueryJsonFormat]: BigQueryJsonFormat[immutable.Iterable[T]] =
+    viaSeq[imm.Iterable[T], T](seq => imm.Iterable(seq: _*))
+  implicit def immSeqFormat[T: BigQueryJsonFormat]: BigQueryJsonFormat[imm.Seq[T]] =
+    viaSeq[imm.Seq[T], T](seq => imm.Seq(seq: _*))
+  implicit def immIndexedSeqFormat[T: BigQueryJsonFormat]: BigQueryJsonFormat[imm.IndexedSeq[T]] =
+    viaSeq[imm.IndexedSeq[T], T](seq => imm.IndexedSeq(seq: _*))
+  implicit def immLinearSeqFormat[T: BigQueryJsonFormat]: BigQueryJsonFormat[imm.LinearSeq[T]] =
+    viaSeq[imm.LinearSeq[T], T](seq => imm.LinearSeq(seq: _*))
+  implicit def vectorFormat[T: BigQueryJsonFormat]: BigQueryJsonFormat[imm.Vector[T]] =
+    viaSeq[imm.Vector[T], T](seq => imm.Vector(seq: _*))
 
-
-  implicit def iterableFormat[T: BigQueryJsonFormat]: BigQueryJsonFormat[collection.Iterable[T]] = viaSeq[collection.Iterable[T], T](seq => collection.Iterable(seq: _*))
-  implicit def seqFormat[T: BigQueryJsonFormat]: BigQueryJsonFormat[collection.Seq[T]] = viaSeq[collection.Seq[T], T](seq => collection.Seq(seq: _*))
-  implicit def indexedSeqFormat[T: BigQueryJsonFormat]: BigQueryJsonFormat[collection.IndexedSeq[T]] = viaSeq[collection.IndexedSeq[T], T](seq => collection.IndexedSeq(seq: _*))
-  implicit def linearSeqFormat[T: BigQueryJsonFormat]: BigQueryJsonFormat[collection.LinearSeq[T]] = viaSeq[collection.LinearSeq[T], T](seq => collection.LinearSeq(seq: _*))
+  implicit def iterableFormat[T: BigQueryJsonFormat]: BigQueryJsonFormat[collection.Iterable[T]] =
+    viaSeq[collection.Iterable[T], T](seq => collection.Iterable(seq: _*))
+  implicit def seqFormat[T: BigQueryJsonFormat]: BigQueryJsonFormat[collection.Seq[T]] =
+    viaSeq[collection.Seq[T], T](seq => collection.Seq(seq: _*))
+  implicit def indexedSeqFormat[T: BigQueryJsonFormat]: BigQueryJsonFormat[collection.IndexedSeq[T]] =
+    viaSeq[collection.IndexedSeq[T], T](seq => collection.IndexedSeq(seq: _*))
+  implicit def linearSeqFormat[T: BigQueryJsonFormat]: BigQueryJsonFormat[collection.LinearSeq[T]] =
+    viaSeq[collection.LinearSeq[T], T](seq => collection.LinearSeq(seq: _*))
 
   /**
    * A BigQueryJsonFormat construction helper that creates a BigQueryJsonFormat for an Iterable type I from a builder function

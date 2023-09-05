@@ -182,7 +182,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "commons-net" % "commons-net" % "3.9.0", // ApacheV2
         "com.hierynomus" % "sshj" % "0.35.0", // ApacheV2
-        "io.github.hakky54" % "sslcontext-kickstart-for-pem" % "8.1.6" % Test
+        "io.github.hakky54" % "sslcontext-kickstart-for-pem" % "6.8.0" % Test
       )
   )
 
@@ -277,7 +277,7 @@ object Dependencies {
   )
 
   val HBase = {
-    val hbaseVersion = "2.5.5"
+    val hbaseVersion = "2.4.17"
     val hadoopVersion = "3.3.6"
     Seq(
       libraryDependencies ++= Seq(

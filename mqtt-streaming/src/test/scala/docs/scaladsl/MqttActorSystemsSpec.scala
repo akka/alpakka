@@ -13,7 +13,8 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class MqttTypedActorSystemSpec extends AnyWordSpec {
 
-  implicit val actorSystem: ActorSystem[Nothing] = akka.actor.typed.ActorSystem(Behaviors.ignore, "MqttTypedActorSystemSpec")
+  implicit val actorSystem: ActorSystem[Nothing] =
+    akka.actor.typed.ActorSystem(Behaviors.ignore, "MqttTypedActorSystemSpec")
 
   "A typed actor system" should {
     "allow client creation" in {

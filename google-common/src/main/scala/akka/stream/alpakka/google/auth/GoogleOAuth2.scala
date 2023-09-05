@@ -11,7 +11,7 @@ import akka.http.scaladsl.model.HttpMethods.POST
 import akka.http.scaladsl.model.{FormData, HttpRequest}
 import akka.stream.Materializer
 import akka.stream.alpakka.google.http.GoogleHttp
-import akka.stream.alpakka.google.{RequestSettings, implicits}
+import akka.stream.alpakka.google.{implicits, RequestSettings}
 import pdi.jwt.JwtAlgorithm.RS256
 import pdi.jwt.{JwtClaim, JwtSprayJson}
 import spray.json.DefaultJsonProtocol._

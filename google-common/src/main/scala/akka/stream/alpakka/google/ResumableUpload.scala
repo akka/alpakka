@@ -11,7 +11,7 @@ import akka.http.scaladsl.model.HttpMethods.{POST, PUT}
 import akka.http.scaladsl.model.StatusCodes.{Created, OK, PermanentRedirect}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.ByteRange.Slice
-import akka.http.scaladsl.model.headers.{Location, Range, RawHeader, `Content-Range`}
+import akka.http.scaladsl.model.headers.{`Content-Range`, Location, Range, RawHeader}
 import akka.http.scaladsl.unmarshalling.{FromResponseUnmarshaller, Unmarshal, Unmarshaller}
 import akka.stream.Materializer
 import akka.stream.alpakka.google.http.GoogleHttp
@@ -90,10 +90,11 @@ private[alpakka] object ResumableUpload {
     implicit val system: ActorSystem = mat.system
     import implicits._
 
-    implicit val um: FromResponseUnmarshaller[Uri] = Unmarshaller.withMaterializer { implicit ec =>implicit mat =>response: HttpResponse =>
-      response.discardEntityBytes().future.map { _ =>
-        response.header[Location].fold(throw InvalidResponseException(ErrorInfo("No Location header")))(_.uri)
-      }
+    implicit val um: FromResponseUnmarshaller[Uri] = Unmarshaller.withMaterializer {
+      implicit ec => implicit mat => response: HttpResponse =>
+        response.discardEntityBytes().future.map { _ =>
+          response.header[Location].fold(throw InvalidResponseException(ErrorInfo("No Location header")))(_.uri)
+        }
     }.withDefaultRetry
 
     GoogleHttp().singleAuthenticatedRequest[Uri](request)
@@ -143,22 +144,23 @@ private[alpakka] object ResumableUpload {
     implicit val system: ActorSystem = mat.system
     import implicits._
 
-    implicit val um: FromResponseUnmarshaller[Either[T, Long]] = Unmarshaller.withMaterializer { implicit ec =>implicit mat =>response: HttpResponse =>
-      response.status match {
-        case OK | Created => Unmarshal(response).to[T].map(Left(_))
-        case PermanentRedirect =>
-          response.discardEntityBytes().future.map { _ =>
-            Right(
-              response
-                .header[Range]
-                .flatMap(_.ranges.headOption)
-                .collect {
-                  case Slice(_, last) => last + 1
-                } getOrElse 0L
-            )
-          }
-        case _ => throw InvalidResponseException(ErrorInfo(response.status.value, response.status.defaultMessage))
-      }
+    implicit val um: FromResponseUnmarshaller[Either[T, Long]] = Unmarshaller.withMaterializer {
+      implicit ec => implicit mat => response: HttpResponse =>
+        response.status match {
+          case OK | Created => Unmarshal(response).to[T].map(Left(_))
+          case PermanentRedirect =>
+            response.discardEntityBytes().future.map { _ =>
+              Right(
+                response
+                  .header[Range]
+                  .flatMap(_.ranges.headOption)
+                  .collect {
+                    case Slice(_, last) => last + 1
+                  } getOrElse 0L
+              )
+            }
+          case _ => throw InvalidResponseException(ErrorInfo(response.status.value, response.status.defaultMessage))
+        }
     }.withDefaultRetry
 
     import mat.executionContext

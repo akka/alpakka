@@ -131,11 +131,12 @@ private[pubsub] trait PubSubApi {
       pr.receivedMessages.map(rm => JsObject("receivedMessages" -> rm.toJson)).getOrElse(JsObject.empty)
   }
 
-  private implicit val acknowledgeRequestFormat: RootJsonFormat[AcknowledgeRequest] = new RootJsonFormat[AcknowledgeRequest] {
-    def read(json: JsValue): AcknowledgeRequest =
-      AcknowledgeRequest(json.asJsObject.fields("ackIds").convertTo[immutable.Seq[String]]: _*)
-    def write(ar: AcknowledgeRequest): JsValue = JsObject("ackIds" -> ar.ackIds.toJson)
-  }
+  private implicit val acknowledgeRequestFormat: RootJsonFormat[AcknowledgeRequest] =
+    new RootJsonFormat[AcknowledgeRequest] {
+      def read(json: JsValue): AcknowledgeRequest =
+        AcknowledgeRequest(json.asJsObject.fields("ackIds").convertTo[immutable.Seq[String]]: _*)
+      def write(ar: AcknowledgeRequest): JsValue = JsObject("ackIds" -> ar.ackIds.toJson)
+    }
   private implicit val pullRequestFormat: RootJsonFormat[PullRequest] = DefaultJsonProtocol.jsonFormat2(PullRequest)
 
   private def scheme: String = if (isEmulated) "http" else "https"

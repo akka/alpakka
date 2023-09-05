@@ -8,7 +8,16 @@ package docs.scaladsl
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.stream.alpakka.google.{GoogleAttributes, GoogleSettings}
 import akka.stream.alpakka.googlecloud.bigquery.InsertAllRetryPolicy
-import akka.stream.alpakka.googlecloud.bigquery.model.{Dataset, Job, JobReference, JobState, QueryResponse, Table, TableDataListResponse, TableListResponse}
+import akka.stream.alpakka.googlecloud.bigquery.model.{
+  Dataset,
+  Job,
+  JobReference,
+  JobState,
+  QueryResponse,
+  Table,
+  TableDataListResponse,
+  TableListResponse
+}
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.BigQuery
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.schema.BigQuerySchemas._
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.schema.TableSchemaWriter

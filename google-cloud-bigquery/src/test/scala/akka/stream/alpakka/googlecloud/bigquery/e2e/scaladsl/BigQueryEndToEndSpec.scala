@@ -5,7 +5,7 @@
 package akka.stream.alpakka.googlecloud.bigquery.e2e.scaladsl
 
 import akka.actor.{ActorSystem, Scheduler}
-import akka.{Done, pattern}
+import akka.{pattern, Done}
 import akka.stream.alpakka.googlecloud.bigquery.HoverflySupport
 import akka.stream.alpakka.googlecloud.bigquery.e2e.{A, B, C}
 import akka.stream.alpakka.googlecloud.bigquery.model.JobState
