@@ -24,7 +24,7 @@ class SnsPublisherSpec
     with IntegrationTestContext
     with LogCapturing {
 
-  implicit val defaultPatience =
+  implicit val defaultPatience: PatienceConfig =
     PatienceConfig(timeout = 15.seconds, interval = 100.millis)
 
   "SNS Publisher sink" should "send string message" in {

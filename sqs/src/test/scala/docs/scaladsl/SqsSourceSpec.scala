@@ -247,7 +247,7 @@ class SqsSourceSpec extends AnyFlatSpec with ScalaFutures with Matchers with Def
       val customClient: SdkAsyncHttpClient = AkkaHttpClient.builder().withActorSystem(system).build()
 
       //#init-custom-client
-      implicit val customSqsClient = SqsAsyncClient
+      implicit val customSqsClient: SqsAsyncClient = SqsAsyncClient
         .builder()
         .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
         //#init-custom-client

@@ -18,7 +18,7 @@ import scala.concurrent.duration._
 
 class EventBridgePublisherSpec extends AnyFlatSpec with Matchers with ScalaFutures with IntegrationTestContext {
 
-  implicit val defaultPatience =
+  implicit val defaultPatience: PatienceConfig =
     PatienceConfig(timeout = 15.seconds, interval = 100.millis)
 
   "EventBridge Publisher sink" should "send PutEventsEntry message" in {

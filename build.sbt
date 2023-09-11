@@ -127,7 +127,7 @@ lazy val avroparquetTests =
     .dependsOn(avroparquet)
     .disablePlugins(MimaPlugin)
 
-lazy val awslambda = alpakkaProject("awslambda", "aws.lambda", Dependencies.AwsLambda)
+lazy val awslambda = alpakkaProject("awslambda", "aws.lambda", Dependencies.AwsLambda).settings(Scala3.settings)
 
 lazy val azureStorageQueue = alpakkaProject(
   "azure-storage-queue",
@@ -148,7 +148,7 @@ lazy val csvBench = internalProject("csv-bench")
   .dependsOn(csv)
   .enablePlugins(JmhPlugin)
 
-lazy val dynamodb = alpakkaProject("dynamodb", "aws.dynamodb", Dependencies.DynamoDB)
+lazy val dynamodb = alpakkaProject("dynamodb", "aws.dynamodb", Dependencies.DynamoDB).settings(Scala3.settings)
 
 lazy val elasticsearch = alpakkaProject(
   "elasticsearch",
@@ -273,7 +273,7 @@ lazy val jms = alpakkaProject("jms", "jms", Dependencies.Jms, Scala3.settings)
 
 lazy val jsonStreaming = alpakkaProject("json-streaming", "json.streaming", Dependencies.JsonStreaming)
 
-lazy val kinesis = alpakkaProject("kinesis", "aws.kinesis", Dependencies.Kinesis)
+lazy val kinesis = alpakkaProject("kinesis", "aws.kinesis", Dependencies.Kinesis).settings(Scala3.settings)
 
 lazy val kudu = alpakkaProject("kudu", "kudu", Dependencies.Kudu)
 
@@ -320,13 +320,13 @@ lazy val simpleCodecs = alpakkaProject("simple-codecs", "simplecodecs")
 lazy val slick = alpakkaProject("slick", "slick", Dependencies.Slick)
 
 lazy val eventbridge =
-  alpakkaProject("aws-event-bridge", "aws.eventbridge", Dependencies.Eventbridge)
+  alpakkaProject("aws-event-bridge", "aws.eventbridge", Dependencies.Eventbridge).settings(Scala3.settings)
 
-lazy val sns = alpakkaProject("sns", "aws.sns", Dependencies.Sns)
+lazy val sns = alpakkaProject("sns", "aws.sns", Dependencies.Sns).settings(Scala3.settings)
 
 lazy val solr = alpakkaProject("solr", "solr", Dependencies.Solr)
 
-lazy val sqs = alpakkaProject("sqs", "aws.sqs", Dependencies.Sqs)
+lazy val sqs = alpakkaProject("sqs", "aws.sqs", Dependencies.Sqs).settings(Scala3.settings)
 
 lazy val sse = alpakkaProject("sse", "sse", Dependencies.Sse)
 

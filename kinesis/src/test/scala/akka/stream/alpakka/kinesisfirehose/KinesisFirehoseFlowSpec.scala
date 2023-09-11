@@ -77,7 +77,7 @@ class KinesisFirehoseFlowSpec extends AnyWordSpec with Matchers with KinesisFire
         .run()
   }
 
-  trait WithPutRecordsSuccess { self: KinesisFirehoseFlowProbe =>
+  trait WithPutRecordsSuccess { self: KinesisFirehoseFlowProbe with Settings =>
     when(amazonKinesisFirehoseAsync.putRecordBatch(any[PutRecordBatchRequest])).thenAnswer(new Answer[AnyRef] {
       override def answer(invocation: InvocationOnMock) = {
         val request = invocation
@@ -92,7 +92,7 @@ class KinesisFirehoseFlowSpec extends AnyWordSpec with Matchers with KinesisFire
     })
   }
 
-  trait WithPutRecordsFailure { self: KinesisFirehoseFlowProbe =>
+  trait WithPutRecordsFailure { self: KinesisFirehoseFlowProbe with Settings =>
     when(amazonKinesisFirehoseAsync.putRecordBatch(any[PutRecordBatchRequest])).thenAnswer(new Answer[AnyRef] {
       override def answer(invocation: InvocationOnMock) = {
         val future = new CompletableFuture()

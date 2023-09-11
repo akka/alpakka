@@ -31,6 +31,9 @@ object ShardIterator {
     override final val shardIteratorType: ShardIteratorType = ShardIteratorType.TRIM_HORIZON
   }
 
+  object AtTimestamp {
+    def apply(value: Instant) = new AtTimestamp(value)
+  }
   case class AtTimestamp private (value: Instant) extends ShardIterator {
     override final val timestamp: Option[Instant] = Some(value)
 
