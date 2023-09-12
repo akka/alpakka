@@ -24,7 +24,7 @@ import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.lambda.LambdaAsyncClient
 import software.amazon.awssdk.services.lambda.model.{InvokeRequest, InvokeResponse}
 
-import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor}
+import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration._
 
 class AwsLambdaFlowSpec
