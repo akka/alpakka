@@ -267,7 +267,7 @@ class KinesisSchedulerSourceSpec
 
     var recordProcessor: ShardRecordProcessor = _
     var otherRecordProcessor: ShardRecordProcessor = _
-    private val schedulerBuilder = { x: ShardRecordProcessorFactory =>
+    private val schedulerBuilder = { (x: ShardRecordProcessorFactory) =>
       recordProcessor = x.shardRecordProcessor()
       otherRecordProcessor = x.shardRecordProcessor()
       semaphore.release()
@@ -348,7 +348,7 @@ class KinesisSchedulerSourceSpec
             ) {
               override def shutdownReason: Option[ShutdownReason] = None
 
-              override def forceCheckpoint(): Unit = checkpointer(record)
+              override def forceCheckpoint(): Unit = checkpointer(this.record)
             }
           )
           latestRecord = record
@@ -390,7 +390,7 @@ class KinesisSchedulerSourceSpec
             ) {
               override def shutdownReason: Option[ShutdownReason] = None
 
-              override def forceCheckpoint(): Unit = checkpointerShard1(record)
+              override def forceCheckpoint(): Unit = checkpointerShard1(this.record)
             }
           )
           latestRecordShard1 = record
@@ -410,7 +410,7 @@ class KinesisSchedulerSourceSpec
             ) {
               override def shutdownReason: Option[ShutdownReason] = None
 
-              override def forceCheckpoint(): Unit = checkpointerShard2(record)
+              override def forceCheckpoint(): Unit = checkpointerShard2(this.record)
             }
           )
           latestRecordShard2 = record
@@ -444,7 +444,7 @@ class KinesisSchedulerSourceSpec
         )
       ) {
         override def shutdownReason: Option[ShutdownReason] = None
-        override def forceCheckpoint(): Unit = checkpointer(record)
+        override def forceCheckpoint(): Unit = checkpointer(this.record)
       }
       sourceProbe.sendNext(committableRecord)
 

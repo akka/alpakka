@@ -1,0 +1,2 @@
+# 6.0.3 scala3 comp - https://github.com/akka/alpakka/pull/3011
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.alpakka.kinesis.ShardIterator$AtTimestamp$")
