@@ -20,7 +20,9 @@ import akka.stream.alpakka.googlecloud.bigquery.model.{
 }
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.BigQuery
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.schema.BigQuerySchemas._
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.schema.TableSchemaWriter
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryJsonProtocol._
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRootJsonFormat
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.{Done, NotUsed}
 
@@ -38,8 +40,8 @@ class BigQueryDoc {
   //#setup
   case class Person(name: String, age: Int, addresses: Seq[Address], isHakker: Boolean)
   case class Address(street: String, city: String, postalCode: Option[Int])
-  implicit val addressFormat = bigQueryJsonFormat3(Address)
-  implicit val personFormat = bigQueryJsonFormat4(Person)
+  implicit val addressFormat: BigQueryRootJsonFormat[Address] = bigQueryJsonFormat3(Address)
+  implicit val personFormat: BigQueryRootJsonFormat[Person] = bigQueryJsonFormat4(Person)
   //#setup
 
   @nowarn("msg=dead code")
@@ -103,8 +105,8 @@ class BigQueryDoc {
   //#table-methods
 
   //#create-table
-  implicit val addressSchema = bigQuerySchema3(Address)
-  implicit val personSchema = bigQuerySchema4(Person)
+  implicit val addressSchema: TableSchemaWriter[Address] = bigQuerySchema3(Address)
+  implicit val personSchema: TableSchemaWriter[Person] = bigQuerySchema4(Person)
   val newTable: Future[Table] = BigQuery.createTable[Person](datasetId, "newTableId")
   //#create-table
 

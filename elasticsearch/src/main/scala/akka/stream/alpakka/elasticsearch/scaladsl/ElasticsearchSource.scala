@@ -7,11 +7,11 @@ package akka.stream.alpakka.elasticsearch.scaladsl
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.{Http, HttpExt}
-import akka.stream.alpakka.elasticsearch.{impl, _}
+import akka.stream.alpakka.elasticsearch._
 import akka.stream.scaladsl.Source
 import spray.json._
 
-import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.ExecutionContext
 
 /**
  * Scala API to create Elasticsearch sources.
@@ -67,7 +67,7 @@ object ElasticsearchSource {
       .fromMaterializer { (mat, _) =>
         implicit val system: ActorSystem = mat.system
         implicit val http: HttpExt = Http()
-        implicit val ec: ExecutionContextExecutor = mat.executionContext
+        implicit val ec: ExecutionContext = mat.executionContext
 
         val sourceStage = new impl.ElasticsearchSourceStage(
           elasticsearchParams,
@@ -106,7 +106,7 @@ object ElasticsearchSource {
       .fromMaterializer { (mat, _) =>
         implicit val system: ActorSystem = mat.system
         implicit val http: HttpExt = Http()
-        implicit val ec: ExecutionContextExecutor = mat.executionContext
+        implicit val ec: ExecutionContext = mat.executionContext
 
         Source.fromGraph(
           new impl.ElasticsearchSourceStage(elasticsearchParams,

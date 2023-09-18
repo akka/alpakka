@@ -12,7 +12,7 @@ import akka.stream.alpakka.ironmq._
 import akka.stream.alpakka.ironmq.scaladsl.CommittableMessage
 import akka.stream.stage._
 
-import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 @InternalApi
@@ -52,7 +52,7 @@ private[ironmq] final class IronMqPullStage(queueName: String, settings: IronMqS
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) with StageLogging {
 
-      implicit def ec: ExecutionContextExecutor = materializer.executionContext
+      implicit def ec: ExecutionContext = materializer.executionContext
 
       // This flag avoid run concurrent fetch from IronMQ
       private var fetching: Boolean = false

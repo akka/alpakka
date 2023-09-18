@@ -12,14 +12,14 @@ import akka.stream.scaladsl._
 import akka.testkit.TestKit
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
 import slick.jdbc.{GetResult, JdbcProfile}
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
-import org.scalatest.matchers.must.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 /**
  * This unit test is run using a local H2 database using
@@ -33,7 +33,7 @@ class SlickSpec
     with Matchers
     with LogCapturing {
   //#init-mat
-  implicit val system = ActorSystem()
+  implicit val system: ActorSystem = ActorSystem()
   //#init-mat
 
   //#init-session
@@ -49,9 +49,9 @@ class SlickSpec
     def * = (id, name)
   }
 
-  implicit val ec = system.dispatcher
-  implicit val defaultPatience = PatienceConfig(timeout = 3.seconds, interval = 50.millis)
-  implicit val getUserResult = GetResult(r => User(r.nextInt(), r.nextString()))
+  implicit val ec: ExecutionContext = system.dispatcher
+  implicit val defaultPatience: PatienceConfig = PatienceConfig(timeout = 3.seconds, interval = 50.millis)
+  implicit val getUserResult: GetResult[User] = GetResult(r => User(r.nextInt(), r.nextString()))
 
   val users = (1 to 40).map(i => User(i, s"Name$i")).toSet
 
@@ -154,7 +154,7 @@ class SlickSpec
     "insert 40 records into a table (no parallelism)" in {
       //#init-db-config-session
       val databaseConfig = DatabaseConfig.forConfig[JdbcProfile]("slick-h2")
-      implicit val session = SlickSession.forConfig(databaseConfig)
+      implicit val session: SlickSession = SlickSession.forConfig(databaseConfig)
       //#init-db-config-session
 
       val inserted = Source(users)

@@ -4,9 +4,6 @@
 
 package akka.stream.alpakka.text.scaladsl
 
-import java.nio.charset.{Charset, StandardCharsets, UnmappableCharacterException}
-import java.nio.file.Paths
-
 import akka.actor.ActorSystem
 import akka.stream.IOResult
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
@@ -19,9 +16,11 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{BeforeAndAfterAll, RecoverMethods}
 
+import java.nio.charset.{Charset, StandardCharsets, UnmappableCharacterException}
+import java.nio.file.Paths
 import scala.collection.immutable
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.concurrent.{ExecutionContext, Future}
 
 class CharsetCodingFlowsSpec
     extends TestKit(ActorSystem("charset"))
@@ -32,7 +31,7 @@ class CharsetCodingFlowsSpec
     with RecoverMethods
     with LogCapturing {
 
-  private implicit val executionContext: ExecutionContextExecutor = system.dispatcher
+  private implicit val executionContext: ExecutionContext = system.dispatcher
 
   val multiByteChars = "äåû經濟商行政管理总局التجارى"
 
@@ -60,9 +59,9 @@ class CharsetCodingFlowsSpec
     }
 
     "be illustrated in a documentation example" in {
-      import java.nio.charset.StandardCharsets
-
       import akka.stream.scaladsl.FileIO
+
+      import java.nio.charset.StandardCharsets
 
       // #encoding
       import scala.collection.JavaConverters._
@@ -98,9 +97,9 @@ class CharsetCodingFlowsSpec
 
   "Transcoding" should {
     "be illustrated in a documentation example" in {
-      import java.nio.charset.StandardCharsets
-
       import akka.stream.scaladsl.FileIO
+
+      import java.nio.charset.StandardCharsets
 
       val utf16bytes = ByteString("äåûßêëé", StandardCharsets.UTF_16)
       val targetFile = Paths.get("target/outdata-transcoding.txt")

@@ -4,14 +4,13 @@
 
 package akka.stream.alpakka.kinesis
 
-import java.util.concurrent.{Executors, TimeoutException}
-
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Suite}
 
+import java.util.concurrent.{Executors, TimeoutException}
 import scala.concurrent.duration._
-import scala.concurrent.{blocking, Await, ExecutionContext, ExecutionContextExecutor}
+import scala.concurrent.{blocking, Await, ExecutionContext}
 
 trait DefaultTestContext extends BeforeAndAfterAll with BeforeAndAfterEach { this: Suite =>
 
@@ -23,7 +22,7 @@ trait DefaultTestContext extends BeforeAndAfterAll with BeforeAndAfterEach { thi
   """)
   )
   private val threadPool = Executors.newFixedThreadPool(10)
-  implicit protected val executionContext: ExecutionContextExecutor =
+  implicit protected val executionContext: ExecutionContext =
     ExecutionContext.fromExecutor(threadPool)
 
   override protected def afterAll(): Unit = {

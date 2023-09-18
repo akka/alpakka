@@ -33,7 +33,7 @@ class PaginatedRequestSpec
     super.afterAll()
   }
 
-  implicit val patience = PatienceConfig(remainingOrDefault)
+  implicit val patience: PatienceConfig = PatienceConfig(remainingOrDefault)
   implicit val paginated: Paginated[JsValue] = _.asJsObject.fields.get("pageToken").flatMap {
     case JsString(value) => Some(value)
     case _ => None

@@ -38,12 +38,12 @@ class PushKitSenderSpec
   override def afterAll() =
     TestKit.shutdownActorSystem(system)
 
-  implicit val defaultPatience =
+  implicit val defaultPatience: PatienceConfig =
     PatienceConfig(timeout = 2.seconds, interval = 50.millis)
 
   implicit val executionContext: ExecutionContext = system.dispatcher
 
-  implicit val config = HmsSettings()
+  implicit val config: HmsSettings = HmsSettings()
 
   "HmsSender" should {
 

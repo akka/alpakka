@@ -21,7 +21,7 @@ import scala.concurrent.{Future, Promise}
 class ExampleUsage {
 
   //#init-system
-  implicit val system = ActorSystem()
+  implicit val system: ActorSystem = ActorSystem()
   val config = PubSubConfig()
   val topic = "topic1"
   val subscription = "subscription1"

@@ -55,7 +55,7 @@ object GrpcPublisher {
  * An extension that manages a single gRPC scala publisher client per actor system.
  */
 final class GrpcPublisherExt private (sys: ExtendedActorSystem) extends Extension {
-  implicit val publisher = GrpcPublisher(sys: ActorSystem)
+  implicit val publisher: GrpcPublisher = GrpcPublisher(sys: ActorSystem)
 }
 
 object GrpcPublisherExt extends ExtensionId[GrpcPublisherExt] with ExtensionIdProvider {

@@ -5,6 +5,7 @@
 package akka.stream.alpakka.google
 
 import akka.NotUsed
+import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.http.scaladsl.model.HttpMethods.{POST, PUT}
 import akka.http.scaladsl.model.StatusCodes.{Created, OK, PermanentRedirect}
@@ -46,8 +47,8 @@ private[alpakka] object ResumableUpload {
     Sink
       .fromMaterializer { (mat, attr) =>
         import mat.executionContext
-        implicit val materializer = mat
-        implicit val settings = GoogleAttributes.resolveSettings(mat, attr)
+        implicit val materializer: Materializer = mat
+        implicit val settings: GoogleSettings = GoogleAttributes.resolveSettings(mat, attr)
         val uploadChunkSize = settings.requestSettings.uploadChunkSize
 
         val in = Flow[ByteString]
@@ -86,13 +87,14 @@ private[alpakka] object ResumableUpload {
 
   private def initiateSession(request: HttpRequest)(implicit mat: Materializer,
                                                     settings: GoogleSettings): Future[Uri] = {
-    implicit val system = mat.system
+    implicit val system: ActorSystem = mat.system
     import implicits._
 
-    implicit val um = Unmarshaller.withMaterializer { implicit ec => implicit mat => response: HttpResponse =>
-      response.discardEntityBytes().future.map { _ =>
-        response.header[Location].fold(throw InvalidResponseException(ErrorInfo("No Location header")))(_.uri)
-      }
+    implicit val um: FromResponseUnmarshaller[Uri] = Unmarshaller.withMaterializer {
+      implicit ec => implicit mat => response: HttpResponse =>
+        response.discardEntityBytes().future.map { _ =>
+          response.header[Location].fold(throw InvalidResponseException(ErrorInfo("No Location header")))(_.uri)
+        }
     }.withDefaultRetry
 
     GoogleHttp().singleAuthenticatedRequest[Uri](request)
@@ -103,7 +105,7 @@ private[alpakka] object ResumableUpload {
   private def uploadChunk[T: FromResponseUnmarshaller](
       request: HttpRequest
   )(implicit mat: Materializer): Flow[Either[T, MaybeLast[Chunk]], Try[Option[T]], NotUsed] = {
-    implicit val system = mat.system
+    implicit val system: ActorSystem = mat.system
 
     val um = Unmarshaller.withMaterializer { implicit ec => implicit mat => response: HttpResponse =>
       response.status match {
@@ -139,25 +141,26 @@ private[alpakka] object ResumableUpload {
       request: HttpRequest,
       chunk: Future[MaybeLast[Chunk]]
   )(implicit mat: Materializer, settings: GoogleSettings): Future[Either[T, MaybeLast[Chunk]]] = {
-    implicit val system = mat.system
+    implicit val system: ActorSystem = mat.system
     import implicits._
 
-    implicit val um = Unmarshaller.withMaterializer { implicit ec => implicit mat => response: HttpResponse =>
-      response.status match {
-        case OK | Created => Unmarshal(response).to[T].map(Left(_))
-        case PermanentRedirect =>
-          response.discardEntityBytes().future.map { _ =>
-            Right(
-              response
-                .header[Range]
-                .flatMap(_.ranges.headOption)
-                .collect {
-                  case Slice(_, last) => last + 1
-                } getOrElse 0L
-            )
-          }
-        case _ => throw InvalidResponseException(ErrorInfo(response.status.value, response.status.defaultMessage))
-      }
+    implicit val um: FromResponseUnmarshaller[Either[T, Long]] = Unmarshaller.withMaterializer {
+      implicit ec => implicit mat => response: HttpResponse =>
+        response.status match {
+          case OK | Created => Unmarshal(response).to[T].map(Left(_))
+          case PermanentRedirect =>
+            response.discardEntityBytes().future.map { _ =>
+              Right(
+                response
+                  .header[Range]
+                  .flatMap(_.ranges.headOption)
+                  .collect {
+                    case Slice(_, last) => last + 1
+                  } getOrElse 0L
+              )
+            }
+          case _ => throw InvalidResponseException(ErrorInfo(response.status.value, response.status.defaultMessage))
+        }
     }.withDefaultRetry
 
     import mat.executionContext

@@ -66,7 +66,7 @@ class GoogleHttpSpec
     http
   }
 
-  implicit val settings = GoogleSettings().requestSettings
+  implicit val settings: RequestSettings = GoogleSettings().requestSettings
 
   "GoogleHttp" must {
 
@@ -160,7 +160,7 @@ class GoogleHttpSpec
         Future.failed(GoogleOAuth2Exception(ErrorInfo())),
         Future.failed(new AnotherException)
       )
-      implicit val settingsWithMockedCredentials = GoogleSettings().copy(credentials = credentials)
+      implicit val settingsWithMockedCredentials: GoogleSettings = GoogleSettings().copy(credentials = credentials)
 
       val http = mockHttp
       when(

@@ -8,6 +8,8 @@ import akka.actor.ActorSystem
 import akka.stream.alpakka.pravega.{
   PravegaEvent,
   ReaderSettingsBuilder,
+  TableReaderSettingsBuilder,
+  TableWriterSettings,
   TableWriterSettingsBuilder,
   WriterSettingsBuilder
 }
@@ -17,21 +19,21 @@ import io.pravega.client.stream.Serializer
 import io.pravega.client.stream.impl.UTF8StringSerializer
 
 import java.nio.ByteBuffer
-import akka.stream.alpakka.pravega.TableReaderSettingsBuilder
 import akka.stream.alpakka.pravega.scaladsl.PravegaTable
 import akka.stream.alpakka.pravega.scaladsl.Pravega
+
 import scala.util.Using
 import io.pravega.client.tables.TableKey
 
 class PravegaReadWriteDocs {
 
-  implicit val system = ActorSystem("PravegaDocs")
+  implicit val system: ActorSystem = ActorSystem("PravegaDocs")
 
   val serializer = new UTF8StringSerializer
 
   implicit def personSerialiser: Serializer[Person] = ???
 
-  implicit val intSerializer = new Serializer[Int] {
+  implicit val intSerializer: Serializer[Int] = new Serializer[Int] {
     override def serialize(value: Int): ByteBuffer = {
       val buff = ByteBuffer.allocate(4).putInt(value)
       buff.position(0)
@@ -89,7 +91,7 @@ class PravegaReadWriteDocs {
 
     }
 
-  implicit val tablewriterSettings = TableWriterSettingsBuilder[Int, Person]()
+  implicit val tablewriterSettings: TableWriterSettings[Int, Person] = TableWriterSettingsBuilder[Int, Person]()
     .withKeyExtractor(id => new TableKey(intSerializer.serialize(id)))
     .build()
 

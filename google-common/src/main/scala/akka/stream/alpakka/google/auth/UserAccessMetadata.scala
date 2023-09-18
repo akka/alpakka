@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.google.auth
 
+import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
@@ -37,7 +38,7 @@ private[auth] object UserAccessMetadata {
   ): Future[AccessToken] = {
     import SprayJsonSupport._
     import mat.executionContext
-    implicit val system = mat.system
+    implicit val system: ActorSystem = mat.system
     for {
       response <- Http().singleRequest(tokenRequest(clientId, clientSecret, refreshToken))
       token <- Unmarshal(response.entity).to[AccessToken]

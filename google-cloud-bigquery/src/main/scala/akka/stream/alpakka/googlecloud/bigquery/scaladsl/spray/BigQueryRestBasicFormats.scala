@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray
 
+import spray.json
 import spray.json.{deserializationError, DefaultJsonProtocol, JsNumber, JsValue, JsonFormat}
 
 import scala.concurrent.duration.{DurationLong, FiniteDuration}
@@ -13,18 +14,29 @@ import scala.concurrent.duration.{DurationLong, FiniteDuration}
  */
 trait BigQueryRestBasicFormats {
 
-  implicit val IntJsonFormat = DefaultJsonProtocol.IntJsonFormat
-  implicit val FloatJsonFormat = DefaultJsonProtocol.FloatJsonFormat
-  implicit val DoubleJsonFormat = DefaultJsonProtocol.DoubleJsonFormat
-  implicit val ByteJsonFormat = DefaultJsonProtocol.ByteJsonFormat
-  implicit val ShortJsonFormat = DefaultJsonProtocol.ShortJsonFormat
-  implicit val BigDecimalJsonFormat = DefaultJsonProtocol.BigDecimalJsonFormat
-  implicit val BigIntJsonFormat = DefaultJsonProtocol.BigIntJsonFormat
-  implicit val UnitJsonFormat = DefaultJsonProtocol.UnitJsonFormat
-  implicit val BooleanJsonFormat = DefaultJsonProtocol.BooleanJsonFormat
-  implicit val CharJsonFormat = DefaultJsonProtocol.CharJsonFormat
-  implicit val StringJsonFormat = DefaultJsonProtocol.StringJsonFormat
-  implicit val SymbolJsonFormat = DefaultJsonProtocol.SymbolJsonFormat
+  implicit val IntJsonFormat: json.DefaultJsonProtocol.IntJsonFormat.type = DefaultJsonProtocol.IntJsonFormat
+  implicit val FloatJsonFormat: json.DefaultJsonProtocol.FloatJsonFormat.type =
+    DefaultJsonProtocol.FloatJsonFormat
+  implicit val DoubleJsonFormat: json.DefaultJsonProtocol.DoubleJsonFormat.type =
+    DefaultJsonProtocol.DoubleJsonFormat
+  implicit val ByteJsonFormat: json.DefaultJsonProtocol.ByteJsonFormat.type =
+    DefaultJsonProtocol.ByteJsonFormat
+  implicit val ShortJsonFormat: json.DefaultJsonProtocol.ShortJsonFormat.type =
+    DefaultJsonProtocol.ShortJsonFormat
+  implicit val BigDecimalJsonFormat: json.DefaultJsonProtocol.BigDecimalJsonFormat.type =
+    DefaultJsonProtocol.BigDecimalJsonFormat
+  implicit val BigIntJsonFormat: json.DefaultJsonProtocol.BigIntJsonFormat.type =
+    DefaultJsonProtocol.BigIntJsonFormat
+  implicit val UnitJsonFormat: json.DefaultJsonProtocol.UnitJsonFormat.type =
+    DefaultJsonProtocol.UnitJsonFormat
+  implicit val BooleanJsonFormat: json.DefaultJsonProtocol.BooleanJsonFormat.type =
+    DefaultJsonProtocol.BooleanJsonFormat
+  implicit val CharJsonFormat: json.DefaultJsonProtocol.CharJsonFormat.type =
+    DefaultJsonProtocol.CharJsonFormat
+  implicit val StringJsonFormat: json.DefaultJsonProtocol.StringJsonFormat.type =
+    DefaultJsonProtocol.StringJsonFormat
+  implicit val SymbolJsonFormat: json.DefaultJsonProtocol.SymbolJsonFormat.type =
+    DefaultJsonProtocol.SymbolJsonFormat
 
   implicit object BigQueryLongJsonFormat extends JsonFormat[Long] {
     def write(x: Long) = JsNumber(x)

@@ -18,7 +18,7 @@ import scala.concurrent.Future
 
 class FcmExamples {
 
-  implicit val system = ActorSystem()
+  implicit val system: ActorSystem = ActorSystem()
 
   //#simple-send
   val fcmConfig = FcmSettings()

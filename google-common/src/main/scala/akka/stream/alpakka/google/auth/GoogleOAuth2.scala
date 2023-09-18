@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.google.auth
 
+import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.HttpMethods.POST
@@ -33,7 +34,7 @@ private[auth] object GoogleOAuth2 {
     import GoogleOAuth2Exception._
     import SprayJsonSupport._
     import implicits._
-    implicit val system = mat.system
+    implicit val system: ActorSystem = mat.system
 
     try {
       val entity = FormData(

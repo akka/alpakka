@@ -25,7 +25,7 @@ object PdxDecoder {
 
   private def instance[A](f: (PdxReader, Symbol) => Try[A]): PdxDecoder[A] =
     new PdxDecoder[A] {
-      def decode(reader: PdxReader, fieldName: Symbol) = f(reader, fieldName)
+      def decode(reader: PdxReader, fieldName: Symbol): Try[A] = f(reader, fieldName)
     }
 
   implicit val hnilDecoder: PdxDecoder[HNil] = instance((_, _) => Success(HNil))
@@ -145,14 +145,13 @@ object PdxDecoder {
       hDecoder: Lazy[PdxDecoder[H]],
       tDecoder: Lazy[PdxDecoder[T]]
   ): PdxDecoder[FieldType[K, H] :: T] = instance {
-    case (reader, fieldName) => {
+    case (reader, fieldName) =>
       val headField = hDecoder.value.decode(reader, witness.value)
       val tailFields = tDecoder.value.decode(reader, fieldName)
       (headField, tailFields) match {
         case (Success(h), Success(t)) => Success(field[K](h) :: t)
         case _ => Failure(null)
       }
-    }
     case e => Failure(null)
   }
 

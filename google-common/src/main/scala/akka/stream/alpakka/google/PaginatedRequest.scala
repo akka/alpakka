@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.google
 
+import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.model.HttpMethods.GET
@@ -42,8 +43,8 @@ private[alpakka] object PaginatedRequest {
 
     Source
       .fromMaterializer { (mat, attr) =>
-        implicit val system = mat.system
-        implicit val settings = GoogleAttributes.resolveSettings(mat, attr)
+        implicit val system: ActorSystem = mat.system
+        implicit val settings: GoogleSettings = GoogleAttributes.resolveSettings(mat, attr)
 
         val requestWithPageToken = addPageToken(request, query)
         Source.unfoldAsync[Either[Done, Option[String]], Out](Right(initialPageToken)) {

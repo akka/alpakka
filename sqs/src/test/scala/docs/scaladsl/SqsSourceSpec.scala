@@ -38,7 +38,7 @@ class SqsSourceSpec extends AnyFlatSpec with ScalaFutures with Matchers with Def
 
   import SqsSourceSpec._
 
-  implicit override val patienceConfig = PatienceConfig(timeout = 10.seconds, interval = 100.millis)
+  implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = 10.seconds, interval = 100.millis)
 
   trait IntegrationFixture {
     val queueUrl: String = randomQueueUrl()

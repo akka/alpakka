@@ -29,7 +29,7 @@ class InfluxDbSourceSpec
 
   final val DatabaseName = "InfluxDbSourceSpec"
 
-  implicit val system = ActorSystem()
+  implicit val system: ActorSystem = ActorSystem()
 
   implicit var influxDB: InfluxDB = _
 

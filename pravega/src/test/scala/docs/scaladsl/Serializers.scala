@@ -10,9 +10,9 @@ import io.pravega.client.stream.impl.UTF8StringSerializer
 
 object Serializers {
 
-  implicit val stringSerializer = new UTF8StringSerializer()
+  implicit val stringSerializer: UTF8StringSerializer = new UTF8StringSerializer()
 
-  implicit val personSerializer = new Serializer[Person] {
+  implicit val personSerializer: Serializer[Person] = new Serializer[Person] {
     def serialize(x: Person): ByteBuffer = {
       val name = x.firstname.getBytes("UTF-8")
       val buff = ByteBuffer.allocate(4 + name.length).putInt(x.id)
@@ -29,7 +29,7 @@ object Serializers {
 
   }
 
-  implicit val intSerializer = new Serializer[Int] {
+  implicit val intSerializer: Serializer[Int] = new Serializer[Int] {
     override def serialize(value: Int): ByteBuffer = {
       val buff = ByteBuffer.allocate(4).putInt(value)
       buff.position(0)

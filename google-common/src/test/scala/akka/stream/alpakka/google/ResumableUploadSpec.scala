@@ -8,7 +8,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.HttpMethods.POST
 import akka.http.scaladsl.model.{ContentTypes, HttpRequest, Uri}
-import akka.http.scaladsl.unmarshalling.Unmarshaller
+import akka.http.scaladsl.unmarshalling.{FromResponseUnmarshaller, Unmarshaller}
 import akka.stream.alpakka.google.scaladsl.`X-Upload-Content-Type`
 import akka.stream.scaladsl.Source
 import akka.testkit.TestKit
@@ -30,7 +30,7 @@ class ResumableUploadSpec
     with ScalaFutures
     with HoverflySupport {
 
-  implicit val patience = PatienceConfig(remainingOrDefault)
+  implicit val patience: PatienceConfig = PatienceConfig(remainingOrDefault)
 
   override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)
@@ -71,7 +71,7 @@ class ResumableUploadSpec
       )
 
       import implicits._
-      implicit val um =
+      implicit val um: FromResponseUnmarshaller[JsValue] =
         Unmarshaller.messageUnmarshallerFromEntityUnmarshaller(sprayJsValueUnmarshaller).withDefaultRetry
 
       val result = Source

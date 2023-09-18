@@ -15,12 +15,12 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.hdfs.MiniDFSCluster
 import org.apache.hadoop.io.Text
 import org.apache.hadoop.io.compress.DefaultCodec
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContextExecutor, Future}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 class HdfsReaderSpec
     extends AnyWordSpecLike
@@ -40,7 +40,7 @@ class HdfsReaderSpec
   val fs: FileSystem = FileSystem.get(conf)
   val settings = HdfsWritingSettings()
 
-  implicit val ec: ExecutionContextExecutor = system.dispatcher
+  implicit val ec: ExecutionContext = system.dispatcher
 
   "HdfsSource" should {
     "read data file" in {

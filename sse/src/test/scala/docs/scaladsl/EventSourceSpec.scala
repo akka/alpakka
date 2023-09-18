@@ -4,8 +4,6 @@
 
 package docs.scaladsl
 
-import java.net.InetSocketAddress
-import java.nio.charset.StandardCharsets.UTF_8
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props, Status}
 import akka.http.scaladsl.coding.Coders
 import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling
@@ -14,15 +12,17 @@ import akka.http.scaladsl.model.StatusCodes.BadRequest
 import akka.http.scaladsl.model.headers.`Last-Event-ID`
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.pattern.pipe
-import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.ThrottleMode
+import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.SocketUtil
 import akka.{Done, NotUsed}
 import org.scalatest.BeforeAndAfterAll
 
+import java.net.InetSocketAddress
+import java.nio.charset.StandardCharsets.UTF_8
 import scala.collection.immutable
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 //#event-source
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.sse.ServerSentEvent
@@ -83,11 +83,11 @@ object EventSourceSpec {
     import Server._
     import context.dispatcher
 
-    private implicit val sys = context.system
+    private implicit val sys: ActorSystem = context.system
 
     context.system.scheduler.scheduleOnce(1.second, self, Bind)
 
-    override def receive = unbound
+    override def receive: Receive = unbound
 
     private def unbound: Receive = {
       case Bind =>
@@ -139,8 +139,8 @@ object EventSourceSpec {
 final class EventSourceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll {
   import EventSourceSpec._
 
-  private implicit val system = ActorSystem()
-  private implicit val ec = system.dispatcher
+  private implicit val system: ActorSystem = ActorSystem()
+  private implicit val ec: ExecutionContext = system.dispatcher
 
   "EventSource" should {
     "communicate correctly with an instable HTTP server" in {
@@ -168,7 +168,7 @@ final class EventSourceSpec extends AsyncWordSpec with Matchers with BeforeAndAf
           .runWith(Sink.seq)
       //#consume-events
 
-      val expected = Seq.tabulate(nrOfSamples)(_ + 3).map(toServerSentEvent(true))
+      val expected = Seq.tabulate(nrOfSamples)(_ + 3).map(toServerSentEvent(setEventId = true))
       events.map(_ shouldBe expected).andThen { case _ => system.stop(server) }
     }
 
@@ -178,7 +178,7 @@ final class EventSourceSpec extends AsyncWordSpec with Matchers with BeforeAndAf
       val server = system.actorOf(Props(new Server(host, port, 2)))
       val eventSource = EventSource(Uri(s"http://$host:$port"), send, Some("2"), 1.second)
       val events = eventSource.take(nrOfSamples).runWith(Sink.seq)
-      val expected = Seq.tabulate(nrOfSamples)(_ % 2 + 3).map(toServerSentEvent(false))
+      val expected = Seq.tabulate(nrOfSamples)(_ % 2 + 3).map(toServerSentEvent(setEventId = false))
       events.map(_ shouldBe expected).andThen { case _ => system.stop(server) }
     }
 
@@ -190,15 +190,15 @@ final class EventSourceSpec extends AsyncWordSpec with Matchers with BeforeAndAf
 
       val eventSource = EventSource(Uri(s"http://$host:$port/gzipped"), send, None, 1.second)
       val events = eventSource.take(nrOfSamples).runWith(Sink.seq)
-      val expected = Seq.tabulate(nrOfSamples)(_ + 1).map(toServerSentEvent(true))
+      val expected = Seq.tabulate(nrOfSamples)(_ + 1).map(toServerSentEvent(setEventId = true))
       events.map(_ shouldBe expected).andThen { case _ => system.stop(server) }
     }
   }
 
-  override protected def afterAll() = {
+  override protected def afterAll(): Unit = {
     Await.ready(system.terminate(), 42.seconds)
     super.afterAll()
   }
 
-  private def send(request: HttpRequest) = Http().singleRequest(request)
+  private def send(request: HttpRequest): Future[HttpResponse] = Http().singleRequest(request)
 }

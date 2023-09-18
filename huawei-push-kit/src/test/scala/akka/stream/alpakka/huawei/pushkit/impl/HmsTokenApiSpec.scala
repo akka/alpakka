@@ -36,7 +36,7 @@ class HmsTokenApiSpec
   override def afterAll() =
     TestKit.shutdownActorSystem(system)
 
-  implicit val defaultPatience =
+  implicit val defaultPatience: PatienceConfig =
     PatienceConfig(timeout = 2.seconds, interval = 50.millis)
 
   val config = HmsSettings()

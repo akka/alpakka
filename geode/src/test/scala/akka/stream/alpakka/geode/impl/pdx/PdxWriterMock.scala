@@ -79,5 +79,5 @@ object PdxMocks {
     override def writeByte(fieldName: String, value: Byte) = { println(s"Write $value"); this }
   }
 
-  implicit val writerMock = new WriterMock()
+  implicit val writerMock: WriterMock = new WriterMock()
 }

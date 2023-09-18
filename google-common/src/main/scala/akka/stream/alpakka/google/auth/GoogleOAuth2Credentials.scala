@@ -29,7 +29,7 @@ private[auth] final class GoogleOAuth2Credentials(credentials: OAuth2Credentials
     Await.result(requestMetadata, Duration.Inf)
 
   override def getRequestMetadata(uri: URI, executor: Executor, callback: RequestMetadataCallback): Unit = {
-    implicit val ec = ExecutionContext.fromExecutor(executor)
+    implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(executor)
     requestMetadata.onComplete {
       case Success(metadata) => callback.onSuccess(metadata)
       case Failure(ex) => callback.onFailure(ex)

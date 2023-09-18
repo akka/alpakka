@@ -6,6 +6,8 @@ package docs.scaladsl
 
 import akka.Done
 import akka.actor.ActorSystem
+
+import scala.concurrent.ExecutionContext
 //#important-imports
 import akka.stream.alpakka.slick.scaladsl._
 import akka.stream.scaladsl._
@@ -15,11 +17,11 @@ import slick.jdbc.GetResult
 import scala.concurrent.Future
 
 object SlickSourceWithPlainSQLQueryExample extends App {
-  implicit val system = ActorSystem()
-  implicit val ec = system.dispatcher
+  implicit val system: ActorSystem = ActorSystem()
+  implicit val ec: ExecutionContext = system.dispatcher
 
   //#source-example
-  implicit val session = SlickSession.forConfig("slick-h2")
+  implicit val session: SlickSession = SlickSession.forConfig("slick-h2")
   system.registerOnTermination(session.close())
 
   // The example domain
@@ -29,7 +31,7 @@ object SlickSourceWithPlainSQLQueryExample extends App {
   // into instances of the User class.
   // Please import slick.jdbc.GetResult
   // See also: "http://slick.lightbend.com/doc/3.2.1/sql.html#result-sets"
-  implicit val getUserResult = GetResult(r => User(r.nextInt(), r.nextString()))
+  implicit val getUserResult: GetResult[User] = GetResult(r => User(r.nextInt(), r.nextString()))
 
   // This import enables the use of the Slick sql"...",
   // sqlu"...", and sqlt"..." String interpolators.
@@ -51,11 +53,11 @@ object SlickSourceWithPlainSQLQueryExample extends App {
 }
 
 object SlickSourceWithTypedQueryExample extends App {
-  implicit val system = ActorSystem()
-  implicit val ec = system.dispatcher
+  implicit val system: ActorSystem = ActorSystem()
+  implicit val ec: ExecutionContext = system.dispatcher
 
   //#source-with-typed-query
-  implicit val session = SlickSession.forConfig("slick-h2")
+  implicit val session: SlickSession = SlickSession.forConfig("slick-h2")
   system.registerOnTermination(session.close())
 
   // This import brings everything you need into scope
@@ -63,9 +65,9 @@ object SlickSourceWithTypedQueryExample extends App {
 
   // The example domain
   class Users(tag: Tag) extends Table[(Int, String)](tag, "ALPAKKA_SLICK_SCALADSL_TEST_USERS") {
-    def id = column[Int]("ID")
-    def name = column[String]("NAME")
-    def * = (id, name)
+    def id: Rep[Int] = column[Int]("ID")
+    def name: Rep[String] = column[String]("NAME")
+    override def * = (id, name)
   }
 
   // Stream the results of a query
@@ -83,11 +85,11 @@ object SlickSourceWithTypedQueryExample extends App {
 }
 
 object SlickSinkExample extends App {
-  implicit val system = ActorSystem()
-  implicit val ec = system.dispatcher
+  implicit val system: ActorSystem = ActorSystem()
+  implicit val ec: ExecutionContext = system.dispatcher
 
   //#sink-example
-  implicit val session = SlickSession.forConfig("slick-h2")
+  implicit val session: SlickSession = SlickSession.forConfig("slick-h2")
   system.registerOnTermination(session.close())
 
   // The example domain
@@ -115,11 +117,11 @@ object SlickSinkExample extends App {
 }
 
 object SlickFlowExample extends App {
-  implicit val system = ActorSystem()
-  implicit val ec = system.dispatcher
+  implicit val system: ActorSystem = ActorSystem()
+  implicit val ec: ExecutionContext = system.dispatcher
 
   //#flow-example
-  implicit val session = SlickSession.forConfig("slick-h2")
+  implicit val session: SlickSession = SlickSession.forConfig("slick-h2")
   system.registerOnTermination(session.close())
 
   // The example domain
@@ -159,11 +161,11 @@ object SlickFlowWithPassThroughExample extends App {
     def map[B](f: A => B): KafkaMessage[B] = KafkaMessage(f(msg), offset)
   }
 
-  implicit val system = ActorSystem()
-  implicit val ec = system.dispatcher
+  implicit val system: ActorSystem = ActorSystem()
+  implicit val ec: ExecutionContext = system.dispatcher
 
   //#flowWithPassThrough-example
-  implicit val session = SlickSession.forConfig("slick-h2")
+  implicit val session: SlickSession = SlickSession.forConfig("slick-h2")
   system.registerOnTermination(session.close())
 
   // The example domain

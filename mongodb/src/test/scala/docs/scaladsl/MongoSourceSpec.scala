@@ -31,7 +31,7 @@ class MongoSourceSpec
     with LogCapturing {
 
   // #init-system
-  implicit val system = ActorSystem()
+  implicit val system: ActorSystem = ActorSystem()
   // #init-system
 
   override implicit val patienceConfig: PatienceConfig =

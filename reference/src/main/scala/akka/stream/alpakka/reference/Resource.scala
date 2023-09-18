@@ -105,7 +105,7 @@ object ResourceSettings {
  * there is only one instance of the resource instantiated per Actor System.
  */
 final class ResourceExt private (sys: ExtendedActorSystem) extends Extension {
-  implicit val resource = Resource(ResourceSettings()(sys))
+  implicit val resource: Resource = Resource(ResourceSettings()(sys))
 
   sys.registerOnTermination(resource.cleanup())
 }

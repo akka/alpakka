@@ -16,7 +16,7 @@ import scala.concurrent.duration._
 import scala.concurrent.Future
 
 class JmsIbmmqConnectorsSpec extends JmsSpec {
-  override implicit val patienceConfig = PatienceConfig(2.minutes)
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(2.minutes)
 
   "The JMS Ibmmq Connectors" should {
     val queueConnectionFactory = {

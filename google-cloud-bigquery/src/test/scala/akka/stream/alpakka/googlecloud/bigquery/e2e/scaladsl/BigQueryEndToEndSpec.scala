@@ -4,12 +4,14 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.e2e.scaladsl
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Scheduler}
 import akka.{pattern, Done}
 import akka.stream.alpakka.googlecloud.bigquery.HoverflySupport
 import akka.stream.alpakka.googlecloud.bigquery.e2e.{A, B, C}
 import akka.stream.alpakka.googlecloud.bigquery.model.JobState
 import akka.stream.alpakka.googlecloud.bigquery.model.TableReference
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.schema.TableSchemaWriter
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRootJsonFormat
 import akka.testkit.TestKit
 import io.specto.hoverfly.junit.core.{HoverflyMode, SimulationSource}
 import org.scalatest.BeforeAndAfterAll
@@ -39,14 +41,14 @@ class BigQueryEndToEndSpec
     }
   }
 
-  override def afterAll() = {
+  override def afterAll(): Unit = {
     system.terminate()
     if (hoverfly.getMode == HoverflyMode.CAPTURE)
       hoverfly.exportSimulation(new File("hoverfly/BigQueryEndToEndSpec.json").toPath)
     super.afterAll()
   }
 
-  implicit def scheduler = system.scheduler
+  implicit def scheduler: Scheduler = system.scheduler
 
   "BigQuery Scala DSL" should {
 
@@ -56,12 +58,12 @@ class BigQueryEndToEndSpec
     import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryJsonProtocol._
     import akka.stream.scaladsl.{Sink, Source}
 
-    implicit val cFormat = bigQueryJsonFormat5(C)
-    implicit val bFormat = bigQueryJsonFormat3(B)
-    implicit val aFormat = bigQueryJsonFormat7(A)
-    implicit val cSchema = bigQuerySchema5(C)
-    implicit val bSchema = bigQuerySchema3(B)
-    implicit val aSchema = bigQuerySchema7(A)
+    implicit val cFormat: BigQueryRootJsonFormat[C] = bigQueryJsonFormat5(C)
+    implicit val bFormat: BigQueryRootJsonFormat[B] = bigQueryJsonFormat3(B)
+    implicit val aFormat: BigQueryRootJsonFormat[A] = bigQueryJsonFormat7(A)
+    implicit val cSchema: TableSchemaWriter[C] = bigQuerySchema5(C)
+    implicit val bSchema: TableSchemaWriter[B] = bigQuerySchema3(B)
+    implicit val aSchema: TableSchemaWriter[A] = bigQuerySchema7(A)
 
     "create dataset" in {
       BigQuery.createDataset(datasetId).map { dataset =>

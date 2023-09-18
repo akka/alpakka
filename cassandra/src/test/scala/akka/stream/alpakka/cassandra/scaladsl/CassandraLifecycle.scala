@@ -6,7 +6,6 @@ package akka.stream.alpakka.cassandra.scaladsl
 
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.atomic.AtomicInteger
-
 import akka.Done
 import akka.testkit.TestKitBase
 import com.datastax.oss.driver.api.core.cql._
@@ -16,7 +15,7 @@ import org.scalatest.concurrent.{PatienceConfiguration, ScalaFutures}
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.control.NonFatal
 import scala.compat.java8.FutureConverters._
 
@@ -63,7 +62,7 @@ trait CassandraLifecycleBase {
     executeCql(lifecycleSession, statements.asScala.toList).toJava
 
   def withSchemaMetadataDisabled(block: => Future[Done]): Future[Done] = {
-    implicit val ec = lifecycleSession.ec
+    implicit val ec: ExecutionContext = lifecycleSession.ec
     lifecycleSession.underlying().flatMap { cqlSession =>
       cqlSession.setSchemaMetadataEnabled(false)
       val blockResult =

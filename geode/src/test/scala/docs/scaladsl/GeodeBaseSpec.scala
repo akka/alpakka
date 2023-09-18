@@ -20,7 +20,7 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class GeodeBaseSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with LogCapturing {
 
-  implicit val system = ActorSystem("test")
+  implicit val system: ActorSystem = ActorSystem("test")
 
   //#region
   val personsRegionSettings: RegionSettings[Int, Person] = RegionSettings("persons", (p: Person) => p.id)
