@@ -132,7 +132,8 @@ lazy val awslambda = alpakkaProject("awslambda", "aws.lambda", Dependencies.AwsL
 lazy val azureStorageQueue = alpakkaProject(
   "azure-storage-queue",
   "azure.storagequeue",
-  Dependencies.AzureStorageQueue
+  Dependencies.AzureStorageQueue,
+  Scala3.settings
 )
 
 lazy val cassandra =
@@ -157,7 +158,7 @@ lazy val elasticsearch = alpakkaProject(
 )
 
 // The name 'file' is taken by `sbt.file`, hence 'files'
-lazy val files = alpakkaProject("file", "file", Dependencies.File)
+lazy val files = alpakkaProject("file", "file", Dependencies.File, Scala3.settings)
 
 lazy val ftp = alpakkaProject(
   "ftp",
@@ -245,9 +246,9 @@ lazy val googleCloudStorage = alpakkaProject(
 lazy val googleFcm = alpakkaProject("google-fcm", "google.firebase.fcm", Dependencies.GoogleFcm, Test / fork := true)
   .dependsOn(googleCommon)
 
-lazy val hbase = alpakkaProject("hbase", "hbase", Dependencies.HBase, Test / fork := true)
+lazy val hbase = alpakkaProject("hbase", "hbase", Dependencies.HBase, Scala3.settings, Test / fork := true)
 
-lazy val hdfs = alpakkaProject("hdfs", "hdfs", Dependencies.Hdfs)
+lazy val hdfs = alpakkaProject("hdfs", "hdfs", Dependencies.Hdfs, Scala3.settings)
 
 lazy val huaweiPushKit =
   alpakkaProject("huawei-push-kit", "huawei.pushkit", Dependencies.HuaweiPushKit)
@@ -256,6 +257,7 @@ lazy val influxdb = alpakkaProject(
   "influxdb",
   "influxdb",
   Dependencies.InfluxDB,
+  Scala3.settings,
   Compile / scalacOptions ++= Seq(
       // JDK 11: method isAccessible in class AccessibleObject is deprecated
       "-Wconf:cat=deprecation:s"
@@ -271,15 +273,15 @@ lazy val ironmq = alpakkaProject(
 
 lazy val jms = alpakkaProject("jms", "jms", Dependencies.Jms, Scala3.settings)
 
-lazy val jsonStreaming = alpakkaProject("json-streaming", "json.streaming", Dependencies.JsonStreaming)
+lazy val jsonStreaming = alpakkaProject("json-streaming", "json.streaming", Dependencies.JsonStreaming, Scala3.settings)
 
 lazy val kinesis = alpakkaProject("kinesis", "aws.kinesis", Dependencies.Kinesis).settings(Scala3.settings)
 
-lazy val kudu = alpakkaProject("kudu", "kudu", Dependencies.Kudu)
+lazy val kudu = alpakkaProject("kudu", "kudu", Dependencies.Kudu, Scala3.settings)
 
 lazy val mongodb = alpakkaProject("mongodb", "mongodb", Dependencies.MongoDb)
 
-lazy val mqtt = alpakkaProject("mqtt", "mqtt", Dependencies.Mqtt)
+lazy val mqtt = alpakkaProject("mqtt", "mqtt", Dependencies.Mqtt, Scala3.settings)
 
 lazy val mqttStreaming =
   alpakkaProject("mqtt-streaming", "mqttStreaming", Dependencies.MqttStreaming)
@@ -306,6 +308,7 @@ lazy val pravega = alpakkaProject(
   "pravega",
   "pravega",
   Dependencies.Pravega,
+  Scala3.settings,
   Test / fork := true
 )
 
@@ -315,7 +318,7 @@ lazy val springWeb = alpakkaProject(
   Dependencies.SpringWeb
 )
 
-lazy val simpleCodecs = alpakkaProject("simple-codecs", "simplecodecs")
+lazy val simpleCodecs = alpakkaProject("simple-codecs", "simplecodecs", Scala3.settings)
 
 lazy val slick = alpakkaProject("slick", "slick", Dependencies.Slick)
 
@@ -324,20 +327,20 @@ lazy val eventbridge =
 
 lazy val sns = alpakkaProject("sns", "aws.sns", Dependencies.Sns).settings(Scala3.settings)
 
-lazy val solr = alpakkaProject("solr", "solr", Dependencies.Solr)
+lazy val solr = alpakkaProject("solr", "solr", Dependencies.Solr, Scala3.settings)
 
 lazy val sqs = alpakkaProject("sqs", "aws.sqs", Dependencies.Sqs).settings(Scala3.settings)
 
-lazy val sse = alpakkaProject("sse", "sse", Dependencies.Sse)
+lazy val sse = alpakkaProject("sse", "sse", Dependencies.Sse, Scala3.settings)
 
-lazy val text = alpakkaProject("text", "text")
+lazy val text = alpakkaProject("text", "text", Scala3.settings)
 
 lazy val udp = alpakkaProject("udp", "udp")
 
 lazy val unixdomainsocket =
   alpakkaProject("unix-domain-socket", "unixdomainsocket", Dependencies.UnixDomainSocket)
 
-lazy val xml = alpakkaProject("xml", "xml", Dependencies.Xml)
+lazy val xml = alpakkaProject("xml", "xml", Dependencies.Xml, Scala3.settings)
 
 // Java Platform version for JavaDoc creation
 val JavaDocLinkVersion = "11"

@@ -95,7 +95,7 @@ class FlowSpec
       committedOffsets = committedOffsets :+ offset
 
     val f1 = Source(messagesFromKafka)
-      .map { kafkaMessage: KafkaMessage =>
+      .map { (kafkaMessage: KafkaMessage) =>
         val cpu = kafkaMessage.cpu
         println("hostname: " + cpu.getHostname)
 
@@ -105,7 +105,7 @@ class FlowSpec
       .via(
         InfluxDbFlow.typedWithPassThrough(classOf[InfluxDbFlowCpu])
       )
-      .map { messages: Seq[InfluxDbWriteResult[InfluxDbFlowCpu, KafkaOffset]] =>
+      .map { (messages: Seq[InfluxDbWriteResult[InfluxDbFlowCpu, KafkaOffset]]) =>
         messages.foreach { message =>
           commitToKafka(message.writeMessage.passThrough)
         }

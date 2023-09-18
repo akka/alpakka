@@ -57,7 +57,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
           query = """{"match_all": {}}""",
           settings = baseSourceSettings
         )
-        .map { message: ReadResult[spray.json.JsObject] =>
+        .map { (message: ReadResult[spray.json.JsObject]) =>
           val book: Book = jsonReader[Book].read(message.source)
           WriteMessage.createIndexMessage(message.id, book)
         }
@@ -95,7 +95,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
           query = """{"match_all": {}}""",
           settings = baseSourceSettings
         )
-        .map { message: ReadResult[Book] =>
+        .map { (message: ReadResult[Book]) =>
           WriteMessage.createIndexMessage(message.id, message.source)
         }
         .runWith(
@@ -131,7 +131,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
           query = """{"match_all": {}}""",
           settings = baseSourceSettings
         )
-        .map { message: ReadResult[Book] =>
+        .map { (message: ReadResult[Book]) =>
           WriteMessage.createIndexMessage(message.id, message.source)
         }
         .via(
@@ -212,7 +212,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
 
       val indexName = "sink6"
       val kafkaToOs = Source(messagesFromKafka) // Assume we get this from Kafka
-        .map { kafkaMessage: KafkaMessage =>
+        .map { (kafkaMessage: KafkaMessage) =>
           val book = kafkaMessage.book
           val id = book.title
 
@@ -264,7 +264,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
 
       val indexName = "sink6-bulk"
       val kafkaToOs = Source(messagesFromKafka) // Assume we get this from Kafka
-        .map { kafkaMessage: KafkaMessage =>
+        .map { (kafkaMessage: KafkaMessage) =>
           val book = kafkaMessage.book
           val id = book.title
 
@@ -320,7 +320,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
 
       val indexName = "sink6-nop"
       val kafkaToOs = Source(messagesFromKafka) // Assume we get this from Kafka
-        .map { kafkaMessage: KafkaMessage =>
+        .map { (kafkaMessage: KafkaMessage) =>
           val book = kafkaMessage.book
           val id = book.title
 
@@ -378,7 +378,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
       register(connectionSettings, indexName, "dummy", 10) // need to create index else exception in reading below
 
       val kafkaToOs = Source(messagesFromKafka) // Assume we get this from Kafka
-        .map { kafkaMessage: KafkaMessage =>
+        .map { (kafkaMessage: KafkaMessage) =>
           val book = kafkaMessage.book
           val id = book.title
 
@@ -470,7 +470,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
           query = """{"match_all": {}}""",
           settings = baseSourceSettings
         )
-        .map { message: ReadResult[Book] =>
+        .map { (message: ReadResult[Book]) =>
           WriteMessage
             .createIndexMessage(message.id, message.source)
             .withIndexName(customIndexName) // Setting the index-name to use for this document
@@ -504,7 +504,7 @@ class OpensearchV1Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils
 
       case class TestDoc(id: String, a: String, b: Option[String], c: String)
 
-      implicit val formatVersionTestDoc: JsonFormat[TestDoc] = jsonFormat4(TestDoc)
+      implicit val formatVersionTestDoc: JsonFormat[TestDoc] = jsonFormat4(TestDoc.apply)
 
       val indexName = "custom-search-params-test-scala"
       val typeName = "_doc"

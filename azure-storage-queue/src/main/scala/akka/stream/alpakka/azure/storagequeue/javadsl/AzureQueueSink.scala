@@ -42,7 +42,7 @@ object AzureQueueWithTimeoutsSink {
    */
   def create(cloudQueue: Supplier[CloudQueue]): Sink[MessageWithTimeouts, CompletionStage[Done]] =
     AzureQueueSink.fromFunction(
-      { input: MessageWithTimeouts =>
+      { (input: MessageWithTimeouts) =>
         AzureQueueSinkFunctions
           .addMessage(() => cloudQueue.get)(input.message, input.timeToLive, input.initialVisibility)
       }
