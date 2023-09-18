@@ -15,27 +15,27 @@ import scala.concurrent.duration.{DurationLong, FiniteDuration}
 trait BigQueryRestBasicFormats {
 
   implicit val IntJsonFormat: json.DefaultJsonProtocol.IntJsonFormat.type = DefaultJsonProtocol.IntJsonFormat
-  implicit val FloatJsonFormat: _root_.spray.json.DefaultJsonProtocol.FloatJsonFormat.type =
+  implicit val FloatJsonFormat: json.DefaultJsonProtocol.FloatJsonFormat.type =
     DefaultJsonProtocol.FloatJsonFormat
-  implicit val DoubleJsonFormat: _root_.spray.json.DefaultJsonProtocol.DoubleJsonFormat.type =
+  implicit val DoubleJsonFormat: json.DefaultJsonProtocol.DoubleJsonFormat.type =
     DefaultJsonProtocol.DoubleJsonFormat
-  implicit val ByteJsonFormat: _root_.spray.json.DefaultJsonProtocol.ByteJsonFormat.type =
+  implicit val ByteJsonFormat: json.DefaultJsonProtocol.ByteJsonFormat.type =
     DefaultJsonProtocol.ByteJsonFormat
-  implicit val ShortJsonFormat: _root_.spray.json.DefaultJsonProtocol.ShortJsonFormat.type =
+  implicit val ShortJsonFormat: json.DefaultJsonProtocol.ShortJsonFormat.type =
     DefaultJsonProtocol.ShortJsonFormat
-  implicit val BigDecimalJsonFormat: _root_.spray.json.DefaultJsonProtocol.BigDecimalJsonFormat.type =
+  implicit val BigDecimalJsonFormat: json.DefaultJsonProtocol.BigDecimalJsonFormat.type =
     DefaultJsonProtocol.BigDecimalJsonFormat
-  implicit val BigIntJsonFormat: _root_.spray.json.DefaultJsonProtocol.BigIntJsonFormat.type =
+  implicit val BigIntJsonFormat: json.DefaultJsonProtocol.BigIntJsonFormat.type =
     DefaultJsonProtocol.BigIntJsonFormat
-  implicit val UnitJsonFormat: _root_.spray.json.DefaultJsonProtocol.UnitJsonFormat.type =
+  implicit val UnitJsonFormat: json.DefaultJsonProtocol.UnitJsonFormat.type =
     DefaultJsonProtocol.UnitJsonFormat
-  implicit val BooleanJsonFormat: _root_.spray.json.DefaultJsonProtocol.BooleanJsonFormat.type =
+  implicit val BooleanJsonFormat: json.DefaultJsonProtocol.BooleanJsonFormat.type =
     DefaultJsonProtocol.BooleanJsonFormat
-  implicit val CharJsonFormat: _root_.spray.json.DefaultJsonProtocol.CharJsonFormat.type =
+  implicit val CharJsonFormat: json.DefaultJsonProtocol.CharJsonFormat.type =
     DefaultJsonProtocol.CharJsonFormat
-  implicit val StringJsonFormat: _root_.spray.json.DefaultJsonProtocol.StringJsonFormat.type =
+  implicit val StringJsonFormat: json.DefaultJsonProtocol.StringJsonFormat.type =
     DefaultJsonProtocol.StringJsonFormat
-  implicit val SymbolJsonFormat: _root_.spray.json.DefaultJsonProtocol.SymbolJsonFormat.type =
+  implicit val SymbolJsonFormat: json.DefaultJsonProtocol.SymbolJsonFormat.type =
     DefaultJsonProtocol.SymbolJsonFormat
 
   implicit object BigQueryLongJsonFormat extends JsonFormat[Long] {
