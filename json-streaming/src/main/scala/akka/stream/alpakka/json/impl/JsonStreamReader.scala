@@ -38,7 +38,7 @@ private[akka] final class JsonStreamReader(path: JsonPath) extends GraphStage[Fl
       private val config = surfer.configBuilder
         .bind(path, new JsonPathListener {
           override def onValue(value: Any, context: ParsingContext): Unit =
-            buffer = buffer.enqueueAll(Seq(ByteString(value.toString)))
+            buffer = buffer.enqueue(ByteString(value.toString))
         })
         .build
       private val parser = surfer.createNonBlockingParser(config)
