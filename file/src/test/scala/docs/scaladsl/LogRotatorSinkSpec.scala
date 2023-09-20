@@ -85,7 +85,7 @@ class LogRotatorSinkSpec
 
     "complete when consuming an empty source" in assertAllStagesStopped {
       val triggerCreator: () => ByteString => Option[Path] = () => {
-        element: ByteString => fail("trigger creator should not be called")
+        (element: ByteString) => fail("trigger creator should not be called")
       }
 
       val rotatorSink: Sink[ByteString, Future[Done]] =
@@ -102,7 +102,7 @@ class LogRotatorSinkSpec
       val fileSizeTriggerCreator: () => ByteString => Option[Path] = () => {
         val max = 10 * 1024 * 1024
         var size: Long = max
-        element: ByteString =>
+        (element: ByteString) =>
           if (size + element.size > max) {
             val path = Files.createTempFile("out-", ".log")
             size = element.size

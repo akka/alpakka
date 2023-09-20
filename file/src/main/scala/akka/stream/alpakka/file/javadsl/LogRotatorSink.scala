@@ -11,6 +11,7 @@ import java.util.concurrent.CompletionStage
 import akka.Done
 import akka.stream.javadsl
 import akka.stream.scaladsl
+import akka.stream.scaladsl.SinkToCompletionStage
 import akka.stream.javadsl.Sink
 import akka.util.ByteString
 import akka.japi.function

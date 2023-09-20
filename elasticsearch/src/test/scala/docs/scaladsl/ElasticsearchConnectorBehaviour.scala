@@ -378,7 +378,7 @@ trait ElasticsearchConnectorBehaviour {
 
         val indexName = "sink7"
         val createBooks = Source(books)
-          .map { book: (String, Book) =>
+          .map { (book: (String, Book)) =>
             WriteMessage.createUpsertMessage(id = book._1, source = book._2)
           }
           .via(
@@ -411,7 +411,7 @@ trait ElasticsearchConnectorBehaviour {
 
         // Update sink7/_doc with the second dataset
         val upserts = Source(updatedBooks)
-          .map { book: (String, JsObject) =>
+          .map { (book: (String, JsObject)) =>
             WriteMessage.createUpsertMessage(id = book._1, source = book._2)
           }
           .via(
@@ -483,7 +483,7 @@ trait ElasticsearchConnectorBehaviour {
       "read and write document-version if configured to do so" in {
 
         case class VersionTestDoc(id: String, name: String, value: Int)
-        implicit val formatVersionTestDoc: JsonFormat[VersionTestDoc] = jsonFormat3(VersionTestDoc)
+        implicit val formatVersionTestDoc: JsonFormat[VersionTestDoc] = jsonFormat3(VersionTestDoc.apply)
 
         val indexName = "version-test-scala"
         val typeName = "_doc"

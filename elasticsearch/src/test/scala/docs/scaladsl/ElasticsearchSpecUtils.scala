@@ -35,7 +35,7 @@ trait ElasticsearchSpecUtils { this: AnyWordSpec with ScalaFutures =>
 
   case class Book(title: String, shouldSkip: Option[Boolean] = None, price: Int = 10)
 
-  implicit val format: JsonFormat[Book] = jsonFormat3(Book)
+  implicit val format: JsonFormat[Book] = jsonFormat3(Book.apply)
   //#define-class
 
   def register(connectionSettings: ElasticsearchConnectionSettings,

@@ -82,7 +82,7 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
       //#run-document
       val copyCollection = SolrSource
         .fromTupleStream(stream)
-        .map { tuple: Tuple =>
+        .map { (tuple: Tuple) =>
           val book: Book = tupleToBook(tuple)
           val doc: SolrInputDocument = bookToDoc(book)
           WriteMessage.createUpsertMessage(doc)
@@ -132,7 +132,7 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
       //#run-bean
       val copyCollection = SolrSource
         .fromTupleStream(stream)
-        .map { tuple: Tuple =>
+        .map { (tuple: Tuple) =>
           val title = tuple.getString("title")
           WriteMessage.createUpsertMessage(BookBean(title))
         }
@@ -175,7 +175,7 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
       //#run-typed
       val copyCollection = SolrSource
         .fromTupleStream(stream)
-        .map { tuple: Tuple =>
+        .map { (tuple: Tuple) =>
           val book: Book = tupleToBook(tuple)
           WriteMessage.createUpsertMessage(book)
         }
@@ -222,7 +222,7 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
       // #typeds-flow
       val copyCollection = SolrSource
         .fromTupleStream(stream)
-        .map { tuple: Tuple =>
+        .map { (tuple: Tuple) =>
           val book: Book = tupleToBook(tuple)
           WriteMessage.createUpsertMessage(book)
         }
@@ -297,7 +297,7 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
       //#kafka-example
       // Note: This code mimics Alpakka Kafka APIs
       val copyCollection = kafkaConsumerSource
-        .map { kafkaMessage: CommittableMessage =>
+        .map { (kafkaMessage: CommittableMessage) =>
           val book = kafkaMessage.book
           // Transform message so that we can write to solr
           WriteMessage.createUpsertMessage(book).withPassThrough(kafkaMessage.committableOffset)
@@ -345,7 +345,7 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
 
       val copyCollection = SolrSource
         .fromTupleStream(stream)
-        .map { tuple: Tuple =>
+        .map { (tuple: Tuple) =>
           val book: Book = tupleToBook(tuple)
           val doc: SolrInputDocument = bookToDoc(book)
           WriteMessage.createUpsertMessage(doc)
@@ -366,7 +366,7 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
       //#delete-documents
       val deleteDocuments = SolrSource
         .fromTupleStream(stream2)
-        .map { tuple: Tuple =>
+        .map { (tuple: Tuple) =>
           val id = tuple.getFields.get("title").toString
           WriteMessage.createDeleteMessage[SolrInputDocument](id)
         }
@@ -400,7 +400,7 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
 
       val upsertCollection = SolrSource
         .fromTupleStream(stream)
-        .map { tuple: Tuple =>
+        .map { (tuple: Tuple) =>
           val book: Book = tupleToBook(tuple)
             .copy(comment = "Written by good authors.")
           val doc: SolrInputDocument = bookToDoc(book)
@@ -422,7 +422,7 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
       //#update-atomically-documents
       val updateCollection = SolrSource
         .fromTupleStream(stream2)
-        .map { tuple: Tuple =>
+        .map { (tuple: Tuple) =>
           val id = tuple.getFields.get("title").toString
           val comment = tuple.getFields.get("comment").toString
           WriteMessage.createUpdateMessage[SolrInputDocument](
@@ -473,7 +473,7 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
 
       val copyCollection = SolrSource
         .fromTupleStream(stream)
-        .map { tuple: Tuple =>
+        .map { (tuple: Tuple) =>
           val book: Book = tupleToBook(tuple)
           WriteMessage.createUpsertMessage(book)
         }
@@ -496,7 +496,7 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
 
       val deleteElements = SolrSource
         .fromTupleStream(stream2)
-        .map { tuple: Tuple =>
+        .map { (tuple: Tuple) =>
           val title = tuple.getFields.get("title").toString
           WriteMessage.createDeleteMessage[Book](title)
         }
@@ -528,7 +528,7 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
 
       val copyCollection = SolrSource
         .fromTupleStream(stream)
-        .map { tuple: Tuple =>
+        .map { (tuple: Tuple) =>
           val book: Book =
             tupleToBook(tuple).copy(comment = "Written by good authors.", routerOpt = Some("router-value"))
           WriteMessage.createUpsertMessage(book)
@@ -552,7 +552,7 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
 
       val updateCollection = SolrSource
         .fromTupleStream(stream2)
-        .map { tuple: Tuple =>
+        .map { (tuple: Tuple) =>
           WriteMessage
             .createUpdateMessage[Book](
               idField = "title",
@@ -603,7 +603,7 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
 
       val copyCollection = SolrSource
         .fromTupleStream(stream)
-        .map { tuple: Tuple =>
+        .map { (tuple: Tuple) =>
           val book: Book = tupleToBook(tuple)
           val doc: SolrInputDocument = bookToDoc(book)
           WriteMessage.createUpsertMessage(doc)
@@ -624,7 +624,7 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
       //#delete-documents-query
       val deleteByQuery = SolrSource
         .fromTupleStream(stream2)
-        .map { tuple: Tuple =>
+        .map { (tuple: Tuple) =>
           val title = tuple.getFields.get("title").toString
           WriteMessage.createDeleteByQueryMessage[SolrInputDocument](
             s"""title:"$title" """
@@ -683,7 +683,7 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
       //#kafka-example-PT
       // Note: This code mimics Alpakka Kafka APIs
       val copyCollection = kafkaConsumerSource
-        .map { offset: CommittableOffset =>
+        .map { (offset: CommittableOffset) =>
           // Transform message so that we can write to solr
           WriteMessage.createPassThrough(offset).withSource(new SolrInputDocument())
         }

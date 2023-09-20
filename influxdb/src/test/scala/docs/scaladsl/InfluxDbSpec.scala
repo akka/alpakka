@@ -71,7 +71,7 @@ class InfluxDbSpec
       //#run-typed
       val f1 = InfluxDbSource
         .typed(classOf[InfluxDbSpecCpu], InfluxDbReadSettings(), influxDB, query)
-        .map { cpu: InfluxDbSpecCpu =>
+        .map { (cpu: InfluxDbSpecCpu) =>
           {
             val clonedCpu = cpu.cloneAt(cpu.getTime.plusSeconds(60000))
             List(InfluxDbWriteMessage(clonedCpu))

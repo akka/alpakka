@@ -45,8 +45,6 @@ presentation by Colin Breck, ScalaDays New York, June 2018
 [Stream a file to AWS S3 using Akka Streams (via Alpakka) in Play Framework](https://blog.knoldus.com/stream-a-file-to-aws-s3-using-akka-streams-via-alpakka-in-play-framework/)
 blog by Sidharth Khattri, May 2018
 
-[Alpakka (Akka Streams) vs Apache Camel: who wins?](http://www.thedevpiece.com/alpakka-akka-streams-vs-apache-camel-who-wins/) Blog by Gabriel Francisco, May 2018 
-
 [Alpakka – a new world of connectors for Reactive Enterprise Integration](https://www.youtube.com/watch?v=EcNZ2mJZmCk)
 presentation by Jan Pustelnik, Actyx, ReactSphere Kraków, April 2018
 

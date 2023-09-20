@@ -81,7 +81,7 @@ class PravegaReadWriteDocs {
 
       Pravega
         .source(readerGroup, readerSettings)
-        .to(Sink.foreach { event: PravegaEvent[String] =>
+        .to(Sink.foreach { (event: PravegaEvent[String]) =>
           val message: String = event.message
           processMessage(message)
         })

@@ -254,7 +254,7 @@ class HdfsWriterSpec
         committedOffsets = committedOffsets :+ offset
 
       val resF = Source(messagesFromKafka)
-        .map { kafkaMessage: KafkaMessage =>
+        .map { (kafkaMessage: KafkaMessage) =>
           val book = kafkaMessage.book
           // Transform message so that we can write to hdfs
           HdfsWriteMessage(ByteString(book.title), kafkaMessage.offset)
