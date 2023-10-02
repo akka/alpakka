@@ -43,32 +43,6 @@ jobs:
       - name: "Code style, compile tests, MiMa. Run locally with: sbt \"verifyCodeStyle; +Test/compile; mimaReportBinaryIssues\""
         run: sbt "verifyCodeStyle; +Test/compile; mimaReportBinaryIssues"
 
-  compile-jdk-8:
-    name: Compile with JDK 8
-    runs-on: ubuntu-22.04
-    env:
-      JAVA_OPTS: -Xms2G -Xmx2G -Xss2M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3.1.0
-        with: # https://github.com/olafurpg/setup-scala#faster-checkout-of-big-repos
-          fetch-depth: 100
-
-      - name: Fetch tags
-        run: git fetch --depth=100 origin +refs/tags/*:refs/tags/*
-
-      - name: Set up JDK 8
-        uses: coursier/setup-action@v1.3.0
-        with:
-          jvm: adopt:1.8.0-275
-
-      - name: Cache Coursier cache
-        uses: coursier/cache-action@v6.4.0
-
-      - name: "Compile JDK 8"
-        run: sbt compile
-
   documentation:
     name: ScalaDoc, Documentation with Paradox
     runs-on: ubuntu-22.04
@@ -168,11 +142,11 @@ jobs:
           CONNECTOR: ${{ matrix.connector }}
         run: ./scripts/gh-detect-changes.sh "${CONNECTOR}"
 
-      - name: Set up JDK 8
+      - name: Set up JDK 11
         if: env.execute_build == 'true'
         uses: coursier/setup-action@v1.3.0
         with:
-          jvm: temurin:1.8
+          jvm: temurin:1.11
 
       - name: Cache Coursier cache
         if: env.execute_build == 'true'
