@@ -15,8 +15,9 @@ object Dependencies {
 
   val InfluxDBJavaVersion = "2.15"
 
-  val AwsSdk2Version = "2.17.113"
+  val AwsSdk2Version = "2.17.295"
   val AwsSpiAkkaHttpVersion = "1.0.1"
+  val ProtobufJavaVersion = "3.21.12"
   // Sync with plugins.sbt
   val AkkaGrpcBinaryVersion = "2.3"
   // sync ignore prefix in scripts/link-validator.conf#L30
@@ -349,7 +350,8 @@ object Dependencies {
       ) ++ Seq(
         "software.amazon.awssdk" % "kinesis" % AwsSdk2Version, // ApacheV2
         "software.amazon.awssdk" % "firehose" % AwsSdk2Version, // ApacheV2
-        "software.amazon.kinesis" % "amazon-kinesis-client" % "2.4.0" // ApacheV2
+        "software.amazon.kinesis" % "amazon-kinesis-client" % "2.4.0", // ApacheV2
+        "com.google.protobuf" % "protobuf-java" % ProtobufJavaVersion // CVE in older transitive dependency
       ).map(
         _.excludeAll(
           ExclusionRule("software.amazon.awssdk", "apache-client"),
