@@ -79,7 +79,7 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
       log.debug("Posting data to Elasticsearch: {}", json)
 
       if (json.nonEmpty) {
-        val uri = baseUri.withPath(Path(endpoint))
+        val uri = baseUri.withPath(Path(baseUri.path.toString() + endpoint))
         val request = HttpRequest(HttpMethods.POST)
           .withUri(uri)
           .withEntity(HttpEntity(NDJsonProtocol.`application/x-ndjson`, json))
