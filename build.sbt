@@ -502,10 +502,12 @@ def internalProject(projectId: String, additionalSettings: sbt.Def.SettingsDefin
   Project(id = projectId, base = file(projectId))
     .enablePlugins(AutomateHeaderPlugin)
     .disablePlugins(SitePlugin, MimaPlugin, CiReleasePlugin)
-    .settings(name := s"akka-stream-alpakka-$projectId",
-              publish / skip := true,
-              scalacOptions += "-Wconf:cat=deprecation&msg=.*JavaConverters.*:s",
-              resolvers += "Akka library repository".at("https://repo.akka.io/maven"))
+    .settings(
+      name := s"akka-stream-alpakka-$projectId",
+      publish / skip := true,
+      scalacOptions += "-Wconf:cat=deprecation&msg=.*JavaConverters.*:s",
+      resolvers += "Akka library repository".at("https://repo.akka.io/maven")
+    )
     .settings(additionalSettings: _*)
 
 Global / onLoad := (Global / onLoad).value.andThen { s =>
