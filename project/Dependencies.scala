@@ -234,7 +234,6 @@ object Dependencies {
         "org.apache.arrow" % "arrow-vector" % "4.0.0" % "provided",
         "io.grpc" % "grpc-auth" % akka.grpc.gen.BuildInfo.grpcVersion, // ApacheV2
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-        "com.typesafe.akka" %% "akka-http2-support" % AkkaHttpVersion,
         "org.apache.arrow" % "arrow-memory-netty" % "4.0.1" % Test,
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion
       ) ++ Mockito

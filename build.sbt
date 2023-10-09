@@ -482,7 +482,6 @@ def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sb
       },
       AutomaticModuleName.settings(s"akka.stream.alpakka.$moduleName"),
       scalacOptions += "-Wconf:cat=deprecation&msg=.*JavaConverters.*:s",
-      resolvers += "Akka library repository".at("https://repo.akka.io/maven"),
       mimaPreviousArtifacts := Set(
           organization.value %% name.value % previousStableVersion.value
             .getOrElse(throw new Error("Unable to determine previous version"))
@@ -505,8 +504,7 @@ def internalProject(projectId: String, additionalSettings: sbt.Def.SettingsDefin
     .settings(
       name := s"akka-stream-alpakka-$projectId",
       publish / skip := true,
-      scalacOptions += "-Wconf:cat=deprecation&msg=.*JavaConverters.*:s",
-      resolvers += "Akka library repository".at("https://repo.akka.io/maven")
+      scalacOptions += "-Wconf:cat=deprecation&msg=.*JavaConverters.*:s"
     )
     .settings(additionalSettings: _*)
 
