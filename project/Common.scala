@@ -7,7 +7,7 @@ import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
 import com.lightbend.paradox.projectinfo.ParadoxProjectInfoPluginKeys._
 import com.lightbend.sbt.JavaFormatterPlugin.autoImport.javafmtOnCompile
 import com.typesafe.tools.mima.plugin.MimaKeys._
-import xerial.sbt.Sonatype.autoImport.sonatypeProfileName
+import sbtdynver.DynVerPlugin.autoImport.dynverSonatypeSnapshots
 
 object Common extends AutoPlugin {
 
@@ -123,6 +123,7 @@ object Common extends AutoPlugin {
             Seq("-Werror")
           case _ => Seq.empty[String]
         }),
+      dynverSonatypeSnapshots := true,
       autoAPIMappings := true,
       apiURL := Some(url(s"https://doc.akka.io/api/alpakka/${version.value}/akka/stream/alpakka/index.html")),
       // show full stack traces and test case durations
@@ -139,7 +140,6 @@ object Common extends AutoPlugin {
       javafmtOnCompile := false,
       headerLicense := Some(
           HeaderLicense.Custom("Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>")
-        ),
-      sonatypeProfileName := "com.lightbend"
+        )
     )
 }

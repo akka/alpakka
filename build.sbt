@@ -1,7 +1,9 @@
+import com.geirsson.CiReleasePlugin
+
 lazy val alpakka = project
   .in(file("."))
   .enablePlugins(ScalaUnidocPlugin)
-  .disablePlugins(MimaPlugin, SitePlugin)
+  .disablePlugins(MimaPlugin, SitePlugin, CiReleasePlugin)
   .aggregate(
     amqp,
     avroparquet,
@@ -469,7 +471,7 @@ def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sb
   import com.typesafe.tools.mima.core._
   Project(id = projectId, base = file(projectId))
     .enablePlugins(AutomateHeaderPlugin)
-    .disablePlugins(SitePlugin)
+    .disablePlugins(SitePlugin, CiReleasePlugin)
     .settings(
       name := s"akka-stream-alpakka-$projectId",
       licenses := {
@@ -480,6 +482,7 @@ def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sb
       },
       AutomaticModuleName.settings(s"akka.stream.alpakka.$moduleName"),
       scalacOptions += "-Wconf:cat=deprecation&msg=.*JavaConverters.*:s",
+      resolvers += "Akka library repository".at("https://repo.akka.io/maven"),
       mimaPreviousArtifacts := Set(
           organization.value %% name.value % previousStableVersion.value
             .getOrElse(throw new Error("Unable to determine previous version"))
@@ -498,10 +501,11 @@ def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sb
 def internalProject(projectId: String, additionalSettings: sbt.Def.SettingsDefinition*): Project =
   Project(id = projectId, base = file(projectId))
     .enablePlugins(AutomateHeaderPlugin)
-    .disablePlugins(SitePlugin, MimaPlugin)
+    .disablePlugins(SitePlugin, MimaPlugin, CiReleasePlugin)
     .settings(name := s"akka-stream-alpakka-$projectId",
               publish / skip := true,
-              scalacOptions += "-Wconf:cat=deprecation&msg=.*JavaConverters.*:s")
+              scalacOptions += "-Wconf:cat=deprecation&msg=.*JavaConverters.*:s",
+              resolvers += "Akka library repository".at("https://repo.akka.io/maven"))
     .settings(additionalSettings: _*)
 
 Global / onLoad := (Global / onLoad).value.andThen { s =>
