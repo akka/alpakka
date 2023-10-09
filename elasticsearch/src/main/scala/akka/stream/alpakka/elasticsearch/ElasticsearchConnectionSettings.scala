@@ -7,11 +7,9 @@ package akka.stream.alpakka.elasticsearch
 import akka.http.scaladsl.{ConnectionContext, HttpsConnectionContext}
 import akka.http.scaladsl.model.HttpHeader
 import akka.http.scaladsl.model.HttpHeader.ParsingResult
-import akka.japi.Util
 
 import scala.collection.JavaConverters._
 import javax.net.ssl.SSLContext
-import scala.compat.java8.OptionConverters
 
 final class ElasticsearchConnectionSettings private (
     val baseUrl: String,
@@ -45,30 +43,6 @@ final class ElasticsearchConnectionSettings private (
       .toList
 
     copy(headers = scalaHeaders)
-  }
-
-  /** Scala API */
-  @deprecated("prefer ElasticsearchConnectionSettings.withSSLContext", "3.1.0")
-  @Deprecated
-  def withConnectionContext(connectionContext: HttpsConnectionContext): ElasticsearchConnectionSettings =
-    copy(connectionContext = Option(connectionContext))
-
-  /** Java API */
-  @deprecated("prefer ElasticsearchConnectionSettings.withSSLContext", "3.1.0")
-  @Deprecated
-  def withConnectionContext(
-      connectionContext: akka.http.javadsl.HttpsConnectionContext
-  ): ElasticsearchConnectionSettings = {
-    val scalaContext = new HttpsConnectionContext(
-      connectionContext.getSslContext,
-      None,
-      OptionConverters.toScala(connectionContext.getEnabledCipherSuites).map(Util.immutableSeq(_)),
-      OptionConverters.toScala(connectionContext.getEnabledProtocols).map(Util.immutableSeq(_)),
-      OptionConverters.toScala(connectionContext.getClientAuth),
-      OptionConverters.toScala(connectionContext.getSslParameters)
-    )
-
-    copy(connectionContext = Option(scalaContext))
   }
 
   def withSSLContext(
