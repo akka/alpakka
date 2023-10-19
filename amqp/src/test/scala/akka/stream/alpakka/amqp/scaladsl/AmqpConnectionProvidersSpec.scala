@@ -196,4 +196,21 @@ class AmqpConnectionProvidersSpec extends AmqpSpec {
       catch { case e: Throwable => e shouldBe an[ConnectException] }
     }
   }
+
+  "The AMQP Reusable Connection Provider" should {
+    "open new connection when previous one is forced to close and released" in {
+      val connectionFactory = new ConnectionFactory()
+      val connectionProvider = AmqpConnectionFactoryConnectionProvider(connectionFactory)
+        .withHostAndPort("localhost", 5672)
+      val reusableConnectionProvider = AmqpCachedConnectionProvider(connectionProvider)
+      val originalConnection = reusableConnectionProvider.get
+
+      originalConnection.isOpen shouldBe true
+      originalConnection.abort(1, "Forced close")
+      reusableConnectionProvider.release(originalConnection)
+
+      val newConnection = reusableConnectionProvider.get
+      newConnection should not be (originalConnection)
+    }
+  }
 }

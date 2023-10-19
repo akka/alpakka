@@ -367,13 +367,12 @@ final class AmqpCachedConnectionProvider private (val provider: AmqpConnectionPr
   def withAutomaticRelease(automaticRelease: Boolean): AmqpCachedConnectionProvider =
     copy(automaticRelease = automaticRelease)
 
-  private lazy val connection = provider.get
-
   @tailrec
   override def get: Connection = state.get match {
     case Empty =>
       if (state.compareAndSet(Empty, Connecting)) {
         try {
+          val connection = provider.get
           if (!state.compareAndSet(Connecting, Connected(connection, 1)))
             throw new ConcurrentModificationException(
               "Unexpected concurrent modification while creating the connection."
