@@ -17,7 +17,7 @@ object Dependencies {
 
   val AwsSdk2Version = "2.17.295"
   val AwsSpiAkkaHttpVersion = "1.0.1"
-  val ProtobufJavaVersion = "3.21.12"
+  val ProtobufJavaVersion = "3.24.0"
   // Sync with plugins.sbt
   val AkkaGrpcBinaryVersion = "2.4"
   // sync ignore prefix in scripts/link-validator.conf#L30
