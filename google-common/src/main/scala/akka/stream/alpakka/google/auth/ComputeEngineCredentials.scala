@@ -10,6 +10,7 @@ import akka.stream.Materializer
 import akka.stream.alpakka.google.RequestSettings
 
 import java.time.Clock
+import scala.annotation.unused
 import scala.concurrent.Future
 
 @InternalApi
@@ -26,7 +27,7 @@ private[auth] object ComputeEngineCredentials {
 private final class ComputeEngineCredentials(projectId: String)(implicit mat: Materializer)
     extends OAuth2Credentials(projectId) {
   override protected def getAccessToken()(implicit mat: Materializer,
-                                          settings: RequestSettings,
+                                          @unused settings: RequestSettings,
                                           clock: Clock): Future[AccessToken] =
     GoogleComputeMetadata.getAccessToken()
 }

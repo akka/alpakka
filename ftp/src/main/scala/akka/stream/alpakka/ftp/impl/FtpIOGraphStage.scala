@@ -110,13 +110,13 @@ private[ftp] trait FtpIOSourceStage[FtpClient, S <: RemoteFileSettings]
         }
 
       protected[this] def doPreStart(): Unit =
-        isOpt = ftpLike match {
+        isOpt = logicFtpLike match {
           case ur: UnconfirmedReads =>
             withUnconfirmedReads(ur)
           case ro: RetrieveOffset =>
             Some(ro.retrieveFileInputStream(path, handler.get.asInstanceOf[ro.Handler], offset).get)
           case _ =>
-            Some(ftpLike.retrieveFileInputStream(path, handler.get).get)
+            Some(logicFtpLike.retrieveFileInputStream(path, handler.get).get)
         }
 
       private def withUnconfirmedReads(
@@ -236,7 +236,7 @@ private[ftp] trait FtpIOSinkStage[FtpClient, S <: RemoteFileSettings]
         }
 
       protected[this] def doPreStart(): Unit = {
-        osOpt = Some(ftpLike.storeFileOutputStream(path, handler.get, append).get)
+        osOpt = Some(logicFtpLike.storeFileOutputStream(path, handler.get, append).get)
         pull(in)
       }
 
@@ -286,7 +286,7 @@ private[ftp] trait FtpMoveSink[FtpClient, S <: RemoteFileSettings]
             override def onPush(): Unit = {
               try {
                 val sourcePath = grab(in)
-                ftpLike.move(sourcePath.path, destinationPath(sourcePath), handler.get)
+                logicFtpLike.move(sourcePath.path, destinationPath(sourcePath), handler.get)
                 numberOfMovedFiles = numberOfMovedFiles + 1
                 pull(in)
               } catch {
@@ -342,7 +342,7 @@ private[ftp] trait FtpRemoveSink[FtpClient, S <: RemoteFileSettings]
           new InHandler {
             override def onPush(): Unit = {
               try {
-                ftpLike.remove(grab(in).path, handler.get)
+                logicFtpLike.remove(grab(in).path, handler.get)
                 numberOfRemovedFiles = numberOfRemovedFiles + 1
                 pull(in)
               } catch {

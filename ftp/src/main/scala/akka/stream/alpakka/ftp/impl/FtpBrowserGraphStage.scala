@@ -21,7 +21,7 @@ private[ftp] trait FtpBrowserGraphStage[FtpClient, S <: RemoteFileSettings]
 
   def emitTraversedDirectories: Boolean = false
 
-  def createLogic(inheritedAttributes: Attributes) = {
+  def createLogic(inheritedAttributes: Attributes): FtpGraphStageLogic[FtpFile, FtpClient, S] = {
     val logic = new FtpGraphStageLogic[FtpFile, FtpClient, S](shape, ftpLike, connectionSettings, ftpClient) {
 
       private[this] var buffer: Seq[FtpFile] = Seq.empty[FtpFile]
@@ -75,9 +75,9 @@ private[ftp] trait FtpBrowserGraphStage[FtpClient, S <: RemoteFileSettings]
 
       private[this] def getFilesFromPath(basePath: String) =
         if (basePath.isEmpty)
-          ftpLike.listFiles(handler.get)
+          logicFtpLike.listFiles(handler.get)
         else
-          ftpLike.listFiles(basePath, handler.get)
+          logicFtpLike.listFiles(basePath, handler.get)
 
     } // end of stage logic
 
