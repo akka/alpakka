@@ -18,7 +18,7 @@ import org.apache.commons.net.ftp.{FTPClient, FTPSClient}
 import scala.concurrent.Future
 
 @DoNotInherit
-sealed trait FtpApi[FtpClient, S <: RemoteFileSettings] { _: FtpSourceFactory[FtpClient, S] =>
+sealed trait FtpApi[FtpClient, S <: RemoteFileSettings] { factory: FtpSourceFactory[FtpClient, S] =>
 
   /**
    * Scala API: creates a [[akka.stream.scaladsl.Source Source]] of [[FtpFile]]s from the remote user `root` directory.
@@ -398,6 +398,6 @@ object Sftp extends SftpApi {
    */
   def apply(customSshClient: SSHClient): SftpApi =
     new SftpApi {
-      override val sshClient: SSHClient = customSshClient
+      override def sshClient(): SSHClient = customSshClient
     }
 }

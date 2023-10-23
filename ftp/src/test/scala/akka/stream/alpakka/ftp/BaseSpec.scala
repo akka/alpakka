@@ -70,7 +70,7 @@ trait BaseSpec
   // Allows to run tests n times in a row with a command line argument, useful for debugging sporadic failures
   // e.g. ftp/testOnly *.FtpsStageSpec -- -Dtimes=20
   // https://gist.github.com/dwickern/6ba9c5c505d2325d3737ace059302922
-  override abstract protected def runTest(testName: String, args: Args): Status = {
+  override protected def runTest(testName: String, args: Args): Status = {
     def run0(times: Int): Status = {
       val status = super.runTest(testName, args)
       if (times <= 1) status else status.thenRun(run0(times - 1))

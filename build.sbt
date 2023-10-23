@@ -166,6 +166,7 @@ lazy val ftp = alpakkaProject(
   "ftp",
   "ftp",
   Dependencies.Ftp,
+  Scala3.settings,
   Test / fork := true,
   // To avoid potential blocking in machines with low entropy (default is `/dev/random`)
   Test / javaOptions += "-Djava.security.egd=file:/dev/./urandom"

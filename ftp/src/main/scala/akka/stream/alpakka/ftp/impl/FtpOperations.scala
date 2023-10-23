@@ -14,7 +14,7 @@ import scala.util.Try
  * INTERNAL API
  */
 @InternalApi
-private[ftp] trait FtpOperations extends CommonFtpOperations { _: FtpLike[FTPClient, FtpSettings] =>
+private[ftp] trait FtpOperations extends CommonFtpOperations { ftpLike: FtpLike[FTPClient, FtpSettings] =>
 
   def connect(connectionSettings: FtpSettings)(implicit ftpClient: FTPClient): Try[Handler] = Try {
     connectionSettings.proxy.foreach(ftpClient.setProxy)
