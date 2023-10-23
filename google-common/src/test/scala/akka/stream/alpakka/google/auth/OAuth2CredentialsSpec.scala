@@ -18,6 +18,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import pdi.jwt.JwtTime
 
 import java.time.Clock
+import scala.annotation.unused
 import scala.concurrent.{Future, Promise}
 
 class OAuth2CredentialsSpec
@@ -41,9 +42,9 @@ class OAuth2CredentialsSpec
   }
 
   val testableCredentials = new OAuth2Credentials("dummyProject") {
-    override protected def getAccessToken()(implicit mat: Materializer,
-                                            settings: RequestSettings,
-                                            clock: Clock): Future[AccessToken] =
+    override protected def getAccessToken()(@unused implicit mat: Materializer,
+                                            @unused settings: RequestSettings,
+                                            @unused clock: Clock): Future[AccessToken] =
       AccessTokenProvider.accessTokenPromise.future
   }
 
