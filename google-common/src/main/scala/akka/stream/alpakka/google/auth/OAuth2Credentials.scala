@@ -14,6 +14,7 @@ import akka.stream.{CompletionStrategy, Materializer, OverflowStrategy}
 import com.google.auth.{Credentials => GoogleCredentials}
 
 import java.time.Clock
+import scala.annotation.unused
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
 @InternalApi
@@ -28,7 +29,7 @@ private[auth] abstract class OAuth2Credentials(val projectId: String)(implicit m
 
   private val tokenStream = stream.run()
 
-  override def get()(implicit ec: ExecutionContext, settings: RequestSettings): Future[OAuth2BearerToken] = {
+  override def get()(implicit @unused ec: ExecutionContext, settings: RequestSettings): Future[OAuth2BearerToken] = {
     val token = Promise[OAuth2BearerToken]()
     tokenStream ! TokenRequest(token, settings)
     token.future

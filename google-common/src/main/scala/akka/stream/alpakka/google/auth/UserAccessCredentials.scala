@@ -13,6 +13,7 @@ import spray.json.DefaultJsonProtocol._
 import spray.json.{JsonParser, RootJsonFormat}
 
 import java.time.Clock
+import scala.annotation.unused
 import scala.concurrent.Future
 import scala.io.Source
 
@@ -68,7 +69,7 @@ private final class UserAccessCredentials(clientId: String,
 ) extends OAuth2Credentials(projectId) {
 
   override protected def getAccessToken()(implicit mat: Materializer,
-                                          settings: RequestSettings,
+                                          @unused settings: RequestSettings,
                                           clock: Clock): Future[AccessToken] = {
     UserAccessMetadata.getAccessToken(clientId, clientSecret, refreshToken)
   }
