@@ -45,7 +45,7 @@ protected[ftp] trait FtpLike[FtpClient, S <: RemoteFileSettings] {
  * INTERNAL API
  */
 @InternalApi
-protected[ftp] trait RetrieveOffset { _: FtpLike[_, _] =>
+protected[ftp] trait RetrieveOffset { ftpLike: FtpLike[_, _] =>
 
   def retrieveFileInputStream(name: String, handler: Handler, offset: Long): Try[InputStream]
 
@@ -55,7 +55,7 @@ protected[ftp] trait RetrieveOffset { _: FtpLike[_, _] =>
  * INTERNAL API
  */
 @InternalApi
-protected[ftp] trait UnconfirmedReads { _: FtpLike[_, _] =>
+protected[ftp] trait UnconfirmedReads { ftpLike: FtpLike[_, _] =>
 
   def retrieveFileInputStream(name: String, handler: Handler, offset: Long, maxUnconfirmedReads: Int): Try[InputStream]
 

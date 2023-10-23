@@ -67,6 +67,8 @@ object Common extends AutoPlugin {
           case Dependencies.Scala213
               if insideCI.value && fatalWarnings.value && !Dependencies.CronBuild && scalaVersion.value != Dependencies.Scala3 =>
             Seq("-Werror")
+          case Dependencies.Scala3 if insideCI.value =>
+            Seq("-explain")
           case _ => Seq.empty[String]
         }),
       Compile / doc / scalacOptions := scalacOptions.value ++ Seq(

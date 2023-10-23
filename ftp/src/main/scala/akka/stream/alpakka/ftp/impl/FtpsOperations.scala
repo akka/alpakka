@@ -15,7 +15,7 @@ import scala.util.Try
  */
 @InternalApi
 private[ftp] trait FtpsOperations extends CommonFtpOperations {
-  _: FtpLike[FTPSClient, FtpsSettings] =>
+  ftpLike: FtpLike[FTPSClient, FtpsSettings] =>
 
   def connect(connectionSettings: FtpsSettings)(implicit ftpClient: FTPSClient): Try[Handler] =
     Try {
