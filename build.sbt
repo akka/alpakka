@@ -186,7 +186,8 @@ lazy val googleCommon = alpakkaProject(
   "google-common",
   "google.common",
   Dependencies.GoogleCommon,
-  Test / fork := true
+  Test / fork := true,
+  headerSources / excludeFilter := HiddenFileFilter || "JwtSprayJsonParser.scala"
 )
 
 lazy val googleCloudBigQuery = alpakkaProject(

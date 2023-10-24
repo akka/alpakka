@@ -1,10 +1,8 @@
 /*
- * Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>
- */
-
-/*
  * This software is licensed under the Apache 2 license.
  * Copyright 2021 JWT-Scala Contributors.
+ *
+ * Copyright (C) since 2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.google.auth
