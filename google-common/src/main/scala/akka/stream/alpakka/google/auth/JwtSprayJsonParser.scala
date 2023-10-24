@@ -9,6 +9,7 @@
 
 package akka.stream.alpakka.google.auth
 
+import akka.annotation.InternalApi
 import pdi.jwt.{JwtAlgorithm, JwtClaim, JwtHeader, JwtJsonCommon}
 
 import java.time.Clock
@@ -21,7 +22,8 @@ import spray.json._
  * This class originally came from jwt-spray-json,
  * but was removed in https://github.com/jwt-scala/jwt-scala/commit/bf1131ce02480103c0b953b97da001105a3ee038
  */
-trait JwtSprayJsonParser[H, C] extends JwtJsonCommon[JsObject, H, C] {
+@InternalApi
+private[auth] trait JwtSprayJsonParser[H, C] extends JwtJsonCommon[JsObject, H, C] {
   protected def parse(value: String): JsObject = value.parseJson.asJsObject
 
   protected def stringify(value: JsObject): String = value.compactPrint
@@ -36,11 +38,13 @@ trait JwtSprayJsonParser[H, C] extends JwtJsonCommon[JsObject, H, C] {
 
 }
 
-object JwtSprayJson extends JwtSprayJson(Clock.systemUTC) {
+@InternalApi
+private[auth] object JwtSprayJson extends JwtSprayJson(Clock.systemUTC) {
   def apply(clock: Clock): JwtSprayJson = new JwtSprayJson(clock)
 }
 
-class JwtSprayJson(override val clock: Clock) extends JwtSprayJsonParser[JwtHeader, JwtClaim] {
+@InternalApi
+private[auth] class JwtSprayJson(override val clock: Clock) extends JwtSprayJsonParser[JwtHeader, JwtClaim] {
 
   import DefaultJsonProtocol._
   override def parseHeader(header: String): JwtHeader = {
