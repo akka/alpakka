@@ -31,7 +31,8 @@ object Dependencies {
   val CouchbaseVersion = "2.7.16"
   val CouchbaseVersionForDocs = "2.7"
 
-  val JwtCoreVersion = "3.0.1"
+  // https://github.com/jwt-scala/jwt-scala/releases
+  val JwtScalaVersion = "9.4.4"
 
   val log4jOverSlf4jVersion = "1.7.36"
   val jclOverSlf4jVersion = "1.7.36"
@@ -204,7 +205,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-        "com.github.jwt-scala" %% "jwt-spray-json" % "9.0.2", // ApacheV2
+        "com.github.jwt-scala" %% "jwt-json-common" % JwtScalaVersion,
         // https://github.com/googleapis/google-auth-library-java
         "com.google.auth" % "google-auth-library-credentials" % GoogleAuthVersion,
         "io.specto" % "hoverfly-java" % hoverflyVersion % Test // ApacheV2
@@ -304,7 +305,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-        "com.github.jwt-scala" %% "jwt-spray-json" % "7.1.4" // ApacheV2
+        "com.github.jwt-scala" %% "jwt-json-common" % JwtScalaVersion
       ) ++ Mockito
   )
 

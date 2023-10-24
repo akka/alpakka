@@ -13,7 +13,7 @@ import akka.stream.Materializer
 import akka.stream.alpakka.google.http.GoogleHttp
 import akka.stream.alpakka.google.{implicits, RequestSettings}
 import pdi.jwt.JwtAlgorithm.RS256
-import pdi.jwt.{JwtClaim, JwtSprayJson}
+import pdi.jwt.JwtClaim
 import spray.json.DefaultJsonProtocol._
 import spray.json.JsonFormat
 
