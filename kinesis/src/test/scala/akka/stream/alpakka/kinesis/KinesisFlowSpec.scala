@@ -58,7 +58,11 @@ class KinesisFlowSpec extends AnyWordSpec with Matchers with KinesisMock with Lo
     }
 
     "compute payload size" in {
-      val r = PutRecordsRequestEntry.builder().partitionKey("").data(SdkBytes.fromByteBuffer(ByteString("data").asByteBuffer)).build()
+      val r = PutRecordsRequestEntry
+        .builder()
+        .partitionKey("")
+        .data(SdkBytes.fromByteBuffer(ByteString("data").asByteBuffer))
+        .build()
       KinesisFlow.getPayloadByteSize((r, "")) shouldBe 4
     }
   }
