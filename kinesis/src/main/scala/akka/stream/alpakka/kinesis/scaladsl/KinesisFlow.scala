@@ -105,7 +105,7 @@ object KinesisFlow {
     result.records.asScala.toList.zip(entries).map { case (res, (_, t)) => (res, t) }
 
   private[kinesis] def getPayloadByteSize[T](record: (PutRecordsRequestEntry, T)): Int = record match {
-    case (request, _) => request.partitionKey.length + request.data.asByteBuffer.position()
+    case (request, _) => request.partitionKey.length + request.data.asByteArrayUnsafe.length
   }
 
   def byPartitionAndData(
