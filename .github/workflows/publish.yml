@@ -13,7 +13,7 @@ permissions:
 jobs:
   release:
     # runs on main repo only
-    if: github.repository == 'akka/alpakka'
+    if: github.event.repository.fork == false
     name: Release
     environment: release
     runs-on: ubuntu-22.04
@@ -43,13 +43,9 @@ jobs:
         run: sbt +publishSigned
 
   documentation:
-    # runs on main repo only
-    if: github.repository == 'akka/alpakka'
     name: Documentation
-    environment: release
     runs-on: ubuntu-22.04
-    env:
-      JAVA_OPTS: -Xms2G -Xmx2G -Xss2M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8
+    if: github.event.repository.fork == false
     steps:
       - name: Checkout
         uses: actions/checkout@v3.1.0
@@ -57,20 +53,17 @@ jobs:
           # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
           fetch-depth: 0
 
-      - name: Cache Coursier cache
-        uses: coursier/cache-action@v6.4.0
-
       - name: Set up JDK 11
         uses: coursier/setup-action@v1.3.0
         with:
           jvm: temurin:1.11
 
-      - name: Publish API and reference documentation
-        env:
-          GUSTAV_KEY: ${{ secrets.GUSTAV_KEY }}
-        run: |+
+      - name: Publish
+        run: |-
           eval "$(ssh-agent -s)"
-          echo $GUSTAV_KEY | base64 -di > .github/id_rsa
+          echo $AKKA_RSYNC_GUSTAV | base64 -d > .github/id_rsa
           chmod 600 .github/id_rsa
           ssh-add .github/id_rsa
-          sbt +~2.13 docs/publishRsync
+          sbt publishRsync
+        env:
+          AKKA_RSYNC_GUSTAV: ${{ secrets.AKKA_RSYNC_GUSTAV }}
