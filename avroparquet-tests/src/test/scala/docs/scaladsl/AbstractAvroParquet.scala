@@ -47,8 +47,12 @@ trait AbstractAvroParquet extends BeforeAndAfterAll {
   conf.setBoolean(AvroReadSupport.AVRO_COMPATIBILITY, true)
 
   def parquetWriter[T <: GenericRecord](file: String, conf: Configuration, schema: Schema): ParquetWriter[T] =
-    AvroParquetWriter.builder[T](HadoopOutputFile.fromPath(new Path(file), conf)).withConf(conf).withSchema(schema).build()
-   
+    AvroParquetWriter
+      .builder[T](HadoopOutputFile.fromPath(new Path(file), conf))
+      .withConf(conf)
+      .withSchema(schema)
+      .build()
+
   def parquetReader[T <: GenericRecord](file: String, conf: Configuration): ParquetReader[T] =
     AvroParquetReader.builder[T](HadoopInputFile.fromPath(new Path(file), conf)).withConf(conf).build()
 
@@ -89,8 +93,11 @@ trait AbstractAvroParquet extends BeforeAndAfterAll {
     val file: String = "./sample/path/test.parquet"
     val conf: Configuration = new Configuration()
     conf.setBoolean(AvroReadSupport.AVRO_COMPATIBILITY, true)
-    val writer: ParquetWriter[Record] =
-      AvroParquetWriter.builder[Record](new Path(file)).withConf(conf).withSchema(schema).build()
+    val writer: ParquetWriter[Record] = AvroParquetWriter
+      .builder[Record](HadoopOutputFile.fromPath(new Path(file), conf))
+      .withConf(conf)
+      .withSchema(schema)
+      .build()
     // #prepare-sink
     if (writer != null) { // forces val usage
     }
@@ -106,7 +113,11 @@ trait AbstractAvroParquet extends BeforeAndAfterAll {
 
     val file: String = "./sample/path/test.parquet"
     val writer: ParquetWriter[GenericRecord] =
-      AvroParquetWriter.builder[GenericRecord](new Path(file)).withConf(conf).withSchema(schema).build()
+      AvroParquetWriter
+        .builder[GenericRecord](HadoopOutputFile.fromPath(new Path(file), conf))
+        .withConf(conf)
+        .withSchema(schema)
+        .build()
     // #init-writer
     // #init-reader
     val reader: ParquetReader[GenericRecord] =
