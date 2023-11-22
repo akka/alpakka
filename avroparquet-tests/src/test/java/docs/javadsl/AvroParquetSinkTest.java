@@ -19,6 +19,7 @@ import org.apache.parquet.avro.AvroParquetWriter;
 import org.apache.parquet.avro.AvroReadSupport;
 import org.apache.parquet.hadoop.ParquetFileWriter;
 import org.apache.parquet.hadoop.ParquetReader;
+import org.apache.parquet.hadoop.util.HadoopOutputFile;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -75,7 +76,7 @@ public class AvroParquetSinkTest {
     Configuration conf = new Configuration();
     conf.setBoolean(AvroReadSupport.AVRO_COMPATIBILITY, true);
     ParquetWriter<GenericRecord> writer =
-        AvroParquetWriter.<GenericRecord>builder(new Path(file))
+        AvroParquetWriter.<GenericRecord>builder(HadoopOutputFile.fromPath(new Path(file), conf))
             .withConf(conf)
             .withWriteMode(ParquetFileWriter.Mode.OVERWRITE)
             .withSchema(schema)
