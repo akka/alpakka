@@ -163,7 +163,7 @@ object Dependencies {
 
   val AvroParquet = Seq(
     libraryDependencies ++= Seq(
-        "org.apache.parquet" % "parquet-avro" % "1.10.1" //Apache2
+        "org.apache.parquet" % "parquet-avro" % "1.13.1" //Apache2
       )
   )
 
@@ -230,7 +230,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         // https://github.com/googleapis/java-bigquerystorage/tree/master/proto-google-cloud-bigquerystorage-v1
         "com.google.api.grpc" % "proto-google-cloud-bigquerystorage-v1" % "1.22.0" % "protobuf-src", // ApacheV2
-        "org.apache.avro" % "avro" % "1.9.2" % "provided",
+        "org.apache.avro" % "avro" % "1.11.3" % "provided",
         "org.apache.arrow" % "arrow-vector" % "4.0.0" % "provided",
         "io.grpc" % "grpc-auth" % akka.grpc.gen.BuildInfo.grpcVersion, // ApacheV2
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
