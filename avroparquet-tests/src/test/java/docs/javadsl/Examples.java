@@ -22,6 +22,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.avro.Schema;
 import akka.stream.javadsl.Source;
 import org.apache.parquet.avro.AvroParquetReader;
+import org.apache.parquet.hadoop.util.HadoopOutputFile;
 // #init-reader
 
 public class Examples {
@@ -53,7 +54,7 @@ public class Examples {
 
     // #init-flow
     ParquetWriter<GenericRecord> writer =
-        AvroParquetWriter.<GenericRecord>builder(new Path("./test.parquet"))
+        AvroParquetWriter.<GenericRecord>builder(HadoopOutputFile.fromPath(new Path("./test.parquet"), conf))
             .withConf(conf)
             .withSchema(schema)
             .build();
