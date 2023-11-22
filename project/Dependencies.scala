@@ -163,8 +163,10 @@ object Dependencies {
 
   val AvroParquet = Seq(
     libraryDependencies ++= Seq(
-        "org.apache.parquet" % "parquet-avro" % "1.13.1" //Apache2
-      )
+        "org.apache.parquet" % "parquet-avro" % "1.13.1", //Apache2
+        "org.apache.avro" % "avro" % "1.11.3"
+      ),
+
   )
 
   val AvroParquetTests = Seq(
