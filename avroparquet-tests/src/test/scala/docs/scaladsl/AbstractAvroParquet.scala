@@ -5,7 +5,6 @@
 package docs.scaladsl
 
 import java.io.File
-
 import akka.testkit.TestKit
 import com.sksamuel.avro4s.RecordFormat
 import org.apache.avro.Schema
@@ -14,7 +13,7 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.parquet.avro.{AvroParquetReader, AvroParquetWriter, AvroReadSupport}
 import org.apache.parquet.hadoop.{ParquetReader, ParquetWriter}
-import org.apache.parquet.hadoop.util.HadoopInputFile
+import org.apache.parquet.hadoop.util.{HadoopInputFile, HadoopOutputFile}
 import org.scalacheck.Gen
 import org.scalatest.{BeforeAndAfterAll, Suite}
 
@@ -48,8 +47,8 @@ trait AbstractAvroParquet extends BeforeAndAfterAll {
   conf.setBoolean(AvroReadSupport.AVRO_COMPATIBILITY, true)
 
   def parquetWriter[T <: GenericRecord](file: String, conf: Configuration, schema: Schema): ParquetWriter[T] =
-    AvroParquetWriter.builder[T](new Path(file)).withConf(conf).withSchema(schema).build()
-
+    AvroParquetWriter.builder[T](HadoopOutputFile.fromPath(new Path(file), conf)).withConf(conf).withSchema(schema).build()
+   
   def parquetReader[T <: GenericRecord](file: String, conf: Configuration): ParquetReader[T] =
     AvroParquetReader.builder[T](HadoopInputFile.fromPath(new Path(file), conf)).withConf(conf).build()
 
