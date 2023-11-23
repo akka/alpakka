@@ -64,6 +64,6 @@ jobs:
           echo $AKKA_RSYNC_GUSTAV | base64 -d > .github/id_rsa
           chmod 600 .github/id_rsa
           ssh-add .github/id_rsa
-          sbt publishRsync
+          sbt docs/publishRsync
         env:
           AKKA_RSYNC_GUSTAV: ${{ secrets.AKKA_RSYNC_GUSTAV }}
