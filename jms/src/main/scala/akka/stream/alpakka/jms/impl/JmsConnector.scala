@@ -291,7 +291,7 @@ private[jms] trait JmsConnector[S <: JmsSession] extends TimerGraphStageLogic wi
       cancelAckTimers(s)
       s.closeSession()
     } catch {
-      case NonFatal(e) => log.error(s, "Error closing jms session")
+      case NonFatal(e) => log.error(e, "Error closing jms session")
     }
   }
 
