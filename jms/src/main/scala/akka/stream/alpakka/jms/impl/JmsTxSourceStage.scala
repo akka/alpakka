@@ -42,48 +42,39 @@ private[jms] final class JmsTxSourceStage(settings: JmsConsumerSettings, destina
 
     protected def pushMessage(msg: TxEnvelope): Unit = push(out, msg)
 
-    override protected def onSessionOpened(jmsSession: JmsConsumerSession): Unit =
-      jmsSession match {
-        case session: JmsSession =>
-          session
-            .createConsumer(settings.selector)
-            .map { consumer =>
-              consumer.setMessageListener(new jms.MessageListener {
-
-                def onMessage(message: jms.Message): Unit =
-                  try {
-                    val envelope = TxEnvelope(message, session)
-                    handleMessage.invoke(envelope)
-                    try {
-                      // JMS spec defines that commit/rollback must be done on the same thread.
-                      // While some JMS implementations work without this constraint, IBM MQ is
-                      // very strict about the spec and throws exceptions when called from a different thread.
-                      val action = Await.result(envelope.commitFuture, settings.ackTimeout)
-                      action()
-                    } catch {
-                      case _: TimeoutException =>
-                        val exception = new JmsTxAckTimeout(settings.ackTimeout)
-                        session.session.rollback()
-                        if (settings.failStreamOnAckTimeout) {
-                          handleError.invoke(exception)
-                        } else {
-                          log.warning(exception.getMessage)
-                        }
+    override protected def onSessionOpened(consumerSession: JmsConsumerSession): Unit =
+      consumerSession
+        .createConsumer(settings.selector)
+        .map { consumer =>
+          consumer.setMessageListener(new jms.MessageListener {
+            def onMessage(message: jms.Message): Unit = {
+              try {
+                val envelope = TxEnvelope(message, consumerSession)
+                handleMessage.invoke(envelope)
+                try {
+                  // JMS spec defines that commit/rollback must be done on the same thread.
+                  // While some JMS implementations work without this constraint, IBM MQ is
+                  // very strict about the spec and throws exceptions when called from a different thread.
+                  val action = Await.result(envelope.commitFuture, settings.ackTimeout)
+                  action()
+                } catch {
+                  case _: TimeoutException =>
+                    val exception = new JmsTxAckTimeout(settings.ackTimeout)
+                    consumerSession.session.rollback()
+                    if (settings.failStreamOnAckTimeout) {
+                      handleError.invoke(exception)
+                    } else {
+                      log.warning(exception.getMessage)
                     }
-                  } catch {
-                    case e: IllegalArgumentException => handleError.invoke(e) // Invalid envelope. Fail the stage.
-                    case e: jms.JMSException => handleError.invoke(e)
-                  }
-              })
+                }
+              } catch {
+                case e: IllegalArgumentException => handleError.invoke(e) // Invalid envelope, fail the stage
+                case e: jms.JMSException => handleError.invoke(e)
+              }
             }
-            .onComplete(sessionOpenedCB.invoke)
-
-        case _ =>
-          throw new IllegalArgumentException(
-            "Session must be of type JmsSession, it is a " +
-            jmsSession.getClass.getName
-          )
-      }
+          })
+        }
+        .onComplete(sessionOpenedCB.invoke)
   }
 
 }

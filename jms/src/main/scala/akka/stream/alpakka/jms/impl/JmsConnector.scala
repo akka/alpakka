@@ -135,7 +135,8 @@ private[jms] trait JmsConnector[S <: JmsSession] extends TimerGraphStageLogic wi
   }
 
   private def handleRetriableException(ex: Throwable): Unit = {
-    jmsSessions = Seq.empty
+    closeSessions()
+
     connectionState match {
       case JmsConnectorInitializing(_, attempt, backoffMaxed, _) =>
         maybeReconnect(ex, attempt, backoffMaxed)
@@ -270,16 +271,17 @@ private[jms] trait JmsConnector[S <: JmsSession] extends TimerGraphStageLogic wi
     eventualConnection.map(closeConnection).map(_ => Done)
 
   protected def closeSessions(): Unit = {
-    jmsSessions.foreach(s => closeSession(s))
+    jmsSessions.foreach(closeSession)
     jmsSessions = Seq.empty
   }
 
   protected def closeSessionsAsync(): Future[Unit] = {
     val closing = Future
       .sequence {
-        jmsSessions.map(s => Future(closeSession(s)))
+        jmsSessions.map(s => Future { closeSession(s) })
       }
-      .map(_ => ())
+      .flatMap(_ => Future.unit)
+
     jmsSessions = Seq.empty
     closing
   }
@@ -289,7 +291,7 @@ private[jms] trait JmsConnector[S <: JmsSession] extends TimerGraphStageLogic wi
       cancelAckTimers(s)
       s.closeSession()
     } catch {
-      case e: Throwable => log.error(e, "Error closing jms session")
+      case NonFatal(e) => log.error(e, "Error closing jms session")
     }
   }
 
@@ -302,7 +304,7 @@ private[jms] trait JmsConnector[S <: JmsSession] extends TimerGraphStageLogic wi
               cancelAckTimers(s)
               s.abortSession()
             } catch {
-              case e: Throwable => log.error(e, "Error aborting jms session")
+              case NonFatal(e) => log.error(e, "Error aborting jms session")
             }
           }
         }
