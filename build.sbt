@@ -32,6 +32,7 @@ lazy val alpakka = project
     influxdb,
     ironmq,
     jms,
+    jakartaJms,
     jsonStreaming,
     kinesis,
     kudu,
@@ -277,6 +278,8 @@ lazy val ironmq = alpakkaProject(
 
 lazy val jms = alpakkaProject("jms", "jms", Dependencies.Jms, Scala3.settings)
 
+lazy val jakartaJms = alpakkaProject("jakarta-jms", "jakarta-jms", Dependencies.JakartaJms, Scala3.settings)
+
 lazy val jsonStreaming = alpakkaProject("json-streaming", "json.streaming", Dependencies.JsonStreaming)
 
 lazy val kinesis = alpakkaProject("kinesis", "aws.kinesis", Dependencies.Kinesis).settings(Scala3.settings)
@@ -427,6 +430,8 @@ lazy val docs = project
         "javadoc.java.base_url" -> "https://docs.oracle.com/en/java/javase/11/docs/api/java.base/",
         "javadoc.java.link_style" -> "direct",
         "javadoc.javax.jms.base_url" -> "https://docs.oracle.com/javaee/7/api/",
+        "javadoc.jakarta.jms.base_url" -> "https://jakarta.ee/specifications/messaging/3.1/apidocs/jakarta.messaging/",
+        "javadoc.jakarta.jms.link_style" -> "direct",
         "javadoc.com.couchbase.base_url" -> s"https://docs.couchbase.com/sdk-api/couchbase-java-client-${Dependencies.CouchbaseVersion}/",
         "javadoc.io.pravega.base_url" -> s"http://pravega.io/docs/${Dependencies.PravegaVersionForDocs}/javadoc/clients/",
         "javadoc.org.apache.kudu.base_url" -> s"https://kudu.apache.org/releases/${Dependencies.KuduVersion}/apidocs/",

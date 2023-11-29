@@ -336,6 +336,16 @@ object Dependencies {
     externalResolvers := ("jboss" at "https://repository.jboss.org/nexus/content/groups/public") +: externalResolvers.value
   )
 
+  val JakartaJms = Seq(
+    libraryDependencies ++= Seq(
+      "jakarta.jms" % "jakarta.jms-api" % "3.1.0", // Eclipse Public License 2.0 + + GPLv2
+      "org.apache.activemq" % "activemq-broker" % "6.0.0" % Test, // ApacheV2
+      "org.apache.activemq" % "activemq-client" % "6.0.0" % Test, // ApacheV2
+      // slf4j-api 2.0.9 via activemq-client
+      "ch.qos.logback" % "logback-classic" % "1.4.12" % Test, // Eclipse Public License 1.0
+    ) ++ Mockito
+  )
+
   val JsonStreaming = Seq(
     libraryDependencies ++= Seq(
         "com.github.jsurfer" % "jsurfer-jackson" % "1.6.0" // MIT
