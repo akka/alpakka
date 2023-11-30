@@ -31,8 +31,8 @@ lazy val alpakka = project
     huaweiPushKit,
     influxdb,
     ironmq,
-    jms,
     jakartaJms,
+    jms,
     jsonStreaming,
     kinesis,
     kudu,
@@ -276,10 +276,10 @@ lazy val ironmq = alpakkaProject(
   Test / fork := true
 )
 
-lazy val jms = alpakkaProject("jms", "jms", Dependencies.Jms, Scala3.settings)
-
 lazy val jakartaJms = alpakkaProject("jakarta-jms", "jakarta-jms", Dependencies.JakartaJms, Scala3.settings)
   .settings(mimaPreviousArtifacts := Set.empty) // FIXME remove after first release
+
+lazy val jms = alpakkaProject("jms", "jms", Dependencies.Jms, Scala3.settings)
 
 lazy val jsonStreaming = alpakkaProject("json-streaming", "json.streaming", Dependencies.JsonStreaming)
 
