@@ -32,6 +32,7 @@ dependency-change: "/project/Dependencies.scala"
 'p:influxdb': ["/influxdb"]
 'p:ironmq': ["/ironmq"]
 'p:jms': ["/jms"]
+'p:jakarta-jms': ["/jakarta-jms"]
 'p:json-streaming': ["/json-streaming"]
 'p:kinesis': ["/kinesis"]
 'p:kudu': ["/kudu"]
