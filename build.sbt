@@ -279,6 +279,7 @@ lazy val ironmq = alpakkaProject(
 lazy val jms = alpakkaProject("jms", "jms", Dependencies.Jms, Scala3.settings)
 
 lazy val jakartaJms = alpakkaProject("jakarta-jms", "jakarta-jms", Dependencies.JakartaJms, Scala3.settings)
+  .settings(mimaPreviousArtifacts := Set.empty) // FIXME remove after first release
 
 lazy val jsonStreaming = alpakkaProject("json-streaming", "json.streaming", Dependencies.JsonStreaming)
 
