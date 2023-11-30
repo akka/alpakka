@@ -4,6 +4,8 @@
 
 package akka.stream.alpakka.jakartajms
 
+import scala.util.Random
+
 import akka.actor.ActorSystem
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.testkit.TestKit
@@ -14,7 +16,6 @@ import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
-
 import jakarta.jms._
 
 abstract class JmsSpec
@@ -77,5 +78,7 @@ abstract class JmsSpec
   }
 
   def withMockedConsumer(test: ConsumerMock => Unit): Unit = test(ConsumerMock())
+
+  def createName(prefix: String) = prefix + Random.nextInt().toString
 
 }

@@ -62,9 +62,7 @@ class JmsProducerRetrySpec extends JmsSpec {
       server.stop() // crash.
 
       Thread.sleep(1000)
-      // https://activemq.apache.org/how-do-i-restart-embedded-broker.html
-      server.service.waitUntilStopped()
-      server.start(true) // recover.
+      server.restart() // recover.
       val restartTime = System.currentTimeMillis()
       for (_ <- 1 to 10) queue.offer(1) // 10 after the crash
       queue.complete()

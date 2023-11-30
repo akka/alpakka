@@ -7,6 +7,7 @@ package jakartajmstestkit
 /**
  * This testkit was copied from https://github.com/sullis/jms-testkit with modifications
  * to support Jakarta Messaging. Replacing `javax.jms` with `jakarta.jms`.
+ * ActiveMQ replaced with Artemis EmbeddedActiveMQ.
  * jms-testkit is licensed under the Apache License, Version 2.0.
  */
 trait JmsTestKit {

@@ -324,6 +324,16 @@ object Dependencies {
       )
   )
 
+  val JakartaJms = Seq(
+    libraryDependencies ++= Seq(
+        "jakarta.jms" % "jakarta.jms-api" % "3.1.0", // Eclipse Public License 2.0 + + GPLv2
+        "org.apache.activemq" % "artemis-jakarta-server" % "2.31.2" % Test, // ApacheV2
+        "org.apache.activemq" % "artemis-jakarta-client" % "2.31.2" % Test, // ApacheV2
+        // slf4j-api 2.0.9 via activemq-client
+        "ch.qos.logback" % "logback-classic" % "1.4.12" % Test // Eclipse Public License 1.0
+      ) ++ Mockito
+  )
+
   val Jms = Seq(
     libraryDependencies ++= Seq(
         "javax.jms" % "jms" % "1.1" % Provided, // CDDL + GPLv2
@@ -334,16 +344,6 @@ object Dependencies {
       ) ++ Mockito,
     // Having JBoss as a first resolver is a workaround for https://github.com/coursier/coursier/issues/200
     externalResolvers := ("jboss" at "https://repository.jboss.org/nexus/content/groups/public") +: externalResolvers.value
-  )
-
-  val JakartaJms = Seq(
-    libraryDependencies ++= Seq(
-        "jakarta.jms" % "jakarta.jms-api" % "3.1.0", // Eclipse Public License 2.0 + + GPLv2
-        "org.apache.activemq" % "activemq-broker" % "6.0.0" % Test, // ApacheV2
-        "org.apache.activemq" % "activemq-client" % "6.0.0" % Test, // ApacheV2
-        // slf4j-api 2.0.9 via activemq-client
-        "ch.qos.logback" % "logback-classic" % "1.4.12" % Test // Eclipse Public License 1.0
-      ) ++ Mockito
   )
 
   val JsonStreaming = Seq(

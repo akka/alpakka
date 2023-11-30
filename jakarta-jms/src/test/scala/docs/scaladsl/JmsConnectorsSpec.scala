@@ -16,15 +16,14 @@ import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.{Done, NotUsed}
 import jakarta.jms._
 
-import org.apache.activemq.command.ActiveMQQueue
-import org.apache.activemq.{ActiveMQConnectionFactory, ActiveMQSession}
+import org.apache.activemq.artemis.jms.client.ActiveMQQueue
+import org.apache.activemq.artemis.jms.client.{ActiveMQConnectionFactory, ActiveMQSession}
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 
 import scala.annotation.tailrec
-import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.collection.mutable
 import scala.concurrent.Future
@@ -37,13 +36,19 @@ class JmsConnectorsSpec extends JmsSpec {
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(2.minutes)
 
+  private def assertClosed(connectionFactory: CachedConnectionFactory): Unit = {
+    intercept[JMSException] {
+      connectionFactory.cachedConnection.getClientID
+    }.getMessage shouldBe "Connection is closed"
+  }
+
   "The JMS Connectors" should {
     "publish and consume strings through a queue" in withServer() { server =>
       val url = server.brokerUri
       //#connection-factory
       //#text-sink
       //#text-source
-      val connectionFactory: jakarta.jms.ConnectionFactory = new org.apache.activemq.ActiveMQConnectionFactory(url)
+      val connectionFactory: jakarta.jms.ConnectionFactory = new org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory(url)
       //#connection-factory
       //#text-sink
       //#text-source
@@ -76,7 +81,7 @@ class JmsConnectorsSpec extends JmsSpec {
       //#object-sink
       //#object-source
       val connectionFactory = connFactory.asInstanceOf[ActiveMQConnectionFactory]
-      connectionFactory.setTrustedPackages(List(classOf[DummyObject].getPackage.getName).asJava)
+      connectionFactory.setDeserializationWhiteList(classOf[DummyObject].getPackage.getName)
       //#object-sink
       //#object-source
 
@@ -536,7 +541,9 @@ class JmsConnectorsSpec extends JmsSpec {
       val completionFuture: Future[Done] = Source(msgsIn).runWith(jmsSink)
       completionFuture.futureValue shouldBe Done
       // make sure connection was closed
-      eventually { connectionFactory.cachedConnection shouldBe Symbol("closed") }
+      eventually {
+        assertClosed(connectionFactory)
+      }
     }
 
     "sink exceptional completion" in withConnectionFactory() { connFactory =>
@@ -554,7 +561,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
       completionFuture.failed.futureValue shouldBe a[RuntimeException]
       // make sure connection was closed
-      eventually { connectionFactory.cachedConnection shouldBe Symbol("closed") }
+      eventually { assertClosed(connectionFactory) }
     }
 
     "producer disconnect exceptional completion" in withServer() { server =>
@@ -588,7 +595,7 @@ class JmsConnectorsSpec extends JmsSpec {
       // - not yet initialized before broker stop, or
       // - closed on broker stop (if preStart came first).
       if (connectionFactory.cachedConnection != null) {
-        connectionFactory.cachedConnection shouldBe Symbol("closed")
+        assertClosed(connectionFactory)
       }
     }
 
@@ -837,7 +844,7 @@ class JmsConnectorsSpec extends JmsSpec {
     }
 
     "fail if message destination is not defined" in {
-      val connectionFactory = new ActiveMQConnectionFactory("localhost:1234")
+      val connectionFactory = new ActiveMQConnectionFactory("vm://13")
 
       an[IllegalArgumentException] shouldBe thrownBy {
         JmsProducer.flow(JmsProducerSettings(producerConfig, connectionFactory))
@@ -1170,7 +1177,7 @@ class JmsConnectorsSpec extends JmsSpec {
   }
 
   "publish and subscribe with a durable subscription" in withServer() { server =>
-    import org.apache.activemq.ActiveMQConnectionFactory
+    import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory
     val producerConnectionFactory = server.createConnectionFactory
     //#create-connection-factory-with-client-id
     val consumerConnectionFactory = server.createConnectionFactory.asInstanceOf[ActiveMQConnectionFactory]

@@ -444,7 +444,7 @@ class JmsAckConnectorsSpec extends JmsSpec {
       probe.requestNext(convertSpanToDuration(patienceConfig.timeout)) shouldBe Some(aMessage)
 
       eventually {
-        server.service.checkQueueSize(testQueue) shouldBe true //queue is empty
+        server.getQueueSize(testQueue) shouldBe 0 //queue is empty
       }
 
       consumerControl.shutdown()

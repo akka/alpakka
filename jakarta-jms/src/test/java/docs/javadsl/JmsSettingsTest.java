@@ -7,7 +7,7 @@ package docs.javadsl;
 import akka.stream.alpakka.jakartajms.*;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import com.typesafe.config.ConfigFactory;
-import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -59,10 +59,11 @@ public class JmsSettingsTest {
     SendRetrySettings sendRetrySettings2 = SendRetrySettings.create(sendRetryConfig);
     assertEquals(sendRetrySettings.toString(), sendRetrySettings2.toString());
 
+    String brokerUrl = "vm://0";
     // #producer-settings
     Config producerConfig = config.getConfig(JmsProducerSettings.configPath());
     JmsProducerSettings settings =
-        JmsProducerSettings.create(producerConfig, new ActiveMQConnectionFactory("broker-url"))
+        JmsProducerSettings.create(producerConfig, new ActiveMQConnectionFactory(brokerUrl))
             .withTopic("target-topic")
             .withCredentials(Credentials.create("username", "password"))
             .withConnectionRetrySettings(retrySettings)
@@ -78,10 +79,11 @@ public class JmsSettingsTest {
     Config connectionRetryConfig = config.getConfig("alpakka.jakarta-jms.connection-retry");
     ConnectionRetrySettings retrySettings = ConnectionRetrySettings.create(connectionRetryConfig);
 
+    String brokerUrl = "vm://0";
     // #consumer-settings
     Config consumerConfig = config.getConfig(JmsConsumerSettings.configPath());
     JmsConsumerSettings settings =
-        JmsConsumerSettings.create(consumerConfig, new ActiveMQConnectionFactory("broker-url"))
+        JmsConsumerSettings.create(consumerConfig, new ActiveMQConnectionFactory(brokerUrl))
             .withTopic("message-topic")
             .withCredentials(Credentials.create("username", "password"))
             .withConnectionRetrySettings(retrySettings)

@@ -13,7 +13,7 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
 import com.typesafe.config.Config;
-import org.apache.activemq.command.ActiveMQQueue;
+import org.apache.activemq.artemis.jms.client.ActiveMQQueue;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;

@@ -22,10 +22,10 @@ import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
 import com.typesafe.config.Config;
 import jakartajmstestkit.JmsBroker;
-import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.activemq.ActiveMQSession;
-import org.apache.activemq.command.ActiveMQQueue;
-import org.apache.activemq.command.ActiveMQTextMessage;
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+import org.apache.activemq.artemis.jms.client.ActiveMQSession;
+import org.apache.activemq.artemis.jms.client.ActiveMQQueue;
+import org.apache.activemq.artemis.jms.client.ActiveMQTextMessage;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -162,8 +162,8 @@ public class JmsConnectorsTest {
           // #object-source
           ActiveMQConnectionFactory connectionFactory =
               (ActiveMQConnectionFactory) server.createConnectionFactory();
-          connectionFactory.setTrustedPackages(
-              Arrays.asList(DummyJavaTests.class.getPackage().getName()));
+          connectionFactory.setDeserializationWhiteList(
+              DummyJavaTests.class.getPackage().getName());
 
           // #object-source
           // #connection-factory-object
@@ -658,11 +658,7 @@ public class JmsConnectorsTest {
               result.toCompletableFuture().get().stream()
                   .map(
                       message -> {
-                        try {
                           return ((ActiveMQTextMessage) message).getText();
-                        } catch (JMSException e) {
-                          throw new RuntimeException(e);
-                        }
                       })
                   .collect(Collectors.toList());
 

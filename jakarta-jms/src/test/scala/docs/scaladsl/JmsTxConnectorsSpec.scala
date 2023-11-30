@@ -21,7 +21,7 @@ import scala.concurrent.{Await, Future, Promise}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
-class JmsTxConnectorsSpec extends JmsSharedServerSpec {
+class JmsTxConnectorsSpec extends JmsSpec {
 
   private final val log = LoggerFactory.getLogger(classOf[JmsTxConnectorsSpec])
 
@@ -475,7 +475,6 @@ class JmsTxConnectorsSpec extends JmsSharedServerSpec {
           JmsConsumerSettings(consumerConfig, connectionFactory)
             .withSessionCount(5)
             .withQueue(queueName)
-            .withAckTimeout(10.millis)
         )
 
         val resultQueue = new LinkedBlockingQueue[String]()
@@ -544,7 +543,8 @@ class JmsTxConnectorsSpec extends JmsSharedServerSpec {
         killSwitch2.shutdown()
 
         // messages might get delivered more than once, use set to ignore duplicates
-        resultList.toSet should contain theSameElementsAs numsIn.map(_.toString)
+        (numsIn.map(_.toString).toSet -- resultList.toSet) shouldBe Set.empty[String]
+        resultList.toSet.toVector.sorted shouldBe numsIn.map(_.toString).sorted
     }
 
     "ensure no message loss or starvation when timeouts occur in a stream processing" in withConnectionFactory() {
@@ -566,7 +566,6 @@ class JmsTxConnectorsSpec extends JmsSharedServerSpec {
           JmsConsumerSettings(consumerConfig, connectionFactory)
             .withSessionCount(5)
             .withQueue(queueName)
-            .withAckTimeout(10.millis)
         )
 
         val resultQueue = new LinkedBlockingQueue[String]()

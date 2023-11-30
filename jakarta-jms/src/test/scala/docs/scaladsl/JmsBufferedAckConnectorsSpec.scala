@@ -4,26 +4,36 @@
 
 package docs.scaladsl
 
-import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.TimeUnit
+
+import scala.annotation.tailrec
+import scala.collection.immutable
+import scala.collection.mutable
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.util.Failure
+import scala.util.Success
 
 import akka.Done
+import akka.stream.KillSwitches
+import akka.stream.ThrottleMode
 import akka.stream.alpakka.jakartajms._
-import akka.stream.alpakka.jakartajms.scaladsl.{JmsConsumer, JmsConsumerControl, JmsProducer}
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import akka.stream.alpakka.jakartajms.scaladsl.JmsConsumer
+import akka.stream.alpakka.jakartajms.scaladsl.JmsConsumerControl
+import akka.stream.alpakka.jakartajms.scaladsl.JmsProducer
+import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.Keep
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.{KillSwitches, ThrottleMode}
-import org.apache.activemq.ActiveMQSession
-import jakarta.jms.{JMSException, TextMessage}
+import jakarta.jms.JMSException
+import jakarta.jms.TextMessage
+import org.apache.activemq.artemis.api.jms.ActiveMQJMSConstants
 import org.scalatest.Inspectors._
 import org.scalatest.time.Span.convertSpanToDuration
 
-import scala.annotation.tailrec
-import scala.collection.{immutable, mutable}
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.util.{Failure, Success}
-
-class JmsBufferedAckConnectorsSpec extends JmsSharedServerSpec {
+class JmsBufferedAckConnectorsSpec extends JmsSpec {
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(2.minutes)
 
@@ -309,7 +319,7 @@ class JmsBufferedAckConnectorsSpec extends JmsSharedServerSpec {
         .run()
 
       // We need this ack mode for AMQ to not lose messages as ack normally acks any messages read on the session.
-      val individualAck = new AcknowledgeMode(ActiveMQSession.INDIVIDUAL_ACKNOWLEDGE)
+      val individualAck = new AcknowledgeMode(ActiveMQJMSConstants.INDIVIDUAL_ACKNOWLEDGE)
 
       val jmsSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
         JmsConsumerSettings(consumerConfig, connectionFactory)
@@ -336,8 +346,7 @@ class JmsBufferedAckConnectorsSpec extends JmsSharedServerSpec {
       val ex = new Exception("Test exception")
       killSwitch.abort(ex)
 
-      import scala.concurrent.ExecutionContext.Implicits.global
-
+      import system.dispatcher
       val resultTry = streamDone.map(Success(_)).recover { case e => Failure(e) }.futureValue
 
       // Keep publishing for another 2 seconds to make sure we killed the consumption mid-stream.
@@ -377,7 +386,8 @@ class JmsBufferedAckConnectorsSpec extends JmsSharedServerSpec {
       resultList.toSet should contain.theSameElementsAs(numsIn.map(_.toString))
     }
 
-    "send acknowledgments back to the broker after max.ack.interval" in withConnectionFactory() { connectionFactory =>
+    "send acknowledgments back to the broker after max.ack.interval" in withServer() { server =>
+      val connectionFactory = server.createTopicConnectionFactory
       val testQueue = "test"
       val aMessage = "message"
       val maxAckInterval = 1.second
@@ -406,7 +416,7 @@ class JmsBufferedAckConnectorsSpec extends JmsSharedServerSpec {
       probe.requestNext(convertSpanToDuration(patienceConfig.timeout)) shouldBe Some(aMessage)
 
       eventually {
-        isQueueEmpty(testQueue) shouldBe true
+        server.getQueueSize(testQueue) shouldBe 0
       }
 
       consumerControl.shutdown()

@@ -6,14 +6,14 @@ package docs.scaladsl
 
 import akka.stream.alpakka.jakartajms._
 import com.typesafe.config.{Config, ConfigFactory}
-import org.apache.activemq.ActiveMQConnectionFactory
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory
 import org.scalatest.OptionValues
 
 import scala.concurrent.duration._
 
 class JmsSettingsSpec extends JmsSpec with OptionValues {
 
-  private val connectionFactory = new ActiveMQConnectionFactory("broker-url")
+  private val connectionFactory = new ActiveMQConnectionFactory("vm://0")
 
   "Jms producer" should {
     "have producer settings" in {

@@ -43,6 +43,7 @@ private[jakartajms] final class JmsConsumerStage(settings: JmsConsumerSettings, 
                                 createDestination: jms.Session => jakarta.jms.Destination): JmsConsumerSession = {
       val session =
         connection.createSession(false, settings.acknowledgeMode.getOrElse(AcknowledgeMode.AutoAcknowledge).mode)
+
       new JmsConsumerSession(connection, session, createDestination(session), self.destination)
     }
 

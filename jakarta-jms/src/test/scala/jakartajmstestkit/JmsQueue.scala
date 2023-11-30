@@ -14,6 +14,7 @@ import scala.util.Try
 /**
  * This testkit was copied from https://github.com/sullis/jms-testkit with modifications
  * to support Jakarta Messaging. Replacing `javax.jms` with `jakarta.jms`.
+ * ActiveMQ replaced with Artemis EmbeddedActiveMQ.
  * jms-testkit is licensed under the Apache License, Version 2.0.
  */
 class JmsQueue(val broker: JmsBroker) {
@@ -26,13 +27,7 @@ class JmsQueue(val broker: JmsBroker) {
   def createConnectionFactory: ConnectionFactory = broker.createConnectionFactory
 
   private def calculateQueueSize(qName: String): Long = {
-    import scala.collection.JavaConverters._
-    val destinationMap = broker.service.getRegionBroker.getDestinationMap().asScala
-    val dests = destinationMap.values.filter(_.getName == qName)
-    val counts = dests.map {
-      _.getDestinationStatistics.getMessages.getCount
-    }
-    counts.sum
+    broker.getQueueSize(qName)
   }
 
   def toSeq: Seq[String] = {

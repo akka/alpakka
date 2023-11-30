@@ -6,7 +6,7 @@ package akka.stream.alpakka.jakartajms.scaladsl
 
 import jakarta.jms.{Connection, ConnectionFactory}
 
-import org.apache.activemq.ActiveMQConnection
+import org.apache.activemq.artemis.jms.client.ActiveMQConnection
 
 /**
  * a silly cached connection factory, not thread safe
