@@ -70,7 +70,9 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
     override def onPull(): Unit = tryPull()
 
     override def onPush(): Unit = {
-      val endpoint = if (settings.allowExplicitIndex) "/_bulk" else s"/${elasticsearchParams.indexName}/_bulk"
+      val endpoint =
+        if (settings.allowExplicitIndex) baseUri.path / "_bulk"
+        else baseUri.path / elasticsearchParams.indexName / "_bulk"
       val (messages, resultsPassthrough) = grab(in)
       inflight = true
       val json: String = restApi.toJson(messages)
@@ -78,7 +80,7 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
       log.debug("Posting data to Elasticsearch: {}", json)
 
       if (json.nonEmpty) {
-        val uri = baseUri.withPath(baseUri.path / endpoint)
+        val uri = baseUri.withPath(endpoint)
         val request = HttpRequest(HttpMethods.POST)
           .withUri(uri)
           .withEntity(HttpEntity(NDJsonProtocol.`application/x-ndjson`, json))
