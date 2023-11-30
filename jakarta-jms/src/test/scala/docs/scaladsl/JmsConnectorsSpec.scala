@@ -48,7 +48,8 @@ class JmsConnectorsSpec extends JmsSpec {
       //#connection-factory
       //#text-sink
       //#text-source
-      val connectionFactory: jakarta.jms.ConnectionFactory = new org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory(url)
+      val connectionFactory: jakarta.jms.ConnectionFactory =
+        new org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory(url)
       //#connection-factory
       //#text-sink
       //#text-source
