@@ -6,7 +6,6 @@ package akka.stream.alpakka.elasticsearch.impl
 
 import akka.annotation.InternalApi
 import akka.http.scaladsl.HttpExt
-import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.alpakka.elasticsearch._
