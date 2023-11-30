@@ -25,7 +25,7 @@ The JMS message model supports several types of message bodies in (see @javadoc[
 
 ### Configure JMS producers
 
-To connect to the JMS broker, first define an appropriate @javadoc[jakarta.jms.ConnectionFactory](jakarta.jms.ConnectionFactory). Here we're using Active MQ.
+To connect to the JMS broker, first define an appropriate @javadoc[jakarta.jms.ConnectionFactory](jakarta.jms.ConnectionFactory). Here we're using [Active MQ Artemis](https://activemq.apache.org/components/artemis/).
 
 Scala
 : @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #connection-factory }

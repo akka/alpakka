@@ -14,7 +14,7 @@ The JMS message model supports several types of message bodies in (see @javadoc[
 
 @apidoc[jakartajms.*.JmsConsumer$] offers factory methods to consume JMS messages in a number of ways.
 
-This examples shows how to listen to a JMS queue and emit @javadoc[jakarta.jms.Message](jakarta.jms.Message) elements into the stream.
+This example shows how to listen to a JMS queue and emit @javadoc[jakarta.jms.Message](jakarta.jms.Message) elements into the stream.
 
 The materialized value @apidoc[jakartajms.*.JmsConsumerControl] is used to shut down the consumer (it is a @apidoc[KillSwitch]) and offers the possibility to inspect the connectivity state of the consumer. 
 
@@ -27,7 +27,7 @@ Java
 
 ## Configure JMS consumers
 
-To connect to the JMS broker, first define an appropriate @javadoc[jakarta.jms.ConnectionFactory](jakarta.jms.ConnectionFactory). The Alpakka tests and all examples use Active MQ.
+To connect to the JMS broker, first define an appropriate @javadoc[jakarta.jms.ConnectionFactory](jakarta.jms.ConnectionFactory). The Alpakka tests and all examples use [Active MQ Artemis](https://activemq.apache.org/components/artemis/).
 
 Scala
 : @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #connection-factory }
