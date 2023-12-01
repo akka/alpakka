@@ -108,8 +108,10 @@ object Dependencies {
           .exclude("com.github.spotbugs", "spotbugs-annotations")
           .exclude("org.apache.tinkerpop", "*") //https://github.com/akka/alpakka/issues/2200
           .exclude("com.esri.geometry", "esri-geometry-api"), //https://github.com/akka/alpakka/issues/2225
-        "com.typesafe.akka" %% "akka-discovery" % AkkaVersion % Provided
-      ) ++ JacksonDatabindDependencies // evict Jackson version from "com.datastax.oss" % "java-driver-core"
+        "com.typesafe.akka" %% "akka-discovery" % AkkaVersion % Provided,
+      // override to fix 2023-4586
+      "io.netty" % "netty-handler" % "4.1.101.Final"
+    ) ++ JacksonDatabindDependencies // evict Jackson version from "com.datastax.oss" % "java-driver-core"
   )
 
   val Couchbase = Seq(
