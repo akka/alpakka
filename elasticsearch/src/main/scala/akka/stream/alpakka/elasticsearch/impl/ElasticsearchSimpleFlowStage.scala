@@ -71,8 +71,8 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
 
     override def onPush(): Unit = {
       val endpoint =
-        if (settings.allowExplicitIndex) baseUri.path / "_bulk"
-        else baseUri.path / elasticsearchParams.indexName / "_bulk"
+        if (settings.allowExplicitIndex) baseUri.path ?/ "_bulk"
+        else baseUri.path ?/ elasticsearchParams.indexName / "_bulk"
       val (messages, resultsPassthrough) = grab(in)
       inflight = true
       val json: String = restApi.toJson(messages)
