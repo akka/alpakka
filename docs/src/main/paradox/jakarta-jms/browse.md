@@ -25,7 +25,7 @@ A JMS `selector` can be used to filter the messages. Otherwise it will browse th
 
 ## Configure JMS browse
 
-To connect to the JMS broker, first define an appropriate @javadoc[jakarta.jms.ConnectionFactory](jakarta.jms.ConnectionFactory). The Alpakka tests and all examples use Active MQ.
+To connect to the JMS broker, first define an appropriate @javadoc[jakarta.jms.ConnectionFactory](jakarta.jms.ConnectionFactory). The Alpakka tests and all examples use ActiveMQ Artemis.
 
 Scala
 : @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #connection-factory }

@@ -27,7 +27,7 @@ Java
 
 ## Configure JMS consumers
 
-To connect to the JMS broker, first define an appropriate @javadoc[jakarta.jms.ConnectionFactory](jakarta.jms.ConnectionFactory). The Alpakka tests and all examples use [Active MQ Artemis](https://activemq.apache.org/components/artemis/).
+To connect to the JMS broker, first define an appropriate @javadoc[jakarta.jms.ConnectionFactory](jakarta.jms.ConnectionFactory). The Alpakka tests and all examples use [ActiveMQ Artemis](https://activemq.apache.org/components/artemis/).
 
 Scala
 : @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #connection-factory }
@@ -187,7 +187,7 @@ Java
 
 ### Object sources
 
-The `objectSource` emits the received message body as deserialized JVM instance. As serialization may be a security concern, JMS clients require special configuration to allow this. The example shows how to configure ActiveMQ connection factory to support serialization. See [ActiveMQ Security](https://activemq.apache.org/objectmessage.html) for more information on this.
+The `objectSource` emits the received message body as deserialized JVM instance. As serialization may be a security concern, JMS clients require special configuration to allow this. The example shows how to configure ActiveMQ Artemis connection factory to support serialization. See [Controlling JMS ObjectMessage deserialization](https://activemq.apache.org/components/artemis/documentation/latest/security.html#controlling-jms-objectmessage-deserialization) for more information on this.
 
 Scala
 : @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #object-source }

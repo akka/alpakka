@@ -25,7 +25,7 @@ The JMS message model supports several types of message bodies in (see @javadoc[
 
 ### Configure JMS producers
 
-To connect to the JMS broker, first define an appropriate @javadoc[jakarta.jms.ConnectionFactory](jakarta.jms.ConnectionFactory). Here we're using [Active MQ Artemis](https://activemq.apache.org/components/artemis/).
+To connect to the JMS broker, first define an appropriate @javadoc[jakarta.jms.ConnectionFactory](jakarta.jms.ConnectionFactory). Here we're using [ActiveMQ Artemis](https://activemq.apache.org/components/artemis/).
 
 Scala
 : @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #connection-factory }
@@ -105,8 +105,8 @@ Java
 
 #### Object sinks
 
-Create and configure ActiveMQ connection factory to support serialization.
-See [ActiveMQ Security](https://activemq.apache.org/objectmessage.html) for more information on this.
+Create and configure ActiveMQ Artemis connection factory to support serialization.
+See [Controlling JMS ObjectMessage deserialization](https://activemq.apache.org/components/artemis/documentation/latest/security.html#controlling-jms-objectmessage-deserialization) for more information on this.
 Create a sink, that accepts and forwards @apidoc[jakartajms.JmsObjectMessage$]s to the JMS provider:
 
 Scala
