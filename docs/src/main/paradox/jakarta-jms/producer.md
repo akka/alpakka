@@ -1,12 +1,12 @@
 # Producer
 
-The Alpakka JMS connector offers producing JMS messages to topics or queues in three ways
+The Alpakka Jakarta Messaging connector offers producing messages to topics or queues in three ways
 
 * JVM types to an Akka Streams Sink
 * `JmsMessage` sub-types to a Akka Streams Sink or Flow (using `JmsProducer.sink` or `JmsProducer.flow`)
 * `JmsEnvelope` sub-types to a Akka Streams Flow (using `JmsProducer.flexiFlow`) to support pass-throughs
 
-The JMS message model supports several types of message bodies in (see @javadoc[javax.jms.Message](javax.jms.Message)), which may be created directly from the Akka Stream elements, or in wrappers to access more advanced features.
+The JMS message model supports several types of message bodies in (see @javadoc[jakarta.jms.Message](jakarta.jms.Message)), which may be created directly from the Akka Stream elements, or in wrappers to access more advanced features.
 
 | Stream element type                                       | Alpakka producer         |
 |-----------------------------------------------------------|--------------------------|
@@ -25,95 +25,95 @@ The JMS message model supports several types of message bodies in (see @javadoc[
 
 ### Configure JMS producers
 
-To connect to the JMS broker, first define an appropriate @javadoc[javax.jms.ConnectionFactory](javax.jms.ConnectionFactory). Here we're using Active MQ.
+To connect to the JMS broker, first define an appropriate @javadoc[jakarta.jms.ConnectionFactory](jakarta.jms.ConnectionFactory). Here we're using [ActiveMQ Artemis](https://activemq.apache.org/components/artemis/).
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #connection-factory }
+: @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #connection-factory }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #connection-factory }
+: @@snip [snip](/jakarta-jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #connection-factory }
 
 
-The created @javadoc[ConnectionFactory](javax.jms.ConnectionFactory) is then used for the creation of the different JMS sinks or sources (see below).
+The created @javadoc[ConnectionFactory](jakarta.jms.ConnectionFactory) is then used for the creation of the different JMS sinks or sources (see below).
 
 ### A `JmsMessage` sub-type sink
 
-Use a case class with the subtype of @apidoc[.jms.JmsMessage] to wrap the messages you want to send and optionally set message specific properties or headers.
-@apidoc[.jms.*.JmsProducer$] contains factory methods to facilitate the creation of sinks according to the message type.
+Use a case class with the subtype of @apidoc[jakartajms.JmsMessage] to wrap the messages you want to send and optionally set message specific properties or headers.
+@apidoc[jakartajms.*.JmsProducer$] contains factory methods to facilitate the creation of sinks according to the message type.
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #create-jms-sink }
+: @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #create-jms-sink }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #create-jms-sink }
+: @@snip [snip](/jakarta-jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #create-jms-sink }
 
 
 #### Setting JMS message properties
 
-For every @apidoc[.jms.JmsMessage] you can set JMS message properties.
+For every @apidoc[jakartajms.JmsMessage] you can set JMS message properties.
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #create-messages-with-properties }
+: @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #create-messages-with-properties }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #create-messages-with-properties }
+: @@snip [snip](/jakarta-jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #create-messages-with-properties }
 
 
 #### Setting JMS message header attributes
-For every @apidoc[.jms.JmsMessage] you can set also JMS message headers.
+For every @apidoc[jakartajms.JmsMessage] you can set also JMS message headers.
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #create-messages-with-headers }
+: @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #create-messages-with-headers }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #create-messages-with-headers }
+: @@snip [snip](/jakarta-jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #create-messages-with-headers }
 
 
 ### Raw JVM type sinks
 
 #### Text sinks
 
-Create a sink, that accepts and forwards @apidoc[.jms.JmsTextMessage$]s to the JMS provider:
+Create a sink, that accepts and forwards @apidoc[jakartajms.JmsTextMessage$]s to the JMS provider:
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #text-sink }
+: @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #text-sink }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #text-sink }
+: @@snip [snip](/jakarta-jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #text-sink }
 
 #### Byte array sinks
 
-Create a sink, that accepts and forwards @apidoc[.jms.JmsByteMessage$]s to the JMS provider.
+Create a sink, that accepts and forwards @apidoc[jakartajms.JmsByteMessage$]s to the JMS provider.
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #bytearray-sink }
+: @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #bytearray-sink }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #bytearray-sink  }
+: @@snip [snip](/jakarta-jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #bytearray-sink  }
 
 
 #### Map message sink
 
-Create a sink, that accepts and forwards @apidoc[.jms.JmsMapMessage$]s to the JMS provider:
+Create a sink, that accepts and forwards @apidoc[jakartajms.JmsMapMessage$]s to the JMS provider:
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #map-sink }
+: @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #map-sink }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #map-sink }
+: @@snip [snip](/jakarta-jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #map-sink }
 
 
 #### Object sinks
 
-Create and configure ActiveMQ connection factory to support serialization.
-See [ActiveMQ Security](https://activemq.apache.org/objectmessage.html) for more information on this.
-Create a sink, that accepts and forwards @apidoc[.jms.JmsObjectMessage$]s to the JMS provider:
+Create and configure ActiveMQ Artemis connection factory to support serialization.
+See [Controlling JMS ObjectMessage deserialization](https://activemq.apache.org/components/artemis/documentation/latest/security.html#controlling-jms-objectmessage-deserialization) for more information on this.
+Create a sink, that accepts and forwards @apidoc[jakartajms.JmsObjectMessage$]s to the JMS provider:
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #object-sink }
+: @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #object-sink }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #object-sink }
+: @@snip [snip](/jakarta-jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #object-sink }
 
 
 ### Sending messages as a Flow
@@ -123,10 +123,10 @@ For example, you can ensure that a message is persisted to the queue before subs
 
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #flow-producer }
+: @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #flow-producer }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #flow-producer }
+: @@snip [snip](/jakarta-jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #flow-producer }
 
 
 ### Sending messages with per-message destinations
@@ -134,10 +134,10 @@ Java
 It is also possible to define message destinations per message:
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #run-directed-flow-producer }
+: @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #run-directed-flow-producer }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #run-directed-flow-producer }
+: @@snip [snip](/jakarta-jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #run-directed-flow-producer }
 
 When no destination is defined on the message, the destination given in the producer settings is used.
 
@@ -156,10 +156,10 @@ which it will pass through:
 * `JmsObjectMessagePassThrough`  
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #run-flexi-flow-producer }
+: @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #run-flexi-flow-producer }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #run-flexi-flow-producer }
+: @@snip [snip](/jakarta-jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #run-flexi-flow-producer }
 
 There are two implementations: One envelope type containing a messages to send to Jms, and one
 envelope type containing only values to pass through. This allows messages to flow without producing any new messages 
@@ -167,23 +167,23 @@ to Jms. This is primarily useful when committing offsets back to Kakfa, or when 
 the outcome of processing them back to Jms.
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #run-flexi-flow-pass-through-producer }
+: @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #run-flexi-flow-pass-through-producer }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #run-flexi-flow-pass-through-producer }
+: @@snip [snip](/jakarta-jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #run-flexi-flow-pass-through-producer }
 
 
 ## Producer Settings
 
-The Alpakka JMS producer is configured via default settings in the [HOCON](https://github.com/lightbend/config#using-hocon-the-json-superset) config file section `alpakka.jms.producer` in your `application.conf`, and settings may be tweaked in the code using the `withXyz` methods.
+The Alpakka Jakarta Messaging producer is configured via default settings in the [HOCON](https://github.com/lightbend/config#using-hocon-the-json-superset) config file section `alpakka.jakarta-jms.producer` in your `application.conf`, and settings may be tweaked in the code using the `withXyz` methods.
 
-The `JmsProducerSettings` factories allow for passing the actor system to read from the default  `alpakka.jms.producer` section, or you may pass a `Config` instance which is resolved to a section of the same structure. 
+The `JmsProducerSettings` factories allow for passing the actor system to read from the default  `alpakka.jakarta-jms.producer` section, or you may pass a `Config` instance which is resolved to a section of the same structure. 
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsSettingsSpec.scala) { #producer-settings }
+: @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsSettingsSpec.scala) { #producer-settings }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsSettingsTest.java) { #producer-settings }
+: @@snip [snip](/jakarta-jms/src/test/java/docs/javadsl/JmsSettingsTest.java) { #producer-settings }
 
 The producer can be configured with the following settings. On the second tab, the section from `reference.conf` shows the structure to use for configuring multiple set-ups.
 
@@ -200,7 +200,7 @@ timeToLive                | optional    | Time messages should be kept on the Jm
 connectionStatusSubscriptionTimeout | 5 seconds | Time to wait for subscriber of connection status events before starting to discard them |
 
 reference.conf
-: @@snip [snip](/jms/src/main/resources/reference.conf) { #producer }
+: @@snip [snip](/jakarta-jms/src/main/resources/reference.conf) { #producer }
 
 
 ## Connection Retries
@@ -217,7 +217,7 @@ maxBackoff     | Maximum back-off time allowed, after which all retries will hap
 maxRetries     | Maximum number of retries allowed (negative value is infinite)                      | 10
 
 reference.conf
-: @@snip [snip](/jms/src/main/resources/reference.conf) { #connection-retry }
+: @@snip [snip](/jakarta-jms/src/main/resources/reference.conf) { #connection-retry }
 
 
 The retry time is calculated by:
@@ -231,10 +231,10 @@ Consumers, producers and browsers try to reconnect with the same retry character
 All JMS settings support setting the `connectionRetrySettings` field using `.withConnectionRetrySettings(retrySettings)` on the given settings. The followings show how to create `ConnectionRetrySettings`:
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsSettingsSpec.scala) { #retry-settings-case-class }
+: @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsSettingsSpec.scala) { #retry-settings-case-class }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsSettingsTest.java) { #retry-settings }
+: @@snip [snip](/jakarta-jms/src/test/java/docs/javadsl/JmsSettingsTest.java) { #retry-settings }
 
 ## Send Retries
 
@@ -250,7 +250,7 @@ maxBackoff     | Maximum back-off time allowed, after which all retries will hap
 maxRetries     | Maximum number of retries allowed (negative value is infinite)                      | 10
 
 reference.conf
-: @@snip [snip](/jms/src/main/resources/reference.conf) { #send-retry }
+: @@snip [snip](/jakarta-jms/src/main/resources/reference.conf) { #send-retry }
 
 The retry time is calculated by:
 
@@ -261,10 +261,10 @@ With the default settings, we'll see retries after 20ms, 57ms, 104ms pauses, unt
 JMS producer settings support configuring retries by using `.withSendRetrySettings(retrySettings)`. The followings show how to create `SendRetrySettings`:
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsSettingsSpec.scala) { #send-retry-settings }
+: @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsSettingsSpec.scala) { #send-retry-settings }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsSettingsTest.java) { #send-retry-settings }
+: @@snip [snip](/jakarta-jms/src/test/java/docs/javadsl/JmsSettingsTest.java) { #send-retry-settings }
 
 If a send operation finally fails, the stage also fails unless a different supervision strategy is applied. The 
 producer stage honours stream supervision.

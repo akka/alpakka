@@ -46,6 +46,7 @@ The [Alpakka project](https://doc.akka.io/docs/alpakka/current/) is an open sour
 * [IBM DB2 Event Store](external/db2-event-store.md)
 * [InfluxDB](influxdb.md)
 * [IronMQ](ironmq.md)
+* [Jakarta Messaging](jakarta-jms/index.md)
 * [JMS](jms/index.md)
 * [MongoDB](mongodb.md)
 * [MQTT](mqtt.md)

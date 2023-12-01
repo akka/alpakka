@@ -1,52 +1,52 @@
 # Consumer
 
-The Alpakka JMS connector offers consuming JMS messages from topics or queues:
+The Alpakka Jakarta Messaging connector offers consuming JMS messages from topics or queues:
 
-* Read `javax.jms.Message`s from an Akka Streams source 
+* Read `jakarta.jms.Message`s from an Akka Streams source 
 * Allow for client acknowledgement to the JMS broker 
 * Allow for JMS transactions 
 * Read raw JVM types from an Akka Streams Source
 
-The JMS message model supports several types of message bodies in (see @javadoc[javax.jms.Message](javax.jms.Message)), which may be created directly from the Akka Stream elements, or in wrappers to access more advanced features.
+The JMS message model supports several types of message bodies in (see @javadoc[jakarta.jms.Message](jakarta.jms.Message)), which may be created directly from the Akka Stream elements, or in wrappers to access more advanced features.
 
 
 ## Receiving messages
 
-@apidoc[.jms.*.JmsConsumer$] offers factory methods to consume JMS messages in a number of ways.
+@apidoc[jakartajms.*.JmsConsumer$] offers factory methods to consume JMS messages in a number of ways.
 
-This examples shows how to listen to a JMS queue and emit @javadoc[javax.jms.Message](javax.jms.Message) elements into the stream.
+This example shows how to listen to a JMS queue and emit @javadoc[jakarta.jms.Message](jakarta.jms.Message) elements into the stream.
 
-The materialized value @apidoc[.jms.*.JmsConsumerControl] is used to shut down the consumer (it is a @apidoc[KillSwitch]) and offers the possibility to inspect the connectivity state of the consumer. 
+The materialized value @apidoc[jakartajms.*.JmsConsumerControl] is used to shut down the consumer (it is a @apidoc[KillSwitch]) and offers the possibility to inspect the connectivity state of the consumer. 
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #jms-source }
+: @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #jms-source }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #jms-source }
+: @@snip [snip](/jakarta-jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #jms-source }
 
 
 ## Configure JMS consumers
 
-To connect to the JMS broker, first define an appropriate @javadoc[javax.jms.ConnectionFactory](javax.jms.ConnectionFactory). The Alpakka tests and all examples use Active MQ.
+To connect to the JMS broker, first define an appropriate @javadoc[jakarta.jms.ConnectionFactory](jakarta.jms.ConnectionFactory). The Alpakka tests and all examples use [ActiveMQ Artemis](https://activemq.apache.org/components/artemis/).
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #connection-factory }
+: @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #connection-factory }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #connection-factory }
+: @@snip [snip](/jakarta-jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #connection-factory }
 
 
-The created @javadoc[ConnectionFactory](javax.jms.ConnectionFactory) is then used for the creation of the different JMS sources.
+The created @javadoc[ConnectionFactory](jakarta.jms.ConnectionFactory) is then used for the creation of the different JMS sources.
 
-The @apidoc[.jms.JmsConsumerSettings$] factories allow for passing the actor system to read from the default `alpakka.jms.consumer` section, or you may pass a `Config` instance which is resolved to a section of the same structure. 
+The @apidoc[jakartajms.JmsConsumerSettings$] factories allow for passing the actor system to read from the default `alpakka.jakarta-jms.consumer` section, or you may pass a `Config` instance which is resolved to a section of the same structure. 
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsSettingsSpec.scala) { #consumer-settings }
+: @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsSettingsSpec.scala) { #consumer-settings }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsSettingsTest.java) { #consumer-settings }
+: @@snip [snip](/jakarta-jms/src/test/java/docs/javadsl/JmsSettingsTest.java) { #consumer-settings }
 
-The Alpakka JMS consumer is configured via default settings in the [HOCON](https://github.com/lightbend/config#using-hocon-the-json-superset) config file section `alpakka.jms.consumer` in your `application.conf`, and settings may be tweaked in the code using the `withXyz` methods. On the second tab the section from `reference.conf` shows the structure to use for configuring multiple set-ups.
+The Alpakka Jakarta Messaging consumer is configured via default settings in the [HOCON](https://github.com/lightbend/config#using-hocon-the-json-superset) config file section `alpakka.jakarta-jms.consumer` in your `application.conf`, and settings may be tweaked in the code using the `withXyz` methods. On the second tab the section from `reference.conf` shows the structure to use for configuring multiple set-ups.
 
 Table
 : Setting               | Description                                                          | Default Value       | 
@@ -64,7 +64,7 @@ selector                | JMS selector expression (see [below](#using-jms-select
 connectionStatusSubscriptionTimeout | 5 seconds | Time to wait for subscriber of connection status events before starting to discard them |
 
 reference.conf
-: @@snip [snip](/jms/src/main/resources/reference.conf) { #consumer }
+: @@snip [snip](/jakarta-jms/src/main/resources/reference.conf) { #consumer }
 
 
 ### Broker specific destinations
@@ -72,10 +72,10 @@ reference.conf
 To reach out to special features of the JMS broker, destinations can be created as `CustomDestination` which takes a factory method for creating destinations.
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #custom-destination }
+: @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #custom-destination }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #custom-destination }
+: @@snip [snip](/jakarta-jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #custom-destination }
 
 
 ## Using JMS client acknowledgement
@@ -83,10 +83,10 @@ Java
 Client acknowledgement ensures a message is successfully received by the consumer and notifies the JMS broker for every message. Due to the threading details in JMS brokers, this special source is required (see the explanation below).
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsBufferedAckConnectorsSpec.scala) { #source }
+: @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsBufferedAckConnectorsSpec.scala) { #source }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsBufferedAckConnectorsTest.java) { #source }
+: @@snip [snip](/jakarta-jms/src/test/java/docs/javadsl/JmsBufferedAckConnectorsTest.java) { #source }
 
 The `sessionCount` parameter controls the number of JMS sessions to run in parallel.
 
@@ -113,10 +113,10 @@ Use this `JmsConsumer.ackSource` as shown above instead.
 JMS transactions may be used with this connector. Be aware that transactions are a heavy-weight tool and may not perform very good.
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsTxConnectorsSpec.scala) { #source }
+: @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsTxConnectorsSpec.scala) { #source }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsTxConnectorsTest.java) { #source }
+: @@snip [snip](/jakarta-jms/src/test/java/docs/javadsl/JmsTxConnectorsTest.java) { #source }
 
 The `sessionCount` parameter controls the number of JMS sessions to run in parallel.
 
@@ -133,14 +133,14 @@ The `ackTimeout` parameter controls the maximum time given to a message to be co
 
 ## Using JMS selectors
 
-Create a @javadoc[javax.jms.Message](javax.jms.Message) source specifying a [JMS selector expression](https://docs.oracle.com/cd/E19798-01/821-1841/bncer/index.html):
+Create a @javadoc[jakarta.jms.Message](jakarta.jms.Message) source specifying a [JMS selector expression](https://docs.oracle.com/cd/E19798-01/821-1841/bncer/index.html):
 Verify that we are only receiving messages according to the selector:
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #source-with-selector }
+: @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #source-with-selector }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #source-with-selector }
+: @@snip [snip](/jakarta-jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #source-with-selector }
 
 
 ## Raw JVM type sources
@@ -157,10 +157,10 @@ Java
 The `textSource` emits the received message body as String:
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #text-source }
+: @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #text-source }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #text-source }
+: @@snip [snip](/jakarta-jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #text-source }
 
 
 ### Byte array sources
@@ -168,10 +168,10 @@ Java
 The `bytesSource` emits the received message body as byte array:
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #bytearray-source }
+: @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #bytearray-source }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #bytearray-source }
+: @@snip [snip](/jakarta-jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #bytearray-source }
 
 
 ### Map sources
@@ -179,31 +179,31 @@ Java
 The `mapSource` emits the received message body as @scala[Map[String, Object]]@java[Map<String, Object>]:
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #map-source }
+: @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #map-source }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #map-source }
+: @@snip [snip](/jakarta-jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #map-source }
 
 
 ### Object sources
 
-The `objectSource` emits the received message body as deserialized JVM instance. As serialization may be a security concern, JMS clients require special configuration to allow this. The example shows how to configure ActiveMQ connection factory to support serialization. See [ActiveMQ Security](https://activemq.apache.org/objectmessage.html) for more information on this.
+The `objectSource` emits the received message body as deserialized JVM instance. As serialization may be a security concern, JMS clients require special configuration to allow this. The example shows how to configure ActiveMQ Artemis connection factory to support serialization. See [Controlling JMS ObjectMessage deserialization](https://activemq.apache.org/components/artemis/documentation/latest/security.html#controlling-jms-objectmessage-deserialization) for more information on this.
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #object-source }
+: @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #object-source }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #object-source }
+: @@snip [snip](/jakarta-jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #object-source }
 
 
 ## Request / Reply
 
-The request / reply pattern can be implemented by streaming a @apidoc[.jms.*.JmsConsumer$]
-to a @apidoc[.jms.*.JmsProducer$],
+The request / reply pattern can be implemented by streaming a @apidoc[jakartajms.*.JmsConsumer$]
+to a @apidoc[jakartajms.*.JmsProducer$],
 with a stage in between that extracts the `ReplyTo` and `CorrelationID` from the original message and adds them to the response.
 
 Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #request-reply }
+: @@snip [snip](/jakarta-jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #request-reply }
 
 Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #request-reply }
+: @@snip [snip](/jakarta-jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #request-reply }

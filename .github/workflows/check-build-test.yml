@@ -105,6 +105,7 @@ jobs:
           - { connector:  huawei-push-kit }
           - { connector: influxdb,                     pre_cmd: 'docker-compose up -d influxdb' }
           - { connector: ironmq,                       pre_cmd: 'docker-compose up -d ironauth ironmq' }
+          - { connector: jakarta-jms }
           - { connector: jms,                          pre_cmd: 'docker-compose up -d ibmmq' }
           - { connector: json-streaming }
           - { connector: kinesis }
