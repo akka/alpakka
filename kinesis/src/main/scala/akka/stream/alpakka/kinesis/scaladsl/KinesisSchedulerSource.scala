@@ -5,7 +5,6 @@
 package akka.stream.alpakka.kinesis.scaladsl
 
 import akka.NotUsed
-import akka.dispatch.ExecutionContexts
 import akka.stream._
 import akka.stream.alpakka.kinesis.impl.KinesisSchedulerSourceStage
 import akka.stream.alpakka.kinesis.{
@@ -36,13 +35,7 @@ object KinesisSchedulerSource {
       schedulerBuilder: ShardRecordProcessorFactory => Scheduler,
       settings: KinesisSchedulerSourceSettings
   ): Source[CommittableRecord, Future[Scheduler]] =
-    Source
-      .fromMaterializer { (mat, _) =>
-        import mat.executionContext
-        Source
-          .fromGraph(new KinesisSchedulerSourceStage(settings, schedulerBuilder))
-      }
-      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.parasitic))
+      Source.fromGraph(new KinesisSchedulerSourceStage(settings, schedulerBuilder))
 
   def sharded(
       schedulerBuilder: ShardRecordProcessorFactory => Scheduler,
