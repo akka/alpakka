@@ -35,7 +35,7 @@ object KinesisSchedulerSource {
       schedulerBuilder: ShardRecordProcessorFactory => Scheduler,
       settings: KinesisSchedulerSourceSettings
   ): Source[CommittableRecord, Future[Scheduler]] =
-      Source.fromGraph(new KinesisSchedulerSourceStage(settings, schedulerBuilder))
+    Source.fromGraph(new KinesisSchedulerSourceStage(settings, schedulerBuilder))
 
   def sharded(
       schedulerBuilder: ShardRecordProcessorFactory => Scheduler,

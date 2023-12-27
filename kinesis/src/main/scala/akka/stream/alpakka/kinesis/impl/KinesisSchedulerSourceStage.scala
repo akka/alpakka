@@ -103,7 +103,9 @@ private[kinesis] class KinesisSchedulerSourceStage(
         failStage(SchedulerUnexpectedShutdown(e))
     }
     override def postStop(): Unit =
-      schedulerOpt.foreach(scheduler => Future(if (!scheduler.shutdownComplete()) scheduler.shutdown())(materializer.executionContext))
+      schedulerOpt.foreach(
+        scheduler => Future(if (!scheduler.shutdownComplete()) scheduler.shutdown())(materializer.executionContext)
+      )
 
     protected def executionContext(attributes: Attributes): ExecutionContext = {
       val dispatcherId = (attributes.get[ActorAttributes.Dispatcher](ActorAttributes.IODispatcher) match {
@@ -111,7 +113,7 @@ private[kinesis] class KinesisSchedulerSourceStage(
           ActorAttributes.IODispatcher
         case d => d
       }) match {
-        case d@ActorAttributes.IODispatcher =>
+        case d @ ActorAttributes.IODispatcher =>
           // this one is not a dispatcher id, but is a config path pointing to the dispatcher id
           materializer.system.settings.config.getString(d.dispatcher)
         case d => d.dispatcher
