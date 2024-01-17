@@ -104,7 +104,7 @@ private[kinesis] class KinesisSchedulerSourceStage(
     }
     override def postStop(): Unit =
       schedulerOpt.foreach(
-        scheduler => if (!scheduler.shutdownComplete()) scheduler.shutdown())
+        scheduler => if (!scheduler.shutdownComplete()) scheduler.shutdown()
       )
 
     protected def executionContext(attributes: Attributes): ExecutionContext = {
