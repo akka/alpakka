@@ -40,8 +40,7 @@ private[kinesis] object KinesisSchedulerSourceStage {
 private[kinesis] class KinesisSchedulerSourceStage(
     settings: KinesisSchedulerSourceSettings,
     schedulerBuilder: ShardRecordProcessorFactory => Scheduler
-)(implicit ec: ExecutionContext)
-    extends GraphStageWithMaterializedValue[SourceShape[CommittableRecord], Future[Scheduler]] {
+) extends GraphStageWithMaterializedValue[SourceShape[CommittableRecord], Future[Scheduler]] {
 
   private val out = Outlet[CommittableRecord]("Records")
   override def shape: SourceShape[CommittableRecord] = new SourceShape[CommittableRecord](out)
@@ -69,6 +68,7 @@ private[kinesis] class KinesisSchedulerSourceStage(
     private[this] var schedulerOpt: Option[Scheduler] = None
 
     override def preStart(): Unit = {
+      implicit val ec: ExecutionContext = executionContext(attributes)
       val scheduler = schedulerBuilder(new ShardRecordProcessorFactory {
         override def shardRecordProcessor(): ShardRecordProcessor =
           new ShardProcessor(newRecordCallback)
@@ -103,6 +103,23 @@ private[kinesis] class KinesisSchedulerSourceStage(
         failStage(SchedulerUnexpectedShutdown(e))
     }
     override def postStop(): Unit =
-      schedulerOpt.foreach(scheduler => Future(if (!scheduler.shutdownComplete()) scheduler.shutdown()))
+      schedulerOpt.foreach(
+        scheduler => if (!scheduler.shutdownComplete()) scheduler.shutdown()
+      )
+
+    protected def executionContext(attributes: Attributes): ExecutionContext = {
+      val dispatcherId = (attributes.get[ActorAttributes.Dispatcher](ActorAttributes.IODispatcher) match {
+        case ActorAttributes.Dispatcher("") =>
+          ActorAttributes.IODispatcher
+        case d => d
+      }) match {
+        case d @ ActorAttributes.IODispatcher =>
+          // this one is not a dispatcher id, but is a config path pointing to the dispatcher id
+          materializer.system.settings.config.getString(d.dispatcher)
+        case d => d.dispatcher
+      }
+
+      materializer.system.dispatchers.lookup(dispatcherId)
+    }
   }
 }
