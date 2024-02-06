@@ -13,7 +13,7 @@ object Dependencies {
   val AkkaVersion = "2.9.0"
   val AkkaBinaryVersion = "2.9"
 
-  val InfluxDBJavaVersion = "2.15"
+  val InfluxDBJavaVersion = "2.24"
 
   val AwsSdk2Version = "2.17.295"
   val AwsSpiAkkaHttpVersion = "1.0.1"
