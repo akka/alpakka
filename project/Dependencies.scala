@@ -362,7 +362,7 @@ object Dependencies {
       ) ++ Seq(
         "software.amazon.awssdk" % "kinesis" % AwsSdk2Version, // ApacheV2
         "software.amazon.awssdk" % "firehose" % AwsSdk2Version, // ApacheV2
-        "software.amazon.kinesis" % "amazon-kinesis-client" % "2.4.0", // ApacheV2
+        "software.amazon.kinesis" % "amazon-kinesis-client" % "2.4.8", // ApacheV2
         "com.google.protobuf" % "protobuf-java" % KinesisProtobufJavaVersion // CVE in older transitive dependency
       ).map(
         _.excludeAll(
