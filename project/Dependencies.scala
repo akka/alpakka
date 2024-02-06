@@ -352,7 +352,7 @@ object Dependencies {
       ) ++ JacksonDatabindDependencies
   )
 
-  val KinesisProtobufJavaVersion = "3.24.0" // sync with Akka gRPC
+  val KinesisProtobufJavaVersion = "3.24.4" // sync with Akka gRPC
   val Kinesis = Seq(
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
