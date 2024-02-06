@@ -34,8 +34,8 @@ object Dependencies {
   // https://github.com/jwt-scala/jwt-scala/releases
   val JwtScalaVersion = "9.4.4"
 
-  val log4jOverSlf4jVersion = "1.7.36"
-  val jclOverSlf4jVersion = "1.7.36"
+  val log4jOverSlf4jVersion = "2.0.12"
+  val jclOverSlf4jVersion = "2.0.12"
 
   val Common = Seq(
     // These libraries are added to all modules via the `Common` AutoPlugin
