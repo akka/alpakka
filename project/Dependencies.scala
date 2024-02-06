@@ -372,7 +372,7 @@ object Dependencies {
       ) ++ Mockito
   )
 
-  val KuduVersion = "1.7.1"
+  val KuduVersion = "1.14.0"
   val Kudu = Seq(
     libraryDependencies ++= Seq(
         "org.apache.kudu" % "kudu-client-tools" % KuduVersion, // ApacheV2
