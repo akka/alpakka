@@ -13,14 +13,15 @@ import scala.annotation.varargs
 
 final class PravegaReaderGroupManager(scope: String,
                                       clientConfig: ClientConfig,
-                                      readerGroupConfigBuilder: ReaderGroupConfigBuilder)
-    extends AutoCloseable {
+                                      readerGroupConfigBuilder: ReaderGroupConfigBuilder
+) extends AutoCloseable {
 
   def this(scope: String, clientConfig: ClientConfig) =
     this(scope,
          clientConfig,
          ReaderGroupConfig
-           .builder())
+           .builder()
+    )
 
   private lazy val readerGroupManager = ReaderGroupManager.withScope(scope, clientConfig)
 

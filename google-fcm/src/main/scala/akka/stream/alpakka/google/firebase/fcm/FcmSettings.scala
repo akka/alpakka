@@ -14,21 +14,25 @@ import scala.compat.java8.OptionConverters._
 
 @nowarn("msg=deprecated")
 final class FcmSettings private (
-    /** Use [[akka.stream.alpakka.google.GoogleSettings]] */ @deprecated(
+    /** Use [[akka.stream.alpakka.google.GoogleSettings]] */
+    @deprecated(
       "Use akka.stream.alpakka.google.GoogleSettings",
       "3.0.0"
     ) @Deprecated val clientEmail: String,
-    /** Use [[akka.stream.alpakka.google.GoogleSettings]] */ @deprecated(
+    /** Use [[akka.stream.alpakka.google.GoogleSettings]] */
+    @deprecated(
       "Use akka.stream.alpakka.google.GoogleSettings",
       "3.0.0"
     ) @Deprecated val privateKey: String,
-    /** Use [[akka.stream.alpakka.google.GoogleSettings]] */ @deprecated(
+    /** Use [[akka.stream.alpakka.google.GoogleSettings]] */
+    @deprecated(
       "Use akka.stream.alpakka.google.GoogleSettings",
       "3.0.0"
     ) @Deprecated val projectId: String,
     val isTest: Boolean,
     val maxConcurrentConnections: Int,
-    /** Use [[akka.stream.alpakka.google.GoogleSettings]] */ @deprecated(
+    /** Use [[akka.stream.alpakka.google.GoogleSettings]] */
+    @deprecated(
       "Use akka.stream.alpakka.google.GoogleSettings",
       "3.0.0"
     ) @Deprecated val forwardProxy: Option[ForwardProxy] = Option.empty
@@ -79,7 +83,8 @@ final class FcmSettings private (
                     projectId = projectId,
                     isTest = isTest,
                     maxConcurrentConnections = maxConcurrentConnections,
-                    forwardProxy = forwardProxy)
+                    forwardProxy = forwardProxy
+    )
 
   override def toString =
     s"""FcmFlowConfig(clientEmail=$clientEmail,projectId=$projectId,isTest=$isTest,maxConcurrentConnections=$maxConcurrentConnections,forwardProxy=$forwardProxy)"""
@@ -173,7 +178,7 @@ final class ForwardProxyCredentials private (val username: String, val password:
   override def equals(other: Any): Boolean = other match {
     case that: ForwardProxyCredentials =>
       Objects.equals(this.username, that.username) &&
-      Objects.equals(this.password, that.password)
+        Objects.equals(this.password, that.password)
     case _ => false
   }
 
@@ -199,7 +204,8 @@ object ForwardProxy {
   def apply(host: String,
             port: Int,
             credentials: Option[ForwardProxyCredentials],
-            trustPem: Option[ForwardProxyTrustPem]) =
+            trustPem: Option[ForwardProxyTrustPem]
+  ) =
     new ForwardProxy(host, port, credentials, trustPem)
 
   /** Java API */
@@ -212,7 +218,8 @@ object ForwardProxy {
   def create(host: String,
              port: Int,
              credentials: Option[ForwardProxyCredentials],
-             trustPem: Option[ForwardProxyTrustPem]) =
+             trustPem: Option[ForwardProxyTrustPem]
+  ) =
     apply(host, port, credentials, trustPem)
 
 }
@@ -225,7 +232,8 @@ object ForwardProxy {
 final class ForwardProxy private (val host: String,
                                   val port: Int,
                                   val credentials: Option[ForwardProxyCredentials],
-                                  val trustPem: Option[ForwardProxyTrustPem]) {
+                                  val trustPem: Option[ForwardProxyTrustPem]
+) {
 
   /** Java API */
   def getHost: String = host
@@ -245,7 +253,8 @@ final class ForwardProxy private (val host: String,
   private def copy(host: String = host,
                    port: Int = port,
                    credentials: Option[ForwardProxyCredentials] = credentials,
-                   trustPem: Option[ForwardProxyTrustPem] = trustPem) =
+                   trustPem: Option[ForwardProxyTrustPem] = trustPem
+  ) =
     new ForwardProxy(host, port, credentials, trustPem)
 
   override def toString =
@@ -259,9 +268,9 @@ final class ForwardProxy private (val host: String,
   override def equals(other: Any): Boolean = other match {
     case that: ForwardProxy =>
       Objects.equals(this.host, that.host) &&
-      Objects.equals(this.port, that.port) &&
-      Objects.equals(this.credentials, that.credentials) &&
-      Objects.equals(this.trustPem, that.trustPem)
+        Objects.equals(this.port, that.port) &&
+        Objects.equals(this.credentials, that.credentials) &&
+        Objects.equals(this.trustPem, that.trustPem)
     case _ => false
   }
 

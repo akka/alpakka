@@ -50,8 +50,10 @@ final private[couchbase] class CouchbaseSessionImpl(asyncBucket: AsyncBucket, cl
                                                 writeSettings.persistTo,
                                                 writeSettings.replicateTo,
                                                 writeSettings.timeout.toMillis,
-                                                TimeUnit.MILLISECONDS),
-                             document)
+                                                TimeUnit.MILLISECONDS
+                             ),
+                             document
+    )
 
   def get(id: String): Future[Option[JsonDocument]] =
     zeroOrOneObservableToFuture(asyncBucket.get(id))
@@ -64,7 +66,8 @@ final private[couchbase] class CouchbaseSessionImpl(asyncBucket: AsyncBucket, cl
 
   def get[T <: Document[_]](id: String,
                             timeout: FiniteDuration,
-                            documentClass: Class[T]): scala.concurrent.Future[Option[T]] =
+                            documentClass: Class[T]
+  ): scala.concurrent.Future[Option[T]] =
     zeroOrOneObservableToFuture(asyncBucket.get(id, documentClass, timeout.toMillis, TimeUnit.MILLISECONDS))
 
   def upsert(document: JsonDocument): Future[JsonDocument] = upsertDoc(document)
@@ -80,8 +83,10 @@ final private[couchbase] class CouchbaseSessionImpl(asyncBucket: AsyncBucket, cl
                                                 writeSettings.persistTo,
                                                 writeSettings.replicateTo,
                                                 writeSettings.timeout.toMillis,
-                                                TimeUnit.MILLISECONDS),
-                             document.id)
+                                                TimeUnit.MILLISECONDS
+                             ),
+                             document.id
+    )
 
   def replace(document: JsonDocument): Future[JsonDocument] = replaceDoc(document)
 
@@ -96,8 +101,10 @@ final private[couchbase] class CouchbaseSessionImpl(asyncBucket: AsyncBucket, cl
                                                  writeSettings.persistTo,
                                                  writeSettings.replicateTo,
                                                  writeSettings.timeout.toMillis,
-                                                 TimeUnit.MILLISECONDS),
-                             document.id)
+                                                 TimeUnit.MILLISECONDS
+                             ),
+                             document.id
+    )
 
   def remove(id: String): Future[Done] =
     singleObservableToFuture(asyncBucket.remove(id), id)
@@ -108,8 +115,10 @@ final private[couchbase] class CouchbaseSessionImpl(asyncBucket: AsyncBucket, cl
                                                 writeSettings.persistTo,
                                                 writeSettings.replicateTo,
                                                 writeSettings.timeout.toMillis,
-                                                TimeUnit.MILLISECONDS),
-                             id)
+                                                TimeUnit.MILLISECONDS
+                             ),
+                             id
+    )
       .map(_ => Done)(ExecutionContexts.parasitic)
 
   def streamedQuery(query: N1qlQuery): Source[JsonObject, NotUsed] =
@@ -135,8 +144,10 @@ final private[couchbase] class CouchbaseSessionImpl(asyncBucket: AsyncBucket, cl
                                                  writeSettings.persistTo,
                                                  writeSettings.replicateTo,
                                                  writeSettings.timeout.toMillis,
-                                                 TimeUnit.MILLISECONDS),
-                             id)
+                                                 TimeUnit.MILLISECONDS
+                             ),
+                             id
+    )
       .map(_.content(): Long)(ExecutionContexts.parasitic)
 
   def close(): Future[Done] =

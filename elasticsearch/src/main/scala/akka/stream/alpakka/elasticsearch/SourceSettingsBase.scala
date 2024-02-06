@@ -13,7 +13,6 @@ import scala.concurrent.duration.FiniteDuration
 
 /**
  * Configure Elastiscsearch/OpenSearch sources.
- *
  */
 abstract class SourceSettingsBase[Version <: ApiVersionBase, S <: SourceSettingsBase[Version, S]] private[alpakka] (
     val connection: ElasticsearchConnectionSettings,
@@ -59,6 +58,7 @@ abstract class SourceSettingsBase[Version <: ApiVersionBase, S <: SourceSettings
                      bufferSize: Int = bufferSize,
                      includeDocumentVersion: Boolean = includeDocumentVersion,
                      scrollDuration: FiniteDuration = scrollDuration,
-                     apiVersion: Version = apiVersion): S;
+                     apiVersion: Version = apiVersion
+  ): S;
 
 }

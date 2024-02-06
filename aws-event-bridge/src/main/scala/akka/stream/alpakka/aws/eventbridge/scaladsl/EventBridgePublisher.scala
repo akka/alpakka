@@ -25,8 +25,8 @@ object EventBridgePublisher {
    * @param settings [[akka.stream.alpakka.aws.eventbridge.EventBridgePublishSettings]] settings for publishing
    * @param eventBridgeClient [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]] client for publishing
    */
-  def flow(settings: EventBridgePublishSettings = EventBridgePublishSettings())(
-      implicit eventBridgeClient: EventBridgeAsyncClient
+  def flow(settings: EventBridgePublishSettings = EventBridgePublishSettings())(implicit
+      eventBridgeClient: EventBridgeAsyncClient
   ): Flow[PutEventsRequestEntry, PutEventsResponse, NotUsed] =
     Flow
       .fromFunction((message: PutEventsRequestEntry) => PutEventsRequest.builder().entries(message).build())
@@ -38,8 +38,8 @@ object EventBridgePublisher {
    * @param settings [[akka.stream.alpakka.aws.eventbridge.EventBridgePublishSettings]] settings for publishing
    * @param eventBridgeClient [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]] client for publishing
    */
-  def flowSeq(settings: EventBridgePublishSettings = EventBridgePublishSettings())(
-      implicit eventBridgeClient: EventBridgeAsyncClient
+  def flowSeq(settings: EventBridgePublishSettings = EventBridgePublishSettings())(implicit
+      eventBridgeClient: EventBridgeAsyncClient
   ): Flow[Seq[PutEventsRequestEntry], PutEventsResponse, NotUsed] =
     Flow
       .fromFunction((messages: Seq[PutEventsRequestEntry]) => PutEventsRequest.builder().entries(messages: _*).build())
@@ -62,8 +62,8 @@ object EventBridgePublisher {
    *
    * @param eventBridgeClient [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]] client for publishing
    */
-  def publishFlow()(
-      implicit eventBridgeClient: EventBridgeAsyncClient
+  def publishFlow()(implicit
+      eventBridgeClient: EventBridgeAsyncClient
   ): Flow[PutEventsRequest, PutEventsResponse, NotUsed] =
     publishFlow(EventBridgePublishSettings())
 
@@ -73,8 +73,8 @@ object EventBridgePublisher {
    * @param settings [[akka.stream.alpakka.aws.eventbridge.EventBridgePublishSettings]] settings for publishing
    * @param eventBridgeClient [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]] client for publishing
    */
-  def sink(settings: EventBridgePublishSettings = EventBridgePublishSettings())(
-      implicit eventBridgeClient: EventBridgeAsyncClient
+  def sink(settings: EventBridgePublishSettings = EventBridgePublishSettings())(implicit
+      eventBridgeClient: EventBridgeAsyncClient
   ): Sink[PutEventsRequestEntry, Future[Done]] =
     flow(settings).toMat(Sink.ignore)(Keep.right)
 

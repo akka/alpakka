@@ -9,7 +9,8 @@ import akka.util.JavaDurationConverters._
 
 final class SqsAckGroupedSettings private (val maxBatchSize: Int,
                                            val maxBatchWait: scala.concurrent.duration.FiniteDuration,
-                                           val concurrentRequests: Int) {
+                                           val concurrentRequests: Int
+) {
 
   require(concurrentRequests > 0)
   require(
@@ -33,10 +34,12 @@ final class SqsAckGroupedSettings private (val maxBatchSize: Int,
 
   private def copy(maxBatchSize: Int = maxBatchSize,
                    maxBatchWait: scala.concurrent.duration.FiniteDuration = maxBatchWait,
-                   concurrentRequests: Int = concurrentRequests): SqsAckGroupedSettings =
+                   concurrentRequests: Int = concurrentRequests
+  ): SqsAckGroupedSettings =
     new SqsAckGroupedSettings(maxBatchSize = maxBatchSize,
                               maxBatchWait = maxBatchWait,
-                              concurrentRequests = concurrentRequests)
+                              concurrentRequests = concurrentRequests
+    )
 
   override def toString =
     s"""SqsAckGroupedSettings(maxBatchSize=$maxBatchSize,maxBatchWait=$maxBatchWait,concurrentRequests=$concurrentRequests)"""

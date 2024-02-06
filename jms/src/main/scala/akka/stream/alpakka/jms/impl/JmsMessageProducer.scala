@@ -74,39 +74,37 @@ private class JmsMessageProducer(jmsProducer: jms.MessageProducer, jmsSession: J
     }
 
   private[jms] def populateMessageProperties(message: javax.jms.Message, jmsMessage: JmsEnvelope[_]): Unit =
-    jmsMessage.properties.foreach {
-      case (key, v) =>
-        v match {
-          case v: String => message.setStringProperty(key, v)
-          case v: Int => message.setIntProperty(key, v)
-          case v: Boolean => message.setBooleanProperty(key, v)
-          case v: Byte => message.setByteProperty(key, v)
-          case v: Short => message.setShortProperty(key, v)
-          case v: Float => message.setFloatProperty(key, v)
-          case v: Long => message.setLongProperty(key, v)
-          case v: Double => message.setDoubleProperty(key, v)
-          case v: Array[Byte] => message.setObjectProperty(key, v)
-          case null => message.setObjectProperty(key, null)
-          case _ => throw UnsupportedMessagePropertyType(key, v, jmsMessage)
-        }
+    jmsMessage.properties.foreach { case (key, v) =>
+      v match {
+        case v: String => message.setStringProperty(key, v)
+        case v: Int => message.setIntProperty(key, v)
+        case v: Boolean => message.setBooleanProperty(key, v)
+        case v: Byte => message.setByteProperty(key, v)
+        case v: Short => message.setShortProperty(key, v)
+        case v: Float => message.setFloatProperty(key, v)
+        case v: Long => message.setLongProperty(key, v)
+        case v: Double => message.setDoubleProperty(key, v)
+        case v: Array[Byte] => message.setObjectProperty(key, v)
+        case null => message.setObjectProperty(key, null)
+        case _ => throw UnsupportedMessagePropertyType(key, v, jmsMessage)
+      }
     }
 
   private def populateMapMessage(message: javax.jms.MapMessage, jmsMessage: JmsMapMessagePassThrough[_]): Unit =
-    jmsMessage.body.foreach {
-      case (key, v) =>
-        v match {
-          case v: String => message.setString(key, v)
-          case v: Int => message.setInt(key, v)
-          case v: Boolean => message.setBoolean(key, v)
-          case v: Byte => message.setByte(key, v)
-          case v: Short => message.setShort(key, v)
-          case v: Float => message.setFloat(key, v)
-          case v: Long => message.setLong(key, v)
-          case v: Double => message.setDouble(key, v)
-          case v: Array[Byte] => message.setBytes(key, v)
-          case null => message.setObject(key, v)
-          case _ => throw UnsupportedMapMessageEntryType(key, v, jmsMessage)
-        }
+    jmsMessage.body.foreach { case (key, v) =>
+      v match {
+        case v: String => message.setString(key, v)
+        case v: Int => message.setInt(key, v)
+        case v: Boolean => message.setBoolean(key, v)
+        case v: Byte => message.setByte(key, v)
+        case v: Short => message.setShort(key, v)
+        case v: Float => message.setFloat(key, v)
+        case v: Long => message.setLong(key, v)
+        case v: Double => message.setDouble(key, v)
+        case v: Array[Byte] => message.setBytes(key, v)
+        case null => message.setObject(key, v)
+        case _ => throw UnsupportedMapMessageEntryType(key, v, jmsMessage)
+      }
     }
 
   private def populateMessageHeader(message: javax.jms.Message, headers: Set[JmsHeader]): Unit =

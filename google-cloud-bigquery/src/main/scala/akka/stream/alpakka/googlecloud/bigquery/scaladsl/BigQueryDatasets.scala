@@ -41,7 +41,8 @@ private[scaladsl] trait BigQueryDatasets { this: BigQueryRest =>
    */
   def datasets(maxResults: Option[Int] = None,
                all: Option[Boolean] = None,
-               filter: Map[String, String] = Map.empty): Source[Dataset, NotUsed] =
+               filter: Map[String, String] = Map.empty
+  ): Source[Dataset, NotUsed] =
     source { settings =>
       import BigQueryException._
       import SprayJsonSupport._
@@ -60,8 +61,9 @@ private[scaladsl] trait BigQueryDatasets { this: BigQueryRest =>
    * @param datasetId dataset ID of the requested dataset
    * @return a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.Dataset]]
    */
-  def dataset(datasetId: String)(implicit system: ClassicActorSystemProvider,
-                                 settings: GoogleSettings): Future[Dataset] = {
+  def dataset(
+      datasetId: String
+  )(implicit system: ClassicActorSystemProvider, settings: GoogleSettings): Future[Dataset] = {
     import BigQueryException._
     import SprayJsonSupport._
     val uri = BigQueryEndpoints.dataset(settings.projectId, datasetId)
@@ -75,8 +77,9 @@ private[scaladsl] trait BigQueryDatasets { this: BigQueryRest =>
    * @param datasetId dataset ID of the new dataset
    * @return a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.Dataset]]
    */
-  def createDataset(datasetId: String)(implicit system: ClassicActorSystemProvider,
-                                       settings: GoogleSettings): Future[Dataset] = {
+  def createDataset(
+      datasetId: String
+  )(implicit system: ClassicActorSystemProvider, settings: GoogleSettings): Future[Dataset] = {
     val dataset = Dataset(DatasetReference(Some(datasetId), None), None, None, None)
     createDataset(dataset)
   }
@@ -88,8 +91,9 @@ private[scaladsl] trait BigQueryDatasets { this: BigQueryRest =>
    * @param dataset the [[akka.stream.alpakka.googlecloud.bigquery.model.Dataset]] to create
    * @return a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.Dataset]]
    */
-  def createDataset(dataset: Dataset)(implicit system: ClassicActorSystemProvider,
-                                      settings: GoogleSettings): Future[Dataset] = {
+  def createDataset(
+      dataset: Dataset
+  )(implicit system: ClassicActorSystemProvider, settings: GoogleSettings): Future[Dataset] = {
     import BigQueryException._
     import SprayJsonSupport._
     implicit val ec = ExecutionContexts.parasitic
@@ -107,8 +111,10 @@ private[scaladsl] trait BigQueryDatasets { this: BigQueryRest =>
    * @param deleteContents if `true`, delete all the tables in the dataset; if `false` and the dataset contains tables, the request will fail
    * @return a [[scala.concurrent.Future]] containing [[akka.Done]]
    */
-  def deleteDataset(datasetId: String, deleteContents: Boolean = false)(implicit system: ClassicActorSystemProvider,
-                                                                        settings: GoogleSettings): Future[Done] = {
+  def deleteDataset(datasetId: String, deleteContents: Boolean = false)(implicit
+      system: ClassicActorSystemProvider,
+      settings: GoogleSettings
+  ): Future[Done] = {
     import BigQueryException._
     val uri = BigQueryEndpoints.dataset(settings.projectId, datasetId)
     val query = Query("deleteContents" -> deleteContents.toString)

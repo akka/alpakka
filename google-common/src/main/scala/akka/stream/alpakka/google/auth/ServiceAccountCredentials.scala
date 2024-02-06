@@ -20,8 +20,8 @@ import scala.io.Source
 @InternalApi
 private[alpakka] object ServiceAccountCredentials {
 
-  def apply(projectId: String, clientEmail: String, privateKey: String, scopes: Seq[String])(
-      implicit system: ClassicActorSystemProvider
+  def apply(projectId: String, clientEmail: String, privateKey: String, scopes: Seq[String])(implicit
+      system: ClassicActorSystemProvider
   ): Credentials =
     new ServiceAccountCredentials(projectId, clientEmail, privateKey, scopes)
 
@@ -58,12 +58,15 @@ private[alpakka] object ServiceAccountCredentials {
 private final class ServiceAccountCredentials(projectId: String,
                                               clientEmail: String,
                                               privateKey: String,
-                                              scopes: Seq[String])(implicit mat: Materializer)
+                                              scopes: Seq[String]
+)(implicit mat: Materializer)
     extends OAuth2Credentials(projectId) {
 
-  override protected def getAccessToken()(implicit mat: Materializer,
-                                          settings: RequestSettings,
-                                          clock: Clock): Future[AccessToken] = {
+  override protected def getAccessToken()(implicit
+      mat: Materializer,
+      settings: RequestSettings,
+      clock: Clock
+  ): Future[AccessToken] = {
     GoogleOAuth2.getAccessToken(clientEmail, privateKey, scopes)
   }
 }

@@ -77,7 +77,8 @@ import scala.concurrent.Future
 
   def getObject(bucket: String,
                 objectName: String,
-                generation: Option[Long] = None): Source[Option[StorageObject], NotUsed] = sourceGCS { settings =>
+                generation: Option[Long] = None
+  ): Source[Option[StorageObject], NotUsed] = sourceGCS { settings =>
     val uri = Uri(settings.endpointUrl)
       .withPath(Path(settings.basePath) ++ getObjectPath(bucket, objectName))
       .withQuery(Query(generation.map("generation" -> _.toString).toMap))
@@ -87,7 +88,8 @@ import scala.concurrent.Future
 
   def deleteObjectSource(bucket: String,
                          objectName: String,
-                         generation: Option[Long] = None): Source[Boolean, NotUsed] = sourceGCS { settings =>
+                         generation: Option[Long] = None
+  ): Source[Boolean, NotUsed] = sourceGCS { settings =>
     val uri = Uri(settings.endpointUrl)
       .withPath(Path(settings.basePath) ++ getObjectPath(bucket, objectName))
       .withQuery(Query(generation.map("generation" -> _.toString).toMap))
@@ -102,7 +104,8 @@ import scala.concurrent.Future
   def putObject(bucket: String,
                 objectName: String,
                 data: Source[ByteString, _],
-                contentType: ContentType): Source[StorageObject, NotUsed] = sourceGCS { settings =>
+                contentType: ContentType
+  ): Source[StorageObject, NotUsed] = sourceGCS { settings =>
     val uri = Uri(settings.endpointUrl)
       .withPath(Path("/upload" + settings.basePath) ++ getBucketPath(bucket) / "o")
       .withQuery(Query("uploadType" -> "media", "name" -> objectName))
@@ -113,23 +116,24 @@ import scala.concurrent.Future
 
   def download(bucket: String,
                objectName: String,
-               generation: Option[Long] = None): Source[Option[Source[ByteString, NotUsed]], NotUsed] = sourceGCS {
-    settings =>
-      val query = ("alt" -> "media") +: ("generation" -> generation.map(_.toString)) ?+: Query.Empty
-      val uri = Uri(settings.endpointUrl)
-        .withPath(Path(settings.basePath) ++ getObjectPath(bucket, objectName))
-        .withQuery(query)
-      val request = HttpRequest(uri = uri)
-      implicit val um: Unmarshaller[HttpEntity, Source[ByteString, NotUsed]] =
-        Unmarshaller.strict(_.withoutSizeLimit.dataBytes.mapMaterializedValue(_ => NotUsed))
-      makeRequestSource[Option[Source[ByteString, NotUsed]]](request)
+               generation: Option[Long] = None
+  ): Source[Option[Source[ByteString, NotUsed]], NotUsed] = sourceGCS { settings =>
+    val query = ("alt" -> "media") +: ("generation" -> generation.map(_.toString)) ?+: Query.Empty
+    val uri = Uri(settings.endpointUrl)
+      .withPath(Path(settings.basePath) ++ getObjectPath(bucket, objectName))
+      .withQuery(query)
+    val request = HttpRequest(uri = uri)
+    implicit val um: Unmarshaller[HttpEntity, Source[ByteString, NotUsed]] =
+      Unmarshaller.strict(_.withoutSizeLimit.dataBytes.mapMaterializedValue(_ => NotUsed))
+    makeRequestSource[Option[Source[ByteString, NotUsed]]](request)
   }
 
   def resumableUpload(bucket: String,
                       objectName: String,
                       contentType: ContentType,
                       chunkSize: Int = 5 * 1024 * 1024,
-                      metadata: Option[Map[String, String]] = None): Sink[ByteString, Future[StorageObject]] =
+                      metadata: Option[Map[String, String]] = None
+  ): Sink[ByteString, Future[StorageObject]] =
     Sink
       .fromMaterializer { (mat, attr) =>
         implicit val settings = {
@@ -165,7 +169,8 @@ import scala.concurrent.Future
   def rewrite(sourceBucket: String,
               sourceObjectName: String,
               destinationBucket: String,
-              destinationObjectName: String): RunnableGraph[Future[StorageObject]] = {
+              destinationObjectName: String
+  ): RunnableGraph[Future[StorageObject]] = {
 
     sealed trait RewriteState
     case object Starting extends RewriteState
@@ -186,8 +191,8 @@ import scala.concurrent.Future
       val request = HttpRequest(POST, uri, entity = entity)
       makeRequestSource[RewriteResponse](request).map { rewriteResponse =>
         Some(
-          rewriteResponse.rewriteToken.fold[(RewriteState, RewriteResponse)]((Finished, rewriteResponse))(
-            token => (Running(token), rewriteResponse)
+          rewriteResponse.rewriteToken.fold[(RewriteState, RewriteResponse)]((Finished, rewriteResponse))(token =>
+            (Running(token), rewriteResponse)
           )
         )
       }

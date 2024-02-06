@@ -20,7 +20,8 @@ object CouchbaseSource {
    */
   def fromStatement(sessionSettings: CouchbaseSessionSettings,
                     statement: Statement,
-                    bucketName: String): Source[JsonObject, NotUsed] =
+                    bucketName: String
+  ): Source[JsonObject, NotUsed] =
     scaladsl.CouchbaseSource.fromStatement(sessionSettings, statement, bucketName).asJava
 
   /**
@@ -28,7 +29,8 @@ object CouchbaseSource {
    */
   def fromN1qlQuery(sessionSettings: CouchbaseSessionSettings,
                     query: N1qlQuery,
-                    bucketName: String): Source[JsonObject, NotUsed] =
+                    bucketName: String
+  ): Source[JsonObject, NotUsed] =
     scaladsl.CouchbaseSource.fromN1qlQuery(sessionSettings, query, bucketName).asJava
 
 }

@@ -20,7 +20,8 @@ object OrientDbSource {
    */
   def apply(className: String,
             settings: OrientDbSourceSettings,
-            query: Option[String] = None): Source[OrientDbReadResult[ODocument], NotUsed] =
+            query: Option[String] = None
+  ): Source[OrientDbReadResult[ODocument], NotUsed] =
     Source.fromGraph(
       new OrientDbSourceStage(
         className,
@@ -35,7 +36,8 @@ object OrientDbSource {
   def typed[T](className: String,
                settings: OrientDbSourceSettings,
                clazz: Class[T],
-               query: String = null): Source[OrientDbReadResult[T], NotUsed] =
+               query: String = null
+  ): Source[OrientDbReadResult[T], NotUsed] =
     Source.fromGraph(
       new OrientDbSourceStage[T](
         className,

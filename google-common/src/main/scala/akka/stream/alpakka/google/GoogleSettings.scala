@@ -82,7 +82,8 @@ object GoogleSettings {
 
 final case class GoogleSettings @InternalApi private (projectId: String,
                                                       credentials: Credentials,
-                                                      requestSettings: RequestSettings) {
+                                                      requestSettings: RequestSettings
+) {
   def getProjectId = projectId
   def getCredentials = credentials
   def getRequestSettings = requestSettings
@@ -121,7 +122,8 @@ object RequestSettings {
              prettyPrint: Boolean,
              chunkSize: Int,
              retrySettings: RetrySettings,
-             forwardProxy: Optional[ForwardProxy]) =
+             forwardProxy: Optional[ForwardProxy]
+  ) =
     apply(userIp.asScala, quotaUser.asScala, prettyPrint, chunkSize, retrySettings, forwardProxy.asScala)
 }
 
@@ -197,7 +199,8 @@ object RetrySettings {
 final case class RetrySettings @InternalApi private (maxRetries: Int,
                                                      minBackoff: FiniteDuration,
                                                      maxBackoff: FiniteDuration,
-                                                     randomFactor: Double) {
+                                                     randomFactor: Double
+) {
   def getMaxRetries = maxRetries
   def getMinBackoff = minBackoff.asJava
   def getMaxBackoff = maxBackoff.asJava
@@ -245,7 +248,8 @@ object ForwardProxy {
             host: String,
             port: Int,
             credentials: Option[BasicHttpCredentials],
-            trustPem: Option[String])(implicit system: ClassicActorSystemProvider): ForwardProxy = {
+            trustPem: Option[String]
+  )(implicit system: ClassicActorSystemProvider): ForwardProxy = {
     ForwardProxy(
       trustPem.fold(Http(system).defaultClientHttpsContext)(ForwardProxyHttpsContext(_)),
       ForwardProxyPoolSettings(scheme, host, port, credentials)(system.classicSystem)
@@ -257,7 +261,8 @@ object ForwardProxy {
              port: Int,
              credentials: Optional[jm.headers.BasicHttpCredentials],
              trustPem: Optional[String],
-             system: ClassicActorSystemProvider) =
+             system: ClassicActorSystemProvider
+  ) =
     apply(scheme, host, port, credentials.asScala.map(_.asInstanceOf[BasicHttpCredentials]), trustPem.asScala)(system)
 
   def create(connectionContext: jh.HttpConnectionContext, poolSettings: jh.settings.ConnectionPoolSettings) =
@@ -265,7 +270,8 @@ object ForwardProxy {
 }
 
 final case class ForwardProxy @InternalApi private (connectionContext: HttpsConnectionContext,
-                                                    poolSettings: ConnectionPoolSettings) {
+                                                    poolSettings: ConnectionPoolSettings
+) {
   def getConnectionContext: jh.HttpsConnectionContext = connectionContext
   def getPoolSettings: jh.settings.ConnectionPoolSettings = poolSettings
   def withConnectionContext(connectionContext: HttpsConnectionContext) =

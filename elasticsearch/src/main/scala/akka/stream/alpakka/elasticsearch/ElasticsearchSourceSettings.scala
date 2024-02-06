@@ -10,29 +10,31 @@ import scala.concurrent.duration.FiniteDuration
 
 /**
  * Configure Elastiscsearch sources.
- *
  */
 final class ElasticsearchSourceSettings private (connection: ElasticsearchConnectionSettings,
                                                  bufferSize: Int,
                                                  includeDocumentVersion: Boolean,
                                                  scrollDuration: FiniteDuration,
-                                                 apiVersion: ApiVersion)
-    extends SourceSettingsBase[ApiVersion, ElasticsearchSourceSettings](connection,
-                                                                        bufferSize,
-                                                                        includeDocumentVersion,
-                                                                        scrollDuration,
-                                                                        apiVersion) {
+                                                 apiVersion: ApiVersion
+) extends SourceSettingsBase[ApiVersion, ElasticsearchSourceSettings](connection,
+                                                                      bufferSize,
+                                                                      includeDocumentVersion,
+                                                                      scrollDuration,
+                                                                      apiVersion
+    ) {
 
   protected override def copy(connection: ElasticsearchConnectionSettings,
                               bufferSize: Int,
                               includeDocumentVersion: Boolean,
                               scrollDuration: FiniteDuration,
-                              apiVersion: ApiVersion): ElasticsearchSourceSettings =
+                              apiVersion: ApiVersion
+  ): ElasticsearchSourceSettings =
     new ElasticsearchSourceSettings(connection = connection,
                                     bufferSize = bufferSize,
                                     includeDocumentVersion = includeDocumentVersion,
                                     scrollDuration = scrollDuration,
-                                    apiVersion = apiVersion)
+                                    apiVersion = apiVersion
+    )
 
   override def toString =
     s"""ElasticsearchSourceSettings(connection=$connection,bufferSize=$bufferSize,includeDocumentVersion=$includeDocumentVersion,scrollDuration=$scrollDuration,apiVersion=$apiVersion)"""
@@ -47,7 +49,8 @@ object ElasticsearchSourceSettings {
                                     10,
                                     includeDocumentVersion = false,
                                     FiniteDuration(5, TimeUnit.MINUTES),
-                                    ApiVersion.V7)
+                                    ApiVersion.V7
+    )
 
   /** Java API */
   def create(connection: ElasticsearchConnectionSettings): ElasticsearchSourceSettings =
@@ -55,5 +58,6 @@ object ElasticsearchSourceSettings {
                                     10,
                                     includeDocumentVersion = false,
                                     FiniteDuration(5, TimeUnit.MINUTES),
-                                    ApiVersion.V7)
+                                    ApiVersion.V7
+    )
 }

@@ -27,7 +27,8 @@ object ElasticsearchSource {
    */
   def create(elasticsearchParams: ElasticsearchParams,
              query: String,
-             settings: SourceSettingsBase[_, _]): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
+             settings: SourceSettingsBase[_, _]
+  ): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
     create(elasticsearchParams, query, settings, new ObjectMapper())
 
   /**
@@ -37,7 +38,8 @@ object ElasticsearchSource {
   def create(elasticsearchParams: ElasticsearchParams,
              query: String,
              settings: SourceSettingsBase[_, _],
-             objectMapper: ObjectMapper): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
+             objectMapper: ObjectMapper
+  ): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
     Source
       .fromMaterializer { (mat: Materializer, _: Attributes) =>
         {
@@ -71,7 +73,8 @@ object ElasticsearchSource {
   def create(elasticsearchParams: ElasticsearchParams,
              searchParams: java.util.Map[String, String],
              settings: SourceSettingsBase[_, _],
-             objectMapper: ObjectMapper): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
+             objectMapper: ObjectMapper
+  ): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
     Source
       .fromMaterializer { (mat: Materializer, _: Attributes) =>
         {
@@ -98,7 +101,8 @@ object ElasticsearchSource {
   def typed[T](elasticsearchParams: ElasticsearchParams,
                query: String,
                settings: SourceSettingsBase[_, _],
-               clazz: Class[T]): Source[ReadResult[T], NotUsed] =
+               clazz: Class[T]
+  ): Source[ReadResult[T], NotUsed] =
     typed[T](elasticsearchParams, query, settings, clazz, new ObjectMapper())
 
   /**
@@ -109,7 +113,8 @@ object ElasticsearchSource {
                query: String,
                settings: SourceSettingsBase[_, _],
                clazz: Class[T],
-               objectMapper: ObjectMapper): Source[ReadResult[T], NotUsed] =
+               objectMapper: ObjectMapper
+  ): Source[ReadResult[T], NotUsed] =
     Source
       .fromMaterializer { (mat: Materializer, _: Attributes) =>
         {
@@ -143,7 +148,8 @@ object ElasticsearchSource {
                searchParams: java.util.Map[String, String],
                settings: SourceSettingsBase[_, _],
                clazz: Class[T],
-               objectMapper: ObjectMapper): Source[ReadResult[T], NotUsed] =
+               objectMapper: ObjectMapper
+  ): Source[ReadResult[T], NotUsed] =
     Source
       .fromMaterializer { (mat: Materializer, _: Attributes) =>
         {

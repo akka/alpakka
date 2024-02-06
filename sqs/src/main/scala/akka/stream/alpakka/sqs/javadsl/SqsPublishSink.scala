@@ -26,7 +26,8 @@ object SqsPublishSink {
    */
   def create(queueUrl: String,
              settings: SqsPublishSettings,
-             sqsClient: SqsAsyncClient): Sink[String, CompletionStage[Done]] =
+             sqsClient: SqsAsyncClient
+  ): Sink[String, CompletionStage[Done]] =
     scaladsl.SqsPublishSink.apply(queueUrl, settings)(sqsClient).mapMaterializedValue(_.toJava).asJava
 
   /**
@@ -34,7 +35,8 @@ object SqsPublishSink {
    */
   def messageSink(queueUrl: String,
                   settings: SqsPublishSettings,
-                  sqsClient: SqsAsyncClient): Sink[SendMessageRequest, CompletionStage[Done]] =
+                  sqsClient: SqsAsyncClient
+  ): Sink[SendMessageRequest, CompletionStage[Done]] =
     scaladsl.SqsPublishSink
       .messageSink(queueUrl, settings)(sqsClient)
       .mapMaterializedValue(_.toJava)
@@ -44,7 +46,8 @@ object SqsPublishSink {
    * creates a [[akka.stream.javadsl.Sink Sink]] to publish messages to SQS queues based on the message queue url using an [[software.amazon.awssdk.services.sqs.SqsAsyncClient SqsAsyncClient]]
    */
   def messageSink(settings: SqsPublishSettings,
-                  sqsClient: SqsAsyncClient): Sink[SendMessageRequest, CompletionStage[Done]] =
+                  sqsClient: SqsAsyncClient
+  ): Sink[SendMessageRequest, CompletionStage[Done]] =
     scaladsl.SqsPublishSink
       .messageSink(settings)(sqsClient)
       .mapMaterializedValue(_.toJava)
@@ -56,7 +59,8 @@ object SqsPublishSink {
    */
   def grouped(queueUrl: String,
               settings: SqsPublishGroupedSettings,
-              sqsClient: SqsAsyncClient): Sink[String, CompletionStage[Done]] =
+              sqsClient: SqsAsyncClient
+  ): Sink[String, CompletionStage[Done]] =
     scaladsl.SqsPublishSink.grouped(queueUrl, settings)(sqsClient).mapMaterializedValue(_.toJava).asJava
 
   /**
@@ -65,7 +69,8 @@ object SqsPublishSink {
    */
   def groupedMessageSink(queueUrl: String,
                          settings: SqsPublishGroupedSettings,
-                         sqsClient: SqsAsyncClient): Sink[SendMessageRequest, CompletionStage[Done]] =
+                         sqsClient: SqsAsyncClient
+  ): Sink[SendMessageRequest, CompletionStage[Done]] =
     scaladsl.SqsPublishSink
       .groupedMessageSink(queueUrl, settings)(sqsClient)
       .mapMaterializedValue(_.toJava)
@@ -77,7 +82,8 @@ object SqsPublishSink {
    */
   def batch[B <: java.lang.Iterable[String]](queueUrl: String,
                                              settings: SqsPublishBatchSettings,
-                                             sqsClient: SqsAsyncClient): Sink[B, CompletionStage[Done]] =
+                                             sqsClient: SqsAsyncClient
+  ): Sink[B, CompletionStage[Done]] =
     Flow[java.lang.Iterable[String]]
       .map(_.asScala)
       .toMat(scaladsl.SqsPublishSink.batch(queueUrl, settings)(sqsClient))(Keep.right)

@@ -20,7 +20,8 @@ object CouchbaseSource {
    */
   def fromStatement(sessionSettings: CouchbaseSessionSettings,
                     statement: Statement,
-                    bucketName: String): Source[JsonObject, NotUsed] =
+                    bucketName: String
+  ): Source[JsonObject, NotUsed] =
     Source
       .fromMaterializer { (materializer, _) =>
         val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
@@ -35,7 +36,8 @@ object CouchbaseSource {
    */
   def fromN1qlQuery(sessionSettings: CouchbaseSessionSettings,
                     query: N1qlQuery,
-                    bucketName: String): Source[JsonObject, NotUsed] =
+                    bucketName: String
+  ): Source[JsonObject, NotUsed] =
     Source
       .fromMaterializer { (materializer, _) =>
         val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)

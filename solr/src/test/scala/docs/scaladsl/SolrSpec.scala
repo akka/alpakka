@@ -557,7 +557,7 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
             .createUpdateMessage[Book](
               idField = "title",
               tuple.getFields.get("title").toString,
-              updates = Map("comment" -> Map("set" -> (s"${tuple.getFields.get("comment")} It is a good book!!!")))
+              updates = Map("comment" -> Map("set" -> s"${tuple.getFields.get("comment")} It is a good book!!!"))
             )
             .withRoutingFieldValue("router-value")
         }

@@ -30,8 +30,9 @@ object CouchbaseSession {
    * Create a session against the given bucket. The couchbase client used to connect will be created and then closed when
    * the session is closed.
    */
-  def apply(settings: CouchbaseSessionSettings,
-            bucketName: String)(implicit ec: ExecutionContext): Future[CouchbaseSession] =
+  def apply(settings: CouchbaseSessionSettings, bucketName: String)(implicit
+      ec: ExecutionContext
+  ): Future[CouchbaseSession] =
     createClusterClient(settings).flatMap(c => openBucket(c, disconnectClusterOnClose = true, bucketName))
 
   /**
@@ -68,8 +69,8 @@ object CouchbaseSession {
         }).map(_.authenticate(enrichedSettings.username, enrichedSettings.password))
       }
 
-  private def openBucket(cluster: AsyncCluster, disconnectClusterOnClose: Boolean, bucketName: String)(
-      implicit ec: ExecutionContext
+  private def openBucket(cluster: AsyncCluster, disconnectClusterOnClose: Boolean, bucketName: String)(implicit
+      ec: ExecutionContext
   ): Future[CouchbaseSession] =
     RxUtilities
       .singleObservableToFuture(cluster.openBucket(bucketName), "openBucket")

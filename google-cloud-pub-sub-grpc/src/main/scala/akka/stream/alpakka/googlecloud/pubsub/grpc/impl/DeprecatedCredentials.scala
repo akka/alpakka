@@ -17,7 +17,8 @@ private[grpc] final case class DeprecatedCredentials(underlying: CallCredentials
 
   override def applyRequestMetadata(requestInfo: CallCredentials.RequestInfo,
                                     appExecutor: Executor,
-                                    applier: CallCredentials.MetadataApplier): Unit =
+                                    applier: CallCredentials.MetadataApplier
+  ): Unit =
     underlying.applyRequestMetadata(requestInfo, appExecutor, applier)
 
   @deprecated("unstable API", "7.0.0")

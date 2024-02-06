@@ -22,7 +22,8 @@ import scala.concurrent.{Future, Promise}
  */
 @InternalApi private[udp] final class UdpBindLogic(localAddress: InetSocketAddress,
                                                    options: Iterable[SocketOption],
-                                                   boundPromise: Promise[InetSocketAddress])(
+                                                   boundPromise: Promise[InetSocketAddress]
+)(
     val shape: FlowShape[Datagram, Datagram]
 )(implicit val system: ActorSystem)
     extends GraphStageLogic(shape) {
@@ -81,8 +82,9 @@ import scala.concurrent.{Future, Promise}
 }
 
 @InternalApi private[udp] final class UdpBindFlow(localAddress: InetSocketAddress,
-                                                  options: Iterable[SocketOption] = Nil)(
-    implicit val system: ActorSystem
+                                                  options: Iterable[SocketOption] = Nil
+)(implicit
+    val system: ActorSystem
 ) extends GraphStageWithMaterializedValue[FlowShape[Datagram, Datagram], Future[InetSocketAddress]] {
 
   val in: Inlet[Datagram] = Inlet("UdpBindFlow.in")

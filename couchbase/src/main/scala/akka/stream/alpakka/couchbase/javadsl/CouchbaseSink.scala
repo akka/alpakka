@@ -21,7 +21,8 @@ object CouchbaseSink {
    */
   def upsert(sessionSettings: CouchbaseSessionSettings,
              writeSettings: CouchbaseWriteSettings,
-             bucketName: String): Sink[JsonDocument, CompletionStage[Done]] =
+             bucketName: String
+  ): Sink[JsonDocument, CompletionStage[Done]] =
     CouchbaseFlow
       .upsert(sessionSettings, writeSettings, bucketName)
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
@@ -31,7 +32,8 @@ object CouchbaseSink {
    */
   def upsertDoc[T <: Document[_]](sessionSettings: CouchbaseSessionSettings,
                                   writeSettings: CouchbaseWriteSettings,
-                                  bucketName: String): Sink[T, CompletionStage[Done]] =
+                                  bucketName: String
+  ): Sink[T, CompletionStage[Done]] =
     CouchbaseFlow
       .upsertDoc[T](sessionSettings, writeSettings, bucketName)
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
@@ -41,7 +43,8 @@ object CouchbaseSink {
    */
   def replace(sessionSettings: CouchbaseSessionSettings,
               writeSettings: CouchbaseWriteSettings,
-              bucketName: String): Sink[JsonDocument, CompletionStage[Done]] =
+              bucketName: String
+  ): Sink[JsonDocument, CompletionStage[Done]] =
     CouchbaseFlow
       .replace(sessionSettings, writeSettings, bucketName)
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
@@ -51,7 +54,8 @@ object CouchbaseSink {
    */
   def replaceDoc[T <: Document[_]](sessionSettings: CouchbaseSessionSettings,
                                    writeSettings: CouchbaseWriteSettings,
-                                   bucketName: String): Sink[T, CompletionStage[Done]] =
+                                   bucketName: String
+  ): Sink[T, CompletionStage[Done]] =
     CouchbaseFlow
       .replaceDoc[T](sessionSettings, writeSettings, bucketName)
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
@@ -61,7 +65,8 @@ object CouchbaseSink {
    */
   def delete(sessionSettings: CouchbaseSessionSettings,
              writeSettings: CouchbaseWriteSettings,
-             bucketName: String): Sink[String, CompletionStage[Done]] =
+             bucketName: String
+  ): Sink[String, CompletionStage[Done]] =
     CouchbaseFlow
       .delete(sessionSettings, writeSettings, bucketName)
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])

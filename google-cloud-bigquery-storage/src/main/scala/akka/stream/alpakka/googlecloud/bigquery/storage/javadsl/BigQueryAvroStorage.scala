@@ -21,13 +21,15 @@ object BigQueryAvroStorage {
 
   def readRecordsMerged(projectId: String,
                         datasetId: String,
-                        tableId: String): Source[java.util.List[BigQueryRecord], CompletionStage[NotUsed]] =
+                        tableId: String
+  ): Source[java.util.List[BigQueryRecord], CompletionStage[NotUsed]] =
     readRecordsMerged(projectId, datasetId, tableId, None, 0)
 
   def readRecordsMerged(projectId: String,
                         datasetId: String,
                         tableId: String,
-                        maxNumStreams: Int): Source[java.util.List[BigQueryRecord], CompletionStage[NotUsed]] =
+                        maxNumStreams: Int
+  ): Source[java.util.List[BigQueryRecord], CompletionStage[NotUsed]] =
     readRecordsMerged(projectId, datasetId, tableId, None, maxNumStreams)
 
   def readRecordsMerged(
@@ -42,7 +44,8 @@ object BigQueryAvroStorage {
                         datasetId: String,
                         tableId: String,
                         readOptions: TableReadOptions,
-                        maxNumStreams: Int): Source[java.util.List[BigQueryRecord], CompletionStage[NotUsed]] =
+                        maxNumStreams: Int
+  ): Source[java.util.List[BigQueryRecord], CompletionStage[NotUsed]] =
     readRecordsMerged(projectId, datasetId, tableId, Some(readOptions), maxNumStreams)
 
   private def readRecordsMerged(
@@ -62,7 +65,8 @@ object BigQueryAvroStorage {
 
   def readRecords(projectId: String,
                   datasetId: String,
-                  tableId: String): Source[java.util.List[Source[BigQueryRecord, NotUsed]], CompletionStage[NotUsed]] =
+                  tableId: String
+  ): Source[java.util.List[Source[BigQueryRecord, NotUsed]], CompletionStage[NotUsed]] =
     readRecords(projectId, datasetId, tableId)
 
   def readRecords(
@@ -107,13 +111,15 @@ object BigQueryAvroStorage {
 
   def readMerged(projectId: String,
                  datasetId: String,
-                 tableId: String): Source[(AvroSchema, Source[AvroRows, NotUsed]), CompletionStage[NotUsed]] =
+                 tableId: String
+  ): Source[(AvroSchema, Source[AvroRows, NotUsed]), CompletionStage[NotUsed]] =
     readMerged(projectId, datasetId, tableId)
 
   def readMerged(projectId: String,
                  datasetId: String,
                  tableId: String,
-                 maxNumStreams: Int): Source[(AvroSchema, Source[AvroRows, NotUsed]), CompletionStage[NotUsed]] =
+                 maxNumStreams: Int
+  ): Source[(AvroSchema, Source[AvroRows, NotUsed]), CompletionStage[NotUsed]] =
     readMerged(projectId, datasetId, tableId, None, maxNumStreams)
 
   def readMerged(
@@ -128,7 +134,8 @@ object BigQueryAvroStorage {
                  datasetId: String,
                  tableId: String,
                  readOptions: TableReadOptions,
-                 maxNumStreams: Int): Source[(AvroSchema, Source[AvroRows, NotUsed]), CompletionStage[NotUsed]] =
+                 maxNumStreams: Int
+  ): Source[(AvroSchema, Source[AvroRows, NotUsed]), CompletionStage[NotUsed]] =
     readMerged(projectId, datasetId, tableId, Some(readOptions), maxNumStreams)
 
   private def readMerged(
@@ -148,7 +155,8 @@ object BigQueryAvroStorage {
 
   def read(projectId: String,
            datasetId: String,
-           tableId: String): Source[(AvroSchema, java.util.List[Source[AvroRows, NotUsed]]), CompletionStage[NotUsed]] =
+           tableId: String
+  ): Source[(AvroSchema, java.util.List[Source[AvroRows, NotUsed]]), CompletionStage[NotUsed]] =
     read(projectId, datasetId, tableId, None, 0)
 
   def read(

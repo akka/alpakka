@@ -37,7 +37,8 @@ private[jakartajms] final class JmsAckSourceStage(settings: JmsConsumerSettings,
     private val maxAckInterval = settings.maxAckInterval
 
     protected def createSession(connection: jms.Connection,
-                                createDestination: jms.Session => jakarta.jms.Destination): JmsAckSession = {
+                                createDestination: jms.Session => jakarta.jms.Destination
+    ): JmsAckSession = {
       val session =
         connection.createSession(false, settings.acknowledgeMode.getOrElse(AcknowledgeMode.ClientAcknowledge).mode)
       new JmsAckSession(connection, session, createDestination(session), self.destination, maxPendingAcks)

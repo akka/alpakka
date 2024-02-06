@@ -40,8 +40,10 @@ private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
    * @param location the geographic location of the job. Required except for US and EU
    * @return a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.Job]]
    */
-  def job(jobId: String, location: Option[String] = None)(implicit system: ClassicActorSystemProvider,
-                                                          settings: GoogleSettings): Future[Job] = {
+  def job(jobId: String, location: Option[String] = None)(implicit
+      system: ClassicActorSystemProvider,
+      settings: GoogleSettings
+  ): Future[Job] = {
     import BigQueryException._
     import SprayJsonSupport._
     val uri = BigQueryEndpoints.job(settings.projectId, jobId)
@@ -94,7 +96,8 @@ private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
    */
   def insertAllAsync[In: ToEntityMarshaller](datasetId: String,
                                              tableId: String,
-                                             labels: Option[Map[String, String]]): Flow[In, Job, NotUsed] =
+                                             labels: Option[Map[String, String]]
+  ): Flow[In, Job, NotUsed] =
     Flow
       .fromMaterializer { (mat, attr) =>
         import SprayJsonSupport._

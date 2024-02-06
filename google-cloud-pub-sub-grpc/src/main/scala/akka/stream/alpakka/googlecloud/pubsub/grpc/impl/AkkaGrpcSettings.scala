@@ -18,8 +18,9 @@ import scala.annotation.nowarn
  * Internal API
  */
 @InternalApi private[grpc] object AkkaGrpcSettings {
-  def fromPubSubSettings(config: PubSubSettings,
-                         googleSettings: GoogleSettings)(implicit sys: ActorSystem): GrpcClientSettings = {
+  def fromPubSubSettings(config: PubSubSettings, googleSettings: GoogleSettings)(implicit
+      sys: ActorSystem
+  ): GrpcClientSettings = {
     val akkaGrpcConfig = s"""
       |host = "${config.host}"
       |port = ${config.port}

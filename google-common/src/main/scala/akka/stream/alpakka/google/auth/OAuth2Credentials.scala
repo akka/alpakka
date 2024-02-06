@@ -40,9 +40,11 @@ private[auth] abstract class OAuth2Credentials(val projectId: String)(implicit m
   override def asGoogle(implicit ec: ExecutionContext, settings: RequestSettings): GoogleCredentials =
     new GoogleOAuth2Credentials(this)(ec, settings)
 
-  protected def getAccessToken()(implicit mat: Materializer,
-                                 settings: RequestSettings,
-                                 clock: Clock): Future[AccessToken]
+  protected def getAccessToken()(implicit
+      mat: Materializer,
+      settings: RequestSettings,
+      clock: Clock
+  ): Future[AccessToken]
 
   private def stream =
     Source
@@ -60,9 +62,8 @@ private[auth] abstract class OAuth2Credentials(val projectId: String)(implicit m
               Future.successful(cachedToken)
             case (_, TokenRequest(promise, settings)) =>
               getAccessToken()(mat, settings, Clock.systemUTC())
-                .andThen {
-                  case response =>
-                    promise.complete(response.map(t => OAuth2BearerToken(t.token)))
+                .andThen { case response =>
+                  promise.complete(response.map(t => OAuth2BearerToken(t.token)))
                 }(ExecutionContexts.parasitic)
                 .map(Some(_))(ExecutionContexts.parasitic)
                 .recover { case _ => None }(ExecutionContexts.parasitic)

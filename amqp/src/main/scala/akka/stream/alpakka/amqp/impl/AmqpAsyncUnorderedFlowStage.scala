@@ -39,23 +39,25 @@ import scala.concurrent.{Future, Promise}
     val streamCompletion = Promise[Done]()
     (new AbstractAmqpAsyncFlowStageLogic(settings, streamCompletion, shape) {
 
-      private val buffer = mutable.Queue.empty[AwaitingMessage[T]]
+       private val buffer = mutable.Queue.empty[AwaitingMessage[T]]
 
-      override def enqueueMessage(tag: DeliveryTag, passThrough: T): Unit =
-        buffer += AwaitingMessage(tag, passThrough)
+       override def enqueueMessage(tag: DeliveryTag, passThrough: T): Unit =
+         buffer += AwaitingMessage(tag, passThrough)
 
-      override def dequeueAwaitingMessages(tag: DeliveryTag, multiple: Boolean): Iterable[AwaitingMessage[T]] =
-        if (multiple)
-          buffer.dequeueAll(_.tag <= tag)
-        else
-          buffer
-            .dequeueFirst(_.tag == tag)
-            .fold(Seq.empty[AwaitingMessage[T]])(Seq(_))
+       override def dequeueAwaitingMessages(tag: DeliveryTag, multiple: Boolean): Iterable[AwaitingMessage[T]] =
+         if (multiple)
+           buffer.dequeueAll(_.tag <= tag)
+         else
+           buffer
+             .dequeueFirst(_.tag == tag)
+             .fold(Seq.empty[AwaitingMessage[T]])(Seq(_))
 
-      override def messagesAwaitingDelivery: Int = buffer.length
+       override def messagesAwaitingDelivery: Int = buffer.length
 
-      override def noAwaitingMessages: Boolean = buffer.isEmpty
+       override def noAwaitingMessages: Boolean = buffer.isEmpty
 
-    }, streamCompletion.future)
+     },
+     streamCompletion.future
+    )
   }
 }

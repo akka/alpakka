@@ -38,7 +38,8 @@ object Formats extends DefaultJsonProtocol {
                                                 entityId: String,
                                                 domain: String,
                                                 projectTeam: ProjectTeam,
-                                                etag: String)
+                                                etag: String
+  )
   private implicit val ObjectAccessControlsJsonFormat: RootJsonFormat[ObjectAccessControls] = jsonFormat13(
     ObjectAccessControls
   )
@@ -264,31 +265,29 @@ object Formats extends DefaultJsonProtocol {
       metadata,
       componentCount,
       kmsKeyName,
-      customerEncryption.map(
-        ce =>
-          akka.stream.alpakka.googlecloud.storage
-            .CustomerEncryption(ce.encryptionAlgorithm, ce.keySha256)
+      customerEncryption.map(ce =>
+        akka.stream.alpakka.googlecloud.storage
+          .CustomerEncryption(ce.encryptionAlgorithm, ce.keySha256)
       ),
       owner.map(o => akka.stream.alpakka.googlecloud.storage.Owner(o.entity, o.entityId)),
       acl.map(
-        _.map(
-          a =>
-            akka.stream.alpakka.googlecloud.storage.ObjectAccessControls(
-              a.kind,
-              a.id,
-              a.selfLink,
-              a.bucket,
-              a.`object`,
-              a.generation,
-              a.entity,
-              a.role,
-              a.email,
-              a.entityId,
-              a.domain,
-              akka.stream.alpakka.googlecloud.storage
-                .ProjectTeam(a.projectTeam.projectNumber, a.projectTeam.team),
-              a.etag
-            )
+        _.map(a =>
+          akka.stream.alpakka.googlecloud.storage.ObjectAccessControls(
+            a.kind,
+            a.id,
+            a.selfLink,
+            a.bucket,
+            a.`object`,
+            a.generation,
+            a.entity,
+            a.role,
+            a.email,
+            a.entityId,
+            a.domain,
+            akka.stream.alpakka.googlecloud.storage
+              .ProjectTeam(a.projectTeam.projectNumber, a.projectTeam.team),
+            a.etag
+          )
         )
       )
     )

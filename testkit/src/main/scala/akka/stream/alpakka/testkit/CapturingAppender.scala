@@ -94,9 +94,11 @@ import org.slf4j.LoggerFactory
     val logbackLogger = getLogbackLogger(classOf[CapturingAppender].getName + "Delegate")
     val appenders = logbackLogger.iteratorForAppenders().asScala.filterNot(_ == this).toList
     for (event <- buffer; appender <- appenders) {
-      if (sourceActorSystem.isEmpty
-          || event.getMDCPropertyMap.get("sourceActorSystem") == null
-          || sourceActorSystem.contains(event.getMDCPropertyMap.get("sourceActorSystem"))) {
+      if (
+        sourceActorSystem.isEmpty
+        || event.getMDCPropertyMap.get("sourceActorSystem") == null
+        || sourceActorSystem.contains(event.getMDCPropertyMap.get("sourceActorSystem"))
+      ) {
         appender.doAppend(event)
       }
     }

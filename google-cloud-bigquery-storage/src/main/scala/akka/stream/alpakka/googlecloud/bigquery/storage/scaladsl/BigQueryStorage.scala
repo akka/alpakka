@@ -81,7 +81,8 @@ object BigQueryStorage {
                                     tableId: String,
                                     dataFormat: DataFormat,
                                     readOptions: Option[TableReadOptions] = None,
-                                    maxNumStreams: Int = 0) =
+                                    maxNumStreams: Int = 0
+  ) =
     Source
       .future {
         val table = s"projects/$projectId/datasets/$datasetId/tables/$tableId"
@@ -94,7 +95,8 @@ object BigQueryStorage {
               Some(
                 ReadSession(dataFormat = StreamDataFormat.fromValue(dataFormat.getNumber),
                             table = table,
-                            readOptions = readOptions)
+                            readOptions = readOptions
+                )
               ),
               maxNumStreams
             )

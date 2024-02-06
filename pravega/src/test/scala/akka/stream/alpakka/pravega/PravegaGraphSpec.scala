@@ -54,7 +54,8 @@ class PravegaGraphSpec extends PravegaBaseSpec with Repeated {
       val done = time(s"Write $nEvent events",
                       Source(1 to nEvent)
                         .map(i => f"$i%02d_event")
-                        .runWith(Pravega.sink(scope, stream1, writerSettings)))
+                        .runWith(Pravega.sink(scope, stream1, writerSettings))
+      )
 
       time("Wait write", Await.ready(done, timeout))
 

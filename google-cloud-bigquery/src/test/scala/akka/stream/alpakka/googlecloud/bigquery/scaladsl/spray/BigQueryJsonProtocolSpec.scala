@@ -58,7 +58,9 @@ class BigQueryJsonProtocolSpec extends BigQueryJsonProtocol with AnyWordSpecLike
     "parse nested case classes" in {
       recordFormat.read(JsonParser(ParserInput(json))) shouldEqual Record(Some("Peter"),
                                                                           Seq(Address(Some("street1"), Some("city1")),
-                                                                              Address(Some("street2"), Some("city2"))))
+                                                                              Address(Some("street2"), Some("city2"))
+                                                                          )
+      )
     }
 
   }

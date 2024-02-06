@@ -14,7 +14,7 @@ import scala.concurrent.duration.{FiniteDuration, _}
 
 /**
  * Quality of Service constants as defined in
- *[[http://www.eclipse.org/paho/files/javadoc/org/eclipse/paho/client/mqttv3/MqttMessage.html#setQos-int-]]
+ * [[http://www.eclipse.org/paho/files/javadoc/org/eclipse/paho/client/mqttv3/MqttMessage.html#setQos-int-]]
  */
 sealed abstract class MqttQoS {
   def value: Int
@@ -161,7 +161,8 @@ final class MqttConnectionSettings private (val broker: String,
                                             val serverUris: immutable.Seq[String],
                                             val sslHostnameVerifier: Option[javax.net.ssl.HostnameVerifier],
                                             val sslProperties: Map[String, String],
-                                            val offlinePersistenceSettings: Option[MqttOfflinePersistenceSettings]) {
+                                            val offlinePersistenceSettings: Option[MqttOfflinePersistenceSettings]
+) {
 
   def withBroker(value: String): MqttConnectionSettings = copy(broker = value)
   def withClientId(clientId: String): MqttConnectionSettings = copy(clientId = clientId)
@@ -238,7 +239,8 @@ final class MqttConnectionSettings private (val broker: String,
 
   def withOfflinePersistenceSettings(bufferSize: Int = 5000,
                                      deleteOldestMessage: Boolean = false,
-                                     persistBuffer: Boolean = true): MqttConnectionSettings =
+                                     persistBuffer: Boolean = true
+  ): MqttConnectionSettings =
     copy(
       offlinePersistenceSettings =
         Option(MqttOfflinePersistenceSettings(bufferSize, deleteOldestMessage, persistBuffer))

@@ -20,7 +20,8 @@ private[impl] abstract class RestBulkApi[T, C] {
   def toJson(messages: immutable.Seq[WriteMessage[T, C]]): String
 
   def toWriteResults(messages: immutable.Seq[WriteMessage[T, C]],
-                     jsonString: String): immutable.Seq[WriteResult[T, C]] = {
+                     jsonString: String
+  ): immutable.Seq[WriteResult[T, C]] = {
     val responseJson = jsonString.parseJson
 
     // If some commands in bulk request failed, pass failed messages to follows.
@@ -46,7 +47,8 @@ private[impl] abstract class RestBulkApi[T, C] {
 
   /** NOPs don't come back so slip them into the results like this: */
   private def buildMessageResults(items: JsArray,
-                                  messages: immutable.Seq[WriteMessage[T, C]]): immutable.Seq[WriteResult[T, C]] = {
+                                  messages: immutable.Seq[WriteMessage[T, C]]
+  ): immutable.Seq[WriteResult[T, C]] = {
     val ret = new immutable.VectorBuilder[WriteResult[T, C]]
     ret.sizeHint(messages)
     val itemsIter = items.elements.iterator

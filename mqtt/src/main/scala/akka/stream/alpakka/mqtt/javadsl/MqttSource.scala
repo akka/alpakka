@@ -28,7 +28,8 @@ object MqttSource {
    */
   def atMostOnce(settings: MqttConnectionSettings,
                  subscriptions: MqttSubscriptions,
-                 bufferSize: Int): Source[MqttMessage, CompletionStage[Done]] =
+                 bufferSize: Int
+  ): Source[MqttMessage, CompletionStage[Done]] =
     scaladsl.MqttSource
       .atMostOnce(settings, subscriptions, bufferSize)
       .mapMaterializedValue(_.toJava)
@@ -43,7 +44,8 @@ object MqttSource {
    */
   def atLeastOnce(settings: MqttConnectionSettings,
                   subscriptions: MqttSubscriptions,
-                  bufferSize: Int): Source[MqttMessageWithAck, CompletionStage[Done]] =
+                  bufferSize: Int
+  ): Source[MqttMessageWithAck, CompletionStage[Done]] =
     scaladsl.MqttSource
       .atLeastOnce(settings, subscriptions, bufferSize)
       .map(MqttMessageWithAck.toJava)

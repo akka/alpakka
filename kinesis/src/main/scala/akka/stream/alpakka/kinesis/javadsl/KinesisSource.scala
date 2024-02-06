@@ -24,7 +24,8 @@ object KinesisSource {
    * Read from multiple shards into a single stream.
    */
   def basicMerge(shardSettings: java.util.List[ShardSettings],
-                 amazonKinesisAsync: KinesisAsyncClient): Source[Record, NotUsed] =
+                 amazonKinesisAsync: KinesisAsyncClient
+  ): Source[Record, NotUsed] =
     scaladsl.KinesisSource.basicMerge(shardSettings.asScala.toList, amazonKinesisAsync).asJava
 
 }

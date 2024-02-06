@@ -46,7 +46,8 @@ private[kinesis] class ShardProcessor(
   override def initialize(initializationInput: InitializationInput): Unit =
     shardData = new ShardProcessorData(initializationInput.shardId,
                                        initializationInput.extendedSequenceNumber,
-                                       initializationInput.pendingCheckpointSequenceNumber)
+                                       initializationInput.pendingCheckpointSequenceNumber
+    )
 
   override def processRecords(processRecordsInput: ProcessRecordsInput): Unit = {
     checkpointer = processRecordsInput.checkpointer()
@@ -54,22 +55,22 @@ private[kinesis] class ShardProcessor(
     val batchData = new BatchData(processRecordsInput.cacheEntryTime,
                                   processRecordsInput.cacheExitTime,
                                   processRecordsInput.isAtShardEnd,
-                                  processRecordsInput.millisBehindLatest)
+                                  processRecordsInput.millisBehindLatest
+    )
 
     if (batchData.isAtShardEnd) {
       lastRecordSemaphore.acquire()
     }
 
     val numberOfRecords = processRecordsInput.records().size()
-    processRecordsInput.records().asScala.zipWithIndex.foreach {
-      case (record, index) =>
-        processRecord(
-          new InternalCommittableRecord(
-            record,
-            batchData,
-            lastRecord = processRecordsInput.isAtShardEnd && index + 1 == numberOfRecords
-          )
+    processRecordsInput.records().asScala.zipWithIndex.foreach { case (record, index) =>
+      processRecord(
+        new InternalCommittableRecord(
+          record,
+          batchData,
+          lastRecord = processRecordsInput.isAtShardEnd && index + 1 == numberOfRecords
         )
+      )
     }
   }
 

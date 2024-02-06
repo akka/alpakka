@@ -37,7 +37,8 @@ object S3 {
               key: String,
               method: HttpMethod = HttpMethods.GET,
               versionId: Option[String] = None,
-              s3Headers: S3Headers = S3Headers.empty): Source[HttpResponse, NotUsed] =
+              s3Headers: S3Headers = S3Headers.empty
+  ): Source[HttpResponse, NotUsed] =
     S3Stream.request(S3Location(bucket, key), method, versionId = versionId, s3Headers = s3Headers.headers)
 
   /**
@@ -97,7 +98,8 @@ object S3 {
   def deleteObject(bucket: String,
                    key: String,
                    versionId: Option[String],
-                   s3Headers: S3Headers): Source[Done, NotUsed] =
+                   s3Headers: S3Headers
+  ): Source[Done, NotUsed] =
     S3Stream.deleteObject(S3Location(bucket, key), versionId, s3Headers)
 
   /**
@@ -144,7 +146,8 @@ object S3 {
   def deleteObjectsByPrefix(bucket: String,
                             prefix: Option[String],
                             deleteAllVersions: Boolean,
-                            s3Headers: S3Headers): Source[Done, NotUsed] =
+                            s3Headers: S3Headers
+  ): Source[Done, NotUsed] =
     S3Stream.deleteObjectsByPrefix(bucket, prefix, deleteAllVersions, s3Headers)
 
   /**
@@ -182,7 +185,8 @@ object S3 {
                 data: Source[ByteString, _],
                 contentLength: Long,
                 contentType: ContentType = ContentTypes.`application/octet-stream`,
-                s3Headers: S3Headers): Source[ObjectMetadata, NotUsed] =
+                s3Headers: S3Headers
+  ): Source[ObjectMetadata, NotUsed] =
     S3Stream.putObject(S3Location(bucket, key), contentType, data, contentLength, s3Headers)
 
   /**
@@ -312,7 +316,8 @@ object S3 {
    */
   def listBucket(bucket: String,
                  prefix: Option[String],
-                 s3Headers: S3Headers): Source[ListBucketResultContents, NotUsed] =
+                 s3Headers: S3Headers
+  ): Source[ListBucketResultContents, NotUsed] =
     S3Stream.listBucket(bucket, prefix, s3Headers)
 
   /**
@@ -331,7 +336,8 @@ object S3 {
   def listBucket(bucket: String,
                  delimiter: String,
                  prefix: Option[String] = None,
-                 s3Headers: S3Headers = S3Headers.empty): Source[ListBucketResultContents, NotUsed] =
+                 s3Headers: S3Headers = S3Headers.empty
+  ): Source[ListBucketResultContents, NotUsed] =
     S3Stream
       .listBucketAndCommonPrefixes(bucket, delimiter, prefix, s3Headers)
       .mapConcat(_._1)
@@ -381,7 +387,8 @@ object S3 {
    */
   def listMultipartUpload(bucket: String,
                           prefix: Option[String],
-                          s3Headers: S3Headers): Source[ListMultipartUploadResultUploads, NotUsed] =
+                          s3Headers: S3Headers
+  ): Source[ListMultipartUploadResultUploads, NotUsed] =
     S3Stream.listMultipartUpload(bucket, prefix, s3Headers)
 
   /**
@@ -427,7 +434,8 @@ object S3 {
   def listParts(bucket: String,
                 key: String,
                 uploadId: String,
-                s3Headers: S3Headers): Source[ListPartsResultParts, NotUsed] =
+                s3Headers: S3Headers
+  ): Source[ListPartsResultParts, NotUsed] =
     S3Stream.listParts(bucket, key, uploadId, s3Headers)
 
   /**
@@ -494,7 +502,8 @@ object S3 {
   def listObjectVersionsAndCommonPrefixes(bucket: String,
                                           delimiter: String,
                                           prefix: Option[String],
-                                          s3Headers: S3Headers): Source[
+                                          s3Headers: S3Headers
+  ): Source[
     (Seq[ListObjectVersionsResultVersions], Seq[DeleteMarkers], Seq[CommonPrefixes]),
     NotUsed
   ] =
@@ -599,7 +608,8 @@ object S3 {
                                          contentType,
                                          chunkSize,
                                          chunkingParallelism,
-                                         headers)
+                                         headers
+    )
   }
 
   /**
@@ -680,7 +690,8 @@ object S3 {
                                      contentType,
                                      chunkSize,
                                      chunkingParallelism,
-                                     headers)
+                                     headers
+    )
   }
 
   /**
@@ -734,7 +745,8 @@ object S3 {
                                                contentType,
                                                chunkSize,
                                                chunkingParallelism,
-                                               headers)
+                                               headers
+    )
   }
 
   /**
@@ -836,8 +848,8 @@ object S3 {
    *
    * @return [[scala.concurrent.Future Future]] of type [[MultipartUploadResult]]
    */
-  def completeMultipartUpload(bucket: String, key: String, uploadId: String, parts: immutable.Iterable[Part])(
-      implicit system: ClassicActorSystemProvider,
+  def completeMultipartUpload(bucket: String, key: String, uploadId: String, parts: immutable.Iterable[Part])(implicit
+      system: ClassicActorSystemProvider,
       attributes: Attributes = Attributes()
   ): Future[MultipartUploadResult] =
     S3Stream.completeMultipartUpload(S3Location(bucket, key), uploadId, parts, S3Headers.empty)
@@ -908,8 +920,9 @@ object S3 {
    * @param bucketName bucket name
    * @return [[scala.concurrent.Future Future]] with type [[Done]] as API doesn't return any additional information
    */
-  def makeBucket(bucketName: String)(implicit system: ClassicActorSystemProvider,
-                                     attr: Attributes = Attributes()): Future[Done] =
+  def makeBucket(
+      bucketName: String
+  )(implicit system: ClassicActorSystemProvider, attr: Attributes = Attributes()): Future[Done] =
     S3Stream.makeBucket(bucketName, S3Headers.empty)
 
   /**
@@ -921,8 +934,10 @@ object S3 {
    * @param s3Headers any headers you want to add
    * @return [[scala.concurrent.Future Future]] with type [[Done]] as API doesn't return any additional information
    */
-  def makeBucket(bucketName: String, s3Headers: S3Headers)(implicit system: ClassicActorSystemProvider,
-                                                           attr: Attributes): Future[Done] =
+  def makeBucket(bucketName: String, s3Headers: S3Headers)(implicit
+      system: ClassicActorSystemProvider,
+      attr: Attributes
+  ): Future[Done] =
     S3Stream.makeBucket(bucketName, s3Headers)
 
   /**
@@ -956,8 +971,9 @@ object S3 {
    * @param bucketName bucket name
    * @return [[scala.concurrent.Future Future]] of type [[Done]] as API doesn't return any additional information
    */
-  def deleteBucket(bucketName: String)(implicit system: ClassicActorSystemProvider,
-                                       attributes: Attributes = Attributes()): Future[Done] =
+  def deleteBucket(
+      bucketName: String
+  )(implicit system: ClassicActorSystemProvider, attributes: Attributes = Attributes()): Future[Done] =
     S3Stream.deleteBucket(bucketName, S3Headers.empty)
 
   /**
@@ -1006,8 +1022,9 @@ object S3 {
    * @param bucketName bucket name
    * @return [[scala.concurrent.Future Future]] of type [[BucketAccess]]
    */
-  def checkIfBucketExists(bucketName: String)(implicit system: ClassicActorSystemProvider,
-                                              attributes: Attributes = Attributes()): Future[BucketAccess] =
+  def checkIfBucketExists(
+      bucketName: String
+  )(implicit system: ClassicActorSystemProvider, attributes: Attributes = Attributes()): Future[BucketAccess] =
     S3Stream.checkIfBucketExists(bucketName, S3Headers.empty)
 
   /**
@@ -1058,8 +1075,8 @@ object S3 {
    * @param uploadId Unique identifier of the upload
    * @return [[scala.concurrent.Future Future]] of type [[Done]] as API doesn't return any additional information
    */
-  def deleteUpload(bucketName: String, key: String, uploadId: String)(
-      implicit system: ClassicActorSystemProvider,
+  def deleteUpload(bucketName: String, key: String, uploadId: String)(implicit
+      system: ClassicActorSystemProvider,
       attributes: Attributes = Attributes()
   ): Future[Done] =
     deleteUpload(bucketName, key, uploadId, S3Headers.empty)
@@ -1108,6 +1125,7 @@ object S3 {
   def deleteUploadSource(bucketName: String,
                          key: String,
                          uploadId: String,
-                         s3Headers: S3Headers): Source[Done, NotUsed] =
+                         s3Headers: S3Headers
+  ): Source[Done, NotUsed] =
     S3Stream.deleteUploadSource(bucketName, key, uploadId, s3Headers)
 }

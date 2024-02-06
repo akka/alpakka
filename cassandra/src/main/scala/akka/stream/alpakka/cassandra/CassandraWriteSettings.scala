@@ -12,7 +12,8 @@ import scala.concurrent.duration.{FiniteDuration, _}
 class CassandraWriteSettings private (val parallelism: Int,
                                       val maxBatchSize: Int,
                                       val maxBatchWait: FiniteDuration,
-                                      val batchType: BatchType) {
+                                      val batchType: BatchType
+) {
   require(parallelism > 0, s"Invalid value for parallelism: $parallelism. It should be > 0.")
   require(maxBatchSize > 0, s"Invalid value for maxBatchSize: $maxBatchSize. It should be > 0.")
 
@@ -45,7 +46,8 @@ class CassandraWriteSettings private (val parallelism: Int,
   private def copy(parallelism: Int = parallelism,
                    maxBatchSize: Int = maxBatchSize,
                    maxBatchWait: FiniteDuration = maxBatchWait,
-                   batchType: BatchType = batchType) =
+                   batchType: BatchType = batchType
+  ) =
     new CassandraWriteSettings(parallelism, maxBatchSize, maxBatchWait, batchType)
 
   override def toString: String =

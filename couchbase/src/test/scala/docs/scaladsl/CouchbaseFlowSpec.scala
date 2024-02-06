@@ -267,7 +267,8 @@ class CouchbaseFlowSpec
                                  .withParallelism(2)
                                  .withPersistTo(PersistTo.THREE)
                                  .withTimeout(1.seconds),
-                               bucketName)
+                               bucketName
+          )
         )
         .runWith(Sink.seq)
 
@@ -431,8 +432,8 @@ class CouchbaseFlowSpec
 
     "replace multiple RawJsonDocuments" in assertAllStagesStopped {
 
-      val replaceSequence: Seq[TestObject] = sampleData +: Seq[TestObject](TestObject("Second", "SecondReplace"),
-                                                                           TestObject("Third", "ThirdReplace"))
+      val replaceSequence: Seq[TestObject] =
+        sampleData +: Seq[TestObject](TestObject("Second", "SecondReplace"), TestObject("Third", "ThirdReplace"))
 
       upsertSampleData(bucketName)
 
@@ -457,7 +458,8 @@ class CouchbaseFlowSpec
       resultsAsFuture.futureValue.map(doc => doc.content().get("value")) should contain.inOrderOnly("First",
                                                                                                     "SecondReplace",
                                                                                                     "ThirdReplace",
-                                                                                                    "Fourth")
+                                                                                                    "Fourth"
+      )
     }
 
     "replace RawJsonDocument" in assertAllStagesStopped {
@@ -500,7 +502,8 @@ class CouchbaseFlowSpec
                                   .withParallelism(2)
                                   .withPersistTo(PersistTo.THREE)
                                   .withTimeout(1.seconds),
-                                bucketName)
+                                bucketName
+          )
         )
         .runWith(Sink.seq)
 
@@ -546,7 +549,8 @@ class CouchbaseFlowSpec
                                               .withParallelism(2)
                                               .withPersistTo(PersistTo.THREE)
                                               .withTimeout(1.seconds),
-                                            bucketName)
+                                            bucketName
+          )
         )
         .runWith(Sink.seq)
 
@@ -641,7 +645,8 @@ class CouchbaseFlowSpec
                                                .withParallelism(2)
                                                .withPersistTo(PersistTo.THREE)
                                                .withTimeout(1.seconds),
-                                             bucketName)
+                                             bucketName
+          )
         )
         .runWith(Sink.seq)
 

@@ -24,7 +24,8 @@ object CsvToMap {
                         charset,
                         combineAll = false,
                         customFieldValuePlaceholder = Option.empty,
-                        headerPlaceholder = Option.empty)
+                        headerPlaceholder = Option.empty
+      )
     )
 
   /**
@@ -38,7 +39,8 @@ object CsvToMap {
                                  charset,
                                  combineAll = false,
                                  customFieldValuePlaceholder = Option.empty,
-                                 headerPlaceholder = Option.empty)
+                                 headerPlaceholder = Option.empty
+      )
     )
 
   /**
@@ -59,7 +61,8 @@ object CsvToMap {
                         charset,
                         combineAll = true,
                         customFieldValuePlaceholder = customFieldValuePlaceholder,
-                        headerPlaceholder = headerPlaceholder)
+                        headerPlaceholder = headerPlaceholder
+      )
     )
 
   /**
@@ -80,7 +83,8 @@ object CsvToMap {
                                  charset,
                                  combineAll = true,
                                  customFieldValuePlaceholder = customFieldValuePlaceholder,
-                                 headerPlaceholder = headerPlaceholder)
+                                 headerPlaceholder = headerPlaceholder
+      )
     )
 
   /**
@@ -94,7 +98,8 @@ object CsvToMap {
                         StandardCharsets.UTF_8,
                         combineAll = false,
                         customFieldValuePlaceholder = Option.empty,
-                        headerPlaceholder = Option.empty)
+                        headerPlaceholder = Option.empty
+      )
     )
 
   /**
@@ -112,6 +117,7 @@ object CsvToMap {
                                  charset,
                                  combineAll = false,
                                  customFieldValuePlaceholder = Option.empty,
-                                 headerPlaceholder = Option.empty)
+                                 headerPlaceholder = Option.empty
+      )
     )
 }

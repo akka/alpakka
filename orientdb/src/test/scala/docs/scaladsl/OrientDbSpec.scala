@@ -151,9 +151,8 @@ class OrientDbSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with
         sourceClass,
         OrientDbSourceSettings(oDatabase)
       ).map { message: OrientDbReadResult[ODocument] =>
-          OrientDbWriteMessage(message.oDocument)
-        }
-        .groupedWithin(10, 50.millis)
+        OrientDbWriteMessage(message.oDocument)
+      }.groupedWithin(10, 50.millis)
         .runWith(
           OrientDbSink(
             sink4,
@@ -168,9 +167,8 @@ class OrientDbSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with
         sink4,
         OrientDbSourceSettings(oDatabase)
       ).map { message: OrientDbReadResult[ODocument] =>
-          message.oDocument.field[String]("book_title")
-        }
-        .runWith(Sink.seq)
+        message.oDocument.field[String]("book_title")
+      }.runWith(Sink.seq)
       //#run-odocument
 
       result.futureValue.sorted shouldEqual Seq(
@@ -194,9 +192,8 @@ class OrientDbSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with
         sourceClass,
         OrientDbSourceSettings(oDatabase)
       ).map { message: OrientDbReadResult[ODocument] =>
-          OrientDbWriteMessage(message.oDocument)
-        }
-        .groupedWithin(10, 50.millis)
+        OrientDbWriteMessage(message.oDocument)
+      }.groupedWithin(10, 50.millis)
         .via(
           OrientDbFlow.create(
             sink5,
@@ -212,9 +209,8 @@ class OrientDbSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with
         sink5,
         OrientDbSourceSettings(oDatabase)
       ).map { message =>
-          message.oDocument.field[String]("book_title")
-        }
-        .runWith(Sink.seq)
+        message.oDocument.field[String]("book_title")
+      }.runWith(Sink.seq)
 
       f2.futureValue.sorted shouldEqual Seq(
         "Akka Concurrency",
@@ -297,9 +293,8 @@ class OrientDbSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with
         sink7,
         OrientDbSourceSettings(oDatabase)
       ).map { message =>
-          message.oDocument.field[String]("book_title")
-        }
-        .runWith(Sink.seq)
+        message.oDocument.field[String]("book_title")
+      }.runWith(Sink.seq)
 
       f2.futureValue.sorted shouldEqual Seq(
         "Book 1",

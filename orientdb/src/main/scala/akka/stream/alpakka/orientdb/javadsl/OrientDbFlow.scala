@@ -22,9 +22,9 @@ object OrientDbFlow {
   def create(
       className: String,
       settings: OrientDbWriteSettings
-  ): Flow[java.util.List[OrientDbWriteMessage[ODocument, NotUsed]],
-          java.util.List[OrientDbWriteMessage[ODocument, NotUsed]],
-          NotUsed] =
+  ): Flow[java.util.List[OrientDbWriteMessage[ODocument, NotUsed]], java.util.List[OrientDbWriteMessage[ODocument,
+                                                                                                        NotUsed
+  ]], NotUsed] =
     akka.stream.scaladsl
       .Flow[java.util.List[OrientDbWriteMessage[ODocument, NotUsed]]]
       .map(_.asScala.toList)
@@ -41,7 +41,8 @@ object OrientDbFlow {
       settings: OrientDbWriteSettings
   ): Flow[java.util.List[OrientDbWriteMessage[ODocument, C]],
           java.util.List[OrientDbWriteMessage[ODocument, C]],
-          NotUsed] =
+          NotUsed
+  ] =
     akka.stream.scaladsl
       .Flow[java.util.List[OrientDbWriteMessage[ODocument, C]]]
       .map(_.asScala.toList)

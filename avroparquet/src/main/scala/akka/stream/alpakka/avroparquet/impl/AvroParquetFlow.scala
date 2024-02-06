@@ -46,10 +46,12 @@ private[avroparquet] class AvroParquetFlow[T <: GenericRecord](writer: ParquetWr
         }
       )
 
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit =
-          pull(in)
-      })
+      setHandler(out,
+                 new OutHandler {
+                   override def onPull(): Unit =
+                     pull(in)
+                 }
+      )
 
       override def postStop(): Unit = writer.close()
     }

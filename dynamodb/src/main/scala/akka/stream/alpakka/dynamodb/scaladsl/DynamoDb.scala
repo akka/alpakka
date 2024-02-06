@@ -44,16 +44,17 @@ object DynamoDb {
    */
   def flowWithContext[In <: DynamoDbRequest, Out <: DynamoDbResponse, Ctx](
       parallelism: Int
-  )(implicit client: DynamoDbAsyncClient,
-    operation: DynamoDbOp[In, Out]): FlowWithContext[In, Ctx, Try[Out], Ctx, NotUsed] =
+  )(implicit
+      client: DynamoDbAsyncClient,
+      operation: DynamoDbOp[In, Out]
+  ): FlowWithContext[In, Ctx, Try[Out], Ctx, NotUsed] =
     FlowWithContext.fromTuples(
       Flow[(In, Ctx)]
-        .mapAsync(parallelism) {
-          case (in, ctx) =>
-            operation
-              .execute(in)
-              .map[(Try[Out], Ctx)](res => (Success(res), ctx))(ExecutionContexts.parasitic)
-              .recover { case t => (Failure(t), ctx) }(ExecutionContexts.parasitic)
+        .mapAsync(parallelism) { case (in, ctx) =>
+          operation
+            .execute(in)
+            .map[(Try[Out], Ctx)](res => (Success(res), ctx))(ExecutionContexts.parasitic)
+            .recover { case t => (Failure(t), ctx) }(ExecutionContexts.parasitic)
         }
     )
 
@@ -70,8 +71,8 @@ object DynamoDb {
    *
    * Pagination is available for `BatchGetItem`, `ListTables`, `Query` and `Scan` requests.
    */
-  def flowPaginated[In <: DynamoDbRequest, Out <: DynamoDbResponse]()(
-      implicit client: DynamoDbAsyncClient,
+  def flowPaginated[In <: DynamoDbRequest, Out <: DynamoDbResponse]()(implicit
+      client: DynamoDbAsyncClient,
       operation: DynamoDbPaginatedOp[In, Out, _]
   ): Flow[In, Out, NotUsed] = Flow[In].flatMapConcat(source(_))
 
@@ -83,8 +84,10 @@ object DynamoDb {
   )
   def single[In <: DynamoDbRequest, Out <: DynamoDbResponse](
       request: In
-  )(implicit client: DynamoDbAsyncClient,
-    operation: DynamoDbOp[In, Out],
-    system: ClassicActorSystemProvider): Future[Out] =
+  )(implicit
+      client: DynamoDbAsyncClient,
+      operation: DynamoDbOp[In, Out],
+      system: ClassicActorSystemProvider
+  ): Future[Out] =
     Source.single(request).via(flow(1)).runWith(Sink.head)
 }

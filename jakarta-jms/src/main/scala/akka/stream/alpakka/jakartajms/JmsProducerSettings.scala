@@ -66,7 +66,7 @@ final class JmsProducerSettings private (
    */
   def withTimeToLive(value: java.time.Duration): JmsProducerSettings = copy(timeToLive = Option(value).map(_.asScala))
 
-  /**  Timeout for connection status subscriber */
+  /** Timeout for connection status subscriber */
   def withConnectionStatusSubscriptionTimeout(value: FiniteDuration): JmsProducerSettings =
     copy(connectionStatusSubscriptionTimeout = value)
 
@@ -158,7 +158,8 @@ object JmsProducerSettings {
    * @param connectionFactory Factory to use for creating JMS connections.
    */
   def apply(actorSystem: ClassicActorSystemProvider,
-            connectionFactory: jakarta.jms.ConnectionFactory): JmsProducerSettings =
+            connectionFactory: jakarta.jms.ConnectionFactory
+  ): JmsProducerSettings =
     apply(actorSystem.classicSystem, connectionFactory)
 
   /**
@@ -186,7 +187,8 @@ object JmsProducerSettings {
    * @param connectionFactory Factory to use for creating JMS connections.
    */
   def create(actorSystem: ClassicActorSystemProvider,
-             connectionFactory: jakarta.jms.ConnectionFactory): JmsProducerSettings =
+             connectionFactory: jakarta.jms.ConnectionFactory
+  ): JmsProducerSettings =
     apply(actorSystem.classicSystem, connectionFactory)
 
 }

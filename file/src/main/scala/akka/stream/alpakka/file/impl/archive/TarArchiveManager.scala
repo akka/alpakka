@@ -17,13 +17,12 @@ import akka.util.ByteString
 
   def tarFlow(): Flow[(TarArchiveMetadata, Source[ByteString, _]), ByteString, NotUsed] = {
     Flow[(TarArchiveMetadata, Source[ByteString, Any])]
-      .flatMapConcat {
-        case (metadata, stream) =>
-          val entry = new TarArchiveEntry(metadata)
-          Source
-            .single(entry.headerBytes)
-            .concat(stream.via(new EnsureByteStreamSize(metadata.size)))
-            .concat(Source.single(entry.trailingBytes))
+      .flatMapConcat { case (metadata, stream) =>
+        val entry = new TarArchiveEntry(metadata)
+        Source
+          .single(entry.headerBytes)
+          .concat(stream.via(new EnsureByteStreamSize(metadata.size)))
+          .concat(Source.single(entry.trailingBytes))
       }
   }
 

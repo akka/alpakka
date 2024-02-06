@@ -20,8 +20,8 @@ import scala.collection.JavaConverters._
 private[influxdb] final class InfluxDbSourceStage[T](clazz: Class[T],
                                                      settings: InfluxDbReadSettings,
                                                      influxDB: InfluxDB,
-                                                     query: Query)
-    extends GraphStage[SourceShape[T]] {
+                                                     query: Query
+) extends GraphStage[SourceShape[T]] {
 
   val out: Outlet[T] = Outlet("InfluxDb.out")
   override val shape = SourceShape(out)
@@ -43,8 +43,8 @@ private[influxdb] final class InfluxDbSourceLogic[T](clazz: Class[T],
                                                      influxDB: InfluxDB,
                                                      query: Query,
                                                      outlet: Outlet[T],
-                                                     shape: SourceShape[T])
-    extends InfluxDbBaseSourceLogic[T](influxDB, query, outlet, shape) {
+                                                     shape: SourceShape[T]
+) extends InfluxDbBaseSourceLogic[T](influxDB, query, outlet, shape) {
 
   var resultMapperHelper: AlpakkaResultMapperHelper = _
 
@@ -97,8 +97,8 @@ private[influxdb] final class InfluxDbRawSourceStage(query: Query, influxDB: Inf
 private[influxdb] final class InfluxDbSourceRawLogic(query: Query,
                                                      influxDB: InfluxDB,
                                                      outlet: Outlet[QueryResult],
-                                                     shape: SourceShape[QueryResult])
-    extends InfluxDbBaseSourceLogic[QueryResult](influxDB, query, outlet, shape) {
+                                                     shape: SourceShape[QueryResult]
+) extends InfluxDbBaseSourceLogic[QueryResult](influxDB, query, outlet, shape) {
 
   override def onPull(): Unit =
     dataRetrieved match {
@@ -119,8 +119,8 @@ private[influxdb] final class InfluxDbSourceRawLogic(query: Query,
 private[impl] sealed abstract class InfluxDbBaseSourceLogic[T](influxDB: InfluxDB,
                                                                query: Query,
                                                                outlet: Outlet[T],
-                                                               shape: SourceShape[T])
-    extends GraphStageLogic(shape)
+                                                               shape: SourceShape[T]
+) extends GraphStageLogic(shape)
     with OutHandler {
 
   setHandler(outlet, this)

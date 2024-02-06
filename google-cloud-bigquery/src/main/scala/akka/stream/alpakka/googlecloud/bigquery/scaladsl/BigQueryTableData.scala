@@ -46,8 +46,9 @@ private[scaladsl] trait BigQueryTableData { this: BigQueryRest =>
                      tableId: String,
                      startIndex: Option[Long] = None,
                      maxResults: Option[Int] = None,
-                     selectedFields: Seq[String] = Seq.empty)(
-      implicit um: FromEntityUnmarshaller[TableDataListResponse[Out]]
+                     selectedFields: Seq[String] = Seq.empty
+  )(implicit
+      um: FromEntityUnmarshaller[TableDataListResponse[Out]]
   ): Source[Out, Future[TableDataListResponse[Out]]] =
     source { settings =>
       import BigQueryException._
@@ -114,8 +115,8 @@ private[scaladsl] trait BigQueryTableData { this: BigQueryRest =>
    * @tparam In the data model for each record
    * @return a [[akka.stream.scaladsl.Flow]] that sends each [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataInsertAllRequest]] and emits a [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataInsertAllResponse]] for each
    */
-  def insertAll[In](datasetId: String, tableId: String, retryFailedRequests: Boolean)(
-      implicit m: ToEntityMarshaller[TableDataInsertAllRequest[In]]
+  def insertAll[In](datasetId: String, tableId: String, retryFailedRequests: Boolean)(implicit
+      m: ToEntityMarshaller[TableDataInsertAllRequest[In]]
   ): Flow[TableDataInsertAllRequest[In], TableDataInsertAllResponse, NotUsed] =
     Flow
       .fromMaterializer { (mat, attr) =>
@@ -135,8 +136,8 @@ private[scaladsl] trait BigQueryTableData { this: BigQueryRest =>
 
         val pool = {
           val uri = BigQueryEndpoints.endpoint
-          GoogleHttp().cachedHostConnectionPool[TableDataInsertAllResponse](uri.authority.host.address,
-                                                                            uri.effectivePort)(um)
+          GoogleHttp()
+            .cachedHostConnectionPool[TableDataInsertAllResponse](uri.authority.host.address, uri.effectivePort)(um)
         }
 
         Flow[TableDataInsertAllRequest[In]]
@@ -149,9 +150,9 @@ private[scaladsl] trait BigQueryTableData { this: BigQueryRest =>
   private def randomUUID(randomGen: SplittableRandom): UUID = {
     var msb = randomGen.nextLong()
     var lsb = randomGen.nextLong()
-    msb &= 0xFFFFFFFFFFFF0FFFL // clear version
+    msb &= 0xffffffffffff0fffL // clear version
     msb |= 0x0000000000004000L // set to version 4
-    lsb &= 0x3FFFFFFFFFFFFFFFL // clear variant
+    lsb &= 0x3fffffffffffffffL // clear variant
     lsb |= 0x8000000000000000L // set to IETF variant
     new UUID(msb, lsb)
   }

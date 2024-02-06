@@ -42,7 +42,8 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
                               elasticsearchParams.typeName.get,
                               settings.versionType,
                               settings.allowExplicitIndex,
-                              writer)
+                              writer
+      )
     case ApiVersion.V7 =>
       new RestBulkApiV7[T, C](elasticsearchParams.indexName, settings.versionType, settings.allowExplicitIndex, writer)
 
@@ -100,14 +101,14 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
               Unmarshal(response.entity).to[String].map { body =>
                 failureHandler.invoke(
                   (resultsPassthrough,
-                   new RuntimeException(s"Request failed for POST $uri, got ${response.status} with body: $body"))
+                   new RuntimeException(s"Request failed for POST $uri, got ${response.status} with body: $body")
+                  )
                 )
               }
           }
-          .recoverWith {
-            case cause: Throwable =>
-              failureHandler.invoke((Nil, new RuntimeException(s"Request failed for POST $uri", cause)))
-              Future.failed(cause)
+          .recoverWith { case cause: Throwable =>
+            failureHandler.invoke((Nil, new RuntimeException(s"Request failed for POST $uri", cause)))
+            Future.failed(cause)
           }
       } else {
         // if all NOPs, pretend an empty response:
@@ -123,7 +124,8 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
 
       log.error(s"Received error from elastic after having already processed {} documents. Error: {}",
                 resultsPassthrough.size,
-                exception)
+                exception
+      )
       failStage(exception)
     }
 
@@ -142,8 +144,8 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
       if (log.isErrorEnabled) {
         messageResults.filterNot(_.success).foreach { failure =>
           if (failure.getError.isPresent) {
-            log.error(s"Received error from elastic when attempting to index documents. Error: {}",
-                      failure.getError.get)
+            log
+              .error(s"Received error from elastic when attempting to index documents. Error: {}", failure.getError.get)
           }
         }
       }

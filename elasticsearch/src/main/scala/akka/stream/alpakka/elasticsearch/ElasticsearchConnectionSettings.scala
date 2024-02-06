@@ -64,11 +64,12 @@ final class ElasticsearchConnectionSettings private (
                                         username = username,
                                         password = password,
                                         headers = headers,
-                                        connectionContext = connectionContext)
+                                        connectionContext = connectionContext
+    )
 
   override def toString =
-    s"""ElasticsearchConnectionSettings(baseUrl=$baseUrl,username=$username,password=${password.fold("")(
-      _ => "***"
+    s"""ElasticsearchConnectionSettings(baseUrl=$baseUrl,username=$username,password=${password.fold("")(_ =>
+      "***"
     )},headers=${headers.mkString(";")},connectionContext=$connectionContext)"""
 }
 

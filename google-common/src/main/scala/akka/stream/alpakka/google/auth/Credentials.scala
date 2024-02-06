@@ -49,7 +49,9 @@ object Credentials {
                   log.warning("Service account: {}", ex1.getMessage)
                   log.warning("Compute Engine: {}", ex2.getMessage)
                   log.warning("User access: {}", ex3.getMessage)
-                  parseNone(c) // TODO Once credentials are guaranteed to be managed centrally we can throw an error instead
+                  parseNone(
+                    c
+                  ) // TODO Once credentials are guaranteed to be managed centrally we can throw an error instead
               }
           }
       }
@@ -74,10 +76,11 @@ object Credentials {
   @deprecated("Intended only to help with migration", "3.0.0")
   private[alpakka] def cache(key: Any)(default: => Credentials) =
     _cache.getOrElse(key, {
-      val credentials = default
-      _cache += (key -> credentials)
-      credentials
-    })
+                       val credentials = default
+                       _cache += (key -> credentials)
+                       credentials
+                     }
+    )
 
 }
 

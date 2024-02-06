@@ -41,7 +41,8 @@ trait ElasticsearchSpecUtils { this: AnyWordSpec with ScalaFutures =>
   def register(connectionSettings: ElasticsearchConnectionSettings,
                indexName: String,
                title: String,
-               price: Int): Unit = {
+               price: Int
+  ): Unit = {
     val request = HttpRequest(HttpMethods.POST)
       .withUri(Uri(connectionSettings.baseUrl).withPath(Path(s"/$indexName/_doc")))
       .withEntity(ContentTypes.`application/json`, s"""{"title": "$title", "price": $price}""")
@@ -60,7 +61,8 @@ trait ElasticsearchSpecUtils { this: AnyWordSpec with ScalaFutures =>
 
   def readTitlesFrom(apiVersion: ApiVersionBase,
                      sourceSettings: SourceSettingsBase[_, _],
-                     indexName: String): Future[immutable.Seq[String]] =
+                     indexName: String
+  ): Future[immutable.Seq[String]] =
     ElasticsearchSource
       .typed[Book](
         constructElasticsearchParams(indexName, "_doc", apiVersion),
@@ -85,7 +87,8 @@ trait ElasticsearchSpecUtils { this: AnyWordSpec with ScalaFutures =>
 
   def constructElasticsearchParams(indexName: String,
                                    typeName: String,
-                                   apiVersion: ApiVersionBase): ElasticsearchParams = {
+                                   apiVersion: ApiVersionBase
+  ): ElasticsearchParams = {
     if (apiVersion == akka.stream.alpakka.elasticsearch.ApiVersion.V5) {
       ElasticsearchParams.V5(indexName, typeName)
     } else if (apiVersion == akka.stream.alpakka.elasticsearch.ApiVersion.V7) {

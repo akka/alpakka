@@ -24,10 +24,11 @@ object SolrFlow {
   def documents(
       collection: String,
       settings: SolrUpdateSettings
-  )(
-      implicit client: SolrClient
+  )(implicit
+      client: SolrClient
   ): Flow[immutable.Seq[WriteMessage[SolrInputDocument, NotUsed]], immutable.Seq[WriteResult[SolrInputDocument,
-                                                                                             NotUsed]], NotUsed] =
+                                                                                             NotUsed
+  ]], NotUsed] =
     Flow
       .fromGraph(
         new SolrFlowStage[SolrInputDocument, NotUsed](
@@ -45,8 +46,8 @@ object SolrFlow {
   def beans[T](
       collection: String,
       settings: SolrUpdateSettings
-  )(
-      implicit client: SolrClient
+  )(implicit
+      client: SolrClient
   ): Flow[immutable.Seq[WriteMessage[T, NotUsed]], immutable.Seq[WriteResult[T, NotUsed]], NotUsed] =
     Flow
       .fromGraph(
@@ -67,8 +68,8 @@ object SolrFlow {
       collection: String,
       settings: SolrUpdateSettings,
       binder: T => SolrInputDocument
-  )(
-      implicit client: SolrClient
+  )(implicit
+      client: SolrClient
   ): Flow[immutable.Seq[WriteMessage[T, NotUsed]], immutable.Seq[WriteResult[T, NotUsed]], NotUsed] =
     Flow
       .fromGraph(
@@ -88,11 +89,12 @@ object SolrFlow {
   def documentsWithPassThrough[PT](
       collection: String,
       settings: SolrUpdateSettings
-  )(
-      implicit client: SolrClient
+  )(implicit
+      client: SolrClient
   ): Flow[immutable.Seq[WriteMessage[SolrInputDocument, PT]],
           immutable.Seq[WriteResult[SolrInputDocument, PT]],
-          NotUsed] =
+          NotUsed
+  ] =
     Flow
       .fromGraph(
         new SolrFlowStage[SolrInputDocument, PT](

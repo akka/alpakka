@@ -25,7 +25,8 @@ import scala.compat.java8.OptionConverters._
 final case class Dataset private (datasetReference: DatasetReference,
                                   friendlyName: Option[String],
                                   labels: Option[Map[String, String]],
-                                  location: Option[String]) {
+                                  location: Option[String]
+) {
 
   def getDatasetReference = datasetReference
   def getFriendlyName = friendlyName.asJava
@@ -64,7 +65,8 @@ object Dataset {
   def create(datasetReference: DatasetReference,
              friendlyName: util.Optional[String],
              labels: util.Optional[util.Map[String, String]],
-             location: util.Optional[String]) =
+             location: util.Optional[String]
+  ) =
     Dataset(datasetReference, friendlyName.asScala, labels.asScala.map(_.asScala.toMap), location.asScala)
 
   implicit val format: RootJsonFormat[Dataset] = jsonFormat4(apply)

@@ -42,9 +42,11 @@ class OAuth2CredentialsSpec
   }
 
   val testableCredentials = new OAuth2Credentials("dummyProject") {
-    override protected def getAccessToken()(implicit @unused mat: Materializer,
-                                            @unused settings: RequestSettings,
-                                            @unused clock: Clock): Future[AccessToken] =
+    override protected def getAccessToken()(implicit
+        @unused mat: Materializer,
+        @unused settings: RequestSettings,
+        @unused clock: Clock
+    ): Future[AccessToken] =
       AccessTokenProvider.accessTokenPromise.future
   }
 

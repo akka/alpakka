@@ -84,7 +84,7 @@ import scala.util.Success
 
   def handleSentEvent(completableFuture: CompletableFuture[TableEntry]): Unit =
     completableFuture.toScala.onComplete { t =>
-      asyncMessageSendCallback.invokeWithFeedback((t))
+      asyncMessageSendCallback.invokeWithFeedback(t)
     }
 
   setHandler(

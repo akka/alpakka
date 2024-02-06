@@ -36,7 +36,8 @@ private[alpakka] trait Google {
   final def singleRequest[T](request: HttpRequest,
                              unmarshaller: Unmarshaller[HttpResponse, T],
                              settings: GoogleSettings,
-                             system: ClassicActorSystemProvider): CompletionStage[T] =
+                             system: ClassicActorSystemProvider
+  ): CompletionStage[T] =
     ScalaGoogle.singleRequest[T](request)(unmarshaller.asScala, system, settings).toJava
 
   /**
@@ -48,7 +49,8 @@ private[alpakka] trait Google {
    * @return a [[akka.stream.javadsl.Source]] that emits an `Out` for each page of the resource
    */
   final def paginatedRequest[Out <: Paginated](request: HttpRequest,
-                                               unmarshaller: Unmarshaller[HttpResponse, Out]): Source[Out, NotUsed] = {
+                                               unmarshaller: Unmarshaller[HttpResponse, Out]
+  ): Source[Out, NotUsed] = {
     implicit val um = unmarshaller.asScala
     ScalaGoogle.paginatedRequest[Out](request).asJava
   }

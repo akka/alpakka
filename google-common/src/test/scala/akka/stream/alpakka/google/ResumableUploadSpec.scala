@@ -80,7 +80,8 @@ class ResumableUploadSpec
           ResumableUpload[JsValue](
             HttpRequest(POST,
                         Uri("https://example.com?uploadType=resumable"),
-                        List(`X-Upload-Content-Type`(ContentTypes.`application/octet-stream`)))
+                        List(`X-Upload-Content-Type`(ContentTypes.`application/octet-stream`))
+            )
           )
         )
 

@@ -24,7 +24,8 @@ import scala.concurrent.Future
     } else {
       http.singleRequest(request,
                          connectionContext =
-                           connectionSettings.connectionContext.getOrElse(http.defaultClientHttpsContext))
+                           connectionSettings.connectionContext.getOrElse(http.defaultClientHttpsContext)
+      )
     }
   }
 }

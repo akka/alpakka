@@ -25,7 +25,8 @@ object EventBridgePublisher {
    * @param eventBridgeClient [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]] client for publishing
    */
   def flow(settings: EventBridgePublishSettings,
-           eventBridgeClient: EventBridgeAsyncClient): Flow[PutEventsRequestEntry, PutEventsResponse, NotUsed] =
+           eventBridgeClient: EventBridgeAsyncClient
+  ): Flow[PutEventsRequestEntry, PutEventsResponse, NotUsed] =
     akka.stream.alpakka.aws.eventbridge.scaladsl.EventBridgePublisher.flow(settings)(eventBridgeClient).asJava
 
   /**
@@ -69,7 +70,8 @@ object EventBridgePublisher {
    * @param eventBridgeClient [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]] client for publishing
    */
   def publishFlow(settings: EventBridgePublishSettings,
-                  eventBridgeClient: EventBridgeAsyncClient): Flow[PutEventsRequest, PutEventsResponse, NotUsed] =
+                  eventBridgeClient: EventBridgeAsyncClient
+  ): Flow[PutEventsRequest, PutEventsResponse, NotUsed] =
     akka.stream.alpakka.aws.eventbridge.scaladsl.EventBridgePublisher.publishFlow(settings)(eventBridgeClient).asJava
 
   /**
@@ -98,7 +100,8 @@ object EventBridgePublisher {
    * @param eventBridgeClient [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]] client for publishing
    */
   def sink(settings: EventBridgePublishSettings,
-           eventBridgeClient: EventBridgeAsyncClient): Sink[PutEventsRequestEntry, CompletionStage[Done]] =
+           eventBridgeClient: EventBridgeAsyncClient
+  ): Sink[PutEventsRequestEntry, CompletionStage[Done]] =
     flow(settings, eventBridgeClient)
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
 
@@ -109,7 +112,8 @@ object EventBridgePublisher {
    * @param eventBridgeClient [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]] client for publishing
    */
   def publishSink(settings: EventBridgePublishSettings,
-                  eventBridgeClient: EventBridgeAsyncClient): Sink[PutEventsRequest, CompletionStage[Done]] =
+                  eventBridgeClient: EventBridgeAsyncClient
+  ): Sink[PutEventsRequest, CompletionStage[Done]] =
     publishFlow(settings, eventBridgeClient)
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
 

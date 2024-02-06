@@ -20,7 +20,8 @@ import scala.collection.immutable
                                              escapeChar: Char,
                                              endOfLine: String,
                                              quotingStyle: CsvQuotingStyle,
-                                             charset: Charset = StandardCharsets.UTF_8) {
+                                             charset: Charset = StandardCharsets.UTF_8
+) {
 
   private[this] val charsetName = charset.name()
 

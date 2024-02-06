@@ -25,9 +25,11 @@ final class SqsSourceSettings private (
   require(maxBatchSize <= maxBufferSize, "maxBatchSize must be lower or equal than maxBufferSize")
   // SQS requirements
   require(0 <= waitTimeSeconds && waitTimeSeconds <= 20,
-          s"Invalid value ($waitTimeSeconds) for waitTimeSeconds. Requirement: 0 <= waitTimeSeconds <= 20 ")
+          s"Invalid value ($waitTimeSeconds) for waitTimeSeconds. Requirement: 0 <= waitTimeSeconds <= 20 "
+  )
   require(1 <= maxBatchSize && maxBatchSize <= 10,
-          s"Invalid value ($maxBatchSize) for maxBatchSize. Requirement: 1 <= maxBatchSize <= 10 ")
+          s"Invalid value ($maxBatchSize) for maxBatchSize. Requirement: 1 <= maxBatchSize <= 10 "
+  )
 
   /**
    * The duration in seconds for which the call waits for a message to arrive in the queue before returning.

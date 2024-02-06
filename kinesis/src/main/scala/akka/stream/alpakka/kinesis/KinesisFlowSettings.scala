@@ -7,7 +7,8 @@ package akka.stream.alpakka.kinesis
 final class KinesisFlowSettings private (val parallelism: Int,
                                          val maxBatchSize: Int,
                                          val maxRecordsPerSecond: Int,
-                                         val maxBytesPerSecond: Int) {
+                                         val maxBytesPerSecond: Int
+) {
 
   require(
     maxBatchSize >= 1 && maxBatchSize <= 500,

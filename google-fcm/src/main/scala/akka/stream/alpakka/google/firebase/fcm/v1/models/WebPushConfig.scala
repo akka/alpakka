@@ -11,7 +11,8 @@ package akka.stream.alpakka.google.firebase.fcm.v1.models
 case class WebPushConfig(headers: Option[Map[String, String]] = None,
                          data: Option[Map[String, String]] = None,
                          notification: Option[String] = None,
-                         fcm_options: Option[FcmOption] = None) {
+                         fcm_options: Option[FcmOption] = None
+) {
   def withHeaders(value: Map[String, String]): WebPushConfig = this.copy(headers = Option(value))
   def withData(value: Map[String, String]): WebPushConfig = this.copy(data = Option(value))
   def withNotification(value: String): WebPushConfig = this.copy(notification = Option(value))

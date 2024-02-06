@@ -86,11 +86,10 @@ class JmsTxConnectorsSpec extends JmsSharedServerSpec {
 
         // The sent message and the receiving one should have the same properties
         val sortedResult = result.futureValue.sortBy(msg => msg.getIntProperty("Number"))
-        forAll(sortedResult.zip(msgsIn)) {
-          case (out, in) =>
-            out.getIntProperty("Number") shouldEqual in.properties("Number")
-            out.getBooleanProperty("IsOdd") shouldEqual in.properties("IsOdd")
-            out.getBooleanProperty("IsEven") shouldEqual in.properties("IsEven")
+        forAll(sortedResult.zip(msgsIn)) { case (out, in) =>
+          out.getIntProperty("Number") shouldEqual in.properties("Number")
+          out.getBooleanProperty("IsOdd") shouldEqual in.properties("IsOdd")
+          out.getBooleanProperty("IsEven") shouldEqual in.properties("IsEven")
         }
     }
 
@@ -164,13 +163,12 @@ class JmsTxConnectorsSpec extends JmsSharedServerSpec {
         // We should have only received the odd numbers in the list
 
         val sortedResult = result.futureValue.sortBy(msg => msg.getIntProperty("Number"))
-        forAll(sortedResult.zip(oddMsgsIn)) {
-          case (out, in) =>
-            out.getIntProperty("Number") shouldEqual in.properties("Number")
-            out.getBooleanProperty("IsOdd") shouldEqual in.properties("IsOdd")
-            out.getBooleanProperty("IsEven") shouldEqual in.properties("IsEven")
-            // Make sure we are only receiving odd numbers
-            out.getIntProperty("Number") % 2 shouldEqual 1
+        forAll(sortedResult.zip(oddMsgsIn)) { case (out, in) =>
+          out.getIntProperty("Number") shouldEqual in.properties("Number")
+          out.getBooleanProperty("IsOdd") shouldEqual in.properties("IsOdd")
+          out.getBooleanProperty("IsEven") shouldEqual in.properties("IsEven")
+          // Make sure we are only receiving odd numbers
+          out.getIntProperty("Number") % 2 shouldEqual 1
         }
     }
 
@@ -482,9 +480,8 @@ class JmsTxConnectorsSpec extends JmsSharedServerSpec {
 
         val r = new java.util.Random
 
-        val thisDecider: Supervision.Decider = {
-          case ex =>
-            Supervision.resume
+        val thisDecider: Supervision.Decider = { case ex =>
+          Supervision.resume
         }
 
         val (killSwitch, streamDone) = jmsSource
@@ -496,8 +493,8 @@ class JmsTxConnectorsSpec extends JmsSharedServerSpec {
             env.commit()
             1
           }
-          .recover {
-            case _: Throwable => 1
+          .recover { case _: Throwable =>
+            1
           }
           .withAttributes(ActorAttributes.supervisionStrategy(thisDecider))
           .toMat(Sink.ignore)(Keep.both)
@@ -699,7 +696,7 @@ class JmsTxConnectorsSpec extends JmsSharedServerSpec {
         )
 
       val streamCompletion = jmsSource
-      // Let the ack timeout kick in
+        // Let the ack timeout kick in
         .delay(2.seconds)
         .map { txEnvelope =>
           txEnvelope.commit()

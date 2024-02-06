@@ -42,7 +42,8 @@ object GCStorage {
   @deprecated("pass in the actor system instead of the materializer", "3.0.0")
   def getBucket(bucketName: String,
                 materializer: Materializer,
-                attributes: Attributes): CompletionStage[Optional[Bucket]] =
+                attributes: Attributes
+  ): CompletionStage[Optional[Bucket]] =
     GCStorageStream
       .getBucket(bucketName)(materializer, attributes)
       .map(_.asJava)(materializer.executionContext)
@@ -89,7 +90,8 @@ object GCStorage {
   def createBucket(bucketName: String,
                    location: String,
                    materializer: Materializer,
-                   attributes: Attributes): CompletionStage[Bucket] =
+                   attributes: Attributes
+  ): CompletionStage[Bucket] =
     GCStorageStream.createBucket(bucketName, location)(materializer, attributes).toJava
 
   /**
@@ -104,7 +106,8 @@ object GCStorage {
   def createBucket(bucketName: String,
                    location: String,
                    system: ActorSystem,
-                   attributes: Attributes): CompletionStage[Bucket] =
+                   attributes: Attributes
+  ): CompletionStage[Bucket] =
     GCStorageStream.createBucket(bucketName, location)(Materializer.matFromSystem(system), attributes).toJava
 
   /**
@@ -266,7 +269,8 @@ object GCStorage {
    */
   def download(bucket: String,
                objectName: String,
-               generation: Long): Source[Optional[Source[ByteString, NotUsed]], NotUsed] =
+               generation: Long
+  ): Source[Optional[Source[ByteString, NotUsed]], NotUsed] =
     GCStorageStream.download(bucket, objectName, Option(generation)).map(_.map(_.asJava).asJava).asJava
 
   /**
@@ -283,7 +287,8 @@ object GCStorage {
   def simpleUpload(bucket: String,
                    objectName: String,
                    data: Source[ByteString, _],
-                   contentType: ContentType): Source[StorageObject, NotUsed] =
+                   contentType: ContentType
+  ): Source[StorageObject, NotUsed] =
     GCStorageStream.putObject(bucket, objectName, data.asScala, contentType.asInstanceOf[ScalaContentType]).asJava
 
   /**
@@ -302,7 +307,8 @@ object GCStorage {
                       objectName: String,
                       contentType: ContentType,
                       chunkSize: java.lang.Integer,
-                      metadata: java.util.Map[String, String]): Sink[ByteString, CompletionStage[StorageObject]] =
+                      metadata: java.util.Map[String, String]
+  ): Sink[ByteString, CompletionStage[StorageObject]] =
     resumableUpload(bucket, objectName, contentType, chunkSize, Some(metadata))
 
   /**
@@ -319,7 +325,8 @@ object GCStorage {
   def resumableUpload(bucket: String,
                       objectName: String,
                       contentType: ContentType,
-                      chunkSize: java.lang.Integer): Sink[ByteString, CompletionStage[StorageObject]] =
+                      chunkSize: java.lang.Integer
+  ): Sink[ByteString, CompletionStage[StorageObject]] =
     resumableUpload(bucket, objectName, contentType, chunkSize, metadata = None)
 
   private def resumableUpload(
@@ -339,7 +346,8 @@ object GCStorage {
                        objectName,
                        contentType.asInstanceOf[ScalaContentType],
                        chunkSize,
-                       metadata.map(_.asScala.toMap))
+                       metadata.map(_.asScala.toMap)
+      )
       .asJava
       .mapMaterializedValue(func(_.toJava))
   }
@@ -356,7 +364,8 @@ object GCStorage {
    */
   def resumableUpload(bucket: String,
                       objectName: String,
-                      contentType: ContentType): Sink[ByteString, CompletionStage[StorageObject]] =
+                      contentType: ContentType
+  ): Sink[ByteString, CompletionStage[StorageObject]] =
     GCStorageStream
       .resumableUpload(bucket, objectName, contentType.asInstanceOf[ScalaContentType])
       .asJava
@@ -376,7 +385,8 @@ object GCStorage {
   def rewrite(sourceBucket: String,
               sourceObjectName: String,
               destinationBucket: String,
-              destinationObjectName: String): RunnableGraph[CompletionStage[StorageObject]] =
+              destinationObjectName: String
+  ): RunnableGraph[CompletionStage[StorageObject]] =
     RunnableGraph
       .fromGraph(
         GCStorageStream.rewrite(sourceBucket, sourceObjectName, destinationBucket, destinationObjectName)

@@ -27,7 +27,8 @@ final case class ErrorProto private (reason: Option[String], location: Option[St
   @JsonCreator
   private def this(@JsonProperty(value = "reason") reason: String,
                    @JsonProperty("location") location: String,
-                   @JsonProperty(value = "message") message: String) =
+                   @JsonProperty(value = "message") message: String
+  ) =
     this(Option(reason), Option(location), Option(message))
 
   def getReason = reason.asJava

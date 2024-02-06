@@ -30,17 +30,15 @@ private[google] object GoogleOAuth2Exception {
           PredefinedFromEntityUnmarshallers.stringUnmarshaller.map(s => OAuth2ErrorResponse(None, Some(s)))
         )
       )
-      .mapWithInput {
-        case (response, OAuth2ErrorResponse(error, error_description)) =>
-          val ex = GoogleOAuth2Exception(
-            ErrorInfo(error.getOrElse(response.status.value),
-                      error_description.getOrElse(response.status.defaultMessage))
-          )
-          // https://github.com/googleapis/google-auth-library-python/blob/master/google/oauth2/_client.py
-          if (ex.info.summary == internalFailure || ex.info.detail == internalFailure)
-            Retry(ex): Throwable
-          else
-            ex
+      .mapWithInput { case (response, OAuth2ErrorResponse(error, error_description)) =>
+        val ex = GoogleOAuth2Exception(
+          ErrorInfo(error.getOrElse(response.status.value), error_description.getOrElse(response.status.defaultMessage))
+        )
+        // https://github.com/googleapis/google-auth-library-python/blob/master/google/oauth2/_client.py
+        if (ex.info.summary == internalFailure || ex.info.detail == internalFailure)
+          Retry(ex): Throwable
+        else
+          ex
       }
       .withDefaultRetry
 }

@@ -56,7 +56,8 @@ final class CassandraSessionRegistry private (delegate: scaladsl.CassandraSessio
    * Sessions in the session registry are closed after actor system termination.
    */
   def sessionFor(configPath: String,
-                 init: java.util.function.Function[CqlSession, CompletionStage[Done]]): CassandraSession =
+                 init: java.util.function.Function[CqlSession, CompletionStage[Done]]
+  ): CassandraSession =
     new CassandraSession(delegate.sessionFor(configPath, ses => init(ses).toScala))
 
   /**

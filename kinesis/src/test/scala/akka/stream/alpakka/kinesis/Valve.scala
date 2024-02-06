@@ -35,25 +35,21 @@ object Valve {
 
   /**
    * Factory for [[Valve]] instances.
-   *
    */
   def apply[A](): Valve[A] = Valve[A](SwitchMode.Open)
 
   /**
    * Java API: Factory for [[Valve]] instances.
-   *
    */
   def create[A](): Valve[A] = Valve[A](SwitchMode.Open)
 
   /**
    * Factory for [[Valve]] instances.
-   *
    */
   def apply[A](mode: SwitchMode): Valve[A] = new Valve[A](mode)
 
   /**
    * Java API: Factory for [[Valve]] instances.
-   *
    */
   def create[A](mode: SwitchMode): Valve[A] = Valve[A](mode)
 
@@ -90,27 +86,26 @@ final class Valve[A](mode: SwitchMode) extends GraphStageWithMaterializedValue[F
 
     private val switch = new ValveSwitch {
 
-      val flipCallback = getAsyncCallback[(SwitchMode, Promise[Boolean])] {
-        case (flipToMode, promise) =>
-          val succeed = mode match {
-            case _ if flipToMode == mode => false
+      val flipCallback = getAsyncCallback[(SwitchMode, Promise[Boolean])] { case (flipToMode, promise) =>
+        val succeed = mode match {
+          case _ if flipToMode == mode => false
 
-            case Open =>
-              mode = SwitchMode.Close
-              true
+          case Open =>
+            mode = SwitchMode.Close
+            true
 
-            case Close =>
-              if (isAvailable(in)) {
-                push(out, grab(in))
-              } else if (isAvailable(out) && !hasBeenPulled(in)) {
-                pull(in)
-              }
+          case Close =>
+            if (isAvailable(in)) {
+              push(out, grab(in))
+            } else if (isAvailable(out) && !hasBeenPulled(in)) {
+              pull(in)
+            }
 
-              mode = SwitchMode.Open
-              true
-          }
+            mode = SwitchMode.Open
+            true
+        }
 
-          promise.success(succeed)
+        promise.success(succeed)
       }
 
       // FIXME will never complete promise if stage is stopped, use invokeWithFeedback when Akka 2.5.7 is released

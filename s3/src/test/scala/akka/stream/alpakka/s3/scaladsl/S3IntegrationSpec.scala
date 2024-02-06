@@ -147,8 +147,8 @@ trait S3IntegrationSpec
                    objectKey,
                    data,
                    bytes.length,
-                   s3Headers = S3Headers().withMetaHeaders(MetaHeaders(metaHeaders)))
-        .withAttributes(attributes)
+                   s3Headers = S3Headers().withMetaHeaders(MetaHeaders(metaHeaders))
+      ).withAttributes(attributes)
         .runWith(Sink.head)
 
     result.futureValue.eTag should not be empty
@@ -165,7 +165,8 @@ trait S3IntegrationSpec
                    objectKey,
                    data,
                    bytes.length,
-                   s3Headers = S3Headers().withMetaHeaders(MetaHeaders(metaHeaders)))
+                   s3Headers = S3Headers().withMetaHeaders(MetaHeaders(metaHeaders))
+        )
         .withAttributes(attributes)
         .runWith(Sink.head)
       metaBefore <- S3.getObjectMetadata(defaultBucket, objectKey).withAttributes(attributes).runWith(Sink.head)
@@ -329,29 +330,28 @@ trait S3IntegrationSpec
       upload3 <- source.runWith(S3.multipartUpload(defaultBucket, sourceKey3).withAttributes(attributes))
     } yield (upload1, upload2, upload3)
 
-    whenReady(results) {
-      case (upload1, upload2, upload3) =>
-        upload1.bucket shouldEqual defaultBucket
-        upload1.key shouldEqual sourceKey1
-        upload2.bucket shouldEqual defaultBucket
-        upload2.key shouldEqual sourceKey2
-        upload3.bucket shouldEqual defaultBucket
-        upload3.key shouldEqual sourceKey3
+    whenReady(results) { case (upload1, upload2, upload3) =>
+      upload1.bucket shouldEqual defaultBucket
+      upload1.key shouldEqual sourceKey1
+      upload2.bucket shouldEqual defaultBucket
+      upload2.key shouldEqual sourceKey2
+      upload3.bucket shouldEqual defaultBucket
+      upload3.key shouldEqual sourceKey3
 
-        S3.deleteObjectsByPrefix(defaultBucket, Some("original"))
+      S3.deleteObjectsByPrefix(defaultBucket, Some("original"))
+        .withAttributes(attributes)
+        .runWith(Sink.ignore)
+        .futureValue shouldEqual akka.Done
+      val numOfKeysForPrefix =
+        S3.listBucket(defaultBucket, Some("original"))
           .withAttributes(attributes)
-          .runWith(Sink.ignore)
-          .futureValue shouldEqual akka.Done
-        val numOfKeysForPrefix =
-          S3.listBucket(defaultBucket, Some("original"))
-            .withAttributes(attributes)
-            .runFold(0)((result, _) => result + 1)
-            .futureValue
-        numOfKeysForPrefix shouldEqual 0
-        S3.deleteObject(defaultBucket, sourceKey3)
-          .withAttributes(attributes)
-          .runWith(Sink.head)
-          .futureValue shouldEqual akka.Done
+          .runFold(0)((result, _) => result + 1)
+          .futureValue
+      numOfKeysForPrefix shouldEqual 0
+      S3.deleteObject(defaultBucket, sourceKey3)
+        .withAttributes(attributes)
+        .runWith(Sink.head)
+        .futureValue shouldEqual akka.Done
     }
   }
 
@@ -398,9 +398,12 @@ trait S3IntegrationSpec
         .withAttributes(attributes)
         .runWith(Sink.seq)
 
-    } yield (versionsBeforeDelete.flatMap { case (versions, _) => versions }, versionsAfterDelete.flatMap {
-      case (versions, _) => versions
-    }, listBucketContentsAfterDelete)
+    } yield (versionsBeforeDelete.flatMap { case (versions, _) => versions },
+             versionsAfterDelete.flatMap { case (versions, _) =>
+               versions
+             },
+             listBucketContentsAfterDelete
+    )
 
     val (versionsBeforeDelete, versionsAfterDelete, bucketContentsAfterDelete) = results.futureValue
 
@@ -421,7 +424,8 @@ trait S3IntegrationSpec
                    objectKey,
                    data,
                    bytes.length,
-                   s3Headers = S3Headers().withMetaHeaders(MetaHeaders(metaHeaders)))
+                   s3Headers = S3Headers().withMetaHeaders(MetaHeaders(metaHeaders))
+        )
         .withAttributes(attributes)
         .runWith(Sink.ignore)
       result <- S3.listObjectVersions(defaultBucket, None).withAttributes(attributes).runWith(Sink.seq)
@@ -443,23 +447,22 @@ trait S3IntegrationSpec
       upload2 <- source.runWith(S3.multipartUpload(defaultBucket, sourceKey2).withAttributes(attributes))
     } yield (upload1, upload2)
 
-    whenReady(results) {
-      case (upload1, upload2) =>
-        upload1.bucket shouldEqual defaultBucket
-        upload1.key shouldEqual sourceKey1
-        upload2.bucket shouldEqual defaultBucket
-        upload2.key shouldEqual sourceKey2
+    whenReady(results) { case (upload1, upload2) =>
+      upload1.bucket shouldEqual defaultBucket
+      upload1.key shouldEqual sourceKey1
+      upload2.bucket shouldEqual defaultBucket
+      upload2.key shouldEqual sourceKey2
 
-        S3.deleteObjectsByPrefix(defaultBucket, prefix = None)
+      S3.deleteObjectsByPrefix(defaultBucket, prefix = None)
+        .withAttributes(attributes)
+        .runWith(Sink.ignore)
+        .futureValue shouldEqual akka.Done
+      val numOfKeysForPrefix =
+        S3.listBucket(defaultBucket, None)
           .withAttributes(attributes)
-          .runWith(Sink.ignore)
-          .futureValue shouldEqual akka.Done
-        val numOfKeysForPrefix =
-          S3.listBucket(defaultBucket, None)
-            .withAttributes(attributes)
-            .runFold(0)((result, _) => result + 1)
-            .futureValue
-        numOfKeysForPrefix shouldEqual 0
+          .runFold(0)((result, _) => result + 1)
+          .futureValue
+      numOfKeysForPrefix shouldEqual 0
     }
   }
 
@@ -467,7 +470,8 @@ trait S3IntegrationSpec
   final def createStringCollectionWithMinChunkSizeRec(numberOfChunks: Int,
                                                       stringAcc: BigInt = BigInt(0),
                                                       currentChunk: Int = 0,
-                                                      result: Vector[ByteString] = Vector.empty): Vector[ByteString] = {
+                                                      result: Vector[ByteString] = Vector.empty
+  ): Vector[ByteString] = {
 
     if (currentChunk == numberOfChunks)
       result
@@ -484,7 +488,8 @@ trait S3IntegrationSpec
             createStringCollectionWithMinChunkSizeRec(numberOfChunks,
                                                       newAcc,
                                                       currentChunk,
-                                                      result.updated(currentChunk, appendedString))
+                                                      result.updated(currentChunk, appendedString)
+            )
           } else {
             val newChunk = currentChunk + 1
             val newResult = {
@@ -519,7 +524,8 @@ trait S3IntegrationSpec
   case object AbortException extends Exception("Aborting multipart upload")
 
   def createSlowSource(data: immutable.Seq[ByteString],
-                       killSwitch: Option[SharedKillSwitch]): Source[ByteString, NotUsed] = {
+                       killSwitch: Option[SharedKillSwitch]
+  ): Source[ByteString, NotUsed] = {
     val base = Source(data)
       .throttle(1, 10.seconds)
 
@@ -552,8 +558,8 @@ trait S3IntegrationSpec
       _ <- akka.pattern.after(25.seconds)(Future {
         sharedKillSwitch.abort(AbortException)
       })
-      _ <- multiPartUpload.recover[Any] {
-        case AbortException => ()
+      _ <- multiPartUpload.recover[Any] { case AbortException =>
+        ()
       }
       incomplete <- S3.listMultipartUpload(defaultBucket, None).withAttributes(attributes).runWith(Sink.seq)
       uploadIds = incomplete.collect {
@@ -568,18 +574,17 @@ trait S3IntegrationSpec
       })
     } yield (uploadIds, incomplete, parts.flatten)
 
-    whenReady(results) {
-      case (uploadIds, incompleteFiles, parts) =>
-        val inputsUntilAbort = inputData.slice(0, 3)
-        incompleteFiles.exists(_.key == sourceKey) shouldBe true
-        parts.nonEmpty shouldBe true
-        uploadIds.size shouldBe 1
-        parts.size shouldBe 3
-        parts.map(_.size) shouldBe inputsUntilAbort.map(_.utf8String.getBytes("UTF-8").length)
-        // In S3 the etag's are actually an MD5 hash of the contents of the part so we can use this to check
-        // that the data has been uploaded correctly and in the right order, see
-        // https://docs.aws.amazon.com/AmazonS3/latest/API/RESTCommonResponseHeaders.html
-        parts.map(_.eTag.replaceAll("\"", "")) shouldBe inputsUntilAbort.map(byteStringToMD5)
+    whenReady(results) { case (uploadIds, incompleteFiles, parts) =>
+      val inputsUntilAbort = inputData.slice(0, 3)
+      incompleteFiles.exists(_.key == sourceKey) shouldBe true
+      parts.nonEmpty shouldBe true
+      uploadIds.size shouldBe 1
+      parts.size shouldBe 3
+      parts.map(_.size) shouldBe inputsUntilAbort.map(_.utf8String.getBytes("UTF-8").length)
+      // In S3 the etag's are actually an MD5 hash of the contents of the part so we can use this to check
+      // that the data has been uploaded correctly and in the right order, see
+      // https://docs.aws.amazon.com/AmazonS3/latest/API/RESTCommonResponseHeaders.html
+      parts.map(_.eTag.replaceAll("\"", "")) shouldBe inputsUntilAbort.map(byteStringToMD5)
     }
   }
 
@@ -605,8 +610,8 @@ trait S3IntegrationSpec
       _ <- akka.pattern.after(25.seconds)(Future {
         sharedKillSwitch.abort(AbortException)
       })
-      _ <- multiPartUpload.recover[Any] {
-        case AbortException => ()
+      _ <- multiPartUpload.recover[Any] { case AbortException =>
+        ()
       }
       incomplete <- S3.listMultipartUpload(defaultBucket, None).withAttributes(attributes).runWith(Sink.seq)
 
@@ -663,8 +668,8 @@ trait S3IntegrationSpec
       _ <- akka.pattern.after(25.seconds)(Future {
         sharedKillSwitch.abort(AbortException)
       })
-      _ <- multiPartUpload.recover[Any] {
-        case AbortException => ()
+      _ <- multiPartUpload.recover[Any] { case AbortException =>
+        ()
       }
       incomplete <- S3.listMultipartUpload(defaultBucket, None).withAttributes(attributes).runWith(Sink.seq)
 
@@ -714,7 +719,8 @@ trait S3IntegrationSpec
                                                              newAcc,
                                                              currentChunk,
                                                              newChunkSize,
-                                                             result.updated(currentChunk, newEntry))
+                                                             result.updated(currentChunk, newEntry)
+            )
           } else {
             val newChunk = currentChunk + 1
             val (newResult, newChunkSize) = {
@@ -734,7 +740,8 @@ trait S3IntegrationSpec
                                                            newAcc,
                                                            currentChunk,
                                                            initial.toArray.length,
-                                                           firstResult)
+                                                           firstResult
+          )
       }
     }
   }
@@ -761,9 +768,8 @@ trait S3IntegrationSpec
     val originalData = inputData.flatten.map { case (data, _) => data }.fold(ByteString.empty)(_ ++ _)
     val resultingContexts = new ConcurrentLinkedQueue[List[BigInt]]()
     val collectContextSink = Sink
-      .foreach[(UploadPartResponse, immutable.Iterable[BigInt])] {
-        case (_, contexts) =>
-          resultingContexts.add(contexts.toList)
+      .foreach[(UploadPartResponse, immutable.Iterable[BigInt])] { case (_, contexts) =>
+        resultingContexts.add(contexts.toList)
       }
       .mapMaterializedValue(_ => NotUsed)
 
@@ -982,22 +988,21 @@ trait S3IntegrationSpec
         .runWith(Sink.head)
     } yield (upload, copy, download)
 
-    whenReady(results) {
-      case (upload, copy, downloaded) =>
-        upload.bucket shouldEqual defaultBucket
-        upload.key shouldEqual sourceKey
-        copy.bucket shouldEqual defaultBucket
-        copy.key shouldEqual targetKey
-        downloaded shouldBe objectValue
+    whenReady(results) { case (upload, copy, downloaded) =>
+      upload.bucket shouldEqual defaultBucket
+      upload.key shouldEqual sourceKey
+      copy.bucket shouldEqual defaultBucket
+      copy.key shouldEqual targetKey
+      downloaded shouldBe objectValue
 
-        S3.deleteObject(defaultBucket, sourceKey)
-          .withAttributes(attributes)
-          .runWith(Sink.head)
-          .futureValue shouldEqual akka.Done
-        S3.deleteObject(defaultBucket, targetKey)
-          .withAttributes(attributes)
-          .runWith(Sink.head)
-          .futureValue shouldEqual akka.Done
+      S3.deleteObject(defaultBucket, sourceKey)
+        .withAttributes(attributes)
+        .runWith(Sink.head)
+        .futureValue shouldEqual akka.Done
+      S3.deleteObject(defaultBucket, targetKey)
+        .withAttributes(attributes)
+        .runWith(Sink.head)
+        .futureValue shouldEqual akka.Done
     }
   }
 }

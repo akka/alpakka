@@ -34,8 +34,10 @@ import scala.util.{Failure, Success, Try}
  * the final user but as internal API. Still it could be used to create/list/delete queues if needed.
  */
 @InternalApi
-private[ironmq] final class IronMqClient(settings: IronMqSettings)(implicit actorSystem: ActorSystem,
-                                                                   materializer: Materializer) {
+private[ironmq] final class IronMqClient(settings: IronMqSettings)(implicit
+    actorSystem: ActorSystem,
+    materializer: Materializer
+) {
 
   import Codec._
 
@@ -72,8 +74,8 @@ private[ironmq] final class IronMqClient(settings: IronMqSettings)(implicit acto
    * It support pagination by providing the last queue name and number of desired results. It can also filter by queue
    * name prefix.
    */
-  def listQueues(prefix: Option[String] = None, from: Option[String] = None, noOfQueues: Int = 50)(
-      implicit ec: ExecutionContext
+  def listQueues(prefix: Option[String] = None, from: Option[String] = None, noOfQueues: Int = 50)(implicit
+      ec: ExecutionContext
   ): Future[scala.collection.immutable.Seq[String]] = {
 
     def parseQueues(json: Json) = {
@@ -94,8 +96,8 @@ private[ironmq] final class IronMqClient(settings: IronMqSettings)(implicit acto
     }
 
     val query = List(prefix.map("prefix" -> _), from.map("previous" -> _))
-      .collect {
-        case Some(x) => x
+      .collect { case Some(x) =>
+        x
       }
       .foldLeft(Uri.Query("per_page" -> noOfQueues.toString)) { (q, x) =>
         x +: q
@@ -113,8 +115,8 @@ private[ironmq] final class IronMqClient(settings: IronMqSettings)(implicit acto
     makeRequest(Put(Uri(s"$queuesPath/${name}"), Json.obj()))
       .flatMap(Unmarshal(_).to[Json])
       .map(_.hcursor.downField("queue").as[Queue])
-      .collect {
-        case Right(queue) => queue.name.value
+      .collect { case Right(queue) =>
+        queue.name.value
       }
 
   /**
@@ -166,15 +168,16 @@ private[ironmq] final class IronMqClient(settings: IronMqSettings)(implicit acto
                                  } else {
                                    Json.Null
                                  }) deepMerge Json.obj("n" -> Json.fromInt(noOfMessages),
-                                                       "delete" -> Json.fromBoolean(false))
+                                                       "delete" -> Json.fromBoolean(false)
+    )
 
     makeRequest(Post(Uri(s"$queuesPath/${queueName}/reservations"), payload))
       .flatMap(Unmarshal(_).to[Json])
       .map { json =>
         json.hcursor.downField("messages").as[Iterable[ReservedMessage]]
       }
-      .collect {
-        case Right(xs) => xs
+      .collect { case Right(xs) =>
+        xs
       }
   }
 
@@ -183,13 +186,12 @@ private[ironmq] final class IronMqClient(settings: IronMqSettings)(implicit acto
    *
    * The messages will not be available anymore to any other consumer. They are deleted immediately after being fetched.
    *
-   *
    * @param queueName  The name of the queue to consume from.
    * @param noOfMessages The maximum number of messages to consume (It will return a number of messages up to this number)
    * @param watch The amount of time the consumer will wait for more messages to be consumed.
    */
-  def pullMessages(queueName: String, noOfMessages: Int = 1, watch: Duration = Duration.Undefined)(
-      implicit ec: ExecutionContext
+  def pullMessages(queueName: String, noOfMessages: Int = 1, watch: Duration = Duration.Undefined)(implicit
+      ec: ExecutionContext
   ): Future[Iterable[Message]] = {
 
     val payload = (if (watch.isFinite) {
@@ -203,8 +205,8 @@ private[ironmq] final class IronMqClient(settings: IronMqSettings)(implicit acto
       .map { json =>
         json.hcursor.downField("messages").as[Iterable[Message]]
       }
-      .collect {
-        case Right(xs) => xs
+      .collect { case Right(xs) =>
+        xs
       }
   }
 
@@ -215,8 +217,8 @@ private[ironmq] final class IronMqClient(settings: IronMqSettings)(implicit acto
    * @param reservation The Reservation to be renewed.
    * @param timeout The new reservation timeout.
    */
-  def touchMessage(queueName: String, reservation: Reservation, timeout: Duration = Duration.Undefined)(
-      implicit ec: ExecutionContext
+  def touchMessage(queueName: String, reservation: Reservation, timeout: Duration = Duration.Undefined)(implicit
+      ec: ExecutionContext
   ): Future[Reservation] = {
 
     val payload = (if (timeout.isFinite) {
@@ -235,8 +237,8 @@ private[ironmq] final class IronMqClient(settings: IronMqSettings)(implicit acto
           }
         } yield reservation.copy(reservationId = reservationId)
       }
-      .collect {
-        case Some(r) => r
+      .collect { case Some(r) =>
+        r
       }
 
   }
@@ -248,16 +250,17 @@ private[ironmq] final class IronMqClient(settings: IronMqSettings)(implicit acto
    * @param queueName The name of the queue to fetch the messages from.
    * @param numberOfMessages The maximum number of the messages to fetch.
    */
-  def peekMessages(queueName: String,
-                   numberOfMessages: Int = 1)(implicit ec: ExecutionContext): Future[Iterable[Message]] =
+  def peekMessages(queueName: String, numberOfMessages: Int = 1)(implicit
+      ec: ExecutionContext
+  ): Future[Iterable[Message]] =
     makeRequest(
       Get(Uri(s"$queuesPath/${queueName}/messages").withQuery(Uri.Query("n" -> numberOfMessages.toString)))
     ).flatMap(Unmarshal(_).to[Json])
       .map { json =>
         json.hcursor.downField("messages").as[Iterable[Message]]
       }
-      .collect {
-        case Right(xs) => xs
+      .collect { case Right(xs) =>
+        xs
       }
 
   /**
@@ -281,8 +284,8 @@ private[ironmq] final class IronMqClient(settings: IronMqSettings)(implicit acto
    * @param reservation The reservations to be used to release messages. It should not be already expired.
    * @param delay How much time before the message will be available to other consumers.
    */
-  def releaseMessage(queueName: String, reservation: Reservation, delay: FiniteDuration = Duration.Zero)(
-      implicit ec: ExecutionContext
+  def releaseMessage(queueName: String, reservation: Reservation, delay: FiniteDuration = Duration.Zero)(implicit
+      ec: ExecutionContext
   ): Future[Unit] = {
 
     val payload = Json.obj("reservation_id" -> reservation.reservationId.asJson, "delay" -> delay.toSeconds.asJson)

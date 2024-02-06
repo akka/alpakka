@@ -59,8 +59,8 @@ import java.util.concurrent.Executor
       settings.withCallCredentials(MoreCallCredentials.from(credentials().asGoogle(executor, requestSettings())))
     }
 
-    Seq(setTls, setCallCredentials).foldLeft(settings) {
-      case (s, f) => f(s)
+    Seq(setTls, setCallCredentials).foldLeft(settings) { case (s, f) =>
+      f(s)
     }
   }
 

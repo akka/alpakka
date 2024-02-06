@@ -6,7 +6,8 @@ package akka.stream.alpakka.s3
 
 private[s3] object Utils {
 
-  /** Removes S3 ETag quotes in the same way the official AWS tooling does. See
+  /**
+   * Removes S3 ETag quotes in the same way the official AWS tooling does. See
    * https://github.com/aws/aws-sdk-java/blob/f935a3758b771a25f628f1d296cb61044a82b4ac/aws-java-sdk-s3/src/main/java/com/amazonaws/services/s3/internal/ServiceUtils.java#L122
    */
   def removeQuotes(string: String): String = {

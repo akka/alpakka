@@ -23,10 +23,9 @@ private[scaladsl] trait BigQueryRest extends Google {
 
   protected[this] def mkFilterParam(filter: Map[String, String]): String =
     filter.view
-      .map {
-        case (key, value) =>
-          val colonValue = if (value.isEmpty) "" else s":$value"
-          s"label.$key$colonValue"
+      .map { case (key, value) =>
+        val colonValue = if (value.isEmpty) "" else s":$value"
+        s"label.$key$colonValue"
       }
       .mkString(" ")
 

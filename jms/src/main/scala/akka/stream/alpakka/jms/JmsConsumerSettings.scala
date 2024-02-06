@@ -215,7 +215,8 @@ object JmsConsumerSettings {
    * @param connectionFactory Factory to use for creating JMS connections.
    */
   def apply(actorSystem: ClassicActorSystemProvider,
-            connectionFactory: javax.jms.ConnectionFactory): JmsConsumerSettings =
+            connectionFactory: javax.jms.ConnectionFactory
+  ): JmsConsumerSettings =
     apply(actorSystem.classicSystem, connectionFactory)
 
   /**
@@ -243,6 +244,7 @@ object JmsConsumerSettings {
    * @param connectionFactory Factory to use for creating JMS connections.
    */
   def create(actorSystem: ClassicActorSystemProvider,
-             connectionFactory: javax.jms.ConnectionFactory): JmsConsumerSettings =
+             connectionFactory: javax.jms.ConnectionFactory
+  ): JmsConsumerSettings =
     apply(actorSystem.classicSystem, connectionFactory)
 }

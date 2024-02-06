@@ -87,7 +87,8 @@ private[file] class TarReaderStage
 
       def readTrailer(metadata: TarArchiveMetadata,
                       buffer: ByteString,
-                      subSource: Option[SubSourceOutlet[ByteString]]): Unit = {
+                      subSource: Option[SubSourceOutlet[ByteString]]
+      ): Unit = {
         val trailerLength = TarArchiveEntry.trailerLength(metadata)
         if (buffer.length >= trailerLength) {
           subSource.foreach(_.complete())
@@ -240,8 +241,8 @@ private[file] class TarReaderStage
        */
       private final class ReadPastTrailer(metadata: TarArchiveMetadata,
                                           var buffer: ByteString,
-                                          subSource: Option[SubSourceOutlet[ByteString]])
-          extends InHandler
+                                          subSource: Option[SubSourceOutlet[ByteString]]
+      ) extends InHandler
           with ExpectDownstreamPull {
         private val trailerLength = TarArchiveEntry.trailerLength(metadata)
 

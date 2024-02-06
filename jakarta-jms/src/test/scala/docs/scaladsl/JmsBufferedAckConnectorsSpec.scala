@@ -95,11 +95,10 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
 
         // The sent message and the receiving one should have the same properties
         val sortedResult = result.futureValue.sortBy(msg => msg.getIntProperty("Number"))
-        forAll(sortedResult.zip(msgsIn)) {
-          case (out, in) =>
-            out.getIntProperty("Number") shouldEqual in.properties("Number")
-            out.getBooleanProperty("IsOdd") shouldEqual in.properties("IsOdd")
-            out.getBooleanProperty("IsEven") shouldEqual in.properties("IsEven")
+        forAll(sortedResult.zip(msgsIn)) { case (out, in) =>
+          out.getIntProperty("Number") shouldEqual in.properties("Number")
+          out.getBooleanProperty("IsOdd") shouldEqual in.properties("IsOdd")
+          out.getBooleanProperty("IsEven") shouldEqual in.properties("IsEven")
         }
     }
 
@@ -136,13 +135,12 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
         // We should have only received the odd numbers in the list
 
         val sortedResult = result.futureValue.sortBy(msg => msg.getIntProperty("Number"))
-        forAll(sortedResult.zip(oddMsgsIn)) {
-          case (out, in) =>
-            out.getIntProperty("Number") shouldEqual in.properties("Number")
-            out.getBooleanProperty("IsOdd") shouldEqual in.properties("IsOdd")
-            out.getBooleanProperty("IsEven") shouldEqual in.properties("IsEven")
-            // Make sure we are only receiving odd numbers
-            out.getIntProperty("Number") % 2 shouldEqual 1
+        forAll(sortedResult.zip(oddMsgsIn)) { case (out, in) =>
+          out.getIntProperty("Number") shouldEqual in.properties("Number")
+          out.getBooleanProperty("IsOdd") shouldEqual in.properties("IsOdd")
+          out.getBooleanProperty("IsEven") shouldEqual in.properties("IsEven")
+          // Make sure we are only receiving odd numbers
+          out.getIntProperty("Number") % 2 shouldEqual 1
         }
     }
 

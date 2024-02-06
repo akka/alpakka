@@ -58,12 +58,14 @@ object S3 {
               key: String,
               versionId: Optional[String],
               method: HttpMethod = HttpMethods.GET,
-              s3Headers: S3Headers = S3Headers.empty): Source[HttpResponse, NotUsed] =
+              s3Headers: S3Headers = S3Headers.empty
+  ): Source[HttpResponse, NotUsed] =
     S3Stream
       .request(S3Location(bucket, key),
                method.asInstanceOf[ScalaHttpMethod],
                versionId = Option(versionId.orElse(null)),
-               s3Headers = s3Headers.headers)
+               s3Headers = s3Headers.headers
+      )
       .map(v => v: HttpResponse)
       .asJava
 
@@ -87,7 +89,8 @@ object S3 {
    */
   def getObjectMetadata(bucket: String,
                         key: String,
-                        sse: ServerSideEncryption): Source[Optional[ObjectMetadata], NotUsed] =
+                        sse: ServerSideEncryption
+  ): Source[Optional[ObjectMetadata], NotUsed] =
     getObjectMetadata(bucket, key, S3Headers.empty.withOptionalServerSideEncryption(Option(sse)))
 
   /**
@@ -102,7 +105,8 @@ object S3 {
   def getObjectMetadata(bucket: String,
                         key: String,
                         versionId: Optional[String],
-                        sse: ServerSideEncryption): Source[Optional[ObjectMetadata], NotUsed] =
+                        sse: ServerSideEncryption
+  ): Source[Optional[ObjectMetadata], NotUsed] =
     getObjectMetadataWithHeaders(bucket, key, versionId, S3Headers.empty.withOptionalServerSideEncryption(Option(sse)))
 
   /**
@@ -128,7 +132,8 @@ object S3 {
   def getObjectMetadataWithHeaders(bucket: String,
                                    key: String,
                                    versionId: Optional[String],
-                                   s3Headers: S3Headers): Source[Optional[ObjectMetadata], NotUsed] =
+                                   s3Headers: S3Headers
+  ): Source[Optional[ObjectMetadata], NotUsed] =
     S3Stream
       .getObjectMetadata(bucket, key, Option(versionId.orElse(null)), s3Headers)
       .map { opt =>
@@ -169,7 +174,8 @@ object S3 {
   def deleteObject(bucket: String,
                    key: String,
                    versionId: Optional[String],
-                   s3Headers: S3Headers): Source[Done, NotUsed] =
+                   s3Headers: S3Headers
+  ): Source[Done, NotUsed] =
     S3Stream
       .deleteObject(S3Location(bucket, key), Option(versionId.orElse(null)), s3Headers)
       .map(_ => Done.getInstance())
@@ -213,7 +219,8 @@ object S3 {
    */
   def deleteObjectsByPrefix(bucket: String,
                             prefix: Optional[String],
-                            deleteAllVersions: Boolean): Source[Done, NotUsed] =
+                            deleteAllVersions: Boolean
+  ): Source[Done, NotUsed] =
     deleteObjectsByPrefix(bucket, prefix, deleteAllVersions, S3Headers.empty)
 
   /**
@@ -238,7 +245,8 @@ object S3 {
   def deleteObjectsByPrefix(bucket: String,
                             prefix: Optional[String],
                             deleteAllVersions: Boolean,
-                            s3Headers: S3Headers): Source[Done, NotUsed] =
+                            s3Headers: S3Headers
+  ): Source[Done, NotUsed] =
     S3Stream
       .deleteObjectsByPrefix(bucket, Option(prefix.orElse(null)), deleteAllVersions, s3Headers)
       .map(_ => Done.getInstance())
@@ -282,13 +290,15 @@ object S3 {
                 data: Source[ByteString, _],
                 contentLength: Long,
                 contentType: ContentType,
-                s3Headers: S3Headers): Source[ObjectMetadata, NotUsed] =
+                s3Headers: S3Headers
+  ): Source[ObjectMetadata, NotUsed] =
     S3Stream
       .putObject(S3Location(bucket, key),
                  contentType.asInstanceOf[ScalaContentType],
                  data.asScala,
                  contentLength,
-                 s3Headers)
+                 s3Headers
+      )
       .asJava
 
   /**
@@ -305,7 +315,8 @@ object S3 {
                 key: String,
                 data: Source[ByteString, _],
                 contentLength: Long,
-                contentType: ContentType): Source[ObjectMetadata, NotUsed] =
+                contentType: ContentType
+  ): Source[ObjectMetadata, NotUsed] =
     putObject(bucket, key, data, contentLength, contentType, S3Headers.empty.withCannedAcl(CannedAcl.Private))
 
   /**
@@ -320,7 +331,8 @@ object S3 {
   def putObject(bucket: String,
                 key: String,
                 data: Source[ByteString, _],
-                contentLength: Long): Source[ObjectMetadata, NotUsed] =
+                contentLength: Long
+  ): Source[ObjectMetadata, NotUsed] =
     putObject(bucket, key, data, contentLength, ContentTypes.APPLICATION_OCTET_STREAM)
 
   private def toJava[M](
@@ -341,7 +353,8 @@ object S3 {
    */
   @deprecated("Use S3.getObject instead", "4.0.0")
   def download(bucket: String,
-               key: String): Source[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]], NotUsed] =
+               key: String
+  ): Source[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]], NotUsed] =
     toJava(S3Stream.download(S3Location(bucket, key), None, None, S3Headers.empty))
 
   /**
@@ -371,7 +384,8 @@ object S3 {
   @deprecated("Use S3.getObject instead", "4.0.0")
   def download(bucket: String,
                key: String,
-               range: ByteRange): Source[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]], NotUsed] = {
+               range: ByteRange
+  ): Source[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]], NotUsed] = {
     val scalaRange = range.asInstanceOf[ScalaByteRange]
     toJava(S3Stream.download(S3Location(bucket, key), Some(scalaRange), None, S3Headers.empty))
   }
@@ -668,7 +682,8 @@ object S3 {
    */
   def listBucket(bucket: String,
                  prefix: Optional[String],
-                 s3Headers: S3Headers): Source[ListBucketResultContents, NotUsed] =
+                 s3Headers: S3Headers
+  ): Source[ListBucketResultContents, NotUsed] =
     S3Stream
       .listBucket(bucket, prefix.asScala, s3Headers)
       .asJava
@@ -688,7 +703,8 @@ object S3 {
    */
   def listBucket(bucket: String,
                  delimiter: String,
-                 prefix: Optional[String]): Source[ListBucketResultContents, NotUsed] =
+                 prefix: Optional[String]
+  ): Source[ListBucketResultContents, NotUsed] =
     scaladsl.S3
       .listBucket(bucket, delimiter, prefix.asScala)
       .asJava
@@ -710,7 +726,8 @@ object S3 {
   def listBucket(bucket: String,
                  delimiter: String,
                  prefix: Optional[String],
-                 s3Headers: S3Headers): Source[ListBucketResultContents, NotUsed] =
+                 s3Headers: S3Headers
+  ): Source[ListBucketResultContents, NotUsed] =
     scaladsl.S3
       .listBucket(bucket, delimiter, prefix.asScala, s3Headers)
       .asJava
@@ -736,11 +753,12 @@ object S3 {
       prefix: Optional[String],
       s3Headers: S3Headers
   ): Source[akka.japi.Pair[java.util.List[ListBucketResultContents], java.util.List[ListBucketResultCommonPrefixes]],
-            NotUsed] =
+            NotUsed
+  ] =
     S3Stream
       .listBucketAndCommonPrefixes(bucket, delimiter, prefix.asScala, s3Headers)
-      .map {
-        case (contents, commonPrefixes) => akka.japi.Pair(contents.asJava, commonPrefixes.asJava)
+      .map { case (contents, commonPrefixes) =>
+        akka.japi.Pair(contents.asJava, commonPrefixes.asJava)
       }
       .asJava
 
@@ -764,7 +782,8 @@ object S3 {
    */
   def listMultipartUpload(bucket: String,
                           prefix: Optional[String],
-                          s3Headers: S3Headers): Source[ListMultipartUploadResultUploads, NotUsed] =
+                          s3Headers: S3Headers
+  ): Source[ListMultipartUploadResultUploads, NotUsed] =
     scaladsl.S3.listMultipartUpload(bucket, prefix.asScala, s3Headers).asJava
 
   /**
@@ -784,8 +803,8 @@ object S3 {
   ): Source[akka.japi.Pair[java.util.List[ListMultipartUploadResultUploads], java.util.List[CommonPrefixes]], NotUsed] =
     S3Stream
       .listMultipartUploadAndCommonPrefixes(bucket, delimiter, prefix.asScala, s3Headers)
-      .map {
-        case (uploads, commonPrefixes) => akka.japi.Pair(uploads.asJava, commonPrefixes.asJava)
+      .map { case (uploads, commonPrefixes) =>
+        akka.japi.Pair(uploads.asJava, commonPrefixes.asJava)
       }
       .asJava
 
@@ -812,7 +831,8 @@ object S3 {
   def listParts(bucket: String,
                 key: String,
                 uploadId: String,
-                s3Headers: S3Headers): Source[ListPartsResultParts, NotUsed] =
+                s3Headers: S3Headers
+  ): Source[ListPartsResultParts, NotUsed] =
     scaladsl.S3.listParts(bucket, key, uploadId, s3Headers).asJava
 
   /**
@@ -829,8 +849,8 @@ object S3 {
   ): Source[akka.japi.Pair[java.util.List[ListObjectVersionsResultVersions], java.util.List[DeleteMarkers]], NotUsed] =
     S3Stream
       .listObjectVersions(bucket, prefix.asScala, S3Headers.empty)
-      .map {
-        case (versions, markers) => akka.japi.Pair(versions.asJava, markers.asJava)
+      .map { case (versions, markers) =>
+        akka.japi.Pair(versions.asJava, markers.asJava)
       }
       .asJava
 
@@ -850,8 +870,8 @@ object S3 {
   ): Source[akka.japi.Pair[java.util.List[ListObjectVersionsResultVersions], java.util.List[DeleteMarkers]], NotUsed] =
     S3Stream
       .listObjectVersions(bucket, prefix.asScala, s3Headers)
-      .map {
-        case (versions, markers) => akka.japi.Pair(versions.asJava, markers.asJava)
+      .map { case (versions, markers) =>
+        akka.japi.Pair(versions.asJava, markers.asJava)
       }
       .asJava
 
@@ -873,9 +893,8 @@ object S3 {
   ): Source[akka.japi.Pair[java.util.List[ListObjectVersionsResultVersions], java.util.List[DeleteMarkers]], NotUsed] =
     S3Stream
       .listObjectVersionsAndCommonPrefixes(bucket, delimiter, prefix.asScala, s3Headers)
-      .map {
-        case (versions, markers, _) =>
-          akka.japi.Pair(versions.asJava, markers.asJava)
+      .map { case (versions, markers, _) =>
+        akka.japi.Pair(versions.asJava, markers.asJava)
       }
       .asJava
 
@@ -892,14 +911,14 @@ object S3 {
   def listObjectVersionsAndCommonPrefixes(bucket: String,
                                           delimiter: String,
                                           prefix: Option[String],
-                                          s3Headers: S3Headers): Source[akka.japi.tuple.Tuple3[java.util.List[
+                                          s3Headers: S3Headers
+  ): Source[akka.japi.tuple.Tuple3[java.util.List[
     ListObjectVersionsResultVersions
   ], java.util.List[DeleteMarkers], java.util.List[CommonPrefixes]], NotUsed] =
     S3Stream
       .listObjectVersionsAndCommonPrefixes(bucket, delimiter, prefix, s3Headers)
-      .map {
-        case (versions, markers, prefixes) =>
-          akka.japi.tuple.Tuple3(versions.asJava, markers.asJava, prefixes.asJava)
+      .map { case (versions, markers, prefixes) =>
+        akka.japi.tuple.Tuple3(versions.asJava, markers.asJava, prefixes.asJava)
       }
       .asJava
 
@@ -915,7 +934,8 @@ object S3 {
   def multipartUpload(bucket: String,
                       key: String,
                       contentType: ContentType,
-                      s3Headers: S3Headers): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+                      s3Headers: S3Headers
+  ): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
     S3Stream
       .multipartUpload(S3Location(bucket, key), contentType.asInstanceOf[ScalaContentType], s3Headers)
       .mapMaterializedValue(_.toJava)
@@ -931,7 +951,8 @@ object S3 {
    */
   def multipartUpload(bucket: String,
                       key: String,
-                      contentType: ContentType): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+                      contentType: ContentType
+  ): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
     multipartUpload(bucket, key, contentType, S3Headers.empty.withCannedAcl(CannedAcl.Private))
 
   /**
@@ -1020,7 +1041,8 @@ object S3 {
                                   key,
                                   chunkUploadSink,
                                   contentType,
-                                  S3Headers.empty.withCannedAcl(CannedAcl.Private))
+                                  S3Headers.empty.withCannedAcl(CannedAcl.Private)
+    )
 
   /**
    * Uploads a S3 Object by making multiple requests. Unlike `multipartUpload`, this version allows you to pass in a
@@ -1065,13 +1087,15 @@ object S3 {
                             uploadId: String,
                             previousParts: java.lang.Iterable[Part],
                             contentType: ContentType,
-                            s3Headers: S3Headers): Sink[ByteString, CompletionStage[MultipartUploadResult]] = {
+                            s3Headers: S3Headers
+  ): Sink[ByteString, CompletionStage[MultipartUploadResult]] = {
     S3Stream
       .resumeMultipartUpload(S3Location(bucket, key),
                              uploadId,
                              previousParts.asScala.toList,
                              contentType.asInstanceOf[ScalaContentType],
-                             s3Headers)
+                             s3Headers
+      )
       .mapMaterializedValue(_.toJava)
       .asJava
   }
@@ -1090,13 +1114,15 @@ object S3 {
                             key: String,
                             uploadId: String,
                             previousParts: java.lang.Iterable[Part],
-                            contentType: ContentType): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+                            contentType: ContentType
+  ): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
     resumeMultipartUpload(bucket,
                           key,
                           uploadId,
                           previousParts,
                           contentType,
-                          S3Headers.empty.withCannedAcl(CannedAcl.Private))
+                          S3Headers.empty.withCannedAcl(CannedAcl.Private)
+    )
 
   /**
    * Resumes from a previously aborted multipart upload by providing the uploadId and previous upload part identifiers
@@ -1206,7 +1232,8 @@ object S3 {
                                         previousParts,
                                         chunkUploadSink,
                                         contentType,
-                                        S3Headers.empty.withCannedAcl(CannedAcl.Private))
+                                        S3Headers.empty.withCannedAcl(CannedAcl.Private)
+    )
 
   /**
    * Resumes from a previously aborted multipart upload by providing the uploadId and previous upload part identifiers.
@@ -1243,7 +1270,8 @@ object S3 {
                                         uploadId,
                                         previousParts,
                                         chunkUploadSink,
-                                        ContentTypes.APPLICATION_OCTET_STREAM)
+                                        ContentTypes.APPLICATION_OCTET_STREAM
+    )
 
   /**
    * Complete a multipart upload with an already given list of parts
@@ -1255,8 +1283,8 @@ object S3 {
    * @param parts A list of all of the parts for the multipart upload
    * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[MultipartUploadResult]]
    */
-  def completeMultipartUpload(bucket: String, key: String, uploadId: String, parts: java.lang.Iterable[Part])(
-      implicit system: ClassicActorSystemProvider,
+  def completeMultipartUpload(bucket: String, key: String, uploadId: String, parts: java.lang.Iterable[Part])(implicit
+      system: ClassicActorSystemProvider,
       attributes: Attributes = Attributes()
   ): CompletionStage[MultipartUploadResult] =
     completeMultipartUpload(bucket, key, uploadId, parts, S3Headers.empty)
@@ -1304,7 +1332,8 @@ object S3 {
                     targetKey: String,
                     sourceVersionId: Optional[String],
                     contentType: ContentType,
-                    s3Headers: S3Headers): RunnableGraph[CompletionStage[MultipartUploadResult]] =
+                    s3Headers: S3Headers
+  ): RunnableGraph[CompletionStage[MultipartUploadResult]] =
     RunnableGraph
       .fromGraph {
         S3Stream
@@ -1334,14 +1363,16 @@ object S3 {
                     targetBucket: String,
                     targetKey: String,
                     sourceVersionId: Optional[String],
-                    s3Headers: S3Headers): RunnableGraph[CompletionStage[MultipartUploadResult]] =
+                    s3Headers: S3Headers
+  ): RunnableGraph[CompletionStage[MultipartUploadResult]] =
     multipartCopy(sourceBucket,
                   sourceKey,
                   targetBucket,
                   targetKey,
                   sourceVersionId,
                   ContentTypes.APPLICATION_OCTET_STREAM,
-                  s3Headers)
+                  s3Headers
+    )
 
   /**
    * Copy a S3 Object by making multiple requests.
@@ -1359,7 +1390,8 @@ object S3 {
                     targetBucket: String,
                     targetKey: String,
                     contentType: ContentType,
-                    s3Headers: S3Headers): RunnableGraph[CompletionStage[MultipartUploadResult]] =
+                    s3Headers: S3Headers
+  ): RunnableGraph[CompletionStage[MultipartUploadResult]] =
     multipartCopy(sourceBucket, sourceKey, targetBucket, targetKey, Optional.empty(), contentType, s3Headers)
 
   /**
@@ -1376,7 +1408,8 @@ object S3 {
                     sourceKey: String,
                     targetBucket: String,
                     targetKey: String,
-                    s3Headers: S3Headers): RunnableGraph[CompletionStage[MultipartUploadResult]] =
+                    s3Headers: S3Headers
+  ): RunnableGraph[CompletionStage[MultipartUploadResult]] =
     multipartCopy(sourceBucket, sourceKey, targetBucket, targetKey, ContentTypes.APPLICATION_OCTET_STREAM, s3Headers)
 
   /**
@@ -1391,13 +1424,15 @@ object S3 {
   def multipartCopy(sourceBucket: String,
                     sourceKey: String,
                     targetBucket: String,
-                    targetKey: String): RunnableGraph[CompletionStage[MultipartUploadResult]] =
+                    targetKey: String
+  ): RunnableGraph[CompletionStage[MultipartUploadResult]] =
     multipartCopy(sourceBucket,
                   sourceKey,
                   targetBucket,
                   targetKey,
                   ContentTypes.APPLICATION_OCTET_STREAM,
-                  S3Headers.empty)
+                  S3Headers.empty
+    )
 
   /**
    * Create new bucket with a given name
@@ -1410,7 +1445,8 @@ object S3 {
    */
   def makeBucket(bucketName: String,
                  system: ClassicActorSystemProvider,
-                 attributes: Attributes): CompletionStage[Done] =
+                 attributes: Attributes
+  ): CompletionStage[Done] =
     makeBucket(bucketName, system, attributes, S3Headers.empty)
 
   /**
@@ -1437,7 +1473,8 @@ object S3 {
   def makeBucket(bucketName: String,
                  system: ClassicActorSystemProvider,
                  attributes: Attributes,
-                 s3Headers: S3Headers): CompletionStage[Done] =
+                 s3Headers: S3Headers
+  ): CompletionStage[Done] =
     S3Stream.makeBucket(bucketName, s3Headers)(SystemMaterializer(system).materializer, attributes).toJava
 
   /**
@@ -1472,7 +1509,8 @@ object S3 {
    */
   def deleteBucket(bucketName: String,
                    system: ClassicActorSystemProvider,
-                   attributes: Attributes): CompletionStage[Done] =
+                   attributes: Attributes
+  ): CompletionStage[Done] =
     deleteBucket(bucketName, system, attributes, S3Headers.empty)
 
   /**
@@ -1488,7 +1526,8 @@ object S3 {
   def deleteBucket(bucketName: String,
                    system: ClassicActorSystemProvider,
                    attributes: Attributes,
-                   s3Headers: S3Headers): CompletionStage[Done] =
+                   s3Headers: S3Headers
+  ): CompletionStage[Done] =
     S3Stream.deleteBucket(bucketName, s3Headers)(SystemMaterializer(system).materializer, attributes).toJava
 
   /**
@@ -1534,7 +1573,8 @@ object S3 {
    */
   def checkIfBucketExists(bucketName: String,
                           system: ClassicActorSystemProvider,
-                          attributes: Attributes): CompletionStage[BucketAccess] =
+                          attributes: Attributes
+  ): CompletionStage[BucketAccess] =
     checkIfBucketExists(bucketName, system, attributes, S3Headers.empty)
 
   /**
@@ -1550,7 +1590,8 @@ object S3 {
   def checkIfBucketExists(bucketName: String,
                           system: ClassicActorSystemProvider,
                           attributes: Attributes,
-                          s3Headers: S3Headers): CompletionStage[BucketAccess] =
+                          s3Headers: S3Headers
+  ): CompletionStage[BucketAccess] =
     S3Stream.checkIfBucketExists(bucketName, s3Headers)(SystemMaterializer(system).materializer, attributes).toJava
 
   /**
@@ -1594,8 +1635,8 @@ object S3 {
    * @param uploadId Unique identifier of the upload
    * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
    */
-  def deleteUpload(bucketName: String, key: String, uploadId: String)(
-      implicit system: ClassicActorSystemProvider,
+  def deleteUpload(bucketName: String, key: String, uploadId: String)(implicit
+      system: ClassicActorSystemProvider,
       attributes: Attributes = Attributes()
   ): CompletionStage[Done] =
     deleteUpload(bucketName, key, uploadId, S3Headers.empty)
@@ -1646,7 +1687,8 @@ object S3 {
   def deleteUploadSource(bucketName: String,
                          key: String,
                          uploadId: String,
-                         s3Headers: S3Headers): Source[Done, NotUsed] =
+                         s3Headers: S3Headers
+  ): Source[Done, NotUsed] =
     S3Stream.deleteUploadSource(bucketName, key, uploadId, s3Headers).asJava
 
   private def func[T, R](f: T => R) = new akka.japi.function.Function[T, R] {

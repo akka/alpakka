@@ -26,8 +26,10 @@ private[auth] final case class NoCredentials private (projectId: String, token: 
 
   private val futureToken = Future.successful(OAuth2BearerToken(token))
 
-  override def get()(implicit @unused ec: ExecutionContext,
-                     @unused settings: RequestSettings): Future[OAuth2BearerToken] =
+  override def get()(implicit
+      @unused ec: ExecutionContext,
+      @unused settings: RequestSettings
+  ): Future[OAuth2BearerToken] =
     futureToken
 
   override def asGoogle(implicit @unused ec: ExecutionContext, @unused settings: RequestSettings): GoogleCredentials =

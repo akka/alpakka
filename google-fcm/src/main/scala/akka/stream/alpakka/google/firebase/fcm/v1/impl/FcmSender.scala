@@ -24,8 +24,8 @@ import scala.concurrent.Future
 private[fcm] class FcmSender {
   import FcmJsonSupport._
 
-  def send(http: HttpExt, fcmSend: FcmSend)(
-      implicit mat: Materializer,
+  def send(http: HttpExt, fcmSend: FcmSend)(implicit
+      mat: Materializer,
       settings: GoogleSettings
   ): Future[FcmResponse] = {
     import mat.executionContext
@@ -35,8 +35,8 @@ private[fcm] class FcmSender {
     Marshal(fcmSend).to[RequestEntity].flatMap { entity =>
       GoogleHttp(http)
         .singleAuthenticatedRequest[FcmSuccessResponse](HttpRequest(HttpMethods.POST, url, entity = entity))
-    } recover {
-      case FcmErrorException(error) => error
+    } recover { case FcmErrorException(error) =>
+      error
     }
   }
 

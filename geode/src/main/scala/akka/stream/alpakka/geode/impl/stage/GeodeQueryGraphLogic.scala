@@ -15,8 +15,8 @@ import scala.util.Try
 @InternalApi
 private[geode] abstract class GeodeQueryGraphLogic[V](val shape: SourceShape[V],
                                                       val clientCache: ClientCache,
-                                                      val query: String)
-    extends GeodeSourceStageLogic[V](shape, clientCache)
+                                                      val query: String
+) extends GeodeSourceStageLogic[V](shape, clientCache)
     with StageLogging {
 
   override def executeQuery() = Try {

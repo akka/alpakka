@@ -16,7 +16,8 @@ import scala.compat.java8.OptionConverters._
  */
 final class ReadResult[T] @InternalApi private[elasticsearch] (val id: String,
                                                                val source: T,
-                                                               val version: Option[Long]) {
+                                                               val version: Option[Long]
+) {
 
   /** Java API */
   def getVersion: java.util.Optional[Long] = version.asJava
@@ -27,8 +28,8 @@ final class ReadResult[T] @InternalApi private[elasticsearch] (val id: String,
   override def equals(other: Any): Boolean = other match {
     case that: ReadResult[_] =>
       java.util.Objects.equals(this.id, that.id) &&
-      java.util.Objects.equals(this.source, that.source) &&
-      java.util.Objects.equals(this.version, that.version)
+        java.util.Objects.equals(this.source, that.source) &&
+        java.util.Objects.equals(this.version, that.version)
     case _ => false
   }
 

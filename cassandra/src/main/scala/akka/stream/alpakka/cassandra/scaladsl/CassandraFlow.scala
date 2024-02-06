@@ -68,11 +68,10 @@ object CassandraFlow {
         .lazyFutureFlow { () =>
           val prepare = session.prepare(cqlStatement)
           prepare.map { preparedStatement =>
-            Flow[(T, Ctx)].mapAsync(writeSettings.parallelism) {
-              case tuple @ (element, _) =>
-                session
-                  .executeWrite(statementBinder(element, preparedStatement))
-                  .map(_ => tuple)(ExecutionContexts.parasitic)
+            Flow[(T, Ctx)].mapAsync(writeSettings.parallelism) { case tuple @ (element, _) =>
+              session
+                .executeWrite(statementBinder(element, preparedStatement))
+                .map(_ => tuple)(ExecutionContexts.parasitic)
             }
           }(session.ec)
         }
@@ -104,7 +103,8 @@ object CassandraFlow {
   def createBatch[T, K](writeSettings: CassandraWriteSettings,
                         cqlStatement: String,
                         statementBinder: (T, PreparedStatement) => BoundStatement,
-                        groupingKey: T => K)(implicit session: CassandraSession): Flow[T, T, NotUsed] = {
+                        groupingKey: T => K
+  )(implicit session: CassandraSession): Flow[T, T, NotUsed] = {
     Flow
       .lazyFutureFlow { () =>
         val prepareStatement: Future[PreparedStatement] = session.prepare(cqlStatement)

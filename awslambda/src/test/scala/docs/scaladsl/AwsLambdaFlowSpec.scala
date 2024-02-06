@@ -95,7 +95,7 @@ class AwsLambdaFlowSpec
 
       val ex = Await.result(future.failed, 3.seconds)
       ex shouldBe a[RuntimeException]
-      ex.getMessage shouldBe ("Error in lambda")
+      ex.getMessage shouldBe "Error in lambda"
     }
 
   }

@@ -52,12 +52,14 @@ class HmsTokenApiSpec
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),
                            any[ConnectionPoolSettings](),
-                           any[LoggingAdapter]())
+                           any[LoggingAdapter]()
+        )
       ).thenReturn(
         Future.successful(
           HttpResponse(
             entity = HttpEntity(ContentTypes.`application/json`,
-                                """{"access_token": "token", "token_type": "String", "expires_in": 3600}""")
+                                """{"access_token": "token", "token_type": "String", "expires_in": 3600}"""
+            )
           )
         )
       )
@@ -69,7 +71,8 @@ class HmsTokenApiSpec
       verify(http).singleRequest(captor.capture(),
                                  any[HttpsConnectionContext](),
                                  any[ConnectionPoolSettings](),
-                                 any[LoggingAdapter]())
+                                 any[LoggingAdapter]()
+      )
       val request: HttpRequest = captor.getValue
 
       request.uri.toString() shouldBe "https://oauth-login.cloud.huawei.com/oauth2/v3/token"
@@ -85,12 +88,14 @@ class HmsTokenApiSpec
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),
                            any[ConnectionPoolSettings](),
-                           any[LoggingAdapter]())
+                           any[LoggingAdapter]()
+        )
       ).thenReturn(
         Future.successful(
           HttpResponse(
             entity = HttpEntity(ContentTypes.`application/json`,
-                                """{"access_token": "token", "token_type": "String", "expires_in": 3600}""")
+                                """{"access_token": "token", "token_type": "String", "expires_in": 3600}"""
+            )
           )
         )
       )

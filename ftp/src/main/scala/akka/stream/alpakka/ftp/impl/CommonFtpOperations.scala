@@ -57,8 +57,8 @@ private[ftp] trait CommonFtpOperations {
       PosixFilePermission.OTHERS_READ -> file.hasPermission(FTPFile.WORLD_ACCESS, FTPFile.READ_PERMISSION),
       PosixFilePermission.OTHERS_WRITE -> file.hasPermission(FTPFile.WORLD_ACCESS, FTPFile.WRITE_PERMISSION),
       PosixFilePermission.OTHERS_EXECUTE -> file.hasPermission(FTPFile.WORLD_ACCESS, FTPFile.EXECUTE_PERMISSION)
-    ).collect {
-      case (perm, true) => perm
+    ).collect { case (perm, true) =>
+      perm
     }.toSet
 
   def listFiles(handler: Handler): immutable.Seq[FtpFile] = listFiles("", handler)

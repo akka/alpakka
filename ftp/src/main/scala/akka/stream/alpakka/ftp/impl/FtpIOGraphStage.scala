@@ -129,7 +129,8 @@ private[ftp] trait FtpIOSourceStage[FtpClient, S <: RemoteFileSettings]
                 .retrieveFileInputStream(path,
                                          handler.get.asInstanceOf[ftpLikeWithUnconfirmedReads.Handler],
                                          offset,
-                                         s.maxUnconfirmedReads)
+                                         s.maxUnconfirmedReads
+                )
                 .get
             )
           case _ => None

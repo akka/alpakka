@@ -85,8 +85,9 @@ private[alpakka] object ResumableUpload {
       .mapMaterializedValue(_.flatten)
   }
 
-  private def initiateSession(request: HttpRequest)(implicit mat: Materializer,
-                                                    settings: GoogleSettings): Future[Uri] = {
+  private def initiateSession(
+      request: HttpRequest
+  )(implicit mat: Materializer, settings: GoogleSettings): Future[Uri] = {
     implicit val system: ActorSystem = mat.system
     import implicits._
 
@@ -126,11 +127,10 @@ private[alpakka] object ResumableUpload {
 
     EitherFlow(
       Flow[T].map(t => Success(Some(t))),
-      Flow[MaybeLast[Chunk]].map {
-        case maybeLast @ MaybeLast(Chunk(bytes, position)) =>
-          val totalLength = if (maybeLast.isLast) Some(position + bytes.length) else None
-          val header = `Content-Range`(ContentRange(position, position + bytes.length - 1, totalLength))
-          request.addHeader(header).withEntity(bytes)
+      Flow[MaybeLast[Chunk]].map { case maybeLast @ MaybeLast(Chunk(bytes, position)) =>
+        val totalLength = if (maybeLast.isLast) Some(position + bytes.length) else None
+        val header = `Content-Range`(ContentRange(position, position + bytes.length - 1, totalLength))
+        request.addHeader(header).withEntity(bytes)
       } via pool
     ).map(_.merge).mapMaterializedValue(_ => NotUsed)
   }
@@ -154,8 +154,8 @@ private[alpakka] object ResumableUpload {
                 response
                   .header[Range]
                   .flatMap(_.ranges.headOption)
-                  .collect {
-                    case Slice(_, last) => last + 1
+                  .collect { case Slice(_, last) =>
+                    last + 1
                   } getOrElse 0L
               )
             }
@@ -164,23 +164,22 @@ private[alpakka] object ResumableUpload {
     }.withDefaultRetry
 
     import mat.executionContext
-    chunk.flatMap {
-      case maybeLast @ MaybeLast(Chunk(bytes, position)) =>
-        GoogleHttp()
-          .singleAuthenticatedRequest[Either[T, Long]](request.addHeader(statusRequestHeader))
-          .map {
-            case Left(result) if maybeLast.isLast => Left(result)
-            case Right(newPosition) if newPosition >= position =>
-              Right(maybeLast.map { _ =>
-                Chunk(bytes.drop(Math.toIntExact(newPosition - position)), newPosition)
-              })
-            case _ => throw UploadFailedException()
-          }
+    chunk.flatMap { case maybeLast @ MaybeLast(Chunk(bytes, position)) =>
+      GoogleHttp()
+        .singleAuthenticatedRequest[Either[T, Long]](request.addHeader(statusRequestHeader))
+        .map {
+          case Left(result) if maybeLast.isLast => Left(result)
+          case Right(newPosition) if newPosition >= position =>
+            Right(maybeLast.map { _ =>
+              Chunk(bytes.drop(Math.toIntExact(newPosition - position)), newPosition)
+            })
+          case _ => throw UploadFailedException()
+        }
     }
   }
 
-  private def chunker(chunkSize: Int) = Flow[ByteString].map(Some(_)).concat(Source.single(None)).statefulMapConcat {
-    () =>
+  private def chunker(chunkSize: Int) =
+    Flow[ByteString].map(Some(_)).concat(Source.single(None)).statefulMapConcat { () =>
       val chunkBuilder = ByteString.newBuilder
       bytes =>
         bytes.fold(Some(chunkBuilder.result()).filter(_.nonEmpty).toList) { bytes =>
@@ -199,6 +198,6 @@ private[alpakka] object ResumableUpload {
             chunk :: Nil
           }
         }
-  }
+    }
 
 }

@@ -26,16 +26,19 @@ object OrientDbSink {
     OrientDbFlow
       .create(className, settings)
       .toMat(Sink.ignore[java.util.List[OrientDbWriteMessage[ODocument, NotUsed]]](),
-             Keep.right[NotUsed, CompletionStage[Done]])
+             Keep.right[NotUsed, CompletionStage[Done]]
+      )
 
   /**
    * Flow to write elements of type `T` to OrientDB, elements within one list are stored within one transaction.
    */
   def typed[T](className: String,
                settings: OrientDbWriteSettings,
-               clazz: Class[T]): Sink[java.util.List[OrientDbWriteMessage[T, NotUsed]], CompletionStage[Done]] =
+               clazz: Class[T]
+  ): Sink[java.util.List[OrientDbWriteMessage[T, NotUsed]], CompletionStage[Done]] =
     OrientDbFlow
       .typed[T](className, settings, clazz)
       .toMat(Sink.ignore[java.util.List[OrientDbWriteMessage[T, NotUsed]]](),
-             Keep.right[NotUsed, CompletionStage[Done]])
+             Keep.right[NotUsed, CompletionStage[Done]]
+      )
 }

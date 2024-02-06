@@ -31,8 +31,8 @@ private[alpakka] object PaginatedRequest {
    * @tparam Out the data model for each page of the resource
    * @return a [[akka.stream.scaladsl.Source]] that emits an `Out` for each page of the resource
    */
-  def apply[Out: FromResponseUnmarshaller](request: HttpRequest)(
-      implicit paginated: Paginated[Out]
+  def apply[Out: FromResponseUnmarshaller](request: HttpRequest)(implicit
+      paginated: Paginated[Out]
   ): Source[Out, NotUsed] = {
 
     require(request.method == GET, "Paginated request must be GET request")

@@ -25,7 +25,8 @@ object MqttSink {
    * @param defaultQos Quality of service level applied for messages not specifying a message specific value
    */
   def create(connectionSettings: MqttConnectionSettings,
-             defaultQos: MqttQoS): Sink[MqttMessage, CompletionStage[Done]] =
+             defaultQos: MqttQoS
+  ): Sink[MqttMessage, CompletionStage[Done]] =
     MqttFlow
       .atMostOnce(connectionSettings, MqttSubscriptions.empty, bufferSize = 0, defaultQos)
       .toMat(Sink.ignore[MqttMessage](), Keep.right[CompletionStage[Done], CompletionStage[Done]])

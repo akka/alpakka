@@ -86,8 +86,8 @@ object Udp {
    * @param options UDP socket options
    * @param system implicit actor system
    */
-  def sendSink(options: Iterable[SocketOption])(
-      implicit system: ClassicActorSystemProvider
+  def sendSink(options: Iterable[SocketOption])(implicit
+      system: ClassicActorSystemProvider
   ): Sink[Datagram, NotUsed] = sendFlow(options).to(Sink.ignore)
 
   /**
@@ -122,7 +122,8 @@ object Udp {
    * @param system the actor system
    */
   def bindFlow(localAddress: InetSocketAddress,
-               system: ActorSystem): Flow[Datagram, Datagram, Future[InetSocketAddress]] =
+               system: ActorSystem
+  ): Flow[Datagram, Datagram, Future[InetSocketAddress]] =
     Flow.fromGraph(new UdpBindFlow(localAddress)(system))
 
   /**
@@ -151,6 +152,7 @@ object Udp {
    */
   def bindFlow(localAddress: InetSocketAddress,
                options: Iterable[SocketOption],
-               system: ActorSystem): Flow[Datagram, Datagram, Future[InetSocketAddress]] =
+               system: ActorSystem
+  ): Flow[Datagram, Datagram, Future[InetSocketAddress]] =
     Flow.fromGraph(new UdpBindFlow(localAddress, options)(system))
 }

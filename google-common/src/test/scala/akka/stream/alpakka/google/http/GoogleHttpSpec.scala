@@ -62,7 +62,8 @@ class GoogleHttpSpec
                    .map(Try(_))
                    .map((_, mock(classOf[Nothing])))
                    .mapMaterializedValue(_ => mock(classOf[HostConnectionPool])),
-                 Nil: _*): @nowarn("msg=dead code")
+                 Nil: _*
+    ): @nowarn("msg=dead code")
     http
   }
 
@@ -117,16 +118,14 @@ class GoogleHttpSpec
 
       import GoogleHttpException._
       val result1 = GoogleHttp(http).singleRequest[JsValue](HttpRequest())
-      result1.futureValue should matchPattern {
-        case JsObject.empty =>
+      result1.futureValue should matchPattern { case JsObject.empty =>
       }
 
       val result2 = Source
         .single(HttpRequest())
         .via(GoogleHttp(http).cachedHostConnectionPool[JsValue](""))
         .runWith(Sink.head)
-      result2.futureValue should matchPattern {
-        case JsObject.empty =>
+      result2.futureValue should matchPattern { case JsObject.empty =>
       }
     }
 
@@ -145,8 +144,7 @@ class GoogleHttpSpec
       import GoogleHttpException._
       val response = GoogleHttp(http).singleAuthenticatedRequest[JsValue](HttpRequest())
 
-      response.futureValue should matchPattern {
-        case JsObject.empty =>
+      response.futureValue should matchPattern { case JsObject.empty =>
       }
 
     }

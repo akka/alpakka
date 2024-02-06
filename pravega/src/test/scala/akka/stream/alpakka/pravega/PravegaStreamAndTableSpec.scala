@@ -109,12 +109,11 @@ class PravegaStreamAndTableSpec extends PravegaBaseSpec with Repeated {
         val (kill, res) = source2
           .filter(_._2 == 10)
           .viaMat(KillSwitches.single)(Keep.right)
-          .toMat(Sink.fold(count) {
-            case (acc, (name, _)) =>
-              val it = acc - name
-              if (it.isEmpty)
-                finishReading.success(())
-              it
+          .toMat(Sink.fold(count) { case (acc, (name, _)) =>
+            val it = acc - name
+            if (it.isEmpty)
+              finishReading.success(())
+            it
           })(Keep.both)
           .run()
 

@@ -137,29 +137,27 @@ class AmqpDocsSpec extends AmqpSpec {
       //#create-exchange-source
       val fanoutSize = 4
 
-      val mergedSources = (0 until fanoutSize).foldLeft(Source.empty[(Int, String)]) {
-        case (source, fanoutBranch) =>
-          source.merge(
-            AmqpSource
-              .atMostOnceSource(
-                TemporaryQueueSourceSettings(
-                  connectionProvider,
-                  exchangeName
-                ).withDeclaration(exchangeDeclaration),
-                bufferSize = 1
-              )
-              .map(msg => (fanoutBranch, msg.bytes.utf8String))
-          )
+      val mergedSources = (0 until fanoutSize).foldLeft(Source.empty[(Int, String)]) { case (source, fanoutBranch) =>
+        source.merge(
+          AmqpSource
+            .atMostOnceSource(
+              TemporaryQueueSourceSettings(
+                connectionProvider,
+                exchangeName
+              ).withDeclaration(exchangeDeclaration),
+              bufferSize = 1
+            )
+            .map(msg => (fanoutBranch, msg.bytes.utf8String))
+        )
       }
       //#create-exchange-source
 
       val completion = Promise[Done]()
       val mergingFlow = mergedSources
         .viaMat(KillSwitches.single)(Keep.right)
-        .to(Sink.fold(Set.empty[Int]) {
-          case (seen, (branch, element)) =>
-            if (seen.size == fanoutSize) completion.trySuccess(Done)
-            seen + branch
+        .to(Sink.fold(Set.empty[Int]) { case (seen, (branch, element)) =>
+          if (seen.size == fanoutSize) completion.trySuccess(Done)
+          seen + branch
         })
         .run()
 

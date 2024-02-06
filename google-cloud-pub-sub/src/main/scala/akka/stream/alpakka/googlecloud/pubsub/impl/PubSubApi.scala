@@ -120,7 +120,8 @@ private[pubsub] trait PubSubApi {
   private implicit val receivedMessageFormat: RootJsonFormat[ReceivedMessage] = new RootJsonFormat[ReceivedMessage] {
     def read(json: JsValue): ReceivedMessage =
       ReceivedMessage(json.asJsObject.fields("ackId").convertTo[String],
-                      json.asJsObject.fields("message").convertTo[PubSubMessage])
+                      json.asJsObject.fields("message").convertTo[PubSubMessage]
+      )
     def write(rm: ReceivedMessage): JsValue =
       JsObject("ackId" -> rm.ackId.toJson, "message" -> rm.message.toJson)
   }
@@ -159,10 +160,11 @@ private[pubsub] trait PubSubApi {
           for {
             entity <- Marshal(PullRequest(returnImmediately, maxMessages)).to[RequestEntity]
             request = HttpRequest(POST, url, entity = entity)
-            response <- if (isEmulated)
-              GoogleHttp(mat.system).singleRequest[PullResponse](request)
-            else
-              GoogleHttp(mat.system).singleAuthenticatedRequest[PullResponse](request)
+            response <-
+              if (isEmulated)
+                GoogleHttp(mat.system).singleRequest[PullResponse](request)
+              else
+                GoogleHttp(mat.system).singleAuthenticatedRequest[PullResponse](request)
           } yield response
         }
       }
@@ -198,10 +200,11 @@ private[pubsub] trait PubSubApi {
           for {
             entity <- Marshal(request).to[RequestEntity]
             request = HttpRequest(POST, url, entity = entity)
-            done <- if (isEmulated)
-              GoogleHttp(mat.system).singleRequest[Done](request)
-            else
-              GoogleHttp(mat.system).singleAuthenticatedRequest[Done](request)
+            done <-
+              if (isEmulated)
+                GoogleHttp(mat.system).singleRequest[Done](request)
+              else
+                GoogleHttp(mat.system).singleAuthenticatedRequest[Done](request)
           } yield done
         }
       }
@@ -221,8 +224,8 @@ private[pubsub] trait PubSubApi {
       }
     }.withDefaultRetry
 
-  private def pool[T: FromResponseUnmarshaller, Ctx](parallelism: Int, host: Option[String])(
-      implicit system: ActorSystem
+  private def pool[T: FromResponseUnmarshaller, Ctx](parallelism: Int, host: Option[String])(implicit
+      system: ActorSystem
   ): FlowWithContext[HttpRequest, Ctx, Try[T], Ctx, Future[HostConnectionPool]] =
     GoogleHttp().cachedHostConnectionPoolWithContext[T, Ctx](
       host.getOrElse(PubSubGoogleApisHost),
@@ -234,7 +237,8 @@ private[pubsub] trait PubSubApi {
 
   def publish[T](topic: String,
                  parallelism: Int,
-                 host: Option[String]): FlowWithContext[PublishRequest, T, PublishResponse, T, NotUsed] =
+                 host: Option[String]
+  ): FlowWithContext[PublishRequest, T, PublishResponse, T, NotUsed] =
     FlowWithContext.fromTuples {
       Flow
         .fromMaterializer { (mat, attr) =>

@@ -29,7 +29,8 @@ object DirectoryChangesSource {
    */
   def apply(directoryPath: Path,
             pollInterval: FiniteDuration,
-            maxBufferSize: Int): Source[(Path, DirectoryChange), NotUsed] =
+            maxBufferSize: Int
+  ): Source[(Path, DirectoryChange), NotUsed] =
     Source.fromGraph(
       new akka.stream.alpakka.file.impl.DirectoryChangesSource(directoryPath, pollInterval, maxBufferSize, tupler)
     )

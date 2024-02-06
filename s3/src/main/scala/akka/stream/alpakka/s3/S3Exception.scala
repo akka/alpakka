@@ -17,8 +17,8 @@ class S3Exception @InternalApi private[s3] (val statusCode: StatusCode,
                                             val code: String,
                                             val message: String,
                                             val requestId: String,
-                                            val resource: String)
-    extends RuntimeException(message) {
+                                            val resource: String
+) extends RuntimeException(message) {
 
   override def toString: String =
     s"${super.toString} (Status code: $statusCode, Code: $code, RequestId: $requestId, Resource: $resource)"

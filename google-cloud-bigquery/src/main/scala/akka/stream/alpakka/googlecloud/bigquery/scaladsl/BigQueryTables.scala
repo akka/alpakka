@@ -48,8 +48,10 @@ private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
    * @param tableId table ID of the requested table
    * @return a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.Table]]
    */
-  def table(datasetId: String, tableId: String)(implicit system: ClassicActorSystemProvider,
-                                                settings: GoogleSettings): Future[Table] = {
+  def table(datasetId: String, tableId: String)(implicit
+      system: ClassicActorSystemProvider,
+      settings: GoogleSettings
+  ): Future[Table] = {
     import BigQueryException._
     import SprayJsonSupport._
     val uri = BigQueryEndpoints.table(settings.projectId, datasetId, tableId)
@@ -65,8 +67,8 @@ private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
    * @tparam T the data model for the records of this table
    * @return a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.Table]]
    */
-  def createTable[T](datasetId: String, tableId: String)(
-      implicit system: ClassicActorSystemProvider,
+  def createTable[T](datasetId: String, tableId: String)(implicit
+      system: ClassicActorSystemProvider,
       settings: GoogleSettings,
       schemaWriter: TableSchemaWriter[T]
   ): Future[Table] = {
@@ -81,8 +83,9 @@ private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
    * @param table the [[akka.stream.alpakka.googlecloud.bigquery.model.Table]] to create
    * @return a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.Table]]
    */
-  def createTable(table: Table)(implicit system: ClassicActorSystemProvider,
-                                settings: GoogleSettings): Future[Table] = {
+  def createTable(
+      table: Table
+  )(implicit system: ClassicActorSystemProvider, settings: GoogleSettings): Future[Table] = {
     import BigQueryException._
     import SprayJsonSupport._
     implicit val ec = ExecutionContexts.parasitic
@@ -103,8 +106,10 @@ private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
    * @param tableId table ID of the table to delete
    * @return a [[scala.concurrent.Future]] containing [[akka.Done]]
    */
-  def deleteTable(datasetId: String, tableId: String)(implicit system: ClassicActorSystemProvider,
-                                                      settings: GoogleSettings): Future[Done] = {
+  def deleteTable(datasetId: String, tableId: String)(implicit
+      system: ClassicActorSystemProvider,
+      settings: GoogleSettings
+  ): Future[Done] = {
     import BigQueryException._
     val uri = BigQueryEndpoints.table(settings.projectId, datasetId, tableId)
     singleRequest[Done](HttpRequest(DELETE, uri))

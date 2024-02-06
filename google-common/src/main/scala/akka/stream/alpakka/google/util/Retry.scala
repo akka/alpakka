@@ -44,8 +44,9 @@ object Retry {
    * (i.e., this method will never raise a [[Retry]], only its underlying exception).
    */
   @InternalApi
-  private[alpakka] def apply[T](settings: RetrySettings)(future: => Future[T])(implicit ec: ExecutionContext,
-                                                                               scheduler: Scheduler): Future[T] = {
+  private[alpakka] def apply[T](
+      settings: RetrySettings
+  )(future: => Future[T])(implicit ec: ExecutionContext, scheduler: Scheduler): Future[T] = {
     import settings._
     val futureBuilder = () =>
       future
@@ -60,8 +61,8 @@ object Retry {
   }
 
   def flow[In, Out, Mat](retrySettings: RetrySettings)(flow: Flow[In, Out, Mat]): Flow[In, Out, Mat] =
-    tryFlow[In, Out, Mat](retrySettings)(flow.map(Success(_)).recover {
-      case NonFatal(ex) => Failure(ex)
+    tryFlow[In, Out, Mat](retrySettings)(flow.map(Success(_)).recover { case NonFatal(ex) =>
+      Failure(ex)
     }).map(_.get)
 
   def tryFlow[In, Out, Mat](retrySettings: RetrySettings)(flow: Flow[In, Try[Out], Mat]): Flow[In, Try[Out], Mat] = {

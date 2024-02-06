@@ -69,7 +69,8 @@ class MqttPerf {
     val bound = Tcp()
       .bind(host, port)
       .flatMapMerge(
-        1, { connection =>
+        1,
+        { connection =>
           Source
             .fromGraph(serverSource)
             .via(

@@ -23,8 +23,8 @@ import scala.collection.JavaConverters._
 private[orientdb] final class OrientDbSourceStage[T](className: String,
                                                      query: Option[String],
                                                      settings: OrientDbSourceSettings,
-                                                     clazz: Option[Class[T]] = None)
-    extends GraphStage[SourceShape[OrientDbReadResult[T]]] {
+                                                     clazz: Option[Class[T]] = None
+) extends GraphStage[SourceShape[OrientDbReadResult[T]]] {
 
   val out: Outlet[OrientDbReadResult[T]] = Outlet("OrientDBSource.out")
   override val shape = SourceShape(out)

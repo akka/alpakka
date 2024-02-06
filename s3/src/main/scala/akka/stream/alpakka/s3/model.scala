@@ -50,8 +50,8 @@ final class MultipartUpload private (val bucket: String, val key: String, val up
   override def equals(other: Any): Boolean = other match {
     case that: MultipartUpload =>
       Objects.equals(this.bucket, that.bucket) &&
-      Objects.equals(this.key, that.key) &&
-      Objects.equals(this.uploadId, that.uploadId)
+        Objects.equals(this.key, that.key) &&
+        Objects.equals(this.uploadId, that.uploadId)
     case _ => false
   }
 
@@ -99,7 +99,8 @@ final class SuccessfulUploadPart private (val multipartUpload: MultipartUpload, 
 
   private def copy(multipartUpload: MultipartUpload = multipartUpload,
                    partNumber: Int = partNumber,
-                   eTag: String = eTag): SuccessfulUploadPart =
+                   eTag: String = eTag
+  ): SuccessfulUploadPart =
     new SuccessfulUploadPart(multipartUpload, partNumber, eTag)
 
   override def toString: String =
@@ -112,8 +113,8 @@ final class SuccessfulUploadPart private (val multipartUpload: MultipartUpload, 
   override def equals(other: Any): Boolean = other match {
     case that: SuccessfulUploadPart =>
       Objects.equals(this.multipartUpload, that.multipartUpload) &&
-      Objects.equals(this.partNumber, that.partNumber) &&
-      Objects.equals(this.eTag, that.eTag)
+        Objects.equals(this.partNumber, that.partNumber) &&
+        Objects.equals(this.eTag, that.eTag)
     case _ => false
   }
 
@@ -139,8 +140,8 @@ object SuccessfulUploadPart {
 
 final class FailedUploadPart private (val multipartUpload: MultipartUpload,
                                       val partNumber: Int,
-                                      val exception: Throwable)
-    extends UploadPartResponse {
+                                      val exception: Throwable
+) extends UploadPartResponse {
 
   /** Java API */
   def getException: Throwable = exception
@@ -153,7 +154,8 @@ final class FailedUploadPart private (val multipartUpload: MultipartUpload,
 
   private def copy(multipartUpload: MultipartUpload = multipartUpload,
                    partNumber: Int = partNumber,
-                   exception: Throwable = exception): FailedUploadPart =
+                   exception: Throwable = exception
+  ): FailedUploadPart =
     new FailedUploadPart(multipartUpload, partNumber, exception)
 
   override def toString: String =
@@ -167,8 +169,8 @@ final class FailedUploadPart private (val multipartUpload: MultipartUpload,
     other match {
       case that: FailedUploadPart =>
         Objects.equals(this.multipartUpload, that.multipartUpload) &&
-        Objects.equals(this.partNumber, that.partNumber) &&
-        Objects.equals(this.exception, that.exception)
+          Objects.equals(this.partNumber, that.partNumber) &&
+          Objects.equals(this.exception, that.exception)
       case _ => false
     }
 
@@ -248,10 +250,10 @@ final class MultipartUploadResult private (
   override def equals(other: Any): Boolean = other match {
     case that: MultipartUploadResult =>
       Objects.equals(this.location, that.location) &&
-      Objects.equals(this.bucket, that.bucket) &&
-      Objects.equals(this.key, that.key) &&
-      Objects.equals(this.eTag, that.eTag) &&
-      Objects.equals(this.versionId, that.versionId)
+        Objects.equals(this.bucket, that.bucket) &&
+        Objects.equals(this.key, that.key) &&
+        Objects.equals(this.eTag, that.eTag) &&
+        Objects.equals(this.versionId, that.versionId)
     case _ => false
   }
 
@@ -327,7 +329,7 @@ final class AWSIdentity private (val id: String, val displayName: String) {
     other match {
       case that: AWSIdentity =>
         Objects.equals(this.id, that.id) &&
-        Objects.equals(this.displayName, that.displayName)
+          Objects.equals(this.displayName, that.displayName)
       case _ => false
     }
 
@@ -351,7 +353,8 @@ final class ListMultipartUploadResultUploads private (val key: String,
                                                       val initiator: Option[AWSIdentity],
                                                       val owner: Option[AWSIdentity],
                                                       val storageClass: String,
-                                                      val initiated: Instant) {
+                                                      val initiated: Instant
+) {
 
   /** Java API */
   def getKey: String = key
@@ -383,7 +386,8 @@ final class ListMultipartUploadResultUploads private (val key: String,
                    initiator: Option[AWSIdentity] = initiator,
                    owner: Option[AWSIdentity] = owner,
                    storageClass: String = storageClass,
-                   initiated: Instant = initiated): ListMultipartUploadResultUploads =
+                   initiated: Instant = initiated
+  ): ListMultipartUploadResultUploads =
     new ListMultipartUploadResultUploads(
       key = key,
       uploadId = uploadId,
@@ -407,11 +411,11 @@ final class ListMultipartUploadResultUploads private (val key: String,
     other match {
       case that: ListMultipartUploadResultUploads =>
         Objects.equals(this.key, that.key) &&
-        Objects.equals(this.uploadId, that.uploadId) &&
-        Objects.equals(this.initiator, that.initiator) &&
-        Objects.equals(this.owner, that.owner) &&
-        Objects.equals(this.storageClass, that.storageClass) &&
-        Objects.equals(this.initiated, that.initiated)
+          Objects.equals(this.uploadId, that.uploadId) &&
+          Objects.equals(this.initiator, that.initiator) &&
+          Objects.equals(this.owner, that.owner) &&
+          Objects.equals(this.storageClass, that.storageClass) &&
+          Objects.equals(this.initiated, that.initiated)
       case _ => false
     }
 
@@ -427,7 +431,8 @@ object ListMultipartUploadResultUploads {
             initiator: Option[AWSIdentity],
             owner: Option[AWSIdentity],
             storageClass: String,
-            initiated: Instant): ListMultipartUploadResultUploads =
+            initiated: Instant
+  ): ListMultipartUploadResultUploads =
     new ListMultipartUploadResultUploads(key, uploadId, initiator, owner, storageClass, initiated)
 
   /** Java API */
@@ -436,7 +441,8 @@ object ListMultipartUploadResultUploads {
              initiator: Optional[AWSIdentity],
              owner: Optional[AWSIdentity],
              storageClass: String,
-             initiated: Instant): ListMultipartUploadResultUploads =
+             initiated: Instant
+  ): ListMultipartUploadResultUploads =
     apply(key, uploadId, initiator.asScala, owner.asScala, storageClass, initiated)
 }
 
@@ -447,7 +453,8 @@ final class ListObjectVersionsResultVersions private (val eTag: String,
                                                       val owner: Option[AWSIdentity],
                                                       val size: Long,
                                                       val storageClass: String,
-                                                      val versionId: Option[String]) {
+                                                      val versionId: Option[String]
+) {
 
   /** Java API */
   def getETag: String = eTag
@@ -502,7 +509,8 @@ final class ListObjectVersionsResultVersions private (val eTag: String,
                    owner: Option[AWSIdentity] = owner,
                    size: Long = size,
                    storageClass: String = storageClass,
-                   versionId: Option[String] = versionId): ListObjectVersionsResultVersions =
+                   versionId: Option[String] = versionId
+  ): ListObjectVersionsResultVersions =
     new ListObjectVersionsResultVersions(
       eTag = eTag,
       isLatest = isLatest,
@@ -530,13 +538,13 @@ final class ListObjectVersionsResultVersions private (val eTag: String,
     other match {
       case that: ListObjectVersionsResultVersions =>
         Objects.equals(this.eTag, that.eTag) &&
-        Objects.equals(this.isLatest, that.isLatest) &&
-        Objects.equals(this.key, that.key) &&
-        Objects.equals(this.lastModified, that.lastModified) &&
-        Objects.equals(this.owner, that.owner) &&
-        Objects.equals(this.size, that.size) &&
-        Objects.equals(this.storageClass, that.storageClass) &&
-        Objects.equals(this.versionId, that.versionId)
+          Objects.equals(this.isLatest, that.isLatest) &&
+          Objects.equals(this.key, that.key) &&
+          Objects.equals(this.lastModified, that.lastModified) &&
+          Objects.equals(this.owner, that.owner) &&
+          Objects.equals(this.size, that.size) &&
+          Objects.equals(this.storageClass, that.storageClass) &&
+          Objects.equals(this.versionId, that.versionId)
       case _ => false
     }
 
@@ -554,7 +562,8 @@ object ListObjectVersionsResultVersions {
             owner: Option[AWSIdentity],
             size: Long,
             storageClass: String,
-            versionId: Option[String]): ListObjectVersionsResultVersions = {
+            versionId: Option[String]
+  ): ListObjectVersionsResultVersions = {
     // See https://docs.aws.amazon.com/AmazonS3/latest/userguide/AddingObjectstoVersionSuspendedBuckets.html for more
     // info.
     val finalVersionId = versionId match {
@@ -573,7 +582,8 @@ object ListObjectVersionsResultVersions {
              owner: Optional[AWSIdentity],
              size: Long,
              storageClass: String,
-             versionId: Optional[String]): ListObjectVersionsResultVersions =
+             versionId: Optional[String]
+  ): ListObjectVersionsResultVersions =
     apply(eTag, isLatest, key, lastModified, owner.asScala, size, storageClass, versionId.asScala)
 }
 
@@ -581,7 +591,8 @@ final class DeleteMarkers private (val isLatest: Boolean,
                                    val key: String,
                                    val lastModified: Instant,
                                    val owner: Option[AWSIdentity],
-                                   val versionId: Option[String]) {
+                                   val versionId: Option[String]
+) {
 
   /** Java API */
   def getIsLatest: Boolean = isLatest
@@ -618,7 +629,8 @@ final class DeleteMarkers private (val isLatest: Boolean,
                    key: String = key,
                    lastModified: Instant = lastModified,
                    owner: Option[AWSIdentity] = owner,
-                   versionId: Option[String] = versionId): DeleteMarkers =
+                   versionId: Option[String] = versionId
+  ): DeleteMarkers =
     new DeleteMarkers(isLatest, key, lastModified, owner, versionId)
 
   override def toString: String =
@@ -634,10 +646,10 @@ final class DeleteMarkers private (val isLatest: Boolean,
     other match {
       case that: DeleteMarkers =>
         Objects.equals(this.isLatest, that.isLatest) &&
-        Objects.equals(this.key, that.key) &&
-        Objects.equals(this.lastModified, that.lastModified) &&
-        Objects.equals(this.owner, that.owner) &&
-        Objects.equals(this.versionId, that.versionId)
+          Objects.equals(this.key, that.key) &&
+          Objects.equals(this.lastModified, that.lastModified) &&
+          Objects.equals(this.owner, that.owner) &&
+          Objects.equals(this.versionId, that.versionId)
       case _ => false
     }
 
@@ -652,7 +664,8 @@ object DeleteMarkers {
             key: String,
             lastModified: Instant,
             owner: Option[AWSIdentity],
-            versionId: Option[String]): DeleteMarkers = {
+            versionId: Option[String]
+  ): DeleteMarkers = {
     // See https://docs.aws.amazon.com/AmazonS3/latest/userguide/AddingObjectstoVersionSuspendedBuckets.html for more
     // info.
     val finalVersionId = versionId match {
@@ -668,7 +681,8 @@ object DeleteMarkers {
              key: String,
              lastModified: Instant,
              owner: Optional[AWSIdentity],
-             versionId: Optional[String]): DeleteMarkers =
+             versionId: Optional[String]
+  ): DeleteMarkers =
     apply(isLatest, key, lastModified, owner.asScala, versionId.asScala)
 }
 
@@ -733,7 +747,8 @@ final class ListPartsResultParts(val lastModified: Instant, val eTag: String, va
   private def copy(lastModified: Instant = lastModified,
                    eTag: String = eTag,
                    partNumber: Int = partNumber,
-                   size: Long = size): ListPartsResultParts =
+                   size: Long = size
+  ): ListPartsResultParts =
     new ListPartsResultParts(
       lastModified,
       eTag,
@@ -753,9 +768,9 @@ final class ListPartsResultParts(val lastModified: Instant, val eTag: String, va
     other match {
       case that: ListPartsResultParts =>
         Objects.equals(this.lastModified, that.lastModified) &&
-        Objects.equals(this.eTag, that.eTag) &&
-        Objects.equals(this.partNumber, that.partNumber) &&
-        Objects.equals(this.size, that.size)
+          Objects.equals(this.eTag, that.eTag) &&
+          Objects.equals(this.partNumber, that.partNumber) &&
+          Objects.equals(this.size, that.size)
       case _ => false
     }
 
@@ -800,7 +815,7 @@ final class Part(val eTag: String, val partNumber: Int) {
     other match {
       case that: Part =>
         Objects.equals(this.eTag, that.eTag) &&
-        Objects.equals(this.partNumber, that.partNumber)
+          Objects.equals(this.partNumber, that.partNumber)
       case _ => false
     }
 
@@ -866,7 +881,7 @@ final class ListBucketsResultContents private (val creationDate: java.time.Insta
   override def equals(other: Any): Boolean = other match {
     case that: ListBucketsResultContents =>
       Objects.equals(this.name, that.name) &&
-      Objects.equals(this.creationDate, that.creationDate)
+        Objects.equals(this.creationDate, that.creationDate)
     case _ => false
   }
 
@@ -966,11 +981,11 @@ final class ListBucketResultContents private (
   override def equals(other: Any): Boolean = other match {
     case that: ListBucketResultContents =>
       Objects.equals(this.bucketName, that.bucketName) &&
-      Objects.equals(this.key, that.key) &&
-      Objects.equals(this.eTag, that.eTag) &&
-      Objects.equals(this.size, that.size) &&
-      Objects.equals(this.lastModified, that.lastModified) &&
-      Objects.equals(this.storageClass, that.storageClass)
+        Objects.equals(this.key, that.key) &&
+        Objects.equals(this.eTag, that.eTag) &&
+        Objects.equals(this.size, that.size) &&
+        Objects.equals(this.lastModified, that.lastModified) &&
+        Objects.equals(this.storageClass, that.storageClass)
     case _ => false
   }
 
@@ -1050,7 +1065,7 @@ final class ListBucketResultCommonPrefixes private (
   override def equals(other: Any): Boolean = other match {
     case that: ListBucketResultCommonPrefixes =>
       Objects.equals(this.bucketName, that.bucketName) &&
-      Objects.equals(this.prefix, that.prefix)
+        Objects.equals(this.prefix, that.prefix)
     case _ => false
   }
 
@@ -1108,8 +1123,8 @@ final class ObjectMetadata private (
    * @return The hex encoded MD5 hash of the content for the associated object
    *         as calculated by Amazon S3.
    */
-  lazy val eTag: Option[String] = metadata.collectFirst {
-    case e: ETag => Utils.removeQuotes(e.etag.value)
+  lazy val eTag: Option[String] = metadata.collectFirst { case e: ETag =>
+    Utils.removeQuotes(e.etag.value)
   }
 
   /**
@@ -1154,8 +1169,8 @@ final class ObjectMetadata private (
    */
   lazy val contentLength: Long =
     metadata
-      .collectFirst {
-        case cl: `Content-Length` => cl.length
+      .collectFirst { case cl: `Content-Length` =>
+        cl.length
       }
       .getOrElse(0)
 
@@ -1209,8 +1224,8 @@ final class ObjectMetadata private (
    *         stored in the associated S3 object.
    * @see ObjectMetadata#setContentType(String)
    */
-  lazy val contentType: Option[String] = metadata.collectFirst {
-    case ct: `Content-Type` => ct.value
+  lazy val contentType: Option[String] = metadata.collectFirst { case ct: `Content-Type` =>
+    ct.value
   }
 
   /**
@@ -1249,8 +1264,8 @@ final class ObjectMetadata private (
    * @return The date and time at which Amazon S3 last recorded a modification
    *         to the associated object.
    */
-  lazy val lastModified: DateTime = metadata.collectFirst {
-    case ct: `Last-Modified` => ct.date
+  lazy val lastModified: DateTime = metadata.collectFirst { case ct: `Last-Modified` =>
+    ct.date
   }.get
 
   /**
@@ -1269,8 +1284,8 @@ final class ObjectMetadata private (
   /**
    * Gets the optional Cache-Control header
    */
-  lazy val cacheControl: Option[String] = metadata.collectFirst {
-    case c: `Cache-Control` => c.value
+  lazy val cacheControl: Option[String] = metadata.collectFirst { case c: `Cache-Control` =>
+    c.value
   }
 
   /**

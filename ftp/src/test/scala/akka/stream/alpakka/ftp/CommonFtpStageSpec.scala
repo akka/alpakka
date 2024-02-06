@@ -171,14 +171,13 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       val files = listFiles(basePath).runWith(Sink.seq).futureValue
 
       files should have size 1
-      inside(files.head) {
-        case FtpFile(actualFileName, actualPath, isDirectory, size, lastModified, perms) =>
-          actualFileName shouldBe fileName
-          // actualPath shouldBe s"/$basePath$fileName"
-          isDirectory shouldBe false
-          size shouldBe getDefaultContent.length
-          timestamp - lastModified.millis should be < 1.minute
-          perms should contain.allOf(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE)
+      inside(files.head) { case FtpFile(actualFileName, actualPath, isDirectory, size, lastModified, perms) =>
+        actualFileName shouldBe fileName
+        // actualPath shouldBe s"/$basePath$fileName"
+        isDirectory shouldBe false
+        size shouldBe getDefaultContent.length
+        timestamp - lastModified.millis should be < 1.minute
+        perms should contain.allOf(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE)
       }
     }
   }

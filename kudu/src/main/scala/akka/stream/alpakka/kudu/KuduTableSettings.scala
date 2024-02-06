@@ -10,7 +10,8 @@ import scala.compat.java8.FunctionConverters._
 final class KuduTableSettings[T] private (val tableName: String,
                                           val schema: org.apache.kudu.Schema,
                                           val createTableOptions: org.apache.kudu.client.CreateTableOptions,
-                                          val converter: T => org.apache.kudu.client.PartialRow) {
+                                          val converter: T => org.apache.kudu.client.PartialRow
+) {
 
   def withTableName(value: String): KuduTableSettings[T] = copy(tableName = value)
   def withSchema(value: org.apache.kudu.Schema): KuduTableSettings[T] = copy(schema = value)
@@ -20,7 +21,8 @@ final class KuduTableSettings[T] private (val tableName: String,
     new KuduTableSettings(tableName = tableName,
                           schema = schema,
                           createTableOptions = createTableOptions,
-                          converter = value)
+                          converter = value
+    )
 
   private def copy(
       tableName: String = tableName,
@@ -30,7 +32,8 @@ final class KuduTableSettings[T] private (val tableName: String,
     new KuduTableSettings(tableName = tableName,
                           schema = schema,
                           createTableOptions = createTableOptions,
-                          converter = converter)
+                          converter = converter
+    )
 
   override def toString =
     s"""KuduTableSettings(tableName=$tableName,schema=$schema,createTableOptions=$createTableOptions,converter=$converter)"""

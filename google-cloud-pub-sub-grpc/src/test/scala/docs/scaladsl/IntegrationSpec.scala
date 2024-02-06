@@ -178,13 +178,12 @@ class IntegrationSpec
           message.ackId
         }
         .groupedWithin(10, 1.second)
-        .map(
-          ids =>
-            AcknowledgeRequest()
-              .withSubscription(
-                s"projects/$projectId/subscriptions/$subscription"
-              )
-              .withAckIds(ids)
+        .map(ids =>
+          AcknowledgeRequest()
+            .withSubscription(
+              s"projects/$projectId/subscriptions/$subscription"
+            )
+            .withAckIds(ids)
         )
         .to(ackSink)
       //#acknowledge
@@ -232,8 +231,8 @@ class IntegrationSpec
       // subscribe but do not ack - message will be republished later
       val subNoAckResp = GooglePubSub.subscribe(sub, 1.second).runWith(Sink.head)
 
-      inside(subNoAckResp.futureValue.message) {
-        case Some(PubsubMessage(data, _, _, _, _, _)) => data.toStringUtf8 shouldBe msg
+      inside(subNoAckResp.futureValue.message) { case Some(PubsubMessage(data, _, _, _, _, _)) =>
+        data.toStringUtf8 shouldBe msg
       }
 
       // subscribe and get the republished message, and ack this time
@@ -246,8 +245,8 @@ class IntegrationSpec
         )
         .runWith(Sink.head)
 
-      inside(subWithAckResp.futureValue.message) {
-        case Some(PubsubMessage(data, _, _, _, _, _)) => data.toStringUtf8 shouldBe msg
+      inside(subWithAckResp.futureValue.message) { case Some(PubsubMessage(data, _, _, _, _, _)) =>
+        data.toStringUtf8 shouldBe msg
       }
 
       // check if the message is not republished again

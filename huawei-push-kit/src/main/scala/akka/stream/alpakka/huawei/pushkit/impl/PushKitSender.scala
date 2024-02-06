@@ -27,8 +27,8 @@ import scala.concurrent.{ExecutionContext, Future}
 private[pushkit] class PushKitSender {
   import PushKitJsonSupport._
 
-  def send(conf: HmsSettings, token: String, http: HttpExt, hmsSend: PushKitSend, system: ActorSystem)(
-      implicit materializer: Materializer
+  def send(conf: HmsSettings, token: String, http: HttpExt, hmsSend: PushKitSend, system: ActorSystem)(implicit
+      materializer: Materializer
   ): Future[Response] = {
     val appId = conf.appId
     val forwardProxy = conf.forwardProxy

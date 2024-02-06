@@ -86,9 +86,11 @@ import scala.collection.immutable
         }
       )
 
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit =
-          if (!hasBeenPulled(in)) pull(in)
-      })
+      setHandler(out,
+                 new OutHandler {
+                   override def onPull(): Unit =
+                     if (!hasBeenPulled(in)) pull(in)
+                 }
+      )
     }
 }

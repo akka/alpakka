@@ -47,7 +47,8 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
    */
   final case class IncomingConnection(localAddress: UnixSocketAddress,
                                       remoteAddress: UnixSocketAddress,
-                                      flow: Flow[ByteString, ByteString, NotUsed]) {
+                                      flow: Flow[ByteString, ByteString, NotUsed]
+  ) {
 
     /**
      * Handles the connection using the given flow, which is materialized exactly once and the respective
@@ -99,7 +100,8 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends UnixDomainSock
    */
   override def bind(path: Path,
                     backlog: Int = 128,
-                    halfClose: Boolean = false): Source[IncomingConnection, Future[ServerBinding]] =
+                    halfClose: Boolean = false
+  ): Source[IncomingConnection, Future[ServerBinding]] =
     super.bind(path, backlog, halfClose)
 
   /**
@@ -128,7 +130,8 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends UnixDomainSock
   def bindAndHandle(handler: Flow[ByteString, ByteString, _],
                     path: Path,
                     backlog: Int = 128,
-                    halfClose: Boolean = false): Future[ServerBinding] =
+                    halfClose: Boolean = false
+  ): Future[ServerBinding] =
     bind(path, backlog, halfClose)
       .to(Sink.foreach { conn: IncomingConnection =>
         conn.flow.join(handler).run()

@@ -56,7 +56,8 @@ object BigQuery extends Google {
    */
   def listDatasets(maxResults: util.OptionalInt,
                    all: util.Optional[lang.Boolean],
-                   filter: util.Map[String, String]): Source[Dataset, NotUsed] =
+                   filter: util.Map[String, String]
+  ): Source[Dataset, NotUsed] =
     ScalaBigQuery.datasets(maxResults.asScala, all.asScala.map(_.booleanValue), filter.asScala.toMap).asJava
 
   /**
@@ -70,7 +71,8 @@ object BigQuery extends Google {
    */
   def getDataset(datasetId: String,
                  settings: GoogleSettings,
-                 system: ClassicActorSystemProvider): CompletionStage[Dataset] =
+                 system: ClassicActorSystemProvider
+  ): CompletionStage[Dataset] =
     ScalaBigQuery.dataset(datasetId)(system, settings).toJava
 
   /**
@@ -84,7 +86,8 @@ object BigQuery extends Google {
    */
   def createDataset(datasetId: String,
                     settings: GoogleSettings,
-                    system: ClassicActorSystemProvider): CompletionStage[Dataset] =
+                    system: ClassicActorSystemProvider
+  ): CompletionStage[Dataset] =
     ScalaBigQuery.createDataset(datasetId)(system, settings).toJava
 
   /**
@@ -98,7 +101,8 @@ object BigQuery extends Google {
    */
   def createDataset(dataset: Dataset,
                     settings: GoogleSettings,
-                    system: ClassicActorSystemProvider): CompletionStage[Dataset] =
+                    system: ClassicActorSystemProvider
+  ): CompletionStage[Dataset] =
     ScalaBigQuery.createDataset(dataset)(system, settings).toJava
 
   /**
@@ -113,7 +117,8 @@ object BigQuery extends Google {
   def deleteDataset(datasetId: String,
                     deleteContents: Boolean,
                     settings: GoogleSettings,
-                    system: ClassicActorSystemProvider): CompletionStage[Done] =
+                    system: ClassicActorSystemProvider
+  ): CompletionStage[Done] =
     ScalaBigQuery.deleteDataset(datasetId, deleteContents)(system, settings).toJava
 
   /**
@@ -140,7 +145,8 @@ object BigQuery extends Google {
   def getTable(datasetId: String,
                tableId: String,
                settings: GoogleSettings,
-               system: ClassicActorSystemProvider): CompletionStage[Table] =
+               system: ClassicActorSystemProvider
+  ): CompletionStage[Table] =
     ScalaBigQuery.table(datasetId, tableId)(system, settings).toJava
 
   /**
@@ -158,7 +164,8 @@ object BigQuery extends Google {
                   tableId: String,
                   schema: TableSchema,
                   settings: GoogleSettings,
-                  system: ClassicActorSystemProvider): CompletionStage[Table] =
+                  system: ClassicActorSystemProvider
+  ): CompletionStage[Table] =
     createTable(Table(TableReference(None, datasetId, Some(tableId)), None, Some(schema), None, None), settings, system)
 
   /**
@@ -186,7 +193,8 @@ object BigQuery extends Google {
   def deleteTable(datasetId: String,
                   tableId: String,
                   settings: GoogleSettings,
-                  system: ClassicActorSystemProvider): CompletionStage[Done] =
+                  system: ClassicActorSystemProvider
+  ): CompletionStage[Done] =
     ScalaBigQuery.deleteTable(datasetId, tableId)(system, settings).toJava
 
   /**
@@ -304,9 +312,8 @@ object BigQuery extends Google {
     implicit val um = unmarshaller.asScalaCastInput[sm.HttpEntity]
     ScalaBigQuery
       .query(query)
-      .mapMaterializedValue {
-        case (jobReference, queryResponse) =>
-          Pair(jobReference.toJava, queryResponse.toJava)
+      .mapMaterializedValue { case (jobReference, queryResponse) =>
+        Pair(jobReference.toJava, queryResponse.toJava)
       }
       .asJava
   }
@@ -338,7 +345,8 @@ object BigQuery extends Google {
                     startIndex.asScala,
                     maxResults.asScala,
                     timeout.asScala.map(d => FiniteDuration(d.toMillis, MILLISECONDS)),
-                    location.asScala)
+                    location.asScala
+      )
       .mapMaterializedValue(_.toJava)
       .asJava
   }
@@ -356,7 +364,8 @@ object BigQuery extends Google {
   def getJob(jobId: String,
              location: util.Optional[String],
              settings: GoogleSettings,
-             system: ClassicActorSystemProvider): CompletionStage[Job] =
+             system: ClassicActorSystemProvider
+  ): CompletionStage[Job] =
     ScalaBigQuery.job(jobId, location.asScala)(system, settings).toJava
 
   /**
@@ -372,7 +381,8 @@ object BigQuery extends Google {
   def cancelJob(jobId: String,
                 location: util.Optional[String],
                 settings: GoogleSettings,
-                system: ClassicActorSystemProvider): CompletionStage[JobCancelResponse] =
+                system: ClassicActorSystemProvider
+  ): CompletionStage[JobCancelResponse] =
     ScalaBigQuery.cancelJob(jobId, location.asScala)(system, settings).toJava
 
   /**
@@ -388,7 +398,8 @@ object BigQuery extends Google {
    */
   def insertAllAsync[In](datasetId: String,
                          tableId: String,
-                         marshaller: Marshaller[In, RequestEntity]): Flow[In, Job, NotUsed] = {
+                         marshaller: Marshaller[In, RequestEntity]
+  ): Flow[In, Job, NotUsed] = {
     implicit val m = marshaller.asScalaCastOutput[sm.RequestEntity]
     ScalaBigQuery.insertAllAsync[In](datasetId, tableId).asJava[In]
   }
@@ -407,7 +418,8 @@ object BigQuery extends Google {
   def insertAllAsync[In](datasetId: String,
                          tableId: String,
                          labels: util.Optional[util.Map[String, String]],
-                         marshaller: Marshaller[In, RequestEntity]): Flow[In, Job, NotUsed] = {
+                         marshaller: Marshaller[In, RequestEntity]
+  ): Flow[In, Job, NotUsed] = {
     implicit val m = marshaller.asScalaCastOutput[sm.RequestEntity]
     ScalaBigQuery.insertAllAsync[In](datasetId, tableId, labels.asScala.map(_.asScala.toMap)).asJava[In]
   }

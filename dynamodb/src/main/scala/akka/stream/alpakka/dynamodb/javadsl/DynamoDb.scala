@@ -30,7 +30,8 @@ object DynamoDb {
    */
   def flow[In <: DynamoDbRequest, Out <: DynamoDbResponse](client: DynamoDbAsyncClient,
                                                            operation: DynamoDbOp[In, Out],
-                                                           parallelism: Int): Flow[In, Out, NotUsed] =
+                                                           parallelism: Int
+  ): Flow[In, Out, NotUsed] =
     scaladsl.DynamoDb.flow(parallelism)(client, operation).asJava
 
   /**
@@ -53,7 +54,6 @@ object DynamoDb {
 
   /**
    * Create a Source that will emit potentially multiple responses for a given request.
-   *
    */
   def source[In <: DynamoDbRequest, Out <: DynamoDbResponse, Pub <: SdkPublisher[Out]](
       client: DynamoDbAsyncClient,
@@ -81,7 +81,8 @@ object DynamoDb {
   def single[In <: DynamoDbRequest, Out <: DynamoDbResponse](client: DynamoDbAsyncClient,
                                                              operation: DynamoDbOp[In, Out],
                                                              request: In,
-                                                             mat: Materializer): CompletionStage[Out] =
+                                                             mat: Materializer
+  ): CompletionStage[Out] =
     single(client, operation, request, mat.system)
 
   /**

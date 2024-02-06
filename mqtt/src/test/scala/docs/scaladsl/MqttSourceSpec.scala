@@ -29,7 +29,8 @@ class MqttSourceSpec extends MqttSpecBase("MqttSourceSpec") {
   val sourceSettings = connectionSettings.withClientId(clientId = "source-spec/source")
   val sinkSettings = connectionSettings.withClientId(clientId = "source-spec/sink")
 
-  /** Wrap a source with restart logic and exposes an equivalent materialized value.
+  /**
+   * Wrap a source with restart logic and exposes an equivalent materialized value.
    * Could be simplified when https://github.com/akka/akka/issues/24771 is solved.
    */
   def wrapWithRestart[M](
@@ -38,8 +39,8 @@ class MqttSourceSpec extends MqttSpecBase("MqttSourceSpec") {
     val subscribed = Promise[Done]()
     RestartSource
       .withBackoff(
-        RestartSettings(minBackoff = 100.millis, maxBackoff = 3.seconds, randomFactor = 0.2).withMaxRestarts(5,
-                                                                                                             1.second)
+        RestartSettings(minBackoff = 100.millis, maxBackoff = 3.seconds, randomFactor = 0.2)
+          .withMaxRestarts(5, 1.second)
       ) { () =>
         source
           .mapMaterializedValue { f =>
@@ -167,12 +168,11 @@ class MqttSourceSpec extends MqttSpecBase("MqttSourceSpec") {
     "receive messages from multiple topics" in {
       val topic2 = "source-spec/topic2"
       val messages = (0 until 7)
-        .flatMap(
-          i =>
-            Seq(
-              MqttMessage(topic1, ByteString(s"ohi_$i")),
-              MqttMessage(topic2, ByteString(s"ohi_$i"))
-            )
+        .flatMap(i =>
+          Seq(
+            MqttMessage(topic1, ByteString(s"ohi_$i")),
+            MqttMessage(topic2, ByteString(s"ohi_$i"))
+          )
         )
 
       //#create-source
@@ -215,7 +215,8 @@ class MqttSourceSpec extends MqttSpecBase("MqttSourceSpec") {
       val first = MqttSource
         .atMostOnce(sourceSettings.withAuth("username1", "bad_password"),
                     MqttSubscriptions(secureTopic, MqttQoS.AtLeastOnce),
-                    8)
+                    8
+        )
         .runWith(Sink.head)
 
       whenReady(first.failed) {
@@ -231,7 +232,8 @@ class MqttSourceSpec extends MqttSpecBase("MqttSourceSpec") {
       val (subscribed, result) = MqttSource
         .atMostOnce(sourceSettings.withAuth("username1", "password1"),
                     MqttSubscriptions(secureTopic, MqttQoS.AtLeastOnce),
-                    8)
+                    8
+        )
         .toMat(Sink.head)(Keep.both)
         .run()
 
@@ -408,7 +410,8 @@ class MqttSourceSpec extends MqttSpecBase("MqttSourceSpec") {
 
       val source2 = MqttSource.atMostOnce(sourceSettings.withClientId("source-spec/executor"),
                                           MqttSubscriptions(willTopic, MqttQoS.AtLeastOnce),
-                                          8)
+                                          8
+      )
 
       val elem = source2.runWith(Sink.head)
       elem.futureValue shouldBe MqttMessage(willTopic, ByteString("ohi"))

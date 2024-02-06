@@ -147,7 +147,8 @@ private[hdfs] final class HdfsFlowLogic[W, I, C](
       val newState = state.copy(rotationCount = newRotationCount,
                                 writer = newWriter,
                                 rotationStrategy = newRotation,
-                                logicState = LogicState.Idle)
+                                logicState = LogicState.Idle
+      )
 
       (newState, message)
     }
@@ -162,9 +163,8 @@ private[hdfs] final class HdfsFlowLogic[W, I, C](
       if (state.rotationStrategy.should()) {
         rotateOutput
           .run(state)
-          .map {
-            case (newState, message) =>
-              (newState, (state.rotationCount, Some(message)))
+          .map { case (newState, message) =>
+            (newState, (state.rotationCount, Some(message)))
           }
           .value
       } else {
