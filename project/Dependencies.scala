@@ -23,7 +23,7 @@ object Dependencies {
   val AkkaHttpVersion = "10.6.0"
   val AkkaHttpBinaryVersion = "10.6"
   val AlpakkaKafkaVersion = "5.0.0"
-  val ScalaTestVersion = "3.2.15"
+  val ScalaTestVersion = "3.2.18"
   val TestContainersScalaTestVersion = "0.40.3" // pulls Testcontainers 1.16.2
   val mockitoVersion = "4.8.1" // check even https://github.com/scalatest/scalatestplus-mockito/releases
   val hoverflyVersion = "0.14.1"
