@@ -491,7 +491,7 @@ object Dependencies {
       ) ++ Mockito
   )
 
-  val SolrjVersion = "8.11.1"
+  val SolrjVersion = "8.11.3"
   val SolrVersionForDocs = "8_11"
 
   val Solr = Seq(
