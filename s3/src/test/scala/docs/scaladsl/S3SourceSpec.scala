@@ -5,6 +5,7 @@
 package docs.scaladsl
 
 import akka.http.scaladsl.model.headers.ByteRange
+import akka.http.scaladsl.model.headers.ByteRange.FromOffset
 import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpEntity, HttpResponse, IllegalUriException}
 import akka.stream.Attributes
 import akka.stream.alpakka.s3.BucketAccess.{AccessDenied, AccessGranted, NotExists}
@@ -25,6 +26,43 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
   override protected def afterEach(): Unit =
     mock.removeMappings()
+
+  "S3Source" should "download a stream of bytes by ranges from S3" in {
+
+    val bodyBytes = ByteString(body)
+    val bodyRanges = bodyBytes.grouped(10).toList
+    val rangeHeaders = bodyRanges.zipWithIndex.map {
+      case (_, idx) if idx != bodyRanges.size - 1 =>
+        ByteRange(idx * 10, (idx * 10) + 10 - 1)
+      case (_, idx) =>
+        FromOffset(idx * 10)
+    }
+    val rangesWithHeaders = bodyRanges.zip(rangeHeaders)
+
+    mockHead(bodyBytes.size)
+    rangesWithHeaders.foreach { case (bs, br) => mockRangedDownload(br, bs.utf8String)}
+
+    val s3Source: Source[ByteString, Future[ObjectMetadata]] =
+      S3.getObjectByRanges(bucket, bucketKey, rangeSize = 10L)
+
+    val (metadataFuture, dataFuture) =
+      s3Source.toMat(Sink.reduce[ByteString](_ ++ _))(Keep.both).run()
+
+    val data = dataFuture.futureValue
+    val metadata = metadataFuture.futureValue
+
+    data.utf8String shouldBe body
+
+    HttpResponse(
+      entity = HttpEntity(
+        metadata.contentType
+          .flatMap(ContentType.parse(_).toOption)
+          .getOrElse(ContentTypes.`application/octet-stream`),
+        metadata.contentLength,
+        s3Source
+      )
+    )
+  }
 
   "S3Source" should "download a stream of bytes from S3" in {
 
