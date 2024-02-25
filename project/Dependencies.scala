@@ -15,7 +15,7 @@ object Dependencies {
 
   val InfluxDBJavaVersion = "2.15"
 
-  val AwsSdk2Version = "2.17.295"
+  val AwsSdk2Version = "2.24.10"
   val AwsSpiAkkaHttpVersion = "1.0.1"
   // Sync with plugins.sbt
   val AkkaGrpcBinaryVersion = "2.4"
