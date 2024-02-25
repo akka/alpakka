@@ -434,7 +434,7 @@ object Dependencies {
         "software.amazon.awssdk" % "auth" % AwsSdk2Version,
         // in-memory filesystem for file related tests
         "com.google.jimfs" % "jimfs" % "1.2" % Test, // ApacheV2
-        "com.github.tomakehurst" % "wiremock-jre8" % "2.35.2" % Test // ApacheV2
+        "com.github.tomakehurst" % "wiremock-jre8" % "3.0.1" % Test // ApacheV2
       )
   )
 
