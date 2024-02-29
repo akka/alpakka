@@ -97,7 +97,8 @@ private[jms] final class JmsAckSession(override val connection: jms.Connection,
 
   private def stopMessageListenerAndCloseSession(): Unit = {
     try {
-      drainAcks()
+      if (session.getAcknowledgeMode() == jms.Session.CLIENT_ACKNOWLEDGE)
+        drainAcks()
     } finally {
       ackQueue.put(Left(SessionClosed))
       session.close()
