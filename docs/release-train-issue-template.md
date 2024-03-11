@@ -61,7 +61,6 @@ For minor or major releases:
 ### Afterwards
 
 - [ ] If Cassandra has relevant changes, create/update PR in [Akka Persistence Cassandra](https://github.com/akka/akka-persistence-cassandra/) to upgrade to $VERSION$
-- [ ] Update version for [Lightbend Supported Modules](https://developer.lightbend.com/docs/lightbend-platform/introduction/getting-help/build-dependencies.html) in [private project](https://github.com/lightbend/lightbend-technology-intro-doc/blob/master/docs/modules/getting-help/examples/build.sbt)
 - [ ] Update [akka-dependencies bom](https://github.com/lightbend/akka-dependencies)
 - [ ] Create an issue or PR to upgrade projects in [Alpakka Samples](https://github.com/akka/alpakka-samples)
 - Close this issue

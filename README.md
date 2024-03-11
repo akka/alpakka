@@ -10,6 +10,7 @@ Systems don't come alone. In the modern world of microservices and cloud deploym
 
 The Alpakka project implements stream-aware & reactive integration pipelines for Java and Scala. It is built on top of [Akka Streams](https://doc.akka.io/docs/akka/current/stream/index.html), and has been designed from the ground up to understand streaming natively and provide a DSL for reactive and stream-oriented programming, with built-in support for backpressure. Akka Streams is a [Reactive Streams](http://www.reactive-streams.org/) and JDK 9+ [java.util.concurrent.Flow](https://docs.oracle.com/javase/10/docs/api/java/util/concurrent/Flow.html)-compliant implementation and therefore [fully interoperable](https://doc.akka.io/docs/akka/current/general/stream/stream-design.html#interoperation-with-other-reactive-streams-implementations) with other implementations.
 
+The Akka family of projects is managed by teams at [Lightbend](https://lightbend.com) with help from the community.
 
 Documentation
 -------------
@@ -27,7 +28,6 @@ Community
 You can join these forums and chats to discuss and ask Akka and Alpakka related questions:
 
 - Forums: [discuss.lightbend.com](https://discuss.lightbend.com/c/akka/streams-and-alpakka)
-- Chat room about *using* Akka and Alpakka: [![gitter: akka/akka](https://img.shields.io/badge/gitter%3A-akka%2Fakka-blue.svg?style=flat-square)](https://gitter.im/akka/akka)
 - Issue tracker: [![github: akka/alpakka](https://img.shields.io/badge/github%3A-issues-blue.svg?style=flat-square)](https://github.com/akka/alpakka/issues)
 
 In addition to that, you may enjoy the following:
@@ -61,4 +61,4 @@ Our goal is to improve the stability and test coverage for Alpakka APIs over tim
 
 License
 -------
-Alpakka is licensed under the Business Source License 1.1, see [LICENSE](https://github.com/akka/alpakka/blob/main/LICENSE).
+Alpakka is licensed under the [Business Source License (BSL) 1.1](https://github.com/akka/alpakka/blob/main/LICENSE), please see the [Akka License FAQ](https://www.lightbend.com/akka/license-faq).
