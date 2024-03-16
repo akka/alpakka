@@ -184,7 +184,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "commons-net" % "commons-net" % "3.8.0", // ApacheV2
         "com.hierynomus" % "sshj" % "0.33.0", // ApacheV2
-        "io.github.hakky54" % "sslcontext-kickstart-for-pem" % "6.8.0" % Test
+        "io.github.hakky54" % "sslcontext-kickstart-for-pem" % "8.3.3" % Test
       )
   )
 
