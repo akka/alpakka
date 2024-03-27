@@ -175,7 +175,7 @@ object Dependencies {
         "org.apache.hadoop" % "hadoop-common" % "3.3.3" % Test exclude ("log4j", "log4j"), //Apache2
         "com.sksamuel.avro4s" %% "avro4s-core" % "3.0.9" % Test,
         "org.scalacheck" %% "scalacheck" % "1.17.0" % Test,
-        "org.specs2" %% "specs2-core" % "4.8.3" % Test, //MIT like: https://github.com/etorreborre/specs2/blob/master/LICENSE.txt
+        "org.specs2" %% "specs2-core" % "4.20.5" % Test, //MIT like: https://github.com/etorreborre/specs2/blob/master/LICENSE.txt
         "org.slf4j" % "log4j-over-slf4j" % log4jOverSlf4jVersion % Test // MIT like: http://www.slf4j.org/license.html
       )
   )
