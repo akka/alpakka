@@ -43,13 +43,9 @@ The table below shows direct dependencies of this module and the second tab show
 
 The Alpakka Google Cloud BigQuery Storage library contains the classes generated from [Google's protobuf specification](https://github.com/googleapis/java-bigquerystorage/tree/master/proto-google-cloud-bigquerystorage-v1).
 
-@@@note { title="ALPN on JDK 8" }
+@@@ note { title="Java 17" }
 
-HTTP/2 requires ALPN negotiation, which comes with the JDK starting with
-version 8u251.
-
-For older versions of the JDK you will need to load the `jetty-alpn-agent`
-yourself, but we recommend upgrading.
+When running on Java 17 and newer you have to add JVM flag `--add-opens=java.base/java.nio=ALL-UNNAMED`.
 
 @@@
 

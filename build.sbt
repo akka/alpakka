@@ -220,7 +220,10 @@ lazy val googleCloudBigQueryStorage = alpakkaProject(
       "-Wconf:src=.+/akka-grpc/main/.+:s",
       "-Wconf:src=.+/akka-grpc/test/.+:s"
     ),
-  compile / javacOptions := (compile / javacOptions).value.filterNot(_ == "-Xlint:deprecation")
+  compile / javacOptions := (compile / javacOptions).value
+      .filterNot(_ == "-Xlint:deprecation"),
+  Test / fork := true,
+  Test / javaOptions += "--add-opens=java.base/java.nio=ALL-UNNAMED"
 ).dependsOn(googleCommon).enablePlugins(AkkaGrpcPlugin)
 
 lazy val googleCloudPubSub = alpakkaProject(
