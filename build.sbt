@@ -39,7 +39,6 @@ lazy val alpakka = project
     mongodb,
     mqtt,
     mqttStreaming,
-    orientdb,
     pravega,
     reference,
     s3,
@@ -296,16 +295,6 @@ lazy val mqttStreaming =
 lazy val mqttStreamingBench = internalProject("mqtt-streaming-bench")
   .enablePlugins(JmhPlugin)
   .dependsOn(mqtt, mqttStreaming)
-
-lazy val orientdb =
-  alpakkaProject(
-    "orientdb",
-    "orientdb",
-    Dependencies.OrientDB,
-    Test / fork := true,
-    // note: orientdb client needs to be refactored to move off deprecated calls
-    fatalWarnings := false
-  )
 
 lazy val reference = internalProject("reference", Dependencies.Reference)
   .dependsOn(testkit % Test)

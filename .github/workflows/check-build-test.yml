@@ -121,7 +121,6 @@ jobs:
           - { connector: mongodb,                      pre_cmd: 'docker-compose up -d mongo' }
           - { connector: mqtt,                         pre_cmd: 'docker-compose up -d mqtt' }
           - { connector: mqtt-streaming,               pre_cmd: 'docker-compose up -d mqtt' }
-          - { connector: orientdb,                     pre_cmd: 'docker-compose up -d orientdb' }
           - { connector: pravega,                      pre_cmd: 'docker-compose up -d pravega'}
           - { connector: reference }
           - { connector: s3 }

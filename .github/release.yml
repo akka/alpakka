@@ -73,8 +73,6 @@ changelog:
       labels: 'p:mqtt'
     - title: 'MQTT Streaming'
       labels: 'p:mqtt-streaming'
-    - title: 'OrientDB'
-      labels: 'p:orientdb'
     - title: 'Pravega'
       labels: 'p:pravega'
     - title: 'Reference'
