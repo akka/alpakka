@@ -249,7 +249,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-        "com.github.tomakehurst" % "wiremock" % "2.27.2" % Test // ApacheV2
+        "com.github.tomakehurst" % "wiremock" % "3.0.1" % Test // ApacheV2
       ) ++ Mockito
   )
 
