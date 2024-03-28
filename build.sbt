@@ -328,7 +328,7 @@ lazy val springWeb = alpakkaProject(
 
 lazy val simpleCodecs = alpakkaProject("simple-codecs", "simplecodecs", Scala3.settings)
 
-lazy val slick = alpakkaProject("slick", "slick", Dependencies.Slick)
+lazy val slick = alpakkaProject("slick", "slick", Dependencies.Slick, Scala3.settings)
 
 lazy val eventbridge =
   alpakkaProject("aws-event-bridge", "aws.eventbridge", Dependencies.Eventbridge).settings(Scala3.settings)
