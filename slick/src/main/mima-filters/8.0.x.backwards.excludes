@@ -1,0 +1,8 @@
+# Upgraded to Slick 3.5.0
+# https://github.com/slick/slick/releases/tag/v3.5.0
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.slick.javadsl.SlickSession.db")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.alpakka.slick.javadsl.SlickSession.db")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.slick.javadsl.SlickSessionFactory#SlickSessionConfigBackedImpl.db")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.slick.javadsl.SlickSessionFactory#SlickSessionDbAndProfileBackedImpl.db")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.slick.javadsl.SlickSessionFactory#SlickSessionDbAndProfileBackedImpl.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.slick.scaladsl.package#SlickSession.forDbAndProfile")
