@@ -50,7 +50,7 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
         "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion,
         "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
-        "ch.qos.logback" % "logback-classic" % "1.2.11", // Eclipse Public License 1.0
+        "ch.qos.logback" % "logback-classic" % "1.4.14",
         "org.scalatest" %% "scalatest" % ScalaTestVersion,
         "com.dimafeng" %% "testcontainers-scala-scalatest" % TestContainersScalaTestVersion,
         "com.novocode" % "junit-interface" % "0.11", // BSD-style
@@ -330,7 +330,7 @@ object Dependencies {
         "org.apache.activemq" % "artemis-jakarta-server" % "2.31.2" % Test, // ApacheV2
         "org.apache.activemq" % "artemis-jakarta-client" % "2.31.2" % Test, // ApacheV2
         // slf4j-api 2.0.9 via activemq-client
-        "ch.qos.logback" % "logback-classic" % "1.4.14" % Test // Eclipse Public License 1.0
+        "ch.qos.logback" % "logback-classic" % "1.4.14" % Test
       ) ++ Mockito
   )
 
