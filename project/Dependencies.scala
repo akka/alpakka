@@ -32,7 +32,7 @@ object Dependencies {
   val CouchbaseVersionForDocs = "2.7"
 
   // https://github.com/jwt-scala/jwt-scala/releases
-  val JwtScalaVersion = "9.4.4"
+  val JwtScalaVersion = "9.4.6"
 
   val log4jOverSlf4jVersion = "1.7.36"
   val jclOverSlf4jVersion = "1.7.36"
