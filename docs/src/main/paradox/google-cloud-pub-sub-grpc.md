@@ -55,16 +55,6 @@ You can not use a different version of Akka gRPC within the same JVM instance.
 
 The Alpakka Google Cloud Pub/Sub gRPC library contains the classes generated from [Google's protobuf specification](https://github.com/googleapis/java-pubsub/tree/master/proto-google-cloud-pubsub-v1/).
 
-@@@note { title="ALPN on JDK 8" }
-
-HTTP/2 requires ALPN negotiation, which comes with the JDK starting with
-version 8u251.
-
-For older versions of the JDK you will need to load the `jetty-alpn-agent`
-yourself, but we recommend upgrading.
-
-@@@
-
 ## Configuration
 
 The Pub/Sub gRPC connector @ref[shares its basic configuration](google-common.md) with all the Google connectors in Alpakka.

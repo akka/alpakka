@@ -58,7 +58,11 @@ object Dependencies {
       )
   )
 
-  val Mockito = Seq("org.mockito" % "mockito-core" % mockitoVersion % Test)
+  val Mockito = Seq(
+    "org.mockito" % "mockito-core" % mockitoVersion % Test,
+    // Force bump byte-buddy for JDK 21
+    "net.bytebuddy" % "byte-buddy" % "1.14.12" % Test
+  )
 
   // Releases https://github.com/FasterXML/jackson-databind/releases
   // CVE issues https://github.com/FasterXML/jackson-databind/issues?utf8=%E2%9C%93&q=+label%3ACVE
@@ -233,10 +237,10 @@ object Dependencies {
         // https://github.com/googleapis/java-bigquerystorage/tree/master/proto-google-cloud-bigquerystorage-v1
         "com.google.api.grpc" % "proto-google-cloud-bigquerystorage-v1" % "1.22.0" % "protobuf-src", // ApacheV2
         "org.apache.avro" % "avro" % "1.11.3" % "provided",
-        "org.apache.arrow" % "arrow-vector" % "4.0.0" % "provided",
+        "org.apache.arrow" % "arrow-vector" % "13.0.0" % "provided",
         "io.grpc" % "grpc-auth" % akka.grpc.gen.BuildInfo.grpcVersion, // ApacheV2
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-        "org.apache.arrow" % "arrow-memory-netty" % "4.0.1" % Test,
+        "org.apache.arrow" % "arrow-memory-netty" % "13.0.0" % Test,
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion
       ) ++ Mockito
   )

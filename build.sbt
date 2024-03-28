@@ -160,7 +160,15 @@ lazy val elasticsearch = alpakkaProject(
 )
 
 // The name 'file' is taken by `sbt.file`, hence 'files'
-lazy val files = alpakkaProject("file", "file", Dependencies.File, Scala3.settings)
+lazy val files = alpakkaProject(
+  "file",
+  "file",
+  Dependencies.File,
+  Scala3.settings,
+  // com.sun.nio.file.SensitivityWatchEventModifier is deprecated in Java 21
+  // https://bugs.openjdk.org/browse/JDK-8303175
+  fatalWarnings := false
+)
 
 lazy val ftp = alpakkaProject(
   "ftp",
@@ -212,7 +220,10 @@ lazy val googleCloudBigQueryStorage = alpakkaProject(
       "-Wconf:src=.+/akka-grpc/main/.+:s",
       "-Wconf:src=.+/akka-grpc/test/.+:s"
     ),
-  compile / javacOptions := (compile / javacOptions).value.filterNot(_ == "-Xlint:deprecation")
+  compile / javacOptions := (compile / javacOptions).value
+      .filterNot(_ == "-Xlint:deprecation"),
+  Test / fork := true,
+  Test / javaOptions += "--add-opens=java.base/java.nio=ALL-UNNAMED"
 ).dependsOn(googleCommon).enablePlugins(AkkaGrpcPlugin)
 
 lazy val googleCloudPubSub = alpakkaProject(
