@@ -8,8 +8,6 @@ import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.{Arrays, Optional}
 
-import scala.annotation.nowarn
-
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.alpakka.solr._
