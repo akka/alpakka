@@ -39,9 +39,10 @@ object Dependencies {
   val log4jOverSlf4jVersion = slf4jVersion
   val jclOverSlf4jVersion = slf4jVersion
 
-  // Later versions bump slf4j-api past 2.x
+  // Akka 2.9 expects Slf4j 1.x
   // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L28
-  val LogbackClassicVersion = "1.2.13"
+  val LogbackWithSlf4jV1 = "1.2.13"
+  val LogbackWithSlf4jV2 = "1.5.3"
 
   val Common = Seq(
     // These libraries are added to all modules via the `Common` AutoPlugin
@@ -56,7 +57,7 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
         "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion,
         "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
-        "ch.qos.logback" % "logback-classic" % LogbackClassicVersion,
+        "ch.qos.logback" % "logback-classic" % LogbackWithSlf4jV1,
         "org.scalatest" %% "scalatest" % ScalaTestVersion,
         "com.dimafeng" %% "testcontainers-scala-scalatest" % TestContainersScalaTestVersion,
         "com.novocode" % "junit-interface" % "0.11", // BSD-style
@@ -255,7 +256,8 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-        "com.github.tomakehurst" % "wiremock" % "3.0.1" % Test // ApacheV2
+        "com.github.tomakehurst" % "wiremock" % "3.0.1" % Test,
+        "ch.qos.logback" % "logback-classic" % LogbackWithSlf4jV2 % Test
       ) ++ Mockito
   )
 
@@ -339,8 +341,7 @@ object Dependencies {
         "jakarta.jms" % "jakarta.jms-api" % "3.1.0", // Eclipse Public License 2.0 + + GPLv2
         "org.apache.activemq" % "artemis-jakarta-server" % "2.33.0" % Test, // ApacheV2
         "org.apache.activemq" % "artemis-jakarta-client" % "2.33.0" % Test, // ApacheV2
-        // slf4j-api 2.0.9 via activemq-client
-        "ch.qos.logback" % "logback-classic" % "1.4.14" % Test
+        "ch.qos.logback" % "logback-classic" % LogbackWithSlf4jV2 % Test
       ) ++ Mockito
   )
 
