@@ -8,6 +8,8 @@ import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.{Arrays, Optional}
 
+import scala.annotation.nowarn
+
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.alpakka.solr._
@@ -746,6 +748,7 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
     TestKit.shutdownActorSystem(system)
   }
 
+  @nowarn("msg=deprecated") // FIXME #2917 Deprecated getIdField in Solrj 8.11.x
   private def setupCluster(): Unit = {
     val targetDir = new File("solr/target")
     val testWorkingDir =
@@ -769,6 +772,7 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
     solrClient.getClusterStateProvider
       .asInstanceOf[ZkClientClusterStateProvider]
       .uploadConfig(confDir.toPath, "conf")
+    solrClient.setIdField("router")
 
     assertTrue(!solrClient.getZkStateReader.getClusterState.getLiveNodes.isEmpty)
   }
