@@ -742,13 +742,12 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
   }
 
   override def afterAll(): Unit = {
-    solrClient.close()
-    cluster.shutdown()
-    zkTestServer.shutdown()
+    if (solrClient != null) solrClient.close()
+    if (cluster != null) cluster.shutdown()
+    if (zkTestServer != null) zkTestServer.shutdown()
     TestKit.shutdownActorSystem(system)
   }
 
-  @nowarn("msg=deprecated") // FIXME #2917 Deprecated getIdField in Solrj 8.11.x
   private def setupCluster(): Unit = {
     val targetDir = new File("solr/target")
     val testWorkingDir =
@@ -772,7 +771,6 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
     solrClient.getClusterStateProvider
       .asInstanceOf[ZkClientClusterStateProvider]
       .uploadConfig(confDir.toPath, "conf")
-    solrClient.setIdField("router")
 
     assertTrue(!solrClient.getZkStateReader.getClusterState.getLiveNodes.isEmpty)
   }

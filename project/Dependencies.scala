@@ -34,8 +34,14 @@ object Dependencies {
   // https://github.com/jwt-scala/jwt-scala/releases
   val JwtScalaVersion = "9.4.4"
 
-  val log4jOverSlf4jVersion = "1.7.36"
-  val jclOverSlf4jVersion = "1.7.36"
+  // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L20
+  val slf4jVersion = "1.7.36"
+  val log4jOverSlf4jVersion = slf4jVersion
+  val jclOverSlf4jVersion = slf4jVersion
+
+  // Later versions bump slf4j-api past 2.x
+  // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L28
+  val LogbackClassicVersion = "1.2.13"
 
   val Common = Seq(
     // These libraries are added to all modules via the `Common` AutoPlugin
@@ -50,7 +56,7 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
         "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion,
         "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
-        "ch.qos.logback" % "logback-classic" % "1.4.14",
+        "ch.qos.logback" % "logback-classic" % LogbackClassicVersion,
         "org.scalatest" %% "scalatest" % ScalaTestVersion,
         "com.dimafeng" %% "testcontainers-scala-scalatest" % TestContainersScalaTestVersion,
         "com.novocode" % "junit-interface" % "0.11", // BSD-style
