@@ -539,7 +539,7 @@ object Dependencies {
 
   val Xml = Seq(
     libraryDependencies ++= Seq(
-        "com.fasterxml" % "aalto-xml" % "1.2.2" // ApacheV2
+        "com.fasterxml" % "aalto-xml" % "1.3.2" // ApacheV2
       )
   )
 
