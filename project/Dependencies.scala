@@ -105,7 +105,7 @@ object Dependencies {
 
   val AzureStorageQueue = Seq(
     libraryDependencies ++= Seq(
-        "com.microsoft.azure" % "azure-storage" % "8.0.0" // ApacheV2
+        "com.microsoft.azure" % "azure-storage" % "8.6.6" // ApacheV2
       )
   )
 
