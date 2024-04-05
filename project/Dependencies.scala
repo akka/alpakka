@@ -34,8 +34,15 @@ object Dependencies {
   // https://github.com/jwt-scala/jwt-scala/releases
   val JwtScalaVersion = "9.4.6"
 
-  val log4jOverSlf4jVersion = "1.7.36"
-  val jclOverSlf4jVersion = "1.7.36"
+  // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L20
+  val slf4jVersion = "1.7.36"
+  val log4jOverSlf4jVersion = slf4jVersion
+  val jclOverSlf4jVersion = slf4jVersion
+
+  // Akka 2.9 expects Slf4j 1.x
+  // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L28
+  val LogbackWithSlf4jV1 = "1.2.13"
+  val wiremock = ("com.github.tomakehurst" % "wiremock" % "3.0.1" % Test).exclude("org.slf4j", "slf4j-api")
 
   val Common = Seq(
     // These libraries are added to all modules via the `Common` AutoPlugin
@@ -50,7 +57,7 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
         "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion,
         "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
-        "ch.qos.logback" % "logback-classic" % "1.4.14",
+        "ch.qos.logback" % "logback-classic" % LogbackWithSlf4jV1,
         "org.scalatest" %% "scalatest" % ScalaTestVersion,
         "com.dimafeng" %% "testcontainers-scala-scalatest" % TestContainersScalaTestVersion,
         "com.novocode" % "junit-interface" % "0.11", // BSD-style
@@ -249,7 +256,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-        "com.github.tomakehurst" % "wiremock" % "3.0.1" % Test // ApacheV2
+        wiremock
       ) ++ Mockito
   )
 
@@ -331,10 +338,8 @@ object Dependencies {
   val JakartaJms = Seq(
     libraryDependencies ++= Seq(
         "jakarta.jms" % "jakarta.jms-api" % "3.1.0", // Eclipse Public License 2.0 + + GPLv2
-        "org.apache.activemq" % "artemis-jakarta-server" % "2.33.0" % Test, // ApacheV2
-        "org.apache.activemq" % "artemis-jakarta-client" % "2.33.0" % Test, // ApacheV2
-        // slf4j-api 2.0.9 via activemq-client
-        "ch.qos.logback" % "logback-classic" % "1.4.14" % Test
+        ("org.apache.activemq" % "artemis-jakarta-server" % "2.33.0" % Test).exclude("org.slf4j", "slf4j-api"),
+        ("org.apache.activemq" % "artemis-jakarta-client" % "2.33.0" % Test).exclude("org.slf4j", "slf4j-api")
       ) ++ Mockito
   )
 
@@ -438,7 +443,7 @@ object Dependencies {
         "software.amazon.awssdk" % "auth" % AwsSdk2Version,
         // in-memory filesystem for file related tests
         "com.google.jimfs" % "jimfs" % "1.3.0" % Test, // ApacheV2
-        "com.github.tomakehurst" % "wiremock-jre8" % "3.0.1" % Test // ApacheV2
+        wiremock
       )
   )
 
@@ -460,8 +465,8 @@ object Dependencies {
   val SlickVersion = "3.5.0"
   val Slick = Seq(
     libraryDependencies ++= Seq(
-        "com.typesafe.slick" %% "slick" % SlickVersion, // BSD 2-clause "Simplified" License
-        "com.typesafe.slick" %% "slick-hikaricp" % SlickVersion, // BSD 2-clause "Simplified" License
+        ("com.typesafe.slick" %% "slick" % SlickVersion).exclude("org.slf4j", "slf4j-api"),
+        ("com.typesafe.slick" %% "slick-hikaricp" % SlickVersion).exclude("org.slf4j", "slf4j-api"),
         "com.h2database" % "h2" % "2.1.214" % Test // Eclipse Public License 1.0
       )
   )
