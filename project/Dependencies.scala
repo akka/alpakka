@@ -194,7 +194,8 @@ object Dependencies {
   val Ftp = Seq(
     libraryDependencies ++= Seq(
         "commons-net" % "commons-net" % "3.8.0", // ApacheV2
-        "com.hierynomus" % "sshj" % "0.33.0", // ApacheV2
+        // Versions after sshj 0.35.0 depend on SLF4J 2.x
+        "com.hierynomus" % "sshj" % "0.35.0",
         "io.github.hakky54" % "sslcontext-kickstart-for-pem" % "6.8.0" % Test
       )
   )
