@@ -100,7 +100,7 @@ private[jms] final class JmsAckSession(override val connection: jms.Connection,
       if (session.getAcknowledgeMode() == jms.Session.CLIENT_ACKNOWLEDGE)
         drainAcks()
     } catch {
-      case ex: JMSException if ex.getMessage.contains("JMSCC0033") => // Swallow as ack isn't necessary if this is being thrown
+      case ex: JMSException if ex.getMessage != null && ex.getMessage.contains("JMSCC0033") => // Swallow as ack isn't necessary if this is being thrown
     } finally {
       ackQueue.put(Left(SessionClosed))
       session.close()
