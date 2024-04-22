@@ -1,10 +1,5 @@
-Alpakka [![scaladex-badge][]][scaladex] [![maven-central-badge][]][maven-central] [![CI on GitHub actions](https://github.com/akka/alpakka/actions/workflows/check-build-test.yml/badge.svg)](https://github.com/akka/alpakka/actions/workflows/check-build-test.yml)
+Alpakka
 =======
-
-[scaladex]:              https://index.scala-lang.org/akka/alpakka
-[scaladex-badge]:        https://index.scala-lang.org/akka/alpakka/latest.svg
-[maven-central]:         https://search.maven.org/#search%7Cga%7C1%7Cakka-stream-alpakka
-[maven-central-badge]:   https://maven-badges.herokuapp.com/maven-central/com.lightbend.akka/akka-stream-alpakka-file_2.13/badge.svg
 
 Systems don't come alone. In the modern world of microservices and cloud deployment, new components must interact with legacy systems, making integration an important key to success. Reactive Streams give us a technology-independent tool to let these heterogeneous systems communicate without overwhelming each other.
 
@@ -28,7 +23,7 @@ Community
 You can join these forums and chats to discuss and ask Akka and Alpakka related questions:
 
 - Forums: [discuss.lightbend.com](https://discuss.lightbend.com/c/akka/streams-and-alpakka)
-- Issue tracker: [![github: akka/alpakka](https://img.shields.io/badge/github%3A-issues-blue.svg?style=flat-square)](https://github.com/akka/alpakka/issues)
+- Issue tracker: [github.com/akka/alpakka/issues](https://github.com/akka/alpakka/issues)
 
 In addition to that, you may enjoy the following:
 
