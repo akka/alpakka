@@ -48,9 +48,6 @@ blog by Sidharth Khattri, May 2018
 [Alpakka – a new world of connectors for Reactive Enterprise Integration](https://www.youtube.com/watch?v=EcNZ2mJZmCk)
 presentation by Jan Pustelnik, Actyx, ReactSphere Kraków, April 2018
 
-[Revitalizing Enterprise Integration with Reactive Streams](https://info.lightbend.com/webinar-revitalizing-enterprise-integration-with-reactive-streams-recording.html)
-Webinar by Viktor Klang, Lightbend, March 2018
-
 [Transforming enterprise integration with reactive streams](https://www.oreilly.com/content/transforming-enterprise-integration-with-reactive-streams/)
 Article by Jonas Bonér and Viktor Klang, March 2018
 
