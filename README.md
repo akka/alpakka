@@ -57,3 +57,5 @@ Our goal is to improve the stability and test coverage for Alpakka APIs over tim
 License
 -------
 Alpakka is licensed under the [Business Source License (BSL) 1.1](https://github.com/akka/alpakka/blob/main/LICENSE), please see the [Akka License FAQ](https://www.lightbend.com/akka/license-faq).
+
+Tests and documentation are under a separate license, see the LICENSE file in each documentation and test root directory for details.
