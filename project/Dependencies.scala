@@ -174,7 +174,7 @@ object Dependencies {
 
   val AvroParquet = Seq(
     libraryDependencies ++= Seq(
-        "org.apache.parquet" % "parquet-avro" % "1.13.1", //Apache2
+        "org.apache.parquet" % "parquet-avro" % "1.14.0", //Apache2
         // override the version brought in by parquet-avro to fix CVE-2023-39410
         "org.apache.avro" % "avro" % "1.11.3" //Apache2
       )
