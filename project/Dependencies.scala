@@ -182,8 +182,8 @@ object Dependencies {
 
   val AvroParquetTests = Seq(
     libraryDependencies ++= Seq(
-        "org.apache.hadoop" % "hadoop-client" % "3.3.6" % Test exclude ("log4j", "log4j"), //Apache2
-        "org.apache.hadoop" % "hadoop-common" % "3.3.6" % Test exclude ("log4j", "log4j"), //Apache2
+        "org.apache.hadoop" % "hadoop-client" % "3.4.0" % Test exclude ("log4j", "log4j"), //Apache2
+        "org.apache.hadoop" % "hadoop-common" % "3.4.0" % Test exclude ("log4j", "log4j"), //Apache2
         "com.sksamuel.avro4s" %% "avro4s-core" % "4.1.2" % Test,
         "org.scalacheck" %% "scalacheck" % "1.17.0" % Test,
         "org.specs2" %% "specs2-core" % "4.20.5" % Test, //MIT like: https://github.com/etorreborre/specs2/blob/master/LICENSE.txt
