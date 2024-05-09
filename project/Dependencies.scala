@@ -35,7 +35,7 @@ object Dependencies {
   val JwtScalaVersion = "9.4.6"
 
   // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L20
-  val slf4jVersion = "1.7.36"
+  val slf4jVersion = "2.0.13"
   val log4jOverSlf4jVersion = slf4jVersion
   val jclOverSlf4jVersion = slf4jVersion
 
