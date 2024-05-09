@@ -463,7 +463,7 @@ object Dependencies {
     )
   }
 
-  val SlickVersion = "3.5.0"
+  val SlickVersion = "3.5.1"
   val Slick = Seq(
     libraryDependencies ++= Seq(
         ("com.typesafe.slick" %% "slick" % SlickVersion).exclude("org.slf4j", "slf4j-api"),
