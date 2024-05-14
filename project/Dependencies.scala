@@ -10,7 +10,7 @@ object Dependencies {
   val Scala2Versions = Seq(Scala213)
   val ScalaVersions = Dependencies.Scala2Versions :+ Dependencies.Scala3
 
-  val AkkaVersion = "2.9.0"
+  val AkkaVersion = "2.9.3"
   val AkkaBinaryVersion = "2.9"
 
   val InfluxDBJavaVersion = "2.15"
@@ -20,9 +20,9 @@ object Dependencies {
   // Sync with plugins.sbt
   val AkkaGrpcBinaryVersion = "2.4"
   // sync ignore prefix in scripts/link-validator.conf#L30
-  val AkkaHttpVersion = "10.6.0"
+  val AkkaHttpVersion = "10.6.3"
   val AkkaHttpBinaryVersion = "10.6"
-  val AlpakkaKafkaVersion = "5.0.0"
+  val AlpakkaKafkaVersion = "6.0.0"
   val ScalaTestVersion = "3.2.18"
   val TestContainersScalaTestVersion = "0.40.3" // pulls Testcontainers 1.16.2
   val mockitoVersion = "4.11.0" // check even https://github.com/scalatest/scalatestplus-mockito/releases
