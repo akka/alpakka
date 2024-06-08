@@ -245,10 +245,10 @@ object Dependencies {
         // https://github.com/googleapis/java-bigquerystorage/tree/master/proto-google-cloud-bigquerystorage-v1
         "com.google.api.grpc" % "proto-google-cloud-bigquerystorage-v1" % "1.22.8" % "protobuf-src", // ApacheV2
         "org.apache.avro" % "avro" % "1.11.3" % "provided",
-        "org.apache.arrow" % "arrow-vector" % "13.0.0" % "provided",
+        "org.apache.arrow" % "arrow-vector" % "16.1.0" % "provided",
         "io.grpc" % "grpc-auth" % akka.grpc.gen.BuildInfo.grpcVersion, // ApacheV2
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-        "org.apache.arrow" % "arrow-memory-netty" % "13.0.0" % Test,
+        "org.apache.arrow" % "arrow-memory-netty" % "16.1.0" % Test,
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion
       ) ++ Mockito
   )
