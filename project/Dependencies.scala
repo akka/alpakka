@@ -68,7 +68,7 @@ object Dependencies {
   val Mockito = Seq(
     "org.mockito" % "mockito-core" % mockitoVersion % Test,
     // Force bump byte-buddy for JDK 21
-    "net.bytebuddy" % "byte-buddy" % "1.14.12" % Test
+    "net.bytebuddy" % "byte-buddy" % "1.14.17" % Test
   )
 
   // Releases https://github.com/FasterXML/jackson-databind/releases
