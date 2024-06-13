@@ -8,7 +8,12 @@ import akka.NotUsed
 import akka.dispatch.ExecutionContexts
 import akka.stream.alpakka.cassandra.CassandraWriteSettings
 import akka.stream.scaladsl.{Flow, FlowWithContext}
-import com.datastax.oss.driver.api.core.cql.{BatchStatement, BoundStatement, PreparedStatement}
+import com.datastax.oss.driver.api.core.cql.{
+  AsyncResultSet,
+  BatchStatement,
+  BoundStatement,
+  PreparedStatement
+}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
@@ -47,6 +52,25 @@ object CassandraFlow {
       .mapMaterializedValue(_ => NotUsed)
   }
 
+  def createConditional[T](
+    writeSettings: CassandraWriteSettings,
+    cqlStatement: String,
+    statementBinder: (T, PreparedStatement) => BoundStatement
+  )(implicit session: CassandraSession): Flow[T, Either[T, AsyncResultSet], NotUsed] = {
+    Flow
+      .lazyFutureFlow { () =>
+        val prepare = session.prepare(cqlStatement)
+        prepare.map { preparedStatement =>
+          Flow[T].mapAsync(writeSettings.parallelism) { element =>
+            session
+              .executeConditionalWrite(statementBinder(element, preparedStatement))
+              .map(_.left.map(_ => element))(ExecutionContexts.parasitic)
+          }
+        }(session.ec)
+      }
+      .mapMaterializedValue(_ => NotUsed)
+  }
+
   /**
    * A flow writing to Cassandra for every stream element, passing context along.
    * The element (to be persisted) and the context are emitted unchanged.
@@ -73,6 +97,28 @@ object CassandraFlow {
                 session
                   .executeWrite(statementBinder(element, preparedStatement))
                   .map(_ => tuple)(ExecutionContexts.parasitic)
+            }
+          }(session.ec)
+        }
+        .mapMaterializedValue(_ => NotUsed)
+    }
+  }
+
+  def withContextConditional[T, Ctx](
+    writeSettings: CassandraWriteSettings,
+    cqlStatement: String,
+    statementBinder: (T, PreparedStatement) => BoundStatement
+  )(implicit session: CassandraSession): FlowWithContext[T, Ctx, Either[T, AsyncResultSet], Ctx, NotUsed] = {
+    FlowWithContext.fromTuples {
+      Flow
+        .lazyFutureFlow { () =>
+          val prepare = session.prepare(cqlStatement)
+          prepare.map { preparedStatement =>
+            Flow[(T, Ctx)].mapAsync(writeSettings.parallelism) {
+              case (element, ctx) =>
+              session
+                .executeConditionalWrite(statementBinder(element, preparedStatement))
+                .map(_.left.map(_ => element) -> ctx)(ExecutionContexts.parasitic)
             }
           }(session.ec)
         }

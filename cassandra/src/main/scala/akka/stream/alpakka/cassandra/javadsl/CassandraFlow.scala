@@ -35,6 +35,21 @@ object CassandraFlow {
       )
       .asJava
 
+  def createConditional[T](
+      session: CassandraSession,
+      writeSettings: CassandraWriteSettings,
+      cqlStatement: String,
+      statementBinder: akka.japi.Function2[T, PreparedStatement, BoundStatement]
+  ): Flow[T, ConditionalWriteResult[T], NotUsed] =
+    scaladsl.CassandraFlow
+      .createConditional(
+        writeSettings,
+        cqlStatement,
+        (t, preparedStatement) => statementBinder.apply(t, preparedStatement)
+      )(session.delegate)
+      .map(ConditionalWriteResultBuilder.fromEither)
+      .asJava
+
   /**
    * A flow writing to Cassandra for every stream element, passing context along.
    * The element (to be persisted) and the context are emitted unchanged.
@@ -58,6 +73,22 @@ object CassandraFlow {
       )
       .asJava
   }
+
+  def withContextConditional[T, Ctx](
+      session: CassandraSession,
+      writeSettings: CassandraWriteSettings,
+      cqlStatement: String,
+      statementBinder: akka.japi.Function2[T, PreparedStatement, BoundStatement]
+  ): FlowWithContext[T, Ctx, ConditionalWriteResult[T], Ctx, NotUsed] =
+    scaladsl.CassandraFlow
+      .withContextConditional(
+        writeSettings,
+        cqlStatement,
+        (t, preparedStatement) => statementBinder.apply(t, preparedStatement)
+      )(session.delegate)
+      .map(ConditionalWriteResultBuilder.fromEither)
+      .asJava
+
 
   /**
    * Creates a flow that uses [[com.datastax.oss.driver.api.core.cql.BatchStatement]] and groups the
