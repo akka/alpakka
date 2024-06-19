@@ -72,7 +72,7 @@ public class HBaseStageTest {
       person -> {
         try {
           Append append = new Append(String.format("id_%d", person.id).getBytes("UTF-8"));
-          append.add(
+          append.addColumn(
               "info".getBytes("UTF-8"), "aliases".getBytes("UTF-8"), person.name.getBytes("UTF-8"));
 
           return Collections.singletonList(append);

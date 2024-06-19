@@ -290,8 +290,8 @@ object Dependencies {
   )
 
   val HBase = {
-    val hbaseVersion = "1.4.14"
-    val hadoopVersion = "3.3.6"
+    val hbaseVersion = "2.6.0"
+    val hadoopVersion = "3.4.0"
     Seq(
       libraryDependencies ++= Seq(
           "org.apache.hbase" % "hbase-shaded-client" % hbaseVersion exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2,
@@ -303,7 +303,7 @@ object Dependencies {
     )
   }
 
-  val HadoopVersion = "3.3.6"
+  val HadoopVersion = "3.4.0"
   val Hdfs = Seq(
     libraryDependencies ++= Seq(
         "org.apache.hadoop" % "hadoop-client" % HadoopVersion exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2
