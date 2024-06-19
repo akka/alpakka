@@ -18,5 +18,3 @@ addSbtPlugin("com.github.sbt" % "sbt-site-paradox" % "1.5.0")
 addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "2.4.3")
 // templating
 addSbtPlugin("com.github.sbt" % "sbt-boilerplate" % "0.7.0")
-
-addDependencyTreePlugin
