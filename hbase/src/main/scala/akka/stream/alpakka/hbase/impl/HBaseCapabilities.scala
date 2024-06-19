@@ -8,7 +8,13 @@ import java.io.Closeable
 
 import akka.stream.stage.StageLogging
 import org.apache.hadoop.hbase.TableName
-import org.apache.hadoop.hbase.client.{ColumnFamilyDescriptorBuilder, Connection, ConnectionFactory, Table, TableDescriptorBuilder}
+import org.apache.hadoop.hbase.client.{
+  ColumnFamilyDescriptorBuilder,
+  Connection,
+  ConnectionFactory,
+  Table,
+  TableDescriptorBuilder
+}
 import org.apache.hadoop.conf.Configuration
 
 import scala.concurrent.duration.DurationInt
