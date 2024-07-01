@@ -149,7 +149,7 @@ Java
 |-----------------------------------------------------------|--------------------------|
 | `String`                                                  | [`JmsConsumer.textSource`](#text-sources)         |
 | @scala[`Array[Byte]`]@java[`byte[]`]                      | [`JmsConsumer.bytesSource`](#byte-array-sources)  |
-| @scala[`Map[String, AnyRef]`]@java[`Map<String, Object>`] | [`JmsConsumer.mapSource`](#map-messages-sources)  |
+| @scala[`Map[String, AnyRef]`]@java[`Map<String, Object>`] | [`JmsConsumer.mapSource`](#map-sources)  |
 | `Object` (`java.io.Serializable`)                         | [`JmsConsumer.objectSource`](#object-sources)     |
 
 ### Text sources
