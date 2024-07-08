@@ -37,4 +37,4 @@ jobs:
         run: sbt docs/makeSite
 
       - name: Run Link Validator
-        run: cs launch net.runne::site-link-validator:0.2.3 -- scripts/link-validator.conf
+        run: cs launch net.runne::site-link-validator:0.2.4 -- scripts/link-validator.conf
