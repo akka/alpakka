@@ -213,7 +213,7 @@ object Dependencies {
       ) ++ JacksonDatabindDependencies
   )
 
-  val GoogleAuthVersion = "1.23.0"
+  val GoogleAuthVersion = "1.24.0"
 
   val GoogleCommon = Seq(
     libraryDependencies ++= Seq(
