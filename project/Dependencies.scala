@@ -339,8 +339,8 @@ object Dependencies {
   val JakartaJms = Seq(
     libraryDependencies ++= Seq(
         "jakarta.jms" % "jakarta.jms-api" % "3.1.0", // Eclipse Public License 2.0 + + GPLv2
-        ("org.apache.activemq" % "artemis-jakarta-server" % "2.33.0" % Test).exclude("org.slf4j", "slf4j-api"),
-        ("org.apache.activemq" % "artemis-jakarta-client" % "2.33.0" % Test).exclude("org.slf4j", "slf4j-api")
+        ("org.apache.activemq" % "artemis-jakarta-server" % "2.36.0" % Test).exclude("org.slf4j", "slf4j-api"),
+        ("org.apache.activemq" % "artemis-jakarta-client" % "2.36.0" % Test).exclude("org.slf4j", "slf4j-api")
       ) ++ Mockito
   )
 
