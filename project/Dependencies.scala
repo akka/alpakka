@@ -468,7 +468,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         ("com.typesafe.slick" %% "slick" % SlickVersion).exclude("org.slf4j", "slf4j-api"),
         ("com.typesafe.slick" %% "slick-hikaricp" % SlickVersion).exclude("org.slf4j", "slf4j-api"),
-        "com.h2database" % "h2" % "2.1.214" % Test // Eclipse Public License 1.0
+        "com.h2database" % "h2" % "2.3.230" % Test // Eclipse Public License 1.0
       )
   )
   val Eventbridge = Seq(
