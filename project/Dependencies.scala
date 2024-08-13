@@ -28,7 +28,7 @@ object Dependencies {
   val mockitoVersion = "4.11.0" // check even https://github.com/scalatest/scalatestplus-mockito/releases
   val hoverflyVersion = "0.14.1"
 
-  val CouchbaseVersion = "2.7.23"
+  val CouchbaseVersion = "3.7.2"
   val CouchbaseVersionForDocs = "2.7"
 
   // https://github.com/jwt-scala/jwt-scala/releases
