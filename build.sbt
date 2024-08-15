@@ -66,7 +66,7 @@ lazy val alpakka = project
         |    starts a webserver and opens a new browser window
         |
         |  test - runs all the tests for all of the connectors.
-        |    Make sure to run `docker-compose up` first.
+        |    Make sure to run `docker compose up` first.
         |
         |  mqtt/testOnly *.MqttSourceSpec - runs a single test
         |
