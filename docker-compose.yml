@@ -1,6 +1,6 @@
-# For detailed information about docker-compose visit https://docs.docker.com/compose/
+# For detailed information about docker compose visit https://docs.docker.com/compose/
 # To start all docker containers required to execute the tests locally run:
-# docker-compose up
+# docker compose up
 
 version: '3.7'
 services:

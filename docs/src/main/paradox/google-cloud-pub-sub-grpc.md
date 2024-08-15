@@ -151,7 +151,7 @@ Java
 @@@ note
 Integration test code requires Google Cloud Pub/Sub emulator running in the background. You can start it quickly using docker:
 
-`docker-compose up -d gcloud-pubsub-client`
+`docker compose up -d gcloud-pubsub-client`
 
 This will also run the Pub/Sub admin client that will create topics and subscriptions used by the
 integration tests.
