@@ -138,6 +138,8 @@ lazy val azureStorageQueue = alpakkaProject(
   Scala3.settings
 )
 
+lazy val azureStorage = alpakkaProject("azure-storage", "azure.storage", Dependencies.AzureStorage, Scala3.settings)
+
 lazy val cassandra =
   alpakkaProject("cassandra", "cassandra", Dependencies.Cassandra)
     .settings(Scala3.settings)
