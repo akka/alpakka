@@ -36,5 +36,5 @@ package object storage {
   /** This method returns `None` if given an empty `String`. This is typically used when parsing XML since its common to
    * have XML elements with an empty text value inside.
    */
-  private[storage] def emptyStringToOption(value: String): Option[String] = if (value == "") None else Some(value)
+  private[storage] def emptyStringToOption(value: String): Option[String] = if (value == "") None else Option(value)
 }
