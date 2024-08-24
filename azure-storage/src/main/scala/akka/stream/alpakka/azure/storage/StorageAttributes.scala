@@ -23,6 +23,11 @@ object StorageAttributes {
    * Config path which will be used to resolve required AzureStorage settings
    */
   def settingsPath(path: String): Attributes = Attributes(StorageSettingsPath(path))
+
+  /**
+   * Default settings
+   */
+  def defaultSettings: Attributes = Attributes(StorageSettingsPath.Default)
 }
 
 final class StorageSettingsPath private (val path: String) extends Attribute
