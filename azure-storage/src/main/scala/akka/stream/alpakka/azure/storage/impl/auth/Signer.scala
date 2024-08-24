@@ -37,43 +37,46 @@ final case class Signer(initialRequest: HttpRequest, settings: StorageSettings) 
     mac
   }
 
-  def signedRequest: Source[HttpRequest, NotUsed] =
-    if (settings.authorizationType == "anon") Source.single(requestWithHeaders)
+  def signedRequest: Source[HttpRequest, NotUsed] = {
+    import Signer._
+    val authorizationType = settings.authorizationType
+    if (authorizationType == "anon") Source.single(requestWithHeaders)
     else {
-      val contentLengthValue = getHeaderValue(`Content-Length`.name, "0")
-      val contentLength = if (contentLengthValue == "0") "" else contentLengthValue
-
-      val headersToSign = Seq(
-          requestWithHeaders.method.value.toUpperCase,
-          getHeaderValue(`Content-Encoding`.name, ""),
-          getHeaderValue("Content-Language", ""),
-          contentLength,
-          getHeaderValue("Content-MD5", ""),
-          getHeaderValue(`Content-Type`.name, ""),
-          "", // date, we are using `x-ms-date` instead
-          getHeaderValue(`If-Modified-Since`.name, ""),
-          getHeaderValue(`If-Match`.name, ""),
-          getHeaderValue(`If-None-Match`.name, ""),
-          getHeaderValue(`If-Unmodified-Since`.name, ""),
-          getHeaderValue(Range.name, "")
-        ) ++ getAdditionalXmsHeaders ++ getCanonicalizedResource
+      val headersToSign =
+        if (authorizationType == "SharedKeyLite") buildHeadersToSign(SharedKeyLiteHeaders)
+        else buildHeadersToSign(SharedKeyHeaders)
 
       val signature = sign(headersToSign)
-
       Source.single(
         requestWithHeaders.addHeader(
-          RawHeader(AuthorizationHeaderKey, s"${settings.authorizationType} ${credential.accountName}:$signature")
+          RawHeader(AuthorizationHeaderKey, s"$authorizationType ${credential.accountName}:$signature")
         )
       )
     }
+  }
 
   private def getHeaderOptionalValue(headerName: String) =
     requestWithHeaders.headers.collectFirst {
       case header if header.name() == headerName => header.value()
     }
 
-  private def getHeaderValue(headerName: String, defaultValue: String) =
+  private def getHeaderValue(headerName: String, defaultValue: String = "") =
     getHeaderOptionalValue(headerName).getOrElse(defaultValue)
+
+  private def getContentLengthValue = {
+    val contentLengthValue = getHeaderValue(`Content-Length`.name, "0")
+    if (contentLengthValue == "0") "" else contentLengthValue
+  }
+
+  private def buildHeadersToSign(headerNames: Seq[String]) = {
+    def getValue(headerName: String) = {
+      if (headerName == `Content-Length`.name) getContentLengthValue
+      else getHeaderValue(headerName)
+    }
+
+    Seq(requestWithHeaders.method.value.toUpperCase) ++ headerNames.map(getValue) ++
+    getAdditionalXmsHeaders ++ getCanonicalizedResource
+  }
 
   private def getAdditionalXmsHeaders =
     requestWithHeaders.headers.filter(header => header.name().startsWith("x-ms-")).sortBy(_.name()).map { header =>
@@ -99,4 +102,23 @@ final case class Signer(initialRequest: HttpRequest, settings: StorageSettings) 
 
   private def sign(headersToSign: Seq[String]) =
     Base64.getEncoder.encodeToString(mac.doFinal(headersToSign.mkString(NewLine).getBytes))
+}
+
+object Signer {
+  private val SharedKeyHeaders =
+    Seq(
+      `Content-Encoding`.name,
+      "Content-Language",
+      `Content-Length`.name,
+      "Content-MD5",
+      `Content-Type`.name,
+      Date.name,
+      `If-Modified-Since`.name,
+      `If-Match`.name,
+      `If-None-Match`.name,
+      `If-Unmodified-Since`.name,
+      Range.name
+    )
+
+  private val SharedKeyLiteHeaders = Seq("Content-MD5", `Content-Type`.name, Date.name)
 }
