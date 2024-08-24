@@ -31,7 +31,7 @@ final case class Signer(initialRequest: HttpRequest, settings: StorageSettings) 
       .addHeader(RawHeader(XmsDateHeaderKey, getFormattedDate))
       .addHeader(RawHeader(XmsVersionHeaderKey, settings.apiVersion))
 
-  private val mac = {
+  private lazy val mac = {
     val mac = Mac.getInstance(settings.algorithm)
     mac.init(new SecretKeySpec(credential.accountKey, settings.algorithm))
     mac
@@ -40,7 +40,7 @@ final case class Signer(initialRequest: HttpRequest, settings: StorageSettings) 
   def signedRequest: Source[HttpRequest, NotUsed] = {
     import Signer._
     val authorizationType = settings.authorizationType
-    if (authorizationType == "anon") Source.single(requestWithHeaders)
+    if (authorizationType == "anon" || authorizationType == "sas") Source.single(requestWithHeaders)
     else {
       val headersToSign =
         if (authorizationType == "SharedKeyLite") buildHeadersToSign(SharedKeyLiteHeaders)

@@ -10,13 +10,15 @@ import akka.actor.ClassicActorSystemProvider
 import com.typesafe.config.Config
 
 import java.time.{Duration => JavaDuration}
-import java.util.Objects
+import java.util.{Objects, Optional}
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
+import scala.jdk.OptionConverters._
 
 final class StorageSettings(val apiVersion: String,
                             val authorizationType: String,
                             val azureNameKeyCredential: AzureNameKeyCredential,
+                            val sasToken: Option[String],
                             val retrySettings: RetrySettings,
                             val algorithm: String) {
 
@@ -28,6 +30,9 @@ final class StorageSettings(val apiVersion: String,
 
   /** Java API */
   def getAzureNameKeyCredential: AzureNameKeyCredential = azureNameKeyCredential
+
+  /** Java API */
+  def getSasToken: Optional[String] = sasToken.toJava
 
   /** Java API */
   def getRetrySettings: RetrySettings = retrySettings
@@ -46,6 +51,9 @@ final class StorageSettings(val apiVersion: String,
     copy(azureNameKeyCredential = azureNameKeyCredential)
 
   /** Java API */
+  def withSasToken(sasToken: String): StorageSettings = copy(sasToken = emptyStringToOption(sasToken))
+
+  /** Java API */
   def withRetrySettings(retrySettings: RetrySettings): StorageSettings = copy(retrySettings = retrySettings)
 
   /** Java API */
@@ -56,6 +64,7 @@ final class StorageSettings(val apiVersion: String,
        | apiVersion=$apiVersion,
        | authorizationType=$authorizationType,
        | azureNameKeyCredential=$azureNameKeyCredential,
+       | sasToken=$sasToken
        | retrySettings=$retrySettings,
        | algorithm=$algorithm
        |)""".stripMargin.replaceAll(System.lineSeparator(), "")
@@ -65,6 +74,7 @@ final class StorageSettings(val apiVersion: String,
       apiVersion == that.apiVersion &&
       authorizationType == that.authorizationType &&
       Objects.equals(azureNameKeyCredential, that.azureNameKeyCredential) &&
+      sasToken == that.sasToken &&
       Objects.equals(retrySettings, that.retrySettings) &&
       algorithm == that.algorithm
 
@@ -72,16 +82,17 @@ final class StorageSettings(val apiVersion: String,
   }
 
   override def hashCode(): Int =
-    Objects.hash(apiVersion, authorizationType, azureNameKeyCredential, retrySettings, algorithm)
+    Objects.hash(apiVersion, authorizationType, azureNameKeyCredential, sasToken, retrySettings, algorithm)
 
   private def copy(
       apiVersion: String = apiVersion,
       authorizationType: String = authorizationType,
       azureNameKeyCredential: AzureNameKeyCredential = azureNameKeyCredential,
+      sasToken: Option[String] = sasToken,
       retrySettings: RetrySettings = retrySettings,
       algorithm: String = algorithm
   ) =
-    StorageSettings(apiVersion, authorizationType, azureNameKeyCredential, retrySettings, algorithm)
+    StorageSettings(apiVersion, authorizationType, azureNameKeyCredential, sasToken, retrySettings, algorithm)
 }
 
 object StorageSettings {
@@ -91,31 +102,41 @@ object StorageSettings {
       apiVersion: String,
       authorizationType: String,
       azureNameKeyCredential: AzureNameKeyCredential,
+      sasToken: Option[String],
       retrySettings: RetrySettings,
       algorithm: String
   ): StorageSettings =
-    new StorageSettings(apiVersion, authorizationType, azureNameKeyCredential, retrySettings, algorithm)
+    new StorageSettings(apiVersion, authorizationType, azureNameKeyCredential, sasToken, retrySettings, algorithm)
 
   /** Java API */
   def create(
       apiVersion: String,
       authorizationType: String,
       azureNameKeyCredential: AzureNameKeyCredential,
+      sasToken: Optional[String],
       retrySettings: RetrySettings,
       algorithm: String
   ): StorageSettings =
-    StorageSettings(apiVersion, authorizationType, azureNameKeyCredential, retrySettings, algorithm)
+    StorageSettings(apiVersion,
+                    authorizationType,
+                    azureNameKeyCredential,
+                    Option(sasToken.orElse(null)),
+                    retrySettings,
+                    algorithm)
 
   def apply(config: Config): StorageSettings = {
     val apiVersion = config.getString("api-version")
     val credentials = config.getConfig("credentials")
     val authorizationType = credentials.getString("authorization-type")
+    val sasToken =
+      if (credentials.hasPath("sas-token")) emptyStringToOption(credentials.getString("sas-token")) else None
     val algorithm = config.getString("signing-algorithm")
 
     StorageSettings(
       apiVersion = apiVersion,
       authorizationType = authorizationType,
       azureNameKeyCredential = AzureNameKeyCredential(credentials),
+      sasToken = sasToken,
       retrySettings = RetrySettings(config.getConfig("retry-settings")),
       algorithm = algorithm
     )
