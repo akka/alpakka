@@ -59,7 +59,7 @@ object AzureStorageStream {
             accountName = settings.azureNameKeyCredential.accountName,
             storageType = storageType,
             objectPath = objectPath,
-            queryString = versionId.map(value => s"versionId=$value"),
+            queryString = createQueryString(settings, versionId.map(value => s"versionId=$value")),
             headers = populateCommonHeaders(HttpEntity.Empty, range = range, leaseId = leaseId)
           )
         val objectMetadataMat = Promise[ObjectMetadata]()
@@ -96,7 +96,7 @@ object AzureStorageStream {
             accountName = settings.azureNameKeyCredential.accountName,
             storageType = storageType,
             objectPath = objectPath,
-            queryString = versionId.map(value => s"versionId=$value"),
+            queryString = createQueryString(settings, versionId.map(value => s"versionId=$value")),
             headers = populateCommonHeaders(HttpEntity.Empty, leaseId = leaseId)
           )
 
@@ -129,7 +129,7 @@ object AzureStorageStream {
             accountName = settings.azureNameKeyCredential.accountName,
             storageType = storageType,
             objectPath = objectPath,
-            queryString = versionId.map(value => s"versionId=$value"),
+            queryString = createQueryString(settings, versionId.map(value => s"versionId=$value")),
             headers = populateCommonHeaders(HttpEntity.Empty, leaseId = leaseId)
           )
 
@@ -160,10 +160,11 @@ object AzureStorageStream {
         val httpEntity = HttpEntity(contentType, contentLength, payload)
         val request =
           createRequest(
-            HttpMethods.PUT,
-            settings.azureNameKeyCredential.accountName,
-            BlobType,
-            objectPath,
+            method = HttpMethods.PUT,
+            accountName = settings.azureNameKeyCredential.accountName,
+            storageType = BlobType,
+            objectPath = objectPath,
+            queryString = createQueryString(settings),
             headers = populateCommonHeaders(httpEntity, blobType = Some(blobType), leaseId = leaseId)
           ).withEntity(httpEntity)
         handlePutRequest(request, settings)
@@ -181,10 +182,11 @@ object AzureStorageStream {
         val settings = resolveSettings(attr, system)
         val request =
           createRequest(
-            HttpMethods.PUT,
-            settings.azureNameKeyCredential.accountName,
-            FileType,
-            objectPath,
+            method = HttpMethods.PUT,
+            accountName = settings.azureNameKeyCredential.accountName,
+            storageType = FileType,
+            objectPath = objectPath,
+            queryString = createQueryString(settings),
             headers = Seq(
                 CustomContentTypeHeader(contentType),
                 RawHeader(XMsContentLengthHeaderKey, maxSize.toString),
@@ -217,7 +219,7 @@ object AzureStorageStream {
             accountName = settings.azureNameKeyCredential.accountName,
             storageType = FileType,
             objectPath = objectPath,
-            queryString = Some("comp=range"),
+            queryString = createQueryString(settings, Some("comp=range")),
             headers = populateCommonHeaders(httpEntity,
                                             overrideContentLength,
                                             range = Some(range),
@@ -354,7 +356,7 @@ object AzureStorageStream {
                             accountName: String,
                             storageType: String,
                             objectPath: String,
-                            queryString: Option[String] = None,
+                            queryString: Option[String],
                             headers: Seq[HttpHeader]) =
     HttpRequest(method = method, uri = createUri(accountName, storageType, objectPath, queryString), headers = headers)
 
@@ -363,6 +365,16 @@ object AzureStorageStream {
              host = s"$accountName.$storageType.core.windows.net",
              path = Uri.Path(objectPath).toString(),
              queryString = queryString)
+  }
+
+  private def createQueryString(settings: StorageSettings, apiQueryString: Option[String] = None) = {
+    if (settings.authorizationType == "sas") {
+      if (settings.sasToken.isEmpty) throw new RuntimeException("SAS token must be defined for SAS authorization type.")
+      else {
+        val sasToken = settings.sasToken.get
+        Some(apiQueryString.map(qs => s"$sasToken&$qs").getOrElse(sasToken))
+      }
+    } else apiQueryString
   }
 
   private def resolveSettings(attr: Attributes, sys: ActorSystem) =
