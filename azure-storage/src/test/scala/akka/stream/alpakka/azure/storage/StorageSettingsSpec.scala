@@ -124,5 +124,11 @@ class StorageSettingsSpec extends AnyWordSpec with Matchers {
       val settings = mkSettings("retry-settings.min-backoff=hello")
       settings.retrySettings shouldBe RetrySettings.Default
     }
+
+    "populate endpoint URL if provided" in {
+      val settings = mkSettings("""endpoint-url="http://localhost:1234" """)
+      settings.endPointUrl shouldBe defined
+      settings.endPointUrl.get shouldBe "http://localhost:1234"
+    }
   }
 }

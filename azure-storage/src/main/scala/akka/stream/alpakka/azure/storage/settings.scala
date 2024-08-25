@@ -18,6 +18,7 @@ import scala.util.Try
 
 final class StorageSettings(val apiVersion: String,
                             val authorizationType: String,
+                            val endPointUrl: Option[String],
                             val azureNameKeyCredential: AzureNameKeyCredential,
                             val sasToken: Option[String],
                             val retrySettings: RetrySettings,
@@ -28,6 +29,9 @@ final class StorageSettings(val apiVersion: String,
 
   /** Java API */
   def getAuthorizationType: String = authorizationType
+
+  /** Java API */
+  def getEndPointUrl: Optional[String] = endPointUrl.toJava
 
   /** Java API */
   def getAzureNameKeyCredential: AzureNameKeyCredential = azureNameKeyCredential
@@ -48,11 +52,14 @@ final class StorageSettings(val apiVersion: String,
   def withAuthorizationType(authorizationType: String): StorageSettings = copy(authorizationType = authorizationType)
 
   /** Java API */
+  def withSasToken(sasToken: String): StorageSettings = copy(sasToken = emptyStringToOption(sasToken))
+
+  /** Java API */
   def withAzureNameKeyCredential(azureNameKeyCredential: AzureNameKeyCredential): StorageSettings =
     copy(azureNameKeyCredential = azureNameKeyCredential)
 
   /** Java API */
-  def withSasToken(sasToken: String): StorageSettings = copy(sasToken = emptyStringToOption(sasToken))
+  def withEndPointUrl(endPointUrl: String): StorageSettings = copy(endPointUrl = emptyStringToOption(endPointUrl))
 
   /** Java API */
   def withRetrySettings(retrySettings: RetrySettings): StorageSettings = copy(retrySettings = retrySettings)
@@ -88,12 +95,19 @@ final class StorageSettings(val apiVersion: String,
   private def copy(
       apiVersion: String = apiVersion,
       authorizationType: String = authorizationType,
+      endPointUrl: Option[String] = endPointUrl,
       azureNameKeyCredential: AzureNameKeyCredential = azureNameKeyCredential,
       sasToken: Option[String] = sasToken,
       retrySettings: RetrySettings = retrySettings,
       algorithm: String = algorithm
   ) =
-    StorageSettings(apiVersion, authorizationType, azureNameKeyCredential, sasToken, retrySettings, algorithm)
+    StorageSettings(apiVersion,
+                    authorizationType,
+                    endPointUrl,
+                    azureNameKeyCredential,
+                    sasToken,
+                    retrySettings,
+                    algorithm)
 }
 
 object StorageSettings {
@@ -104,17 +118,25 @@ object StorageSettings {
   def apply(
       apiVersion: String,
       authorizationType: String,
+      endPointUrl: Option[String],
       azureNameKeyCredential: AzureNameKeyCredential,
       sasToken: Option[String],
       retrySettings: RetrySettings,
       algorithm: String
   ): StorageSettings =
-    new StorageSettings(apiVersion, authorizationType, azureNameKeyCredential, sasToken, retrySettings, algorithm)
+    new StorageSettings(apiVersion,
+                        authorizationType,
+                        endPointUrl,
+                        azureNameKeyCredential,
+                        sasToken,
+                        retrySettings,
+                        algorithm)
 
   /** Java API */
   def create(
       apiVersion: String,
       authorizationType: String,
+      endPointUrl: Optional[String],
       azureNameKeyCredential: AzureNameKeyCredential,
       sasToken: Optional[String],
       retrySettings: RetrySettings,
@@ -122,6 +144,7 @@ object StorageSettings {
   ): StorageSettings =
     StorageSettings(apiVersion,
                     authorizationType,
+                    Option(endPointUrl.orElse(null)),
                     azureNameKeyCredential,
                     Option(sasToken.orElse(null)),
                     retrySettings,
@@ -145,6 +168,7 @@ object StorageSettings {
     StorageSettings(
       apiVersion = apiVersion,
       authorizationType = authorizationType,
+      endPointUrl = config.getOptionalString("endpoint-url"),
       azureNameKeyCredential = AzureNameKeyCredential(credentials),
       sasToken = credentials.getOptionalString("sas-token"),
       retrySettings = retrySettings,
