@@ -5,6 +5,8 @@
 package akka.stream.alpakka
 package azure
 
+import com.typesafe.config.Config
+
 import java.time.{ZoneOffset, ZonedDateTime}
 import java.time.format.DateTimeFormatter
 
@@ -41,4 +43,14 @@ package object storage {
    * have XML elements with an empty text value inside.
    */
   private[storage] def emptyStringToOption(value: String): Option[String] = if (value == "") None else Option(value)
+
+  implicit private[storage] class ConfigOps(src: Config) {
+
+    def getString(path: String, defaultValue: String): String = {
+      if (src.hasPath(path)) src.getString(path) else defaultValue
+    }
+
+    def getOptionalString(path: String): Option[String] =
+      if (src.hasPath(path)) emptyStringToOption(src.getString(path)) else None
+  }
 }
