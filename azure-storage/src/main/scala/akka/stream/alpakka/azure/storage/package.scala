@@ -19,6 +19,10 @@ package object storage {
   private[storage] val FileWriteTypeHeaderKey = "x-ms-write"
   private[storage] val XMsContentLengthHeaderKey = "x-ms-content-length"
   private[storage] val FileTypeHeaderKey = "x-ms-type"
+  private[storage] val AnonymousAuthorizationType = "anon"
+  private[storage] val SharedKeyAuthorizationType = "SharedKey"
+  private[storage] val SharedKeyLiteAuthorizationType = "SharedKeyLite"
+  private[storage] val SasAuthorizationType = "sas"
   private[storage] val BlobType = "blob"
   private[storage] val FileType = "file"
 

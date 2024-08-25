@@ -368,7 +368,7 @@ object AzureStorageStream {
   }
 
   private def createQueryString(settings: StorageSettings, apiQueryString: Option[String] = None) = {
-    if (settings.authorizationType == "sas") {
+    if (settings.authorizationType == SasAuthorizationType) {
       if (settings.sasToken.isEmpty) throw new RuntimeException("SAS token must be defined for SAS authorization type.")
       else {
         val sasToken = settings.sasToken.get

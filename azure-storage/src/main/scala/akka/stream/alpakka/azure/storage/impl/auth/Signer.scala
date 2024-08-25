@@ -40,10 +40,11 @@ final case class Signer(initialRequest: HttpRequest, settings: StorageSettings) 
   def signedRequest: Source[HttpRequest, NotUsed] = {
     import Signer._
     val authorizationType = settings.authorizationType
-    if (authorizationType == "anon" || authorizationType == "sas") Source.single(requestWithHeaders)
+    if (authorizationType == AnonymousAuthorizationType || authorizationType == SasAuthorizationType)
+      Source.single(requestWithHeaders)
     else {
       val headersToSign =
-        if (authorizationType == "SharedKeyLite") buildHeadersToSign(SharedKeyLiteHeaders)
+        if (authorizationType == SharedKeyLiteAuthorizationType) buildHeadersToSign(SharedKeyLiteHeaders)
         else buildHeadersToSign(SharedKeyHeaders)
 
       val signature = sign(headersToSign)
