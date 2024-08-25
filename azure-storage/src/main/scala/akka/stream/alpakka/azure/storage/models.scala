@@ -25,8 +25,9 @@ object AzureNameKeyCredential {
     AzureNameKeyCredential(accountName, accountKey)
 
   def apply(config: Config): AzureNameKeyCredential = {
-    val accountName = config.getString("account-name")
-    val accountKey = config.getString("account-key")
+    val accountName = config.getString("account-name", "")
+    val accountKey = config.getString("account-key", "")
+    if (accountName.isEmpty) throw new RuntimeException("accountName property must be defined")
     AzureNameKeyCredential(accountName, accountKey)
   }
 }

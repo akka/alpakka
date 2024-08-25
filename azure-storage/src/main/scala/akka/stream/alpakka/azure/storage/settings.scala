@@ -14,6 +14,7 @@ import java.util.{Objects, Optional}
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
 import scala.jdk.OptionConverters._
+import scala.util.Try
 
 final class StorageSettings(val apiVersion: String,
                             val authorizationType: String,
@@ -97,6 +98,8 @@ final class StorageSettings(val apiVersion: String,
 
 object StorageSettings {
   private[storage] val ConfigPath = "alpakka.azure-storage"
+  private val AuthorizationTypes =
+    Seq(AnonymousAuthorizationType, SharedKeyAuthorizationType, SharedKeyLiteAuthorizationType, SasAuthorizationType)
 
   def apply(
       apiVersion: String,
@@ -125,20 +128,27 @@ object StorageSettings {
                     algorithm)
 
   def apply(config: Config): StorageSettings = {
-    val apiVersion = config.getString("api-version")
-    val credentials = config.getConfig("credentials")
-    val authorizationType = credentials.getString("authorization-type")
-    val sasToken =
-      if (credentials.hasPath("sas-token")) emptyStringToOption(credentials.getString("sas-token")) else None
-    val algorithm = config.getString("signing-algorithm")
+    val apiVersion = config.getString("api-version", "2024-11-04")
+
+    val credentials =
+      if (config.hasPath("credentials")) config.getConfig("credentials")
+      else throw new RuntimeException("credentials must be defined.")
+
+    val authorizationType = {
+      val value = credentials.getString("authorization-type", "anon")
+      if (AuthorizationTypes.contains(value)) value else AnonymousAuthorizationType
+    }
+
+    val retrySettings =
+      if (config.hasPath("retry-settings")) RetrySettings(config.getConfig("retry-settings")) else RetrySettings.Default
 
     StorageSettings(
       apiVersion = apiVersion,
       authorizationType = authorizationType,
       azureNameKeyCredential = AzureNameKeyCredential(credentials),
-      sasToken = sasToken,
-      retrySettings = RetrySettings(config.getConfig("retry-settings")),
-      algorithm = algorithm
+      sasToken = credentials.getOptionalString("sas-token"),
+      retrySettings = retrySettings,
+      algorithm = config.getString("signing-algorithm", "HmacSHA256")
     )
   }
 
@@ -208,7 +218,7 @@ final class RetrySettings private (val maxRetries: Int,
 }
 
 object RetrySettings {
-  val default: RetrySettings = RetrySettings(3, 200.milliseconds, 10.seconds, 0.0)
+  val Default: RetrySettings = RetrySettings(3, 200.milliseconds, 10.seconds, 0.0)
 
   /** Scala API */
   def apply(
@@ -228,11 +238,15 @@ object RetrySettings {
       randomFactor
     )
 
-  def apply(config: Config): RetrySettings =
-    RetrySettings(
-      config.getInt("max-retries"),
-      FiniteDuration(config.getDuration("min-backoff").toNanos, TimeUnit.NANOSECONDS),
-      FiniteDuration(config.getDuration("max-backoff").toNanos, TimeUnit.NANOSECONDS),
-      config.getDouble("random-factor")
-    )
+  def apply(config: Config): RetrySettings = {
+    Try(
+      RetrySettings(
+        config.getInt("max-retries"),
+        FiniteDuration(config.getDuration("min-backoff").toNanos, TimeUnit.NANOSECONDS),
+        FiniteDuration(config.getDuration("max-backoff").toNanos, TimeUnit.NANOSECONDS),
+        config.getDouble("random-factor")
+      )
+    ).toOption.getOrElse(Default)
+  }
+
 }
