@@ -66,6 +66,7 @@ object BlobService {
     AzureStorageStream.deleteObject(BlobType, objectPath, versionId, leaseId)
 
   /**
+   * Put blob.
    *
    * @param objectPath path of the object, should start with "/" and separated by `/`, e.g. `/container/blob`
    * @param contentType content type of the blob
@@ -82,4 +83,14 @@ object BlobService {
               blobType: String = "BlockBlob",
               leaseId: Option[String] = None): Source[Option[ObjectMetadata], NotUsed] =
     AzureStorageStream.putBlob(blobType, objectPath, contentType, contentLength, payload, leaseId)
+
+  /**
+   * Create container.
+   *
+   * @param objectPath path of the object, should start with "/" and separated by `/`, e.g. `/container/blob`
+   * @return A [[akka.stream.scaladsl.Source Source]] containing an [[scala.Option]] of
+   *         [[akka.stream.alpakka.azure.storage.ObjectMetadata]], will be [[scala.None]] in case the object does not exist
+   */
+  def createContainer(objectPath: String): Source[Option[ObjectMetadata], NotUsed] =
+    AzureStorageStream.createContainer(objectPath)
 }

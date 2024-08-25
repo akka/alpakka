@@ -231,6 +231,24 @@ object AzureStorageStream {
       .mapMaterializedValue(_ => NotUsed)
   }
 
+  private[storage] def createContainer(objectPath: String): Source[Option[ObjectMetadata], NotUsed] =
+    Source
+      .fromMaterializer { (mat, attr) =>
+        implicit val system: ActorSystem = mat.system
+        val settings = resolveSettings(attr, system)
+        val request =
+          createRequest(
+            method = HttpMethods.PUT,
+            accountName = settings.azureNameKeyCredential.accountName,
+            storageType = BlobType,
+            objectPath = objectPath,
+            queryString = createQueryString(settings, Some("restype=container")),
+            headers = populateCommonHeaders(HttpEntity.Empty)
+          )
+        handlePutRequest(request, settings)
+      }
+      .mapMaterializedValue(_ => NotUsed)
+
   private def handlePutRequest(request: HttpRequest, settings: StorageSettings)(implicit system: ActorSystem) = {
     import system.dispatcher
     signAndRequest(request, settings).flatMapConcat {
@@ -330,7 +348,7 @@ object AzureStorageStream {
                                     overrideContentLength: Option[Long] = None,
                                     range: Option[ByteRange] = None,
                                     blobType: Option[String] = None,
-                                    leaseId: Option[String],
+                                    leaseId: Option[String] = None,
                                     writeType: Option[String] = None) = {
     // Azure required to have these two headers (Content-Length & Content-Type) in the request
     // in some cases Content-Length header must be set as 0

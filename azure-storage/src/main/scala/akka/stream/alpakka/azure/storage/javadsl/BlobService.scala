@@ -100,6 +100,7 @@ object BlobService {
       .asJava
 
   /**
+   * Put blob.
    *
    * @param objectPath path of the object, should start with "/" and separated by `/`, e.g. `/container/blob`
    * @param contentType content type of the blob
@@ -124,4 +125,14 @@ object BlobService {
                Option(leaseId.orElse(null)))
       .map(opt => Optional.ofNullable(opt.orNull))
       .asJava
+
+  /**
+   * Create container.
+   *
+   * @param objectPath path of the object, should start with "/" and separated by `/`, e.g. `/container/blob`
+   * @return A [[akka.stream.scaladsl.Source Source]] containing an [[scala.Option]] of
+   *         [[akka.stream.alpakka.azure.storage.ObjectMetadata]], will be [[scala.None]] in case the object does not exist
+   */
+  def createContainer(objectPath: String): Source[Optional[ObjectMetadata], NotUsed] =
+    AzureStorageStream.createContainer(objectPath).map(opt => Optional.ofNullable(opt.orNull)).asJava
 }
