@@ -64,12 +64,14 @@ object StorageException {
       )
     } match {
       case Failure(ex) =>
-        StorageException(statusCode = statusCode,
-                         errorCode = ex.getMessage,
-                         errorMessage = response,
-                         resourceName = None,
-                         resourceValue = None,
-                         reason = None)
+        StorageException(
+          statusCode = statusCode,
+          errorCode = Option(ex.getMessage).getOrElse("null"),
+          errorMessage = Option(response).getOrElse("null"),
+          resourceName = None,
+          resourceValue = None,
+          reason = None
+        )
       case Success(value) => value
     }
 
