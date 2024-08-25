@@ -56,10 +56,10 @@ object AzureStorageStream {
         val request =
           createRequest(
             method = HttpMethods.GET,
-            accountName = settings.azureNameKeyCredential.accountName,
-            storageType = storageType,
-            objectPath = objectPath,
-            queryString = createQueryString(settings, versionId.map(value => s"versionId=$value")),
+            uri = createUri(settings = settings,
+                            storageType = storageType,
+                            objectPath = objectPath,
+                            queryString = createQueryString(settings, versionId.map(value => s"versionId=$value"))),
             headers = populateCommonHeaders(HttpEntity.Empty, range = range, leaseId = leaseId)
           )
         val objectMetadataMat = Promise[ObjectMetadata]()
@@ -93,10 +93,10 @@ object AzureStorageStream {
         val request =
           createRequest(
             method = HttpMethods.HEAD,
-            accountName = settings.azureNameKeyCredential.accountName,
-            storageType = storageType,
-            objectPath = objectPath,
-            queryString = createQueryString(settings, versionId.map(value => s"versionId=$value")),
+            uri = createUri(settings = settings,
+                            storageType = storageType,
+                            objectPath = objectPath,
+                            queryString = createQueryString(settings, versionId.map(value => s"versionId=$value"))),
             headers = populateCommonHeaders(HttpEntity.Empty, leaseId = leaseId)
           )
 
@@ -126,10 +126,10 @@ object AzureStorageStream {
         val request =
           createRequest(
             method = HttpMethods.DELETE,
-            accountName = settings.azureNameKeyCredential.accountName,
-            storageType = storageType,
-            objectPath = objectPath,
-            queryString = createQueryString(settings, versionId.map(value => s"versionId=$value")),
+            uri = createUri(settings = settings,
+                            storageType = storageType,
+                            objectPath = objectPath,
+                            queryString = createQueryString(settings, versionId.map(value => s"versionId=$value"))),
             headers = populateCommonHeaders(HttpEntity.Empty, leaseId = leaseId)
           )
 
@@ -161,10 +161,10 @@ object AzureStorageStream {
         val request =
           createRequest(
             method = HttpMethods.PUT,
-            accountName = settings.azureNameKeyCredential.accountName,
-            storageType = BlobType,
-            objectPath = objectPath,
-            queryString = createQueryString(settings),
+            uri = createUri(settings = settings,
+                            storageType = BlobType,
+                            objectPath = objectPath,
+                            queryString = createQueryString(settings)),
             headers = populateCommonHeaders(httpEntity, blobType = Some(blobType), leaseId = leaseId)
           ).withEntity(httpEntity)
         handlePutRequest(request, settings)
@@ -183,10 +183,10 @@ object AzureStorageStream {
         val request =
           createRequest(
             method = HttpMethods.PUT,
-            accountName = settings.azureNameKeyCredential.accountName,
-            storageType = FileType,
-            objectPath = objectPath,
-            queryString = createQueryString(settings),
+            uri = createUri(settings = settings,
+                            storageType = FileType,
+                            objectPath = objectPath,
+                            queryString = createQueryString(settings)),
             headers = Seq(
                 CustomContentTypeHeader(contentType),
                 RawHeader(XMsContentLengthHeaderKey, maxSize.toString),
@@ -216,10 +216,10 @@ object AzureStorageStream {
         val request =
           createRequest(
             method = HttpMethods.PUT,
-            accountName = settings.azureNameKeyCredential.accountName,
-            storageType = FileType,
-            objectPath = objectPath,
-            queryString = createQueryString(settings, Some("comp=range")),
+            uri = createUri(settings = settings,
+                            storageType = FileType,
+                            objectPath = objectPath,
+                            queryString = createQueryString(settings, Some("comp=range"))),
             headers = populateCommonHeaders(httpEntity,
                                             overrideContentLength,
                                             range = Some(range),
@@ -239,12 +239,13 @@ object AzureStorageStream {
         val request =
           createRequest(
             method = HttpMethods.PUT,
-            accountName = settings.azureNameKeyCredential.accountName,
-            storageType = BlobType,
-            objectPath = objectPath,
-            queryString = createQueryString(settings, Some("restype=container")),
+            uri = createUri(settings = settings,
+                            storageType = BlobType,
+                            objectPath = objectPath,
+                            queryString = createQueryString(settings, Some("restype=container"))),
             headers = populateCommonHeaders(HttpEntity.Empty)
           )
+
         handlePutRequest(request, settings)
       }
       .mapMaterializedValue(_ => NotUsed)
@@ -370,19 +371,28 @@ object AzureStorageStream {
     (maybeContentLengthHeader ++ maybeContentTypeHeader ++ maybeRangeHeader ++ maybeBlobTypeHeader ++ maybeLeaseIdHeader ++ maybeWriteTypeHeader).toSeq
   }
 
-  private def createRequest(method: HttpMethod,
-                            accountName: String,
-                            storageType: String,
-                            objectPath: String,
-                            queryString: Option[String],
-                            headers: Seq[HttpHeader]) =
-    HttpRequest(method = method, uri = createUri(accountName, storageType, objectPath, queryString), headers = headers)
+  private def createRequest(method: HttpMethod, uri: Uri, headers: Seq[HttpHeader]) =
+    HttpRequest(method = method, uri = uri, headers = headers)
 
-  private def createUri(accountName: String, storageType: String, objectPath: String, queryString: Option[String]) = {
-    Uri.from(scheme = "https",
-             host = s"$accountName.$storageType.core.windows.net",
-             path = Uri.Path(objectPath).toString(),
-             queryString = queryString)
+  private def createUri(settings: StorageSettings,
+                        storageType: String,
+                        objectPath: String,
+                        queryString: Option[String]) = {
+    val accountName = settings.azureNameKeyCredential.accountName
+    val path = if (objectPath.startsWith("/")) objectPath else s"/$objectPath"
+    settings.endPointUrl
+      .map { endPointUrl =>
+        val qs = queryString.getOrElse("")
+        Uri(endPointUrl).withPath(Uri.Path(s"/$accountName$path")).withQuery(Uri.Query(qs))
+      }
+      .getOrElse(
+        Uri.from(
+          scheme = "https",
+          host = s"$accountName.$storageType.core.windows.net",
+          path = Uri.Path(path).toString(),
+          queryString = queryString
+        )
+      )
   }
 
   private def createQueryString(settings: StorageSettings, apiQueryString: Option[String] = None) = {
