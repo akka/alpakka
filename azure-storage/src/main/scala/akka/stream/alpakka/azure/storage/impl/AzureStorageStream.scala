@@ -275,7 +275,6 @@ object AzureStorageStream {
     import system.dispatcher
 
     val retriableFlow = Flow[HttpRequest]
-      .flatMapConcat(req => Signer(req, settings).signedRequest)
       .mapAsync(parallelism = 1)(
         req =>
           singleRequest(req)
@@ -289,6 +288,7 @@ object AzureStorageStream {
     import settings.retrySettings._
     Source
       .single(request)
+      .flatMapConcat(request => Signer(request, settings).signedRequest)
       .via(RetryFlow.withBackoff(minBackoff, maxBackoff, randomFactor, maxRetries, retriableFlow) {
         case (request, Success(response)) if isTransientError(response.status) =>
           response.entity.discardBytes()
@@ -296,7 +296,7 @@ object AzureStorageStream {
         case (request, Failure(_)) =>
           // Treat any exception as transient.
           Some(request)
-        case _ => None
+        case a => None
       })
       .mapAsync(1)(Future.fromTry)
   }
