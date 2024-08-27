@@ -176,7 +176,7 @@ object StorageSettings {
     )
   }
 
-  def apply(system: ClassicActorSystemProvider): StorageSettings =
+  def apply()(implicit system: ClassicActorSystemProvider): StorageSettings =
     StorageSettings(system.classicSystem.settings.config.getConfig(ConfigPath))
 }
 
