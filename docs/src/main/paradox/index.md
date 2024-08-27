@@ -23,6 +23,7 @@ The [Alpakka project](https://doc.akka.io/docs/alpakka/current/) is an initiativ
 * [AWS S3](s3.md)
 * [AWS SNS](sns.md)
 * [AWS SQS](sqs.md)
+* [Azure Storage](azure-storage.md)
 * [Azure Storage Queue](azure-storage-queue.md)
 * [Couchbase](couchbase.md)
 * [Elasticsearch](elasticsearch.md)
