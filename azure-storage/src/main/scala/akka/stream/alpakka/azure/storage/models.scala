@@ -44,6 +44,19 @@ final class ObjectMetadata private (val metadata: Seq[HttpHeader]) {
   lazy val headers: java.util.List[akka.http.javadsl.model.HttpHeader] =
     (metadata: Seq[akka.http.javadsl.model.HttpHeader]).asJava
 
+  /**
+   * Content MD5
+   */
+  lazy val contentMd5: Option[String] = metadata.collectFirst {
+    case e if e.name == "Content-MD5" => removeQuotes(e.value())
+  }
+
+  /**
+   * Java API
+   * Content MD5
+   */
+  lazy val getContentMd5: Optional[String] = contentMd5.toJava
+
   /** Gets the hex encoded 128-bit MD5 digest of the associated object according to RFC 1864. This data is used as an
    * integrity check to verify that the data received by the caller is the same data that was sent by Azure Storage.
    * <p> This field represents the hex encoded 128-bit MD5 digest of an object's content as calculated by Azure
@@ -162,7 +175,8 @@ final class ObjectMetadata private (val metadata: Seq[HttpHeader]) {
 
   override def toString: String =
     s"""ObjectMetadata(
-       |eTag=$eTag,
+       |contentMd5=$contentMd5
+       | eTag=$eTag,
        | contentLength=$contentLength,
        | contentType=$contentType,
        | lastModified=$lastModified
