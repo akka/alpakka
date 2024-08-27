@@ -150,7 +150,7 @@ lazy val azureStorage = alpakkaProject(
       "AZURE_STORAGE_ACCOUNT_NAME" -> "<populate_azure_storage_account_name>",
       "AZURE_STORAGE_ACCOUNT_KEY" -> "<populate_azure_storage_account_key>"
     )
-)
+).settings(mimaPreviousArtifacts := Set.empty) // FIXME remove after first release
 
 lazy val cassandra =
   alpakkaProject("cassandra", "cassandra", Dependencies.Cassandra)
