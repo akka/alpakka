@@ -85,7 +85,7 @@ public class StorageTest extends StorageWireMockBase {
                         ContentTypes.TEXT_PLAIN_UTF8,
                         contentLength(),
                         Source.single(ByteString.fromString(payload())),
-                        "BlockBlob", Optional.empty());
+                         Optional.empty());
 
         final CompletionStage<Optional<ObjectMetadata>> optionalCompletionStage = source.runWith(Sink.head(), system);
         //#put-blob

@@ -8,8 +8,9 @@ package storage
 package scaladsl
 
 import akka.NotUsed
-import akka.http.scaladsl.model.{ContentType, ContentTypes}
+import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpEntity}
 import akka.http.scaladsl.model.headers.ByteRange
+import akka.stream.alpakka.azure.storage.headers.BlobTypeHeader
 import akka.stream.alpakka.azure.storage.impl.AzureStorageStream
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
@@ -35,7 +36,10 @@ object BlobService {
               range: Option[ByteRange] = None,
               versionId: Option[String] = None,
               leaseId: Option[String] = None): Source[ByteString, Future[ObjectMetadata]] =
-    AzureStorageStream.getObject(BlobType, objectPath, range, versionId, leaseId)
+    AzureStorageStream.getObject(BlobType,
+                                 objectPath,
+                                 versionId,
+                                 StorageHeaders().withRangeHeader(range).withLeaseIdHeader(leaseId).headers)
 
   /**
    * Gets blob properties.
@@ -49,7 +53,10 @@ object BlobService {
   def getProperties(objectPath: String,
                     versionId: Option[String] = None,
                     leaseId: Option[String] = None): Source[Option[ObjectMetadata], NotUsed] =
-    AzureStorageStream.getObjectProperties(BlobType, objectPath, versionId, leaseId)
+    AzureStorageStream.getObjectProperties(BlobType,
+                                           objectPath,
+                                           versionId,
+                                           StorageHeaders().withLeaseIdHeader(leaseId).headers)
 
   /**
    * Deletes blob.
@@ -63,7 +70,10 @@ object BlobService {
   def deleteBlob(objectPath: String,
                  versionId: Option[String] = None,
                  leaseId: Option[String] = None): Source[Option[ObjectMetadata], NotUsed] =
-    AzureStorageStream.deleteObject(BlobType, objectPath, versionId, leaseId)
+    AzureStorageStream.deleteObject(BlobType,
+                                    objectPath,
+                                    versionId,
+                                    StorageHeaders().withLeaseIdHeader(leaseId).headers)
 
   /**
    * Put blob.
@@ -72,7 +82,6 @@ object BlobService {
    * @param contentType content type of the blob
    * @param contentLength length of the blob
    * @param payload actual payload, a [[akka.stream.scaladsl.Source Source]] of [[akka.util.ByteString ByteString]]
-   * @param blobType type of the blob, ''Must be one of:'' __'''BlockBlob, PageBlob, or AppendBlob'''__
    * @return A [[akka.stream.scaladsl.Source Source]] containing an [[scala.Option]] of
    *         [[akka.stream.alpakka.azure.storage.ObjectMetadata]], will be [[scala.None]] in case the object does not exist
    */
@@ -80,9 +89,17 @@ object BlobService {
               contentType: ContentType = ContentTypes.`application/octet-stream`,
               contentLength: Long,
               payload: Source[ByteString, _],
-              blobType: String = "BlockBlob",
               leaseId: Option[String] = None): Source[Option[ObjectMetadata], NotUsed] =
-    AzureStorageStream.putBlob(blobType, objectPath, contentType, contentLength, payload, leaseId)
+    AzureStorageStream.putBlob(
+      objectPath,
+      HttpEntity(contentType, contentLength, payload),
+      StorageHeaders()
+        .withContentLengthHeader(contentLength)
+        .withContentTypeHeader(contentType)
+        .withBlobTypeHeader(BlobTypeHeader.BlockBlobHeader)
+        .withLeaseIdHeader(leaseId)
+        .headers
+    )
 
   /**
    * Create container.

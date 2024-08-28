@@ -12,7 +12,8 @@ import akka.http.javadsl.model._
 import akka.http.javadsl.model.headers.ByteRange
 import akka.http.scaladsl.model.headers.ByteRange.Slice
 import akka.http.scaladsl.model.headers.{ByteRange => ScalaByteRange}
-import akka.http.scaladsl.model.{ContentType => ScalaContentType}
+import akka.http.scaladsl.model.{HttpEntity, ContentType => ScalaContentType}
+import akka.stream.alpakka.azure.storage.headers.FileWriteTypeHeader
 import akka.stream.alpakka.azure.storage.impl.AzureStorageStream
 import akka.stream.javadsl.Source
 import akka.stream.scaladsl.SourceToCompletionStage
@@ -39,14 +40,21 @@ object FileService {
   def getFile(objectPath: String,
               range: ByteRange,
               versionId: Optional[String],
-              leaseId: Optional[String]): Source[ByteString, CompletionStage[ObjectMetadata]] = {
-    val scalaRange = range.asInstanceOf[ScalaByteRange]
+              leaseId: Optional[String]): Source[ByteString, CompletionStage[ObjectMetadata]] =
     new Source(
       AzureStorageStream
-        .getObject(FileType, objectPath, Some(scalaRange), Option(versionId.orElse(null)), Option(leaseId.orElse(null)))
+        .getObject(
+          FileType,
+          objectPath,
+          Option(versionId.orElse(null)),
+          StorageHeaders
+            .create()
+            .withRangeHeader(range.asInstanceOf[ScalaByteRange])
+            .withLeaseIdHeader(Option(leaseId.orElse(null)))
+            .headers
+        )
         .toCompletionStage()
     )
-  }
 
   /**
    * Gets file representing `objectPath` with specified range (if applicable).
@@ -62,7 +70,15 @@ object FileService {
               leaseId: Optional[String]): Source[ByteString, CompletionStage[ObjectMetadata]] = {
     new Source(
       AzureStorageStream
-        .getObject(FileType, objectPath, None, Option(versionId.orElse(null)), Option(leaseId.orElse(null)))
+        .getObject(
+          FileType,
+          objectPath,
+          Option(versionId.orElse(null)),
+          StorageHeaders
+            .create()
+            .withLeaseIdHeader(Option(leaseId.orElse(null)))
+            .headers
+        )
         .toCompletionStage()
     )
   }
@@ -80,7 +96,10 @@ object FileService {
                     versionId: Optional[String],
                     leaseId: Optional[String]): Source[Optional[ObjectMetadata], NotUsed] =
     AzureStorageStream
-      .getObjectProperties(FileType, objectPath, Option(versionId.orElse(null)), Option(leaseId.orElse(null)))
+      .getObjectProperties(FileType,
+                           objectPath,
+                           Option(versionId.orElse(null)),
+                           StorageHeaders.create().withLeaseIdHeader(Option(leaseId.orElse(null))).headers)
       .map(opt => Optional.ofNullable(opt.orNull))
       .asJava
 
@@ -97,7 +116,10 @@ object FileService {
                  versionId: Optional[String],
                  leaseId: Optional[String]): Source[Optional[ObjectMetadata], NotUsed] =
     AzureStorageStream
-      .deleteObject(FileType, objectPath, Option(versionId.orElse(null)), Option(leaseId.orElse(null)))
+      .deleteObject(FileType,
+                    objectPath,
+                    Option(versionId.orElse(null)),
+                    StorageHeaders.create().withLeaseIdHeader(Option(leaseId.orElse(null))).headers)
       .map(opt => Optional.ofNullable(opt.orNull))
       .asJava
 
@@ -116,7 +138,16 @@ object FileService {
                  maxSize: Long,
                  leaseId: Optional[String]): Source[Optional[ObjectMetadata], NotUsed] =
     AzureStorageStream
-      .createFile(objectPath, contentType.asInstanceOf[ScalaContentType], maxSize, Option(leaseId.orElse(null)))
+      .createFile(
+        objectPath,
+        StorageHeaders
+          .create()
+          .withContentTypeHeader(contentType.asInstanceOf[ScalaContentType])
+          .withFileMaxContentLengthHeader(maxSize)
+          .withFileTypeHeader()
+          .withLeaseIdHeader(Option(leaseId.orElse(null)))
+          .headers
+      )
       .map(opt => Optional.ofNullable(opt.orNull))
       .asJava
 
@@ -135,15 +166,24 @@ object FileService {
                   contentType: ContentType,
                   range: Slice,
                   payload: Source[ByteString, _],
-                  leaseId: Optional[String]): Source[Optional[ObjectMetadata], NotUsed] =
+                  leaseId: Optional[String]): Source[Optional[ObjectMetadata], NotUsed] = {
+    val contentLength = range.last - range.first + 1
     AzureStorageStream
-      .updateOrClearRange(objectPath,
-                          contentType.asInstanceOf[ScalaContentType],
-                          range,
-                          Some(payload.asScala),
-                          Option(leaseId.orElse(null)))
+      .updateRange(
+        objectPath,
+        HttpEntity(contentType.asInstanceOf[ScalaContentType], contentLength, payload.asScala),
+        StorageHeaders
+          .create()
+          .withContentLengthHeader(contentLength)
+          .withContentTypeHeader(contentType.asInstanceOf[ScalaContentType])
+          .withRangeHeader(range)
+          .withLeaseIdHeader(Option(leaseId.orElse(null)))
+          .withFileWriteTypeHeader(FileWriteTypeHeader.UpdateFileHeader)
+          .headers
+      )
       .map(opt => Optional.ofNullable(opt.orNull))
       .asJava
+  }
 
   /**
    * Clears specified range from the file.
@@ -158,11 +198,16 @@ object FileService {
                  range: Slice,
                  leaseId: Optional[String]): Source[Optional[ObjectMetadata], NotUsed] =
     AzureStorageStream
-      .updateOrClearRange(objectPath,
-                          ContentTypes.NO_CONTENT_TYPE.asInstanceOf[ScalaContentType],
-                          range,
-                          None,
-                          Option(leaseId.orElse(null)))
+      .clearRange(
+        objectPath,
+        StorageHeaders
+          .create()
+          .withContentLengthHeader(0L)
+          .withRangeHeader(range)
+          .withLeaseIdHeader(Option(leaseId.orElse(null)))
+          .withFileWriteTypeHeader(FileWriteTypeHeader.ClearFileHeader)
+          .headers
+      )
       .map(opt => Optional.ofNullable(opt.orNull))
       .asJava
 }

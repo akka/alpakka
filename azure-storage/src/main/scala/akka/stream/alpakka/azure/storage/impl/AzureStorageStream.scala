@@ -12,17 +12,9 @@ import akka.actor.ActorSystem
 import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes.{Accepted, Created, NotFound, OK}
-import akka.http.scaladsl.model.headers.{
-  ByteRange,
-  CustomHeader,
-  RawHeader,
-  `Content-Length`,
-  `Content-Type`,
-  Range => RangeHeader
-}
+import akka.http.scaladsl.model.headers.{`Content-Length`, `Content-Type`, CustomHeader}
 import akka.http.scaladsl.model.{
   ContentType,
-  HttpEntity,
   HttpHeader,
   HttpMethod,
   HttpMethods,
@@ -30,6 +22,7 @@ import akka.http.scaladsl.model.{
   HttpResponse,
   ResponseEntity,
   StatusCode,
+  UniversalEntity,
   Uri
 }
 import akka.http.scaladsl.unmarshalling.Unmarshal
@@ -46,9 +39,8 @@ object AzureStorageStream {
 
   private[storage] def getObject(storageType: String,
                                  objectPath: String,
-                                 range: Option[ByteRange],
                                  versionId: Option[String],
-                                 leaseId: Option[String]): Source[ByteString, Future[ObjectMetadata]] = {
+                                 headers: Seq[HttpHeader]): Source[ByteString, Future[ObjectMetadata]] = {
     Source
       .fromMaterializer { (mat, attr) =>
         implicit val system: ActorSystem = mat.system
@@ -60,7 +52,7 @@ object AzureStorageStream {
                             storageType = storageType,
                             objectPath = objectPath,
                             queryString = createQueryString(settings, versionId.map(value => s"versionId=$value"))),
-            headers = populateCommonHeaders(HttpEntity.Empty, range = range, leaseId = leaseId)
+            headers = headers
           )
         val objectMetadataMat = Promise[ObjectMetadata]()
         signAndRequest(request, settings)(mat.system)
@@ -84,7 +76,7 @@ object AzureStorageStream {
   private[storage] def getObjectProperties(storageType: String,
                                            objectPath: String,
                                            versionId: Option[String],
-                                           leaseId: Option[String]): Source[Option[ObjectMetadata], NotUsed] = {
+                                           headers: Seq[HttpHeader]): Source[Option[ObjectMetadata], NotUsed] = {
     Source
       .fromMaterializer { (mat, attr) =>
         implicit val system: ActorSystem = mat.system
@@ -97,7 +89,7 @@ object AzureStorageStream {
                             storageType = storageType,
                             objectPath = objectPath,
                             queryString = createQueryString(settings, versionId.map(value => s"versionId=$value"))),
-            headers = populateCommonHeaders(HttpEntity.Empty, leaseId = leaseId)
+            headers = headers
           )
 
         signAndRequest(request, settings)
@@ -117,7 +109,7 @@ object AzureStorageStream {
   private[storage] def deleteObject(storageType: String,
                                     objectPath: String,
                                     versionId: Option[String],
-                                    leaseId: Option[String]): Source[Option[ObjectMetadata], NotUsed] = {
+                                    headers: Seq[HttpHeader]): Source[Option[ObjectMetadata], NotUsed] = {
     Source
       .fromMaterializer { (mat, attr) =>
         implicit val system: ActorSystem = mat.system
@@ -130,7 +122,7 @@ object AzureStorageStream {
                             storageType = storageType,
                             objectPath = objectPath,
                             queryString = createQueryString(settings, versionId.map(value => s"versionId=$value"))),
-            headers = populateCommonHeaders(HttpEntity.Empty, leaseId = leaseId)
+            headers = headers
           )
 
         signAndRequest(request, settings)
@@ -147,17 +139,13 @@ object AzureStorageStream {
       .mapMaterializedValue(_ => NotUsed)
   }
 
-  private[storage] def putBlob(blobType: String,
-                               objectPath: String,
-                               contentType: ContentType,
-                               contentLength: Long,
-                               payload: Source[ByteString, _],
-                               leaseId: Option[String]): Source[Option[ObjectMetadata], NotUsed] = {
+  private[storage] def putBlob(objectPath: String,
+                               httpEntity: UniversalEntity,
+                               headers: Seq[HttpHeader]): Source[Option[ObjectMetadata], NotUsed] = {
     Source
       .fromMaterializer { (mat, attr) =>
         implicit val system: ActorSystem = mat.system
         val settings = resolveSettings(attr, system)
-        val httpEntity = HttpEntity(contentType, contentLength, payload)
         val request =
           createRequest(
             method = HttpMethods.PUT,
@@ -165,7 +153,7 @@ object AzureStorageStream {
                             storageType = BlobType,
                             objectPath = objectPath,
                             queryString = createQueryString(settings)),
-            headers = populateCommonHeaders(httpEntity, blobType = Some(blobType), leaseId = leaseId)
+            headers = headers
           ).withEntity(httpEntity)
         handlePutRequest(request, settings)
       }
@@ -173,9 +161,7 @@ object AzureStorageStream {
   }
 
   private[storage] def createFile(objectPath: String,
-                                  contentType: ContentType,
-                                  maxSize: Long,
-                                  leaseId: Option[String]): Source[Option[ObjectMetadata], NotUsed] = {
+                                  headers: Seq[HttpHeader]): Source[Option[ObjectMetadata], NotUsed] = {
     Source
       .fromMaterializer { (mat, attr) =>
         implicit val system: ActorSystem = mat.system
@@ -187,32 +173,20 @@ object AzureStorageStream {
                             storageType = FileType,
                             objectPath = objectPath,
                             queryString = createQueryString(settings)),
-            headers = Seq(
-                CustomContentTypeHeader(contentType),
-                RawHeader(XMsContentLengthHeaderKey, maxSize.toString),
-                RawHeader(FileTypeHeaderKey, "file")
-              ) ++ leaseId.map(value => RawHeader(LeaseIdHeaderKey, value))
+            headers = headers
           )
         handlePutRequest(request, settings)
       }
       .mapMaterializedValue(_ => NotUsed)
   }
 
-  private[storage] def updateOrClearRange(objectPath: String,
-                                          contentType: ContentType,
-                                          range: ByteRange.Slice,
-                                          payload: Option[Source[ByteString, _]],
-                                          leaseId: Option[String]): Source[Option[ObjectMetadata], NotUsed] = {
+  private[storage] def updateRange(objectPath: String,
+                                   httpEntity: UniversalEntity,
+                                   headers: Seq[HttpHeader]): Source[Option[ObjectMetadata], NotUsed] = {
     Source
       .fromMaterializer { (mat, attr) =>
         implicit val system: ActorSystem = mat.system
         val settings = resolveSettings(attr, system)
-        val contentLength = range.last - range.first + 1
-        val clearRange = payload.isEmpty
-        val writeType = if (clearRange) "clear" else "update"
-        val overrideContentLength = if (clearRange) Some(0L) else None
-        val httpEntity =
-          if (clearRange) HttpEntity.empty(contentType) else HttpEntity(contentType, contentLength, payload.get)
         val request =
           createRequest(
             method = HttpMethods.PUT,
@@ -220,12 +194,28 @@ object AzureStorageStream {
                             storageType = FileType,
                             objectPath = objectPath,
                             queryString = createQueryString(settings, Some("comp=range"))),
-            headers = populateCommonHeaders(httpEntity,
-                                            overrideContentLength,
-                                            range = Some(range),
-                                            leaseId = leaseId,
-                                            writeType = Some(writeType))
+            headers = headers
           ).withEntity(httpEntity)
+        handlePutRequest(request, settings)
+      }
+      .mapMaterializedValue(_ => NotUsed)
+  }
+
+  private[storage] def clearRange(objectPath: String,
+                                  headers: Seq[HttpHeader]): Source[Option[ObjectMetadata], NotUsed] = {
+    Source
+      .fromMaterializer { (mat, attr) =>
+        implicit val system: ActorSystem = mat.system
+        val settings = resolveSettings(attr, system)
+        val request =
+          createRequest(
+            method = HttpMethods.PUT,
+            uri = createUri(settings = settings,
+                            storageType = FileType,
+                            objectPath = objectPath,
+                            queryString = createQueryString(settings, Some("comp=range"))),
+            headers = headers
+          )
         handlePutRequest(request, settings)
       }
       .mapMaterializedValue(_ => NotUsed)
@@ -243,7 +233,7 @@ object AzureStorageStream {
                             storageType = BlobType,
                             objectPath = objectPath,
                             queryString = createQueryString(settings, Some("restype=container"))),
-            headers = populateCommonHeaders(HttpEntity.Empty)
+            headers = StorageHeaders().headers
           )
 
         handlePutRequest(request, settings)
@@ -343,32 +333,6 @@ object AzureStorageStream {
       case response: HttpResponse =>
         unmarshalError(response.status, response.entity)
     }
-  }
-
-  private def populateCommonHeaders(entity: HttpEntity,
-                                    overrideContentLength: Option[Long] = None,
-                                    range: Option[ByteRange] = None,
-                                    blobType: Option[String] = None,
-                                    leaseId: Option[String] = None,
-                                    writeType: Option[String] = None) = {
-    // Azure required to have these two headers (Content-Length & Content-Type) in the request
-    // in some cases Content-Length header must be set as 0
-    val contentLength = overrideContentLength.orElse(entity.contentLengthOption).getOrElse(0L)
-    val maybeContentLengthHeader =
-      if (overrideContentLength.isEmpty && contentLength == 0L) None else Some(CustomContentLengthHeader(contentLength))
-
-    val maybeContentTypeHeader =
-      emptyStringToOption(entity.contentType.toString()) match {
-        case Some(value) if value != "none/none" => Some(CustomContentTypeHeader(entity.contentType))
-        case _ => None
-      }
-
-    val maybeRangeHeader = range.map(RangeHeader(_))
-    val maybeBlobTypeHeader = blobType.map(value => RawHeader(BlobTypeHeaderKey, value))
-    val maybeLeaseIdHeader = leaseId.map(value => RawHeader(LeaseIdHeaderKey, value))
-    val maybeWriteTypeHeader = writeType.map(value => RawHeader(FileWriteTypeHeaderKey, value))
-
-    (maybeContentLengthHeader ++ maybeContentTypeHeader ++ maybeRangeHeader ++ maybeBlobTypeHeader ++ maybeLeaseIdHeader ++ maybeWriteTypeHeader).toSeq
   }
 
   private def createRequest(method: HttpMethod, uri: Uri, headers: Seq[HttpHeader]) =

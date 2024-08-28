@@ -8,8 +8,9 @@ package storage
 package scaladsl
 
 import akka.NotUsed
-import akka.http.scaladsl.model.{ContentType, ContentTypes}
+import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpEntity}
 import akka.http.scaladsl.model.headers.ByteRange
+import akka.stream.alpakka.azure.storage.headers.FileWriteTypeHeader
 import akka.stream.alpakka.azure.storage.impl.AzureStorageStream
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
@@ -35,7 +36,10 @@ object FileService {
               range: Option[ByteRange] = None,
               versionId: Option[String] = None,
               leaseId: Option[String] = None): Source[ByteString, Future[ObjectMetadata]] =
-    AzureStorageStream.getObject(FileType, objectPath, range, versionId, leaseId)
+    AzureStorageStream.getObject(FileType,
+                                 objectPath,
+                                 versionId,
+                                 StorageHeaders().withRangeHeader(range).withLeaseIdHeader(leaseId).headers)
 
   /**
    * Gets file properties.
@@ -49,7 +53,10 @@ object FileService {
   def getProperties(objectPath: String,
                     versionId: Option[String] = None,
                     leaseId: Option[String] = None): Source[Option[ObjectMetadata], NotUsed] =
-    AzureStorageStream.getObjectProperties(FileType, objectPath, versionId, leaseId)
+    AzureStorageStream.getObjectProperties(FileType,
+                                           objectPath,
+                                           versionId,
+                                           StorageHeaders().withLeaseIdHeader(leaseId).headers)
 
   /**
    * Deletes file.
@@ -63,7 +70,10 @@ object FileService {
   def deleteFile(objectPath: String,
                  versionId: Option[String] = None,
                  leaseId: Option[String] = None): Source[Option[ObjectMetadata], NotUsed] =
-    AzureStorageStream.deleteObject(FileType, objectPath, versionId, leaseId)
+    AzureStorageStream.deleteObject(FileType,
+                                    objectPath,
+                                    versionId,
+                                    StorageHeaders().withLeaseIdHeader(leaseId).headers)
 
   /**
    * Creates a file.
@@ -79,7 +89,15 @@ object FileService {
                  contentType: ContentType = ContentTypes.`application/octet-stream`,
                  maxSize: Long,
                  leaseId: Option[String] = None): Source[Option[ObjectMetadata], NotUsed] =
-    AzureStorageStream.createFile(objectPath, contentType, maxSize, leaseId)
+    AzureStorageStream.createFile(
+      objectPath,
+      StorageHeaders()
+        .withContentTypeHeader(contentType)
+        .withFileMaxContentLengthHeader(maxSize)
+        .withFileTypeHeader()
+        .withLeaseIdHeader(leaseId)
+        .headers
+    )
 
   /**
    * Updates file on the specified range.
@@ -96,8 +114,20 @@ object FileService {
                   contentType: ContentType = ContentTypes.`application/octet-stream`,
                   range: ByteRange.Slice,
                   payload: Source[ByteString, _],
-                  leaseId: Option[String] = None): Source[Option[ObjectMetadata], NotUsed] =
-    AzureStorageStream.updateOrClearRange(objectPath, contentType, range, Some(payload), leaseId)
+                  leaseId: Option[String] = None): Source[Option[ObjectMetadata], NotUsed] = {
+    val contentLength = range.last - range.first + 1
+    AzureStorageStream.updateRange(
+      objectPath,
+      HttpEntity(contentType, contentLength, payload),
+      StorageHeaders()
+        .withContentLengthHeader(contentLength)
+        .withContentTypeHeader(contentType)
+        .withRangeHeader(range)
+        .withLeaseIdHeader(leaseId)
+        .withFileWriteTypeHeader(FileWriteTypeHeader.UpdateFileHeader)
+        .headers
+    )
+  }
 
   /**
    * Clears specified range from the file.
@@ -111,5 +141,13 @@ object FileService {
   def clearRange(objectPath: String,
                  range: ByteRange.Slice,
                  leaseId: Option[String] = None): Source[Option[ObjectMetadata], NotUsed] =
-    AzureStorageStream.updateOrClearRange(objectPath, ContentTypes.NoContentType, range, None, leaseId)
+    AzureStorageStream.clearRange(
+      objectPath,
+      StorageHeaders()
+        .withContentLengthHeader(0L)
+        .withRangeHeader(range)
+        .withLeaseIdHeader(leaseId)
+        .withFileWriteTypeHeader(FileWriteTypeHeader.ClearFileHeader)
+        .headers
+    )
 }
