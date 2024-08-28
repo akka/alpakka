@@ -135,7 +135,7 @@ object FileService {
                   contentType: ContentType,
                   range: Slice,
                   payload: Source[ByteString, _],
-                  leaseId: Optional[String]): Source[Optional[ObjectMetadata], NotUsed.type] =
+                  leaseId: Optional[String]): Source[Optional[ObjectMetadata], NotUsed] =
     AzureStorageStream
       .updateOrClearRange(objectPath,
                           contentType.asInstanceOf[ScalaContentType],
@@ -156,7 +156,7 @@ object FileService {
    */
   def clearRange(objectPath: String,
                  range: Slice,
-                 leaseId: Optional[String]): Source[Optional[ObjectMetadata], NotUsed.type] =
+                 leaseId: Optional[String]): Source[Optional[ObjectMetadata], NotUsed] =
     AzureStorageStream
       .updateOrClearRange(objectPath,
                           ContentTypes.NO_CONTENT_TYPE.asInstanceOf[ScalaContentType],

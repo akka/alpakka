@@ -202,7 +202,7 @@ object AzureStorageStream {
                                           contentType: ContentType,
                                           range: ByteRange.Slice,
                                           payload: Option[Source[ByteString, _]],
-                                          leaseId: Option[String]): Source[Option[ObjectMetadata], NotUsed.type] = {
+                                          leaseId: Option[String]): Source[Option[ObjectMetadata], NotUsed] = {
     Source
       .fromMaterializer { (mat, attr) =>
         implicit val system: ActorSystem = mat.system
@@ -296,7 +296,7 @@ object AzureStorageStream {
         case (request, Failure(_)) =>
           // Treat any exception as transient.
           Some(request)
-        case a => None
+        case _ => None
       })
       .mapAsync(1)(Future.fromTry)
   }
