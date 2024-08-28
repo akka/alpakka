@@ -98,7 +98,7 @@ Java
 
 ### Get blob properties without downloading blob
 
-The [`Get Blob Properties`](https://learn.microsoft.com/en-us/rest/api/storageservices/get-blob-properties) operation returns all user-defined metadata, standard HTTP properties, and system properties for the blob. (**Note:** Current implementation does not return user-defined metatdata.)
+The [`Get Blob Properties`](https://learn.microsoft.com/en-us/rest/api/storageservices/get-blob-properties) operation returns all user-defined metadata, standard HTTP properties, and system properties for the blob. (**Note:** Current implementation does not return user-defined metadata.)
 
 Scala
 : @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #get-blob-properties }
