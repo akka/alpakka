@@ -96,7 +96,7 @@ object FileService {
                   contentType: ContentType = ContentTypes.`application/octet-stream`,
                   range: ByteRange.Slice,
                   payload: Source[ByteString, _],
-                  leaseId: Option[String] = None): Source[Option[ObjectMetadata], NotUsed.type] =
+                  leaseId: Option[String] = None): Source[Option[ObjectMetadata], NotUsed] =
     AzureStorageStream.updateOrClearRange(objectPath, contentType, range, Some(payload), leaseId)
 
   /**
@@ -110,6 +110,6 @@ object FileService {
    */
   def clearRange(objectPath: String,
                  range: ByteRange.Slice,
-                 leaseId: Option[String] = None): Source[Option[ObjectMetadata], NotUsed.type] =
+                 leaseId: Option[String] = None): Source[Option[ObjectMetadata], NotUsed] =
     AzureStorageStream.updateOrClearRange(objectPath, ContentTypes.NoContentType, range, None, leaseId)
 }
