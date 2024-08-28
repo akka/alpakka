@@ -21,12 +21,17 @@ package object storage {
   private[storage] val FileWriteTypeHeaderKey = "x-ms-write"
   private[storage] val XMsContentLengthHeaderKey = "x-ms-content-length"
   private[storage] val FileTypeHeaderKey = "x-ms-type"
+  private[storage] val PageBlobContentLengthHeaderKey = "x-ms-blob-content-length"
+  private[storage] val PageBlobSequenceNumberHeaderKey = "x-ms-blob-sequence-number"
   private[storage] val AnonymousAuthorizationType = "anon"
   private[storage] val SharedKeyAuthorizationType = "SharedKey"
   private[storage] val SharedKeyLiteAuthorizationType = "SharedKeyLite"
   private[storage] val SasAuthorizationType = "sas"
   private[storage] val BlobType = "blob"
   private[storage] val FileType = "file"
+  private[storage] val BlockBlobType = "BlockBlob"
+  private[storage] val PageBlobType = "PageBlob"
+  private[storage] val AppendBlobType = "AppendBlob"
 
   private[storage] def getFormattedDate: String =
     DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now(ZoneOffset.UTC))
