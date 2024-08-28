@@ -66,7 +66,7 @@ Scala
 : @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #create-container }
 
 Java
-: @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #create-container }
+: @@snip [snip](/azure-storage/src/test/java/docs/javadsl/StorageTest.scala) { #create-container }
 
 ### Put Blob
 
@@ -76,7 +76,7 @@ Scala
 : @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #put-blob }
 
 Java
-: @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #put-blob }
+: @@snip [snip](/azure-storage/src/test/java/docs/javadsl/StorageTest.scala) { #put-blob }
 
 ### Get Blob
 
@@ -86,7 +86,7 @@ Scala
 : @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #get-blob }
 
 Java
-: @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #get-blob }
+: @@snip [snip](/azure-storage/src/test/java/docs/javadsl/StorageTest.scala) { #get-blob }
 
 In order to download a range of a file's data you can use overloaded method which additionally takes `ByteRange` as argument.
 
@@ -94,7 +94,7 @@ Scala
 : @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #get-blob-range }
 
 Java
-: @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #get-blob-range }
+: @@snip [snip](/azure-storage/src/test/java/docs/javadsl/StorageTest.scala) { #get-blob-range }
 
 ### Get blob properties without downloading blob
 
@@ -104,7 +104,7 @@ Scala
 : @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #get-blob-properties }
 
 Java
-: @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #get-blob-properties }
+: @@snip [snip](/azure-storage/src/test/java/docs/javadsl/StorageTest.scala) { #get-blob-properties }
 
 ### Delete Blob
 
@@ -114,7 +114,7 @@ Scala
 : @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #delete-blob }
 
 Java
-: @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #delte-blob }
+: @@snip [snip](/azure-storage/src/test/java/docs/javadsl/StorageTest.scala) { #delte-blob }
 
 ## Supported operations on File service
 
@@ -126,7 +126,7 @@ Scala
 : @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #create-file }
 
 Java
-: @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #create-file }
+: @@snip [snip](/azure-storage/src/test/java/docs/javadsl/StorageTest.scala) { #create-file }
 
 ### Update Range
 
@@ -136,7 +136,7 @@ Scala
 : @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #update-range }
 
 Java
-: @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #update-range }
+: @@snip [snip](/azure-storage/src/test/java/docs/javadsl/StorageTest.scala) { #update-range }
 
 Range can be cleared using `ClearRange` function.
 
@@ -144,7 +144,7 @@ Scala
 : @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #clear-range }
 
 Java
-: @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #clear-range }
+: @@snip [snip](/azure-storage/src/test/java/docs/javadsl/StorageTest.scala) { #clear-range }
 
 ### Get File
 
@@ -154,7 +154,7 @@ Scala
 : @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #get-file }
 
 Java
-: @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #get-file }
+: @@snip [snip](/azure-storage/src/test/java/docs/javadsl/StorageTest.scala) { #get-file }
 
 ### Get file properties without downloading blob
 
@@ -164,7 +164,7 @@ Scala
 : @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #get-file-properties }
 
 Java
-: @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #get-file-properties }
+: @@snip [snip](/azure-storage/src/test/java/docs/javadsl/StorageTest.scala) { #get-file-properties }
 
 ### Delete Blob
 
@@ -174,4 +174,4 @@ Scala
 : @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #delete-file }
 
 Java
-: @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #delte-file }
+: @@snip [snip](/azure-storage/src/test/java/docs/javadsl/StorageTest.scala) { #delte-file }
