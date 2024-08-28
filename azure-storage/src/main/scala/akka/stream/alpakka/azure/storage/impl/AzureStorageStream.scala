@@ -160,6 +160,25 @@ object AzureStorageStream {
       .mapMaterializedValue(_ => NotUsed)
   }
 
+  private[storage] def putPageOrAppendBlock(objectPath: String, headers: Seq[HttpHeader]) = {
+    Source
+      .fromMaterializer { (mat, attr) =>
+        implicit val system: ActorSystem = mat.system
+        val settings = resolveSettings(attr, system)
+        val request =
+          createRequest(
+            method = HttpMethods.PUT,
+            uri = createUri(settings = settings,
+                            storageType = BlobType,
+                            objectPath = objectPath,
+                            queryString = createQueryString(settings)),
+            headers = headers
+          )
+        handlePutRequest(request, settings)
+      }
+      .mapMaterializedValue(_ => NotUsed)
+  }
+
   private[storage] def createFile(objectPath: String,
                                   headers: Seq[HttpHeader]): Source[Option[ObjectMetadata], NotUsed] = {
     Source

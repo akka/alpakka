@@ -65,8 +65,11 @@ private[storage] class StorageHeaders private (val contentLengthHeader: Option[H
   private[storage] def withPageBlobContentLengthHeader(contentLength: Long): StorageHeaders =
     copy(pageBlobContentLengthHeader = Some(RawHeader(PageBlobContentLengthHeaderKey, contentLength.toString)))
 
-  private[storage] def withPageBlobSequenceNumberHeader(sequenceNumber: Int): StorageHeaders =
-    copy(pageBlobSequenceNumberHeader = Some(RawHeader(PageBlobSequenceNumberHeaderKey, sequenceNumber.toString)))
+  private[storage] def withPageBlobSequenceNumberHeader(sequenceNumber: Option[Int]): StorageHeaders =
+    copy(
+      pageBlobSequenceNumberHeader =
+        sequenceNumber.map(value => RawHeader(PageBlobSequenceNumberHeaderKey, value.toString))
+    )
 
   private def copy(contentLengthHeader: Option[HttpHeader] = contentLengthHeader,
                    contentTypeHeader: Option[HttpHeader] = contentTypeHeader,

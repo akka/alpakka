@@ -152,6 +152,64 @@ object BlobService {
       .asJava
 
   /**
+   * Put (Create) Page Blob.
+   *
+   * @param objectPath path of the object, should start with "/" and separated by `/`, e.g. `/container/blob`
+   * @param contentType content type of the blob
+   * @param maxBlockSize maximum block size
+   * @param blobSequenceNumber optional block sequence number
+   * @param leaseId lease ID of an active lease (if applicable)
+   * @return A [[akka.stream.javadsl.Source Source]] containing an [[scala.Option]] of
+   *         [[akka.stream.alpakka.azure.storage.ObjectMetadata]], will be [[scala.None]] in case the object does not exist
+   */
+  def putPageBlock(objectPath: String,
+                   contentType: ContentType,
+                   maxBlockSize: Long,
+                   blobSequenceNumber: Option[Int],
+                   leaseId: Optional[String]): Source[Optional[ObjectMetadata], NotUsed.type] =
+    AzureStorageStream
+      .putPageOrAppendBlock(
+        objectPath,
+        StorageHeaders
+          .create()
+          .withContentLengthHeader(0L)
+          .withContentTypeHeader(contentType.asInstanceOf[ScalaContentType])
+          .withBlobTypeHeader(BlobTypeHeader.PageBlobHeader)
+          .withPageBlobContentLengthHeader(maxBlockSize)
+          .withPageBlobSequenceNumberHeader(blobSequenceNumber)
+          .withLeaseIdHeader(Option(leaseId.orElse(null)))
+          .headers
+      )
+      .map(opt => Optional.ofNullable(opt.orNull))
+      .asJava
+
+  /**
+   * Put (Create) Append Blob.
+   *
+   * @param objectPath path of the object, should start with "/" and separated by `/`, e.g. `/container/blob`
+   * @param contentType content type of the blob
+   * @param leaseId lease ID of an active lease (if applicable)
+   * @return A [[akka.stream.javadsl.Source Source]] containing an [[scala.Option]] of
+   *         [[akka.stream.alpakka.azure.storage.ObjectMetadata]], will be [[scala.None]] in case the object does not exist
+   */
+  def putAppendBlock(objectPath: String,
+                     contentType: ContentType,
+                     leaseId: Optional[String]): Source[Optional[ObjectMetadata], NotUsed.type] =
+    AzureStorageStream
+      .putPageOrAppendBlock(
+        objectPath,
+        StorageHeaders
+          .create()
+          .withContentLengthHeader(0L)
+          .withContentTypeHeader(contentType.asInstanceOf[ScalaContentType])
+          .withBlobTypeHeader(BlobTypeHeader.AppendBlobHeader)
+          .withLeaseIdHeader(Option(leaseId.orElse(null)))
+          .headers
+      )
+      .map(opt => Optional.ofNullable(opt.orNull))
+      .asJava
+
+  /**
    * Create container.
    *
    * @param objectPath path of the object, should start with "/" and separated by `/`, e.g. `/container/blob`

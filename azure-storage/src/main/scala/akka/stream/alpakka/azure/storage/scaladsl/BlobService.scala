@@ -82,6 +82,7 @@ object BlobService {
    * @param contentType content type of the blob
    * @param contentLength length of the blob
    * @param payload actual payload, a [[akka.stream.scaladsl.Source Source]] of [[akka.util.ByteString ByteString]]
+   * @param leaseId lease ID of an active lease (if applicable)
    * @return A [[akka.stream.scaladsl.Source Source]] containing an [[scala.Option]] of
    *         [[akka.stream.alpakka.azure.storage.ObjectMetadata]], will be [[scala.None]] in case the object does not exist
    */
@@ -97,6 +98,56 @@ object BlobService {
         .withContentLengthHeader(contentLength)
         .withContentTypeHeader(contentType)
         .withBlobTypeHeader(BlobTypeHeader.BlockBlobHeader)
+        .withLeaseIdHeader(leaseId)
+        .headers
+    )
+
+  /**
+   * Put (Create) Page Blob.
+   *
+   * @param objectPath path of the object, should start with "/" and separated by `/`, e.g. `/container/blob`
+   * @param contentType content type of the blob
+   * @param maxBlockSize maximum block size
+   * @param blobSequenceNumber optional block sequence number
+   * @param leaseId lease ID of an active lease (if applicable)
+   * @return A [[akka.stream.scaladsl.Source Source]] containing an [[scala.Option]] of
+   *         [[akka.stream.alpakka.azure.storage.ObjectMetadata]], will be [[scala.None]] in case the object does not exist
+   */
+  def putPageBlock(objectPath: String,
+                   contentType: ContentType = ContentTypes.`application/octet-stream`,
+                   maxBlockSize: Long,
+                   blobSequenceNumber: Option[Int] = None,
+                   leaseId: Option[String] = None): Source[Option[ObjectMetadata], NotUsed] =
+    AzureStorageStream.putPageOrAppendBlock(
+      objectPath,
+      StorageHeaders()
+        .withContentLengthHeader(0L)
+        .withContentTypeHeader(contentType)
+        .withBlobTypeHeader(BlobTypeHeader.PageBlobHeader)
+        .withPageBlobContentLengthHeader(maxBlockSize)
+        .withPageBlobSequenceNumberHeader(blobSequenceNumber)
+        .withLeaseIdHeader(leaseId)
+        .headers
+    )
+
+  /**
+   * Put (Create) Append Blob.
+   *
+   * @param objectPath path of the object, should start with "/" and separated by `/`, e.g. `/container/blob`
+   * @param contentType content type of the blob
+   * @param leaseId lease ID of an active lease (if applicable)
+   * @return A [[akka.stream.scaladsl.Source Source]] containing an [[scala.Option]] of
+   *         [[akka.stream.alpakka.azure.storage.ObjectMetadata]], will be [[scala.None]] in case the object does not exist
+   */
+  def putAppendBlock(objectPath: String,
+                     contentType: ContentType = ContentTypes.`application/octet-stream`,
+                     leaseId: Option[String] = None): Source[Option[ObjectMetadata], NotUsed] =
+    AzureStorageStream.putPageOrAppendBlock(
+      objectPath,
+      StorageHeaders()
+        .withContentLengthHeader(0L)
+        .withContentTypeHeader(contentType)
+        .withBlobTypeHeader(BlobTypeHeader.AppendBlobHeader)
         .withLeaseIdHeader(leaseId)
         .headers
     )
