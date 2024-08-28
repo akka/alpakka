@@ -71,6 +71,7 @@ final class StorageSettings(val apiVersion: String,
     s"""StorageSettings(
        | apiVersion=$apiVersion,
        | authorizationType=$authorizationType,
+       | endPointUrl=$endPointUrl,
        | azureNameKeyCredential=$azureNameKeyCredential,
        | sasToken=$sasToken
        | retrySettings=$retrySettings,
@@ -81,6 +82,7 @@ final class StorageSettings(val apiVersion: String,
     case that: StorageSettings =>
       apiVersion == that.apiVersion &&
       authorizationType == that.authorizationType &&
+      endPointUrl == that.endPointUrl &&
       Objects.equals(azureNameKeyCredential, that.azureNameKeyCredential) &&
       sasToken == that.sasToken &&
       Objects.equals(retrySettings, that.retrySettings) &&
