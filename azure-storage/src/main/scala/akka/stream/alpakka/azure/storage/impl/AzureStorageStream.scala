@@ -139,9 +139,9 @@ object AzureStorageStream {
       .mapMaterializedValue(_ => NotUsed)
   }
 
-  private[storage] def putBlob(objectPath: String,
-                               httpEntity: UniversalEntity,
-                               headers: Seq[HttpHeader]): Source[Option[ObjectMetadata], NotUsed] = {
+  private[storage] def putBlockBlob(objectPath: String,
+                                    httpEntity: UniversalEntity,
+                                    headers: Seq[HttpHeader]): Source[Option[ObjectMetadata], NotUsed] = {
     Source
       .fromMaterializer { (mat, attr) =>
         implicit val system: ActorSystem = mat.system

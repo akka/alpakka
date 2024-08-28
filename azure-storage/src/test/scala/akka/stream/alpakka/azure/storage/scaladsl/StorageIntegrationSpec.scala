@@ -58,7 +58,7 @@ trait StorageIntegrationSpec
     "put blob" in {
       val maybeObjectMetadata =
         BlobService
-          .putBlob(
+          .putBlockBlob(
             objectPath = objectPath,
             contentType = ContentTypes.`text/plain(UTF-8)`,
             contentLength = contentLength,

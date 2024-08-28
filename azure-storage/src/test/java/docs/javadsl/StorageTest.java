@@ -79,16 +79,16 @@ public class StorageTest extends StorageWireMockBase {
     public void putBlob() throws Exception {
         mockPutBlob();
 
-        //#put-blob
+        //#put-block-blob
         final Source<Optional<ObjectMetadata>, NotUsed> source =
-                BlobService.putBlob(containerName() + "/" + blobName(),
+                BlobService.putBlockBlob(containerName() + "/" + blobName(),
                         ContentTypes.TEXT_PLAIN_UTF8,
                         contentLength(),
                         Source.single(ByteString.fromString(payload())),
                          Optional.empty());
 
         final CompletionStage<Optional<ObjectMetadata>> optionalCompletionStage = source.runWith(Sink.head(), system);
-        //#put-blob
+        //#put-block-blob
 
         final var optionalObjectMetadata = optionalCompletionStage.toCompletableFuture().get();
         Assert.assertTrue(optionalObjectMetadata.isPresent());

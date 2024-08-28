@@ -122,7 +122,7 @@ object BlobService {
       .asJava
 
   /**
-   * Put blob.
+   * Put Block blob.
    *
    * @param objectPath path of the object, should start with "/" and separated by `/`, e.g. `/container/blob`
    * @param contentType content type of the blob
@@ -131,13 +131,13 @@ object BlobService {
    * @return A [[akka.stream.javadsl.Source Source]] containing an [[scala.Option]] of
    *         [[akka.stream.alpakka.azure.storage.ObjectMetadata]], will be [[scala.None]] in case the object does not exist
    */
-  def putBlob(objectPath: String,
-              contentType: ContentType,
-              contentLength: Long,
-              payload: Source[ByteString, _],
-              leaseId: Optional[String]): Source[Optional[ObjectMetadata], NotUsed] =
+  def putBlockBlob(objectPath: String,
+                   contentType: ContentType,
+                   contentLength: Long,
+                   payload: Source[ByteString, _],
+                   leaseId: Optional[String]): Source[Optional[ObjectMetadata], NotUsed] =
     AzureStorageStream
-      .putBlob(
+      .putBlockBlob(
         objectPath,
         HttpEntity(contentType.asInstanceOf[ScalaContentType], contentLength, payload.asScala),
         StorageHeaders

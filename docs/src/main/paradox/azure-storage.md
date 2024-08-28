@@ -68,15 +68,15 @@ Scala
 Java
 : @@snip [snip](/azure-storage/src/test/java/docs/javadsl/StorageTest.java) { #create-container }
 
-### Put Blob
+### Put Block Blob
 
-The [`Put Blob`](https://learn.microsoft.com/en-us/rest/api/storageservices/put-blob) operation creates a new block, page, or append blob, or updates the content of an existing block blob.
+The [`Put Block Blob`](https://learn.microsoft.com/en-us/rest/api/storageservices/put-blob) operation creates a new block or updates the content of an existing block blob.
 
 Scala
-: @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #put-blob }
+: @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #put-block-blob }
 
 Java
-: @@snip [snip](/azure-storage/src/test/java/docs/javadsl/StorageTest.java) { #put-blob }
+: @@snip [snip](/azure-storage/src/test/java/docs/javadsl/StorageTest.java) { #put-block-blob }
 
 ### Get Blob
 

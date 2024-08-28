@@ -60,12 +60,12 @@ class StorageSpec
     "put blob" ignore {
       mockPutBlob()
 
-      //#put-blob
+      //#put-block-blob
       import akka.stream.alpakka.azure.storage.scaladsl.BlobService
       import akka.stream.alpakka.azure.storage.ObjectMetadata
 
       val source: Source[Option[ObjectMetadata], NotUsed] =
-        BlobService.putBlob(
+        BlobService.putBlockBlob(
           objectPath = s"$containerName/$blobName",
           contentType = ContentTypes.`text/plain(UTF-8)`,
           contentLength = contentLength,
@@ -73,7 +73,7 @@ class StorageSpec
         )
 
       val eventualMaybeMetadata: Future[Option[ObjectMetadata]] = source.runWith(Sink.head)
-      //#put-blob
+      //#put-block-blob
 
       val maybeObjectMetadata = eventualMaybeMetadata.futureValue
       maybeObjectMetadata shouldBe defined
