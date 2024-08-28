@@ -7,14 +7,14 @@ package azure
 package storage
 package scaladsl
 
-import akka.Done
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.ContentTypes
 import akka.http.scaladsl.model.headers.ByteRange
 import akka.stream.Attributes
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
-import akka.stream.scaladsl.{Framing, Keep, Sink, Source}
+import akka.stream.scaladsl.{Flow, Framing, Keep, Sink, Source}
 import akka.testkit.TestKit
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
@@ -38,6 +38,10 @@ trait StorageIntegrationSpec
   protected val defaultContainerName = "test-container"
   protected val fileName = "sample-blob.txt"
   protected val sampleText: String = "The quick brown fox jumps over the lazy dog." + System.lineSeparator()
+  protected val contentLength: Long = sampleText.length.toLong
+  protected val objectPath = s"$defaultContainerName/$fileName"
+  protected val framing: Flow[ByteString, ByteString, NotUsed] =
+    Framing.delimiter(ByteString(System.lineSeparator()), 256, allowTruncation = true)
 
   protected implicit val system: ActorSystem
   protected implicit lazy val ec: ExecutionContext = system.dispatcher
@@ -55,14 +59,13 @@ trait StorageIntegrationSpec
       val maybeObjectMetadata =
         BlobService
           .putBlob(
-            objectPath = s"$defaultContainerName/$fileName",
+            objectPath = objectPath,
             contentType = ContentTypes.`text/plain(UTF-8)`,
-            contentLength = sampleText.length,
-            payload = Source.single(ByteString.fromString(sampleText))
+            contentLength = contentLength,
+            payload = Source.single(ByteString(sampleText))
           )
           .withAttributes(getDefaultAttributes)
-          .toMat(Sink.head)(Keep.right)
-          .run()
+          .runWith(Sink.head)
           .futureValue
 
       maybeObjectMetadata shouldBe defined
@@ -73,9 +76,9 @@ trait StorageIntegrationSpec
     "get blob" in {
       val (maybeEventualObjectMetadata, eventualText) =
         BlobService
-          .getBlob(s"$defaultContainerName/$fileName")
+          .getBlob(objectPath)
           .withAttributes(getDefaultAttributes)
-          .via(Framing.delimiter(ByteString(System.lineSeparator()), 256, allowTruncation = true))
+          .via(framing)
           .map(byteString => byteString.utf8String + System.lineSeparator())
           .toMat(Sink.seq)(Keep.both)
           .run()
@@ -83,16 +86,15 @@ trait StorageIntegrationSpec
       val objectMetadata = maybeEventualObjectMetadata.futureValue
       objectMetadata.contentMd5 shouldBe Some(calculateDigest(sampleText))
       objectMetadata.contentLength shouldBe sampleText.length
-      eventualText.futureValue.head shouldBe sampleText
+      eventualText.futureValue.mkString("") shouldBe sampleText
     }
 
     "get blob properties" in {
       val maybeObjectMetadata =
         BlobService
-          .getProperties(s"$defaultContainerName/$fileName")
+          .getProperties(objectPath)
           .withAttributes(getDefaultAttributes)
-          .toMat(Sink.head)(Keep.right)
-          .run()
+          .runWith(Sink.head)
           .futureValue
 
       maybeObjectMetadata shouldBe defined
@@ -105,9 +107,9 @@ trait StorageIntegrationSpec
       val range = ByteRange.Slice(0, 8)
       val (maybeEventualObjectMetadata, eventualText) =
         BlobService
-          .getBlob(s"$defaultContainerName/$fileName", Some(range))
+          .getBlob(objectPath, Some(range))
           .withAttributes(getDefaultAttributes)
-          .via(Framing.delimiter(ByteString(System.lineSeparator()), 256, allowTruncation = true))
+          .via(framing)
           .map(_.utf8String)
           .toMat(Sink.seq)(Keep.both)
           .run()
@@ -120,7 +122,7 @@ trait StorageIntegrationSpec
     "delete blob" in {
       val maybeObjectMetadata =
         BlobService
-          .deleteBlob(s"$defaultContainerName/$fileName")
+          .deleteBlob(objectPath)
           .withAttributes(getDefaultAttributes)
           .toMat(Sink.head)(Keep.right)
           .run()
@@ -132,7 +134,7 @@ trait StorageIntegrationSpec
     "get blob after delete" in {
       val maybeObjectMetadata =
         BlobService
-          .getProperties(s"$defaultContainerName/$fileName")
+          .getProperties(objectPath)
           .withAttributes(getDefaultAttributes)
           .toMat(Sink.head)(Keep.right)
           .run()
@@ -149,7 +151,7 @@ trait StorageIntegrationSpec
       .runWith(Sink.ignore)
   }
 
-  private def calculateDigest(text: String) = {
+  protected def calculateDigest(text: String): String = {
     val digest = MessageDigest.getInstance("MD5")
     digest.update(text.getBytes)
     val bytes = digest.digest()
