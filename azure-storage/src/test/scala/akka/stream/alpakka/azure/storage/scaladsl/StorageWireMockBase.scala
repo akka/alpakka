@@ -9,21 +9,17 @@ package scaladsl
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers._
-import StorageWireMockBase.{config, getCallerName, initServer, AccountName}
+import StorageWireMockBase.{config, getCallerName, initServer, AccountName, ETagValue}
 import akka.http.scaladsl.model.ContentTypes
 import akka.testkit.TestKit
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
-import com.github.tomakehurst.wiremock.http.trafficlistener.ConsoleNotifyingWiremockNetworkTrafficListener
-import com.github.tomakehurst.wiremock.matching.StringValuePattern
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import com.typesafe.config.{Config, ConfigFactory}
 
 abstract class StorageWireMockBase(_system: ActorSystem, val _wireMockServer: WireMockServer) extends TestKit(_system) {
-
-  import StorageWireMockBase._
 
   private val port = _wireMockServer.port()
   protected val mock = new WireMock("localhost", port)

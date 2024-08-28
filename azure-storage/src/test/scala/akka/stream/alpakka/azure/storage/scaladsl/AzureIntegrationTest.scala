@@ -8,7 +8,7 @@ package storage
 package scaladsl
 
 import akka.actor.ActorSystem
-import org.junit.Ignore
+import org.scalatest.Ignore
 
 @Ignore
 class AzureIntegrationTest extends StorageIntegrationSpec {
