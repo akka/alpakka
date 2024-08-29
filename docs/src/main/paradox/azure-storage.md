@@ -168,7 +168,7 @@ Java
 
 ### Delete Blob
 
-The [`Delete File`](https://learn.microsoft.com/en-us/rest/api/storageservices/delete-file) operation immediately removes the file from the storage account.
+The [`Delete File`](https://learn.microsoft.com/en-us/rest/api/storageservices/delete-file2) operation immediately removes the file from the storage account.
 
 Scala
 : @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #delete-file }
