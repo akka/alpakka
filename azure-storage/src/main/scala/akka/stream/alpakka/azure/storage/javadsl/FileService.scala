@@ -178,7 +178,7 @@ object FileService {
           .withContentTypeHeader(contentType.asInstanceOf[ScalaContentType])
           .withRangeHeader(range)
           .withLeaseIdHeader(Option(leaseId.orElse(null)))
-          .withFileWriteTypeHeader(RangeWriteTypeHeader.UpdateFileHeader)
+          .withRangeWriteTypeHeader(RangeWriteTypeHeader.UpdateFileHeader)
           .headers
       )
       .map(opt => Optional.ofNullable(opt.orNull))
@@ -205,7 +205,7 @@ object FileService {
           .withContentLengthHeader(0L)
           .withRangeHeader(range)
           .withLeaseIdHeader(Option(leaseId.orElse(null)))
-          .withFileWriteTypeHeader(RangeWriteTypeHeader.ClearFileHeader)
+          .withRangeWriteTypeHeader(RangeWriteTypeHeader.ClearFileHeader)
           .headers
       )
       .map(opt => Optional.ofNullable(opt.orNull))

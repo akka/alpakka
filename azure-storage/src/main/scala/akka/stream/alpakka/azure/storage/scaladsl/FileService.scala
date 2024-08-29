@@ -124,7 +124,7 @@ object FileService {
         .withContentTypeHeader(contentType)
         .withRangeHeader(range)
         .withLeaseIdHeader(leaseId)
-        .withFileWriteTypeHeader(RangeWriteTypeHeader.UpdateFileHeader)
+        .withRangeWriteTypeHeader(RangeWriteTypeHeader.UpdateFileHeader)
         .headers
     )
   }
@@ -147,7 +147,7 @@ object FileService {
         .withContentLengthHeader(0L)
         .withRangeHeader(range)
         .withLeaseIdHeader(leaseId)
-        .withFileWriteTypeHeader(RangeWriteTypeHeader.ClearFileHeader)
+        .withRangeWriteTypeHeader(RangeWriteTypeHeader.ClearFileHeader)
         .headers
     )
 }
