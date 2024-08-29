@@ -76,8 +76,8 @@ public class StorageTest extends StorageWireMockBase {
     // header, secondly once that resolve then we get `akka.http.scaladsl.model.EntityStreamException`.
     @Ignore("Fix this test case")
     @Test
-    public void putBlob() throws Exception {
-        mockPutBlob();
+    public void putBlockBlob() throws Exception {
+        mockPutBlockBlob();
 
         //#put-block-blob
         final Source<Optional<ObjectMetadata>, NotUsed> source =
@@ -93,6 +93,43 @@ public class StorageTest extends StorageWireMockBase {
         final var optionalObjectMetadata = optionalCompletionStage.toCompletableFuture().get();
         Assert.assertTrue(optionalObjectMetadata.isPresent());
     }
+
+    @Test
+    public void putPageBlob() throws Exception {
+        mockPutPageBlob();
+
+        //#put-page-blob
+        final Source<Optional<ObjectMetadata>, NotUsed> source =
+                BlobService.putPageBlock(containerName() + "/" + blobName(),
+                        ContentTypes.TEXT_PLAIN_UTF8,
+                        512L,
+                                Optional.of(0),
+                        Optional.empty());
+
+        final CompletionStage<Optional<ObjectMetadata>> optionalCompletionStage = source.runWith(Sink.head(), system);
+        //#put-page-blob
+
+        final var optionalObjectMetadata = optionalCompletionStage.toCompletableFuture().get();
+        Assert.assertTrue(optionalObjectMetadata.isPresent());
+    }
+
+    @Test
+    public void putAppendBlob() throws Exception {
+        mockPutAppendBlob();
+
+        //#put-append-blob
+        final Source<Optional<ObjectMetadata>, NotUsed> source =
+                BlobService.putAppendBlock(containerName() + "/" + blobName(),
+                        ContentTypes.TEXT_PLAIN_UTF8,
+                        Optional.empty());
+
+        final CompletionStage<Optional<ObjectMetadata>> optionalCompletionStage = source.runWith(Sink.head(), system);
+        //#put-append-blob
+
+        final var optionalObjectMetadata = optionalCompletionStage.toCompletableFuture().get();
+        Assert.assertTrue(optionalObjectMetadata.isPresent());
+    }
+
 
     @Test
     public void getBlob() throws Exception {

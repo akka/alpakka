@@ -57,8 +57,8 @@ class StorageSpec
     // TODO: There are couple of issues, firstly there are two `Content-Length` headers being added, one by `putBlob`
     // function and secondly by, most likely, by WireMock. Need to to figure out how to tell WireMock not to add `Content-Length`
     // header, secondly once that resolve then we get `akka.http.scaladsl.model.EntityStreamException`.
-    "put blob" ignore {
-      mockPutBlob()
+    "put block blob" ignore {
+      mockPutBlockBlob()
 
       //#put-block-blob
       import akka.stream.alpakka.azure.storage.scaladsl.BlobService
@@ -79,6 +79,60 @@ class StorageSpec
       maybeObjectMetadata shouldBe defined
       val objectMetadata = maybeObjectMetadata.get
       objectMetadata.contentLength shouldBe contentLength
+      objectMetadata.eTag shouldBe Some(ETagRawValue)
+    }
+
+    // TODO: There are couple of issues, firstly there are two `Content-Length` headers being added, one by `putBlob`
+    // function and secondly by, most likely, by WireMock. Need to to figure out how to tell WireMock not to add `Content-Length`
+    // header, secondly once that resolve then we get `akka.http.scaladsl.model.EntityStreamException`.
+    "put page blob" in {
+      mockPutPageBlob()
+
+      //#put-page-blob
+      import akka.stream.alpakka.azure.storage.scaladsl.BlobService
+      import akka.stream.alpakka.azure.storage.ObjectMetadata
+
+      val source: Source[Option[ObjectMetadata], NotUsed] =
+        BlobService.putPageBlock(
+          objectPath = s"$containerName/$blobName",
+          contentType = ContentTypes.`text/plain(UTF-8)`,
+          maxBlockSize = 512L,
+          blobSequenceNumber = Some(0)
+        )
+
+      val eventualMaybeMetadata: Future[Option[ObjectMetadata]] = source.runWith(Sink.head)
+      //#put-page-blob
+
+      val maybeObjectMetadata = eventualMaybeMetadata.futureValue
+      maybeObjectMetadata shouldBe defined
+      val objectMetadata = maybeObjectMetadata.get
+      objectMetadata.contentLength shouldBe 0L
+      objectMetadata.eTag shouldBe Some(ETagRawValue)
+    }
+
+    // TODO: There are couple of issues, firstly there are two `Content-Length` headers being added, one by `putBlob`
+    // function and secondly by, most likely, by WireMock. Need to to figure out how to tell WireMock not to add `Content-Length`
+    // header, secondly once that resolve then we get `akka.http.scaladsl.model.EntityStreamException`.
+    "put append blob" in {
+      mockPutAppendBlob()
+
+      //#put-append-blob
+      import akka.stream.alpakka.azure.storage.scaladsl.BlobService
+      import akka.stream.alpakka.azure.storage.ObjectMetadata
+
+      val source: Source[Option[ObjectMetadata], NotUsed] =
+        BlobService.putAppendBlock(
+          objectPath = s"$containerName/$blobName",
+          contentType = ContentTypes.`text/plain(UTF-8)`
+        )
+
+      val eventualMaybeMetadata: Future[Option[ObjectMetadata]] = source.runWith(Sink.head)
+      //#put-append-blob
+
+      val maybeObjectMetadata = eventualMaybeMetadata.futureValue
+      maybeObjectMetadata shouldBe defined
+      val objectMetadata = maybeObjectMetadata.get
+      objectMetadata.contentLength shouldBe 0L
       objectMetadata.eTag shouldBe Some(ETagRawValue)
     }
 

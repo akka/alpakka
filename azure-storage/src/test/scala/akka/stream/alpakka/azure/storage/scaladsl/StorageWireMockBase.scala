@@ -54,15 +54,44 @@ abstract class StorageWireMockBase(_system: ActorSystem, val _wireMockServer: Wi
         )
     )
 
-  protected def mockPutBlob(): StubMapping =
+  protected def mockPutBlockBlob(): StubMapping =
     mock.register(
       put(urlEqualTo(s"/$AccountName/$containerName/$blobName"))
+        .withHeader(BlobTypeHeaderKey, equalTo(BlockBlobType))
         .withRequestBody(equalTo(payload))
         .willReturn(
           aResponse()
             .withStatus(201)
             .withHeader(ETag.name, ETagValue)
             .withHeader(`Content-Length`.name, payload.length.toString)
+            .withHeader(`Content-Type`.name, "text/plain; charset=UTF-8")
+        )
+    )
+
+  protected def mockPutPageBlob(): StubMapping =
+    mock.register(
+      put(urlEqualTo(s"/$AccountName/$containerName/$blobName"))
+        .withHeader(BlobTypeHeaderKey, equalTo(PageBlobType))
+        .withHeader(PageBlobContentLengthHeaderKey, equalTo("512"))
+        .withHeader(PageBlobSequenceNumberHeaderKey, equalTo("0"))
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader(ETag.name, ETagValue)
+            .withHeader(`Content-Length`.name, "0")
+            .withHeader(`Content-Type`.name, "text/plain; charset=UTF-8")
+        )
+    )
+
+  protected def mockPutAppendBlob(): StubMapping =
+    mock.register(
+      put(urlEqualTo(s"/$AccountName/$containerName/$blobName"))
+        .withHeader(BlobTypeHeaderKey, equalTo(AppendBlobType))
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader(ETag.name, ETagValue)
+            .withHeader(`Content-Length`.name, "0")
             .withHeader(`Content-Type`.name, "text/plain; charset=UTF-8")
         )
     )

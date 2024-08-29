@@ -121,7 +121,6 @@ object BlobService {
     AzureStorageStream.putPageOrAppendBlock(
       objectPath,
       StorageHeaders()
-        .withContentLengthHeader(0L)
         .withContentTypeHeader(contentType)
         .withBlobTypeHeader(BlobTypeHeader.PageBlobHeader)
         .withPageBlobContentLengthHeader(maxBlockSize)
@@ -145,7 +144,6 @@ object BlobService {
     AzureStorageStream.putPageOrAppendBlock(
       objectPath,
       StorageHeaders()
-        .withContentLengthHeader(0L)
         .withContentTypeHeader(contentType)
         .withBlobTypeHeader(BlobTypeHeader.AppendBlobHeader)
         .withLeaseIdHeader(leaseId)
