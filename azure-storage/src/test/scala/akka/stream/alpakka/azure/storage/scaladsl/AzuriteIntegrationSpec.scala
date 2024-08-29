@@ -11,12 +11,13 @@ import akka.actor.ActorSystem
 import akka.stream.Attributes
 import com.dimafeng.testcontainers.ForAllTestContainer
 import com.typesafe.config.ConfigFactory
-import org.junit.Ignore
+import org.scalatest.Ignore
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
 
 // TODO: investigate how Azurite works, it is not even working with pure Java API
+// `putBlob` operations fails with "remature end of file."
 @Ignore
 class AzuriteIntegrationSpec extends StorageIntegrationSpec with ForAllTestContainer {
 
