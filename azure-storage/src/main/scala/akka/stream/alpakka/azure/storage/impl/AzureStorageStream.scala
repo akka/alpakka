@@ -160,7 +160,8 @@ object AzureStorageStream {
       .mapMaterializedValue(_ => NotUsed)
   }
 
-  private[storage] def putPageOrAppendBlock(objectPath: String, headers: Seq[HttpHeader]) = {
+  private[storage] def putPageOrAppendBlock(objectPath: String,
+                                            headers: Seq[HttpHeader]): Source[Option[ObjectMetadata], NotUsed] = {
     Source
       .fromMaterializer { (mat, attr) =>
         implicit val system: ActorSystem = mat.system

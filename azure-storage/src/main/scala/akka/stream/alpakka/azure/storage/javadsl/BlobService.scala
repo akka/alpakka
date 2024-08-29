@@ -165,18 +165,19 @@ object BlobService {
   def putPageBlock(objectPath: String,
                    contentType: ContentType,
                    maxBlockSize: Long,
-                   blobSequenceNumber: Option[Int],
-                   leaseId: Optional[String]): Source[Optional[ObjectMetadata], NotUsed.type] =
+                   blobSequenceNumber: Optional[Int],
+                   leaseId: Optional[String]): Source[Optional[ObjectMetadata], NotUsed] =
     AzureStorageStream
       .putPageOrAppendBlock(
         objectPath,
         StorageHeaders
           .create()
-          .withContentLengthHeader(0L)
           .withContentTypeHeader(contentType.asInstanceOf[ScalaContentType])
           .withBlobTypeHeader(BlobTypeHeader.PageBlobHeader)
           .withPageBlobContentLengthHeader(maxBlockSize)
-          .withPageBlobSequenceNumberHeader(blobSequenceNumber)
+          .withPageBlobSequenceNumberHeader(
+            Option(blobSequenceNumber.map(i => Integer.getInteger(i.toString)).orElse(null))
+          )
           .withLeaseIdHeader(Option(leaseId.orElse(null)))
           .headers
       )
@@ -194,13 +195,12 @@ object BlobService {
    */
   def putAppendBlock(objectPath: String,
                      contentType: ContentType,
-                     leaseId: Optional[String]): Source[Optional[ObjectMetadata], NotUsed.type] =
+                     leaseId: Optional[String]): Source[Optional[ObjectMetadata], NotUsed] =
     AzureStorageStream
       .putPageOrAppendBlock(
         objectPath,
         StorageHeaders
           .create()
-          .withContentLengthHeader(0L)
           .withContentTypeHeader(contentType.asInstanceOf[ScalaContentType])
           .withBlobTypeHeader(BlobTypeHeader.AppendBlobHeader)
           .withLeaseIdHeader(Option(leaseId.orElse(null)))
