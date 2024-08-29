@@ -176,7 +176,7 @@ object BlobService {
           .withBlobTypeHeader(BlobTypeHeader.PageBlobHeader)
           .withPageBlobContentLengthHeader(maxBlockSize)
           .withPageBlobSequenceNumberHeader(
-            Option(blobSequenceNumber.map(i => Integer.getInteger(i.toString)).orElse(null))
+            Option(blobSequenceNumber.orElse(null.asInstanceOf[Integer]))
           )
           .withLeaseIdHeader(Option(leaseId.orElse(null)))
           .headers
