@@ -41,11 +41,11 @@ object BlobTypeHeader {
   private[storage] val AppendBlobHeader = new BlobTypeHeader(AppendBlobType)
 }
 
-private[storage] case class FileWriteTypeHeader(writeType: String) {
-  @InternalApi private[storage] def header: HttpHeader = RawHeader(FileWriteTypeHeaderKey, writeType)
+private[storage] case class RangeWriteTypeHeader(headerName: String, writeType: String) {
+  @InternalApi private[storage] def header: HttpHeader = RawHeader(headerName, writeType)
 }
 
-object FileWriteTypeHeader {
-  private[storage] val UpdateFileHeader = new FileWriteTypeHeader("update")
-  private[storage] val ClearFileHeader = new FileWriteTypeHeader("clear")
+object RangeWriteTypeHeader {
+  private[storage] val UpdateFileHeader = new RangeWriteTypeHeader(FileWriteTypeHeaderKey, "update")
+  private[storage] val ClearFileHeader = new RangeWriteTypeHeader(FileWriteTypeHeaderKey, "clear")
 }

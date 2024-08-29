@@ -13,7 +13,7 @@ import akka.http.javadsl.model.headers.ByteRange
 import akka.http.scaladsl.model.headers.ByteRange.Slice
 import akka.http.scaladsl.model.headers.{ByteRange => ScalaByteRange}
 import akka.http.scaladsl.model.{HttpEntity, ContentType => ScalaContentType}
-import akka.stream.alpakka.azure.storage.headers.FileWriteTypeHeader
+import akka.stream.alpakka.azure.storage.headers.RangeWriteTypeHeader
 import akka.stream.alpakka.azure.storage.impl.AzureStorageStream
 import akka.stream.javadsl.Source
 import akka.stream.scaladsl.SourceToCompletionStage
@@ -178,7 +178,7 @@ object FileService {
           .withContentTypeHeader(contentType.asInstanceOf[ScalaContentType])
           .withRangeHeader(range)
           .withLeaseIdHeader(Option(leaseId.orElse(null)))
-          .withFileWriteTypeHeader(FileWriteTypeHeader.UpdateFileHeader)
+          .withFileWriteTypeHeader(RangeWriteTypeHeader.UpdateFileHeader)
           .headers
       )
       .map(opt => Optional.ofNullable(opt.orNull))
@@ -205,7 +205,7 @@ object FileService {
           .withContentLengthHeader(0L)
           .withRangeHeader(range)
           .withLeaseIdHeader(Option(leaseId.orElse(null)))
-          .withFileWriteTypeHeader(FileWriteTypeHeader.ClearFileHeader)
+          .withFileWriteTypeHeader(RangeWriteTypeHeader.ClearFileHeader)
           .headers
       )
       .map(opt => Optional.ofNullable(opt.orNull))

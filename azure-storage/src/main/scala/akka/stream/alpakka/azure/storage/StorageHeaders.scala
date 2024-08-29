@@ -8,7 +8,7 @@ package storage
 
 import akka.http.scaladsl.model.headers.{ByteRange, RawHeader, Range => RangeHeader}
 import akka.http.scaladsl.model.{ContentType, HttpHeader}
-import headers.{BlobTypeHeader, CustomContentLengthHeader, CustomContentTypeHeader, FileWriteTypeHeader}
+import headers.{BlobTypeHeader, CustomContentLengthHeader, CustomContentTypeHeader, RangeWriteTypeHeader}
 
 import java.util.Objects
 
@@ -53,7 +53,7 @@ private[storage] class StorageHeaders private (val contentLengthHeader: Option[H
   private[storage] def withLeaseIdHeader(leaseId: Option[String]): StorageHeaders =
     copy(leaseIdHeader = leaseId.map(value => RawHeader(LeaseIdHeaderKey, value)))
 
-  private[storage] def withFileWriteTypeHeader(fileWriteTypeHeader: FileWriteTypeHeader): StorageHeaders =
+  private[storage] def withFileWriteTypeHeader(fileWriteTypeHeader: RangeWriteTypeHeader): StorageHeaders =
     copy(fileWriteTypeHeader = Some(fileWriteTypeHeader.header))
 
   private[storage] def withFileTypeHeader(): StorageHeaders =

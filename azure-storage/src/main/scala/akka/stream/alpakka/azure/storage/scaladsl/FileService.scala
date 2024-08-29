@@ -10,7 +10,7 @@ package scaladsl
 import akka.NotUsed
 import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpEntity}
 import akka.http.scaladsl.model.headers.ByteRange
-import akka.stream.alpakka.azure.storage.headers.FileWriteTypeHeader
+import akka.stream.alpakka.azure.storage.headers.RangeWriteTypeHeader
 import akka.stream.alpakka.azure.storage.impl.AzureStorageStream
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
@@ -124,7 +124,7 @@ object FileService {
         .withContentTypeHeader(contentType)
         .withRangeHeader(range)
         .withLeaseIdHeader(leaseId)
-        .withFileWriteTypeHeader(FileWriteTypeHeader.UpdateFileHeader)
+        .withFileWriteTypeHeader(RangeWriteTypeHeader.UpdateFileHeader)
         .headers
     )
   }
@@ -147,7 +147,7 @@ object FileService {
         .withContentLengthHeader(0L)
         .withRangeHeader(range)
         .withLeaseIdHeader(leaseId)
-        .withFileWriteTypeHeader(FileWriteTypeHeader.ClearFileHeader)
+        .withFileWriteTypeHeader(RangeWriteTypeHeader.ClearFileHeader)
         .headers
     )
 }
