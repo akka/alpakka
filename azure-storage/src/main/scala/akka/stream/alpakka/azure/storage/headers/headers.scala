@@ -48,4 +48,6 @@ private[storage] case class RangeWriteTypeHeader(headerName: String, writeType: 
 object RangeWriteTypeHeader {
   private[storage] val UpdateFileHeader = new RangeWriteTypeHeader(FileWriteTypeHeaderKey, "update")
   private[storage] val ClearFileHeader = new RangeWriteTypeHeader(FileWriteTypeHeaderKey, "clear")
+  private[storage] val UpdatePageHeader = new RangeWriteTypeHeader(PageWriteTypeHeaderKey, "update")
+  private[storage] val ClearPageHeader = new RangeWriteTypeHeader(PageWriteTypeHeaderKey, "clear")
 }

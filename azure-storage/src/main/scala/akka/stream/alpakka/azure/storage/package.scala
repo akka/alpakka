@@ -19,6 +19,7 @@ package object storage {
   private[storage] val BlobTypeHeaderKey = "x-ms-blob-type"
   private[storage] val LeaseIdHeaderKey = "x-ms-lease-id"
   private[storage] val FileWriteTypeHeaderKey = "x-ms-write"
+  private[storage] val PageWriteTypeHeaderKey = "x-ms-page-write"
   private[storage] val XMsContentLengthHeaderKey = "x-ms-content-length"
   private[storage] val FileTypeHeaderKey = "x-ms-type"
   private[storage] val PageBlobContentLengthHeaderKey = "x-ms-blob-content-length"
