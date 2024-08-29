@@ -91,9 +91,9 @@ object BlobService {
                    contentLength: Long,
                    payload: Source[ByteString, _],
                    leaseId: Option[String] = None): Source[Option[ObjectMetadata], NotUsed] =
-    AzureStorageStream.putBlockBlob(
+    AzureStorageStream.putBlob(
       objectPath,
-      HttpEntity(contentType, contentLength, payload),
+      Some(HttpEntity(contentType, contentLength, payload)),
       StorageHeaders()
         .withContentLengthHeader(contentLength)
         .withContentTypeHeader(contentType)
@@ -118,8 +118,9 @@ object BlobService {
                    maxBlockSize: Long,
                    blobSequenceNumber: Option[Int] = None,
                    leaseId: Option[String] = None): Source[Option[ObjectMetadata], NotUsed] =
-    AzureStorageStream.putPageOrAppendBlock(
+    AzureStorageStream.putBlob(
       objectPath,
+      None,
       StorageHeaders()
         .withContentTypeHeader(contentType)
         .withBlobTypeHeader(BlobTypeHeader.PageBlobHeader)
@@ -141,8 +142,9 @@ object BlobService {
   def putAppendBlock(objectPath: String,
                      contentType: ContentType = ContentTypes.`application/octet-stream`,
                      leaseId: Option[String] = None): Source[Option[ObjectMetadata], NotUsed] =
-    AzureStorageStream.putPageOrAppendBlock(
+    AzureStorageStream.putBlob(
       objectPath,
+      None,
       StorageHeaders()
         .withContentTypeHeader(contentType)
         .withBlobTypeHeader(BlobTypeHeader.AppendBlobHeader)

@@ -137,9 +137,9 @@ object BlobService {
                    payload: Source[ByteString, _],
                    leaseId: Optional[String]): Source[Optional[ObjectMetadata], NotUsed] =
     AzureStorageStream
-      .putBlockBlob(
+      .putBlob(
         objectPath,
-        HttpEntity(contentType.asInstanceOf[ScalaContentType], contentLength, payload.asScala),
+        Some(HttpEntity(contentType.asInstanceOf[ScalaContentType], contentLength, payload.asScala)),
         StorageHeaders
           .create()
           .withContentLengthHeader(contentLength)
@@ -168,8 +168,9 @@ object BlobService {
                    blobSequenceNumber: Optional[Int],
                    leaseId: Optional[String]): Source[Optional[ObjectMetadata], NotUsed] =
     AzureStorageStream
-      .putPageOrAppendBlock(
+      .putBlob(
         objectPath,
+        None,
         StorageHeaders
           .create()
           .withContentTypeHeader(contentType.asInstanceOf[ScalaContentType])
@@ -197,8 +198,9 @@ object BlobService {
                      contentType: ContentType,
                      leaseId: Optional[String]): Source[Optional[ObjectMetadata], NotUsed] =
     AzureStorageStream
-      .putPageOrAppendBlock(
+      .putBlob(
         objectPath,
+        None,
         StorageHeaders
           .create()
           .withContentTypeHeader(contentType.asInstanceOf[ScalaContentType])

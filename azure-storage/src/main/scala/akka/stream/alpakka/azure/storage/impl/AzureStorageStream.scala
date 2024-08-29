@@ -15,6 +15,7 @@ import akka.http.scaladsl.model.StatusCodes.{Accepted, Created, NotFound, OK}
 import akka.http.scaladsl.model.headers.{`Content-Length`, `Content-Type`, CustomHeader}
 import akka.http.scaladsl.model.{
   ContentType,
+  HttpEntity,
   HttpHeader,
   HttpMethod,
   HttpMethods,
@@ -40,7 +41,7 @@ object AzureStorageStream {
   private[storage] def getObject(storageType: String,
                                  objectPath: String,
                                  versionId: Option[String],
-                                 headers: Seq[HttpHeader]): Source[ByteString, Future[ObjectMetadata]] = {
+                                 headers: Seq[HttpHeader]): Source[ByteString, Future[ObjectMetadata]] =
     Source
       .fromMaterializer { (mat, attr) =>
         implicit val system: ActorSystem = mat.system
@@ -71,12 +72,11 @@ object AzureStorageStream {
           .mapMaterializedValue(_ => objectMetadataMat.future)
       }
       .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.parasitic))
-  }
 
   private[storage] def getObjectProperties(storageType: String,
                                            objectPath: String,
                                            versionId: Option[String],
-                                           headers: Seq[HttpHeader]): Source[Option[ObjectMetadata], NotUsed] = {
+                                           headers: Seq[HttpHeader]): Source[Option[ObjectMetadata], NotUsed] =
     Source
       .fromMaterializer { (mat, attr) =>
         implicit val system: ActorSystem = mat.system
@@ -104,12 +104,11 @@ object AzureStorageStream {
           }
       }
       .mapMaterializedValue(_ => NotUsed)
-  }
 
   private[storage] def deleteObject(storageType: String,
                                     objectPath: String,
                                     versionId: Option[String],
-                                    headers: Seq[HttpHeader]): Source[Option[ObjectMetadata], NotUsed] = {
+                                    headers: Seq[HttpHeader]): Source[Option[ObjectMetadata], NotUsed] =
     Source
       .fromMaterializer { (mat, attr) =>
         implicit val system: ActorSystem = mat.system
@@ -137,128 +136,65 @@ object AzureStorageStream {
           }
       }
       .mapMaterializedValue(_ => NotUsed)
-  }
 
-  private[storage] def putBlockBlob(objectPath: String,
-                                    httpEntity: UniversalEntity,
-                                    headers: Seq[HttpHeader]): Source[Option[ObjectMetadata], NotUsed] = {
-    Source
-      .fromMaterializer { (mat, attr) =>
-        implicit val system: ActorSystem = mat.system
-        val settings = resolveSettings(attr, system)
-        val request =
-          createRequest(
-            method = HttpMethods.PUT,
-            uri = createUri(settings = settings,
-                            storageType = BlobType,
-                            objectPath = objectPath,
-                            queryString = createQueryString(settings)),
-            headers = headers
-          ).withEntity(httpEntity)
-        handlePutRequest(request, settings)
-      }
-      .mapMaterializedValue(_ => NotUsed)
-  }
-
-  private[storage] def putPageOrAppendBlock(objectPath: String,
-                                            headers: Seq[HttpHeader]): Source[Option[ObjectMetadata], NotUsed] = {
-    Source
-      .fromMaterializer { (mat, attr) =>
-        implicit val system: ActorSystem = mat.system
-        val settings = resolveSettings(attr, system)
-        val request =
-          createRequest(
-            method = HttpMethods.PUT,
-            uri = createUri(settings = settings,
-                            storageType = BlobType,
-                            objectPath = objectPath,
-                            queryString = createQueryString(settings)),
-            headers = headers
-          )
-        handlePutRequest(request, settings)
-      }
-      .mapMaterializedValue(_ => NotUsed)
-  }
+  private[storage] def putBlob(objectPath: String,
+                               maybeHttpEntity: Option[UniversalEntity],
+                               headers: Seq[HttpHeader]): Source[Option[ObjectMetadata], NotUsed] =
+    putRequest(objectPath = objectPath, storageType = BlobType, maybeHttpEntity = maybeHttpEntity, headers = headers)
 
   private[storage] def createFile(objectPath: String,
-                                  headers: Seq[HttpHeader]): Source[Option[ObjectMetadata], NotUsed] = {
-    Source
-      .fromMaterializer { (mat, attr) =>
-        implicit val system: ActorSystem = mat.system
-        val settings = resolveSettings(attr, system)
-        val request =
-          createRequest(
-            method = HttpMethods.PUT,
-            uri = createUri(settings = settings,
-                            storageType = FileType,
-                            objectPath = objectPath,
-                            queryString = createQueryString(settings)),
-            headers = headers
-          )
-        handlePutRequest(request, settings)
-      }
-      .mapMaterializedValue(_ => NotUsed)
-  }
+                                  headers: Seq[HttpHeader]): Source[Option[ObjectMetadata], NotUsed] =
+    putRequest(objectPath = objectPath, storageType = FileType, headers = headers)
 
   private[storage] def updateRange(objectPath: String,
                                    httpEntity: UniversalEntity,
-                                   headers: Seq[HttpHeader]): Source[Option[ObjectMetadata], NotUsed] = {
+                                   headers: Seq[HttpHeader]): Source[Option[ObjectMetadata], NotUsed] =
+    putRequest(objectPath = objectPath,
+               storageType = FileType,
+               maybeHttpEntity = Some(httpEntity),
+               queryString = Some("comp=range"),
+               headers = headers)
+
+  private[storage] def clearRange(objectPath: String,
+                                  headers: Seq[HttpHeader]): Source[Option[ObjectMetadata], NotUsed] =
+    putRequest(objectPath = objectPath, storageType = FileType, queryString = Some("comp=range"), headers = headers)
+
+  private[storage] def createContainer(objectPath: String): Source[Option[ObjectMetadata], NotUsed] =
+    putRequest(objectPath = objectPath, storageType = BlobType, queryString = Some("restype=container"))
+
+  /**
+   * Common function for "PUT" request where we don't expect response body.
+   *
+   * @param objectPath path of the object.
+   * @param storageType storage type
+   * @param maybeHttpEntity optional http entity
+   * @param queryString query string
+   * @param headers request headers
+   * @return Source with metadata containing response headers
+   */
+  private def putRequest(objectPath: String,
+                         storageType: String,
+                         maybeHttpEntity: Option[UniversalEntity] = None,
+                         queryString: Option[String] = None,
+                         headers: Seq[HttpHeader] = Seq.empty): Source[Option[ObjectMetadata], NotUsed] = {
     Source
       .fromMaterializer { (mat, attr) =>
         implicit val system: ActorSystem = mat.system
         val settings = resolveSettings(attr, system)
+        val httpEntity = maybeHttpEntity.getOrElse(HttpEntity.Empty)
         val request =
           createRequest(
             method = HttpMethods.PUT,
             uri = createUri(settings = settings,
-                            storageType = FileType,
+                            storageType = storageType,
                             objectPath = objectPath,
-                            queryString = createQueryString(settings, Some("comp=range"))),
+                            queryString = createQueryString(settings, queryString)),
             headers = headers
           ).withEntity(httpEntity)
         handlePutRequest(request, settings)
       }
       .mapMaterializedValue(_ => NotUsed)
   }
-
-  private[storage] def clearRange(objectPath: String,
-                                  headers: Seq[HttpHeader]): Source[Option[ObjectMetadata], NotUsed] = {
-    Source
-      .fromMaterializer { (mat, attr) =>
-        implicit val system: ActorSystem = mat.system
-        val settings = resolveSettings(attr, system)
-        val request =
-          createRequest(
-            method = HttpMethods.PUT,
-            uri = createUri(settings = settings,
-                            storageType = FileType,
-                            objectPath = objectPath,
-                            queryString = createQueryString(settings, Some("comp=range"))),
-            headers = headers
-          )
-        handlePutRequest(request, settings)
-      }
-      .mapMaterializedValue(_ => NotUsed)
-  }
-
-  private[storage] def createContainer(objectPath: String): Source[Option[ObjectMetadata], NotUsed] =
-    Source
-      .fromMaterializer { (mat, attr) =>
-        implicit val system: ActorSystem = mat.system
-        val settings = resolveSettings(attr, system)
-        val request =
-          createRequest(
-            method = HttpMethods.PUT,
-            uri = createUri(settings = settings,
-                            storageType = BlobType,
-                            objectPath = objectPath,
-                            queryString = createQueryString(settings, Some("restype=container"))),
-            headers = StorageHeaders().headers
-          )
-
-        handlePutRequest(request, settings)
-      }
-      .mapMaterializedValue(_ => NotUsed)
 
   private def handlePutRequest(request: HttpRequest, settings: StorageSettings)(implicit system: ActorSystem) = {
     import system.dispatcher
