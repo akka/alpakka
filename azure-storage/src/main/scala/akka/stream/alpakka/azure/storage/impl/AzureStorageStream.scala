@@ -12,9 +12,8 @@ import akka.actor.ActorSystem
 import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes.{Accepted, Created, NotFound, OK}
-import akka.http.scaladsl.model.headers.{`Content-Length`, `Content-Type`, CustomHeader}
+import akka.http.scaladsl.model.headers.{`Content-Length`, `Content-Type`}
 import akka.http.scaladsl.model.{
-  ContentType,
   HttpEntity,
   HttpHeader,
   HttpMethod,
@@ -27,6 +26,7 @@ import akka.http.scaladsl.model.{
   Uri
 }
 import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.stream.alpakka.azure.storage.headers.CustomContentTypeHeader
 import akka.stream.{Attributes, Materializer}
 import akka.stream.alpakka.azure.storage.impl.auth.Signer
 import akka.stream.scaladsl.{Flow, RetryFlow, Source}
@@ -336,26 +336,4 @@ object AzureStorageStream {
           .map(settingsPath => storageExtension.settings(settingsPath.path))
           .getOrElse(storageExtension.settings)
       }
-
-  // `Content-Type` header is by design not accessible as header. So need to have a custom
-  // header implementation to expose that
-  private case class CustomContentTypeHeader(contentType: ContentType) extends CustomHeader {
-    override def name(): String = "Content-Type"
-
-    override def value(): String = contentType.value
-
-    override def renderInRequests(): Boolean = true
-
-    override def renderInResponses(): Boolean = true
-  }
-
-  private case class CustomContentLengthHeader(contentLength: Long) extends CustomHeader {
-    override def name(): String = "Content-Length"
-
-    override def value(): String = contentLength.toString
-
-    override def renderInRequests(): Boolean = true
-
-    override def renderInResponses(): Boolean = true
-  }
 }
