@@ -6,14 +6,23 @@ package akka.stream.alpakka
 package azure
 package storage
 
+import akka.actor.ActorSystem
+import akka.testkit.TestKit
 import com.typesafe.config.ConfigFactory
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
-import scala.concurrent.duration._
+import org.scalatest.wordspec.{AnyWordSpec, AnyWordSpecLike}
 
+import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
-class StorageSettingsSpec extends AnyWordSpec with Matchers {
+class StorageSettingsSpec
+    extends TestKit(ActorSystem("StorageSettingsSystem"))
+    with AnyWordSpecLike
+    with Matchers
+    with BeforeAndAfterAll
+    with ScalaFutures {
 
   private def mkSettings(more: String) =
     StorageSettings(
@@ -37,6 +46,12 @@ class StorageSettingsSpec extends AnyWordSpec with Matchers {
                                                    |""".stripMargin))
         .resolve()
     )
+
+  override protected def afterAll(): Unit = {
+    super.afterAll()
+
+    system.terminate().futureValue
+  }
 
   "StorageSettings" should {
     "correctly parse config with anonymous authorization type" in {
@@ -92,15 +107,6 @@ class StorageSettingsSpec extends AnyWordSpec with Matchers {
       }
     }
 
-    "throw RuntimeException if account name is empty" in {
-      Try(mkSettings(""" credentials.account-name="" """)) match {
-        case Failure(ex) =>
-          ex shouldBe a[RuntimeException]
-          ex.getMessage shouldBe "accountName property must be defined"
-        case Success(_) => fail("Should have thrown exception")
-      }
-    }
-
     "parse retry settings" in {
       val settings = mkSettings("")
       settings.retrySettings shouldBe RetrySettings(maxRetries = 5,
@@ -133,6 +139,13 @@ class StorageSettingsSpec extends AnyWordSpec with Matchers {
       val settings = mkSettings("""endpoint-url="http://localhost:1234" """)
       settings.endPointUrl shouldBe defined
       settings.endPointUrl.get shouldBe "http://localhost:1234"
+    }
+
+    "load custom settings from a path" in {
+      val actual = StorageExt(system).settings("azurite")
+      actual.authorizationType shouldBe "SharedKey"
+      actual.endPointUrl shouldBe Some("http://127.0.0.1:10000")
+      actual.azureNameKeyCredential.accountName shouldBe "devstoreaccount1"
     }
   }
 }

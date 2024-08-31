@@ -10,7 +10,6 @@ package scaladsl
 import akka.actor.ActorSystem
 import akka.stream.Attributes
 import com.dimafeng.testcontainers.ForAllTestContainer
-import com.typesafe.config.ConfigFactory
 import org.scalatest.Ignore
 
 import scala.concurrent.duration._
@@ -23,10 +22,10 @@ class AzuriteIntegrationSpec extends StorageIntegrationSpec with ForAllTestConta
 
   override lazy val container: AzuriteContainer = new AzuriteContainer()
 
-  override protected implicit val system: ActorSystem =
-    ActorSystem("StorageIntegrationSpec", ConfigFactory.load("application-azurite").withFallback(ConfigFactory.load()))
+  override protected implicit val system: ActorSystem = ActorSystem("AzuriteIntegrationSpec")
 
-  protected lazy val blobSettings: StorageSettings = StorageSettings().withEndPointUrl(container.getBlobHostAddress)
+  protected lazy val blobSettings: StorageSettings =
+    StorageExt(system).settings("azurite").withEndPointUrl(container.getBlobHostAddress)
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
