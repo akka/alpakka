@@ -56,6 +56,63 @@ At minimum following configurations needs to be set:
 * `account-key`, Account key to use to create authorization signature, mandatory for `SharedKey` or `SharedKeyLite` authorization types, as described [here](https://learn.microsoft.com/en-us/rest/api/storageservices/authorize-with-shared-key). Environment variable `AZURE_STORAGE_ACCOUNT_KEY` can be set to override this configuration.
 * `sas-token` if authorization type is `sas`. Environment variable `AZURE_STORAGE_SAS_TOKEN` can be set to override this configuration.
 
+## Building request
+
+Each function takes two parameters `objectPath` and `requestBuilder`. The `objectPath` is a `/` separated string of the path of the blob
+or file, for example, `my-container/my-blob` or `my-share/my-directory/my-file`.
+
+Each request builder is subclass of [`RequestBuilder`](/azure-storage/src/main/scala/akka/stream/alpakka/azure/storage/requests/RequestBuilder.scala) which knows how to construct request for the given operation.
+
+### Create simple request builder with default values
+
+In this example `GetBlob` builder is initialized without any optional field.
+
+Scala
+: @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/RequestBuilderSpec.scala) { #simple-request-builder }
+
+Java
+: @@snip [snip](/azure-storage/src/test/java/docs/javadsl/RequestBuilderTest.java) { #simple-request-builder }
+
+### Create request builder initialized with optional fields
+
+In this example `GetBlob` builder is initialized with given `leaseId` and `range` fields.
+
+Scala
+: @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/RequestBuilderSpec.scala) { #populate-request-builder }
+
+Java
+: @@snip [snip](/azure-storage/src/test/java/docs/javadsl/RequestBuilderTest.java) { #populate-request-builder }
+
+### Create request builder initialized with required fields
+
+In this example `CreateFile` builder is initialized with `maxFileSize` and `contentType` fields, which are required fields for `CreateFile` operation.
+
+Scala
+: @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/RequestBuilderSpec.scala) { #request-builder-with-initial-values }
+
+Java
+: @@snip [snip](/azure-storage/src/test/java/docs/javadsl/RequestBuilderTest.java) { #request-builder-with-initial-values }
+
+### Create request builder with ServerSideEncryption
+
+`ServerSideEncryption` can be initialized in similar fashion.
+
+Scala
+: @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/RequestBuilderSpec.scala) { #request-builder-with-sse }
+
+Java
+: @@snip [snip](/azure-storage/src/test/java/docs/javadsl/RequestBuilderTest.java) { #request-builder-with-sse }
+
+###  Create request builder with additional headers
+
+Some operations allow you to add additional headers, for `GetBlob` you can specify `If-Match` header, which specify this header to perform the operation only if the resource's ETag matches the value specified, this can be done by calling `addHeader` function.
+
+Scala
+: @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/RequestBuilderSpec.scala) { #request-builder-with-additional-headers }
+
+Java
+: @@snip [snip](/azure-storage/src/test/java/docs/javadsl/RequestBuilderTest.java) { #request-builder-with-additional-headers }
+
 ## Supported operations on Blob service
 
 ### Create Container
@@ -156,7 +213,7 @@ Scala
 Java
 : @@snip [snip](/azure-storage/src/test/java/docs/javadsl/StorageTest.java) { #get-file }
 
-### Get file properties without downloading blob
+### Get file properties without downloading file
 
 The [`Get File Properties`](https://learn.microsoft.com/en-us/rest/api/storageservices/get-file-properties) operation returns all user-defined metadata, standard HTTP properties, and system properties for the file. (**Note:** Current implementation does not return user-defined metatdata.)
 

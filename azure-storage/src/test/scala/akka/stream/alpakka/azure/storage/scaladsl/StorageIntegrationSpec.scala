@@ -13,6 +13,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.ContentTypes
 import akka.http.scaladsl.model.headers.ByteRange
 import akka.stream.Attributes
+import akka.stream.alpakka.azure.storage.requests.{CreateContainer, DeleteBlob, GetBlob, GetProperties, PutBlockBlob}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Flow, Framing, Keep, Sink, Source}
 import akka.testkit.TestKit
@@ -60,8 +61,7 @@ trait StorageIntegrationSpec
         BlobService
           .putBlockBlob(
             objectPath = objectPath,
-            contentType = ContentTypes.`text/plain(UTF-8)`,
-            contentLength = contentLength,
+            requestBuilder = PutBlockBlob(contentLength, ContentTypes.`text/plain(UTF-8)`),
             payload = Source.single(ByteString(sampleText))
           )
           .withAttributes(getDefaultAttributes)
@@ -76,7 +76,7 @@ trait StorageIntegrationSpec
     "get blob" in {
       val (maybeEventualObjectMetadata, eventualText) =
         BlobService
-          .getBlob(objectPath)
+          .getBlob(objectPath, GetBlob())
           .withAttributes(getDefaultAttributes)
           .via(framing)
           .map(byteString => byteString.utf8String + System.lineSeparator())
@@ -92,7 +92,7 @@ trait StorageIntegrationSpec
     "get blob properties" in {
       val maybeObjectMetadata =
         BlobService
-          .getProperties(objectPath)
+          .getProperties(objectPath, GetProperties())
           .withAttributes(getDefaultAttributes)
           .runWith(Sink.head)
           .futureValue
@@ -107,7 +107,7 @@ trait StorageIntegrationSpec
       val range = ByteRange.Slice(0, 8)
       val (maybeEventualObjectMetadata, eventualText) =
         BlobService
-          .getBlob(objectPath, Some(range))
+          .getBlob(objectPath, GetBlob().withRange(range))
           .withAttributes(getDefaultAttributes)
           .via(framing)
           .map(_.utf8String)
@@ -122,7 +122,7 @@ trait StorageIntegrationSpec
     "delete blob" in {
       val maybeObjectMetadata =
         BlobService
-          .deleteBlob(objectPath)
+          .deleteBlob(objectPath, DeleteBlob())
           .withAttributes(getDefaultAttributes)
           .toMat(Sink.head)(Keep.right)
           .run()
@@ -134,7 +134,7 @@ trait StorageIntegrationSpec
     "get blob after delete" in {
       val maybeObjectMetadata =
         BlobService
-          .getProperties(objectPath)
+          .getProperties(objectPath, GetProperties())
           .withAttributes(getDefaultAttributes)
           .toMat(Sink.head)(Keep.right)
           .run()
@@ -146,7 +146,7 @@ trait StorageIntegrationSpec
 
   protected def createContainer(containerName: String): Future[Done] = {
     BlobService
-      .createContainer(containerName)
+      .createContainer(containerName, CreateContainer())
       .withAttributes(getDefaultAttributes)
       .runWith(Sink.ignore)
   }

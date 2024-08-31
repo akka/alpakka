@@ -10,6 +10,14 @@ package scaladsl
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes
 import akka.http.scaladsl.model.headers.ByteRange
+import akka.stream.alpakka.azure.storage.requests.{
+  ClearFileRange,
+  CreateFile,
+  DeleteFile,
+  GetFile,
+  GetProperties,
+  UpdateFileRange
+}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.util.ByteString
 import org.scalatest.Ignore
@@ -23,7 +31,8 @@ class AzureIntegrationTest extends StorageIntegrationSpec {
   "FileService" should {
     "create file" in {
       val maybeObjectMetadata = FileService
-        .createFile(objectPath = objectPath, contentType = ContentTypes.`text/plain(UTF-8)`, maxSize = contentLength)
+        .createFile(objectPath = objectPath,
+                    requestBuilder = CreateFile(contentLength, ContentTypes.`text/plain(UTF-8)`))
         .withAttributes(getDefaultAttributes)
         .runWith(Sink.head)
         .futureValue
@@ -35,10 +44,11 @@ class AzureIntegrationTest extends StorageIntegrationSpec {
 
     "put range" in {
       val maybeObjectMetadata = FileService
-        .updateRange(objectPath = objectPath,
-                     contentType = ContentTypes.`text/plain(UTF-8)`,
-                     range = ByteRange(0, contentLength - 1),
-                     payload = Source.single(ByteString(sampleText)))
+        .updateRange(
+          objectPath = objectPath,
+          requestBuilder = UpdateFileRange(ByteRange(0, contentLength - 1), ContentTypes.`text/plain(UTF-8)`),
+          payload = Source.single(ByteString(sampleText))
+        )
         .withAttributes(getDefaultAttributes)
         .runWith(Sink.head)
         .futureValue
@@ -50,7 +60,7 @@ class AzureIntegrationTest extends StorageIntegrationSpec {
 
     "get file" in {
       val (maybeEventualObjectMetadata, eventualText) = FileService
-        .getFile(objectPath = objectPath)
+        .getFile(objectPath = objectPath, GetFile())
         .via(framing)
         .map(byteString => byteString.utf8String + System.lineSeparator())
         .toMat(Sink.seq)(Keep.both)
@@ -65,7 +75,7 @@ class AzureIntegrationTest extends StorageIntegrationSpec {
     "get file properties" in {
       val maybeObjectMetadata =
         FileService
-          .getProperties(objectPath)
+          .getProperties(objectPath, GetProperties())
           .withAttributes(getDefaultAttributes)
           .runWith(Sink.head)
           .futureValue
@@ -80,7 +90,7 @@ class AzureIntegrationTest extends StorageIntegrationSpec {
       val range = ByteRange(0, 8)
       val (maybeEventualObjectMetadata, eventualText) =
         FileService
-          .getFile(objectPath, Some(range))
+          .getFile(objectPath, GetFile().withRange(range))
           .withAttributes(getDefaultAttributes)
           .via(framing)
           .map(_.utf8String)
@@ -95,7 +105,7 @@ class AzureIntegrationTest extends StorageIntegrationSpec {
     "clear range" in {
       val range = ByteRange(16, 24)
       val maybeObjectMetadata = FileService
-        .clearRange(objectPath = objectPath, range = range)
+        .clearRange(objectPath = objectPath, requestBuilder = ClearFileRange(range))
         .withAttributes(getDefaultAttributes)
         .runWith(Sink.head)
         .futureValue
@@ -106,7 +116,7 @@ class AzureIntegrationTest extends StorageIntegrationSpec {
     "delete file" in {
       val maybeObjectMetadata =
         FileService
-          .deleteFile(objectPath)
+          .deleteFile(objectPath, DeleteFile())
           .withAttributes(getDefaultAttributes)
           .toMat(Sink.head)(Keep.right)
           .run()
@@ -118,7 +128,7 @@ class AzureIntegrationTest extends StorageIntegrationSpec {
     "get file after delete" in {
       val maybeObjectMetadata =
         FileService
-          .getProperties(objectPath)
+          .getProperties(objectPath, GetProperties())
           .withAttributes(getDefaultAttributes)
           .toMat(Sink.head)(Keep.right)
           .run()
