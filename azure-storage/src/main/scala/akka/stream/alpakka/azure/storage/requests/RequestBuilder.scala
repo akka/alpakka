@@ -30,10 +30,12 @@ abstract class RequestBuilder(val sse: Option[ServerSideEncryption] = None,
   private[storage] def createRequest(settings: StorageSettings, storageType: String, objectPath: String): HttpRequest =
     HttpRequest(
       method = method,
-      uri = createUri(settings = settings,
-                      storageType = storageType,
-                      objectPath = objectPath,
-                      queryString = createQueryString(settings, Some(Query(queryParams).toString()))),
+      uri = createUri(
+        settings = settings,
+        storageType = storageType,
+        objectPath = objectPath,
+        queryString = createQueryString(settings, emptyStringToOption(Query(queryParams).toString()))
+      ),
       headers = getHeaders
     )
 

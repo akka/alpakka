@@ -7,7 +7,7 @@ package azure
 
 import com.typesafe.config.Config
 
-import java.time.{ZoneOffset, ZonedDateTime}
+import java.time.{Clock, ZoneOffset}
 import java.time.format.DateTimeFormatter
 
 package object storage {
@@ -34,8 +34,8 @@ package object storage {
   private[storage] val PageBlobType = "PageBlob"
   private[storage] val AppendBlobType = "AppendBlob"
 
-  private[storage] def getFormattedDate: String =
-    DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now(ZoneOffset.UTC))
+  private[storage] def getFormattedDate(implicit clock: Clock): String =
+    DateTimeFormatter.RFC_1123_DATE_TIME.format(clock.instant().atOffset(ZoneOffset.UTC))
 
   /** Removes ETag quotes in the same way the official AWS tooling does. See
    */

@@ -12,6 +12,7 @@ import akka.http.scaladsl.model.{HttpRequest, Uri}
 import akka.http.scaladsl.model.headers._
 import akka.stream.scaladsl.Source
 
+import java.time.Clock
 import java.util.Base64
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
@@ -23,7 +24,7 @@ import javax.crypto.spec.SecretKeySpec
  * @param settings
  *   - Storage settings
  */
-final case class Signer(initialRequest: HttpRequest, settings: StorageSettings) {
+final case class Signer(initialRequest: HttpRequest, settings: StorageSettings)(implicit clock: Clock) {
 
   private val credential = settings.azureNameKeyCredential
   private val requestWithHeaders =
@@ -38,22 +39,15 @@ final case class Signer(initialRequest: HttpRequest, settings: StorageSettings) 
   }
 
   def signedRequest: Source[HttpRequest, NotUsed] = {
-    import Signer._
     val authorizationType = settings.authorizationType
     if (authorizationType == AnonymousAuthorizationType || authorizationType == SasAuthorizationType)
       Source.single(requestWithHeaders)
-    else {
-      val headersToSign =
-        if (authorizationType == SharedKeyLiteAuthorizationType) buildHeadersToSign(SharedKeyLiteHeaders)
-        else buildHeadersToSign(SharedKeyHeaders)
-
-      val signature = sign(headersToSign)
+    else
       Source.single(
         requestWithHeaders.addHeader(
-          RawHeader(AuthorizationHeaderKey, s"$authorizationType ${credential.accountName}:$signature")
+          RawHeader(AuthorizationHeaderKey, generateAuthorizationHeader)
         )
       )
-    }
   }
 
   private def getHeaderOptionalValue(headerName: String) =
@@ -81,7 +75,7 @@ final case class Signer(initialRequest: HttpRequest, settings: StorageSettings) 
 
   private def getAdditionalXmsHeaders =
     requestWithHeaders.headers.filter(header => header.name().startsWith("x-ms-")).sortBy(_.name()).map { header =>
-      s"${header.name()}:${header.value()}"
+      s"${header.name().toLowerCase}:${header.value()}"
     }
 
   private def getCanonicalizedResource = {
@@ -92,7 +86,7 @@ final case class Signer(initialRequest: HttpRequest, settings: StorageSettings) 
       uri.queryString() match {
         case Some(queryString) =>
           Uri.Query(queryString).toMap.toSeq.sortBy(_._1).map {
-            case (key, value) => s"$key:$value"
+            case (key, value) => s"${key.toLowerCase}:$value"
           }
 
         case None => Seq.empty[String]
@@ -101,8 +95,15 @@ final case class Signer(initialRequest: HttpRequest, settings: StorageSettings) 
     Seq(resourcePath) ++ queries
   }
 
-  private def sign(headersToSign: Seq[String]) =
-    Base64.getEncoder.encodeToString(mac.doFinal(headersToSign.mkString(NewLine).getBytes))
+  private[auth] def generateAuthorizationHeader: String = {
+    import Signer._
+    val authorizationType = settings.authorizationType
+    val headersToSign =
+      if (authorizationType == SharedKeyLiteAuthorizationType) buildHeadersToSign(SharedKeyLiteHeaders)
+      else buildHeadersToSign(SharedKeyHeaders)
+    val signature = Base64.getEncoder.encodeToString(mac.doFinal(headersToSign.mkString(NewLine).getBytes))
+    s"$authorizationType ${credential.accountName}:$signature"
+  }
 }
 
 object Signer {

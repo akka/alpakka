@@ -37,6 +37,7 @@ import akka.stream.alpakka.azure.storage.requests.{
 import akka.stream.scaladsl.{Flow, RetryFlow, Source}
 import akka.util.ByteString
 
+import java.time.Clock
 import scala.collection.immutable
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
@@ -203,6 +204,7 @@ object AzureStorageStream {
       )
 
     import settings.retrySettings._
+    implicit val clock: Clock = Clock.systemUTC()
     Source
       .single(request)
       .flatMapConcat(request => Signer(request, settings).signedRequest)
