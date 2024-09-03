@@ -264,6 +264,55 @@ object S3 {
     S3Stream.getObject(S3Location(bucket, key), range, versionId, s3Headers)
 
   /**
+   * Gets a S3 Object using `Byte-Range Fetches`
+   *
+   * @param bucket      the s3 bucket name
+   * @param key         the s3 object key
+   * @param sse [optional] the server side encryption used on upload
+   * @param rangeSize   size of each range to request
+   * @param parallelism number of range to request in parallel
+   *
+   * @return A [[akka.stream.scaladsl.Source]] containing the objects data as a [[akka.util.ByteString]] along with a materialized value containing the
+   *         [[akka.stream.alpakka.s3.ObjectMetadata]]
+   */
+  def getObjectByRanges(
+                 bucket: String,
+                 key: String,
+                 versionId: Option[String] = None,
+                 sse: Option[ServerSideEncryption] = None,
+                 rangeSize: Long = MinChunkSize,
+                 parallelism: Int = 4
+               ): Source[ByteString, Future[ObjectMetadata]] =
+    S3Stream.getObjectByRanges(S3Location(bucket, key),
+      versionId,
+      S3Headers.empty.withOptionalServerSideEncryption(sse),
+      rangeSize,
+      parallelism
+    )
+
+  /**
+   * Gets a S3 Object using `Byte-Range Fetches`
+   *
+   * @param bucket    the s3 bucket name
+   * @param key       the s3 object key
+   * @param s3Headers any headers you want to add
+   * @param rangeSize size of each range to request
+   * @param parallelism number of range to request in parallel
+   *
+   * @return A [[akka.stream.scaladsl.Source]] containing the objects data as a [[akka.util.ByteString]] along with a materialized value containing the
+   *         [[akka.stream.alpakka.s3.ObjectMetadata]]
+   */
+  def getObjectByRanges(
+                 bucket: String,
+                 key: String,
+                 versionId: Option[String],
+                 s3Headers: S3Headers,
+                 rangeSize: Long,
+                 parallelism: Int
+               ): Source[ByteString, Future[ObjectMetadata]] =
+    S3Stream.getObjectByRanges(S3Location(bucket, key), versionId, s3Headers, rangeSize, parallelism)
+
+  /**
    * Will return a list containing all of the buckets for the current AWS account
    *
    * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListBuckets.html
