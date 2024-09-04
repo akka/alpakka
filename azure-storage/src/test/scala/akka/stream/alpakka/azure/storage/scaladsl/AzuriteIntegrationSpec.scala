@@ -16,7 +16,7 @@ import scala.concurrent.duration._
 import scala.concurrent.Await
 
 // TODO: investigate how Azurite works, it is not even working with pure Java API
-// `putBlob` operations fails with "remature end of file."
+// `putBlob` operations fails with "Premature end of file." error with BadRequest.
 @Ignore
 class AzuriteIntegrationSpec extends StorageIntegrationSpec with ForAllTestContainer {
 

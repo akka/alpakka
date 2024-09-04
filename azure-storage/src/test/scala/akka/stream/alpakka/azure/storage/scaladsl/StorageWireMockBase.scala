@@ -16,7 +16,13 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
-import com.github.tomakehurst.wiremock.stubbing.StubMapping
+import com.github.tomakehurst.wiremock.extension.requestfilter.{
+  RequestFilterAction,
+  RequestWrapper,
+  StubRequestFilterV2
+}
+import com.github.tomakehurst.wiremock.http.Request
+import com.github.tomakehurst.wiremock.stubbing.{ServeEvent, StubMapping}
 import com.typesafe.config.{Config, ConfigFactory}
 
 abstract class StorageWireMockBase(_system: ActorSystem, val _wireMockServer: WireMockServer) extends TestKit(_system) {
@@ -194,6 +200,7 @@ object StorageWireMockBase {
   def initServer(): WireMockServer = {
     val server = new WireMockServer(
       wireMockConfig()
+        .extensions(new RemoveDuplicateContentLengthHeader())
         .dynamicPort()
     )
     server.start()
@@ -221,4 +228,26 @@ object StorageWireMockBase {
        | }
        |}
        |""".stripMargin)
+
+  private class RemoveDuplicateContentLengthHeader extends StubRequestFilterV2 {
+    override def filter(request: Request, serveEvent: ServeEvent): RequestFilterAction = {
+      val headerName = `Content-Length`.name
+
+      val updatedRequest =
+        Option(request.header(headerName)).map(_.firstValue()) match {
+          case Some(contentLengthValue) =>
+            RequestWrapper
+              .create()
+              .removeHeader(headerName)
+              .addHeader(headerName, contentLengthValue)
+              .wrap(request)
+
+          case None => request
+        }
+
+      RequestFilterAction.continueWith(updatedRequest)
+    }
+
+    override def getName: String = "remove-duplicate-content-length-headers"
+  }
 }
