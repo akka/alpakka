@@ -38,7 +38,6 @@ import akka.stream.scaladsl.{Flow, RetryFlow, Source}
 import akka.util.ByteString
 
 import java.time.Clock
-import scala.collection.immutable
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
 
@@ -70,120 +69,102 @@ object AzureStorageStream {
       }
       .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.parasitic))
 
-  private[storage] def getObjectProperties(storageType: String,
-                                           objectPath: String,
-                                           requestBuilder: GetProperties): Source[Option[ObjectMetadata], NotUsed] =
-    Source
-      .fromMaterializer { (mat, attr) =>
-        implicit val system: ActorSystem = mat.system
-        import mat.executionContext
-        val settings = resolveSettings(attr, system)
-        val request = requestBuilder.createRequest(settings, storageType, objectPath)
-        signAndRequest(request, settings)
-          .flatMapConcat {
-            case HttpResponse(OK, headers, entity, _) =>
-              Source.future(
-                entity.withoutSizeLimit().discardBytes().future().map(_ => Some(computeMetaData(headers, entity)))
-              )
-            case HttpResponse(NotFound, _, entity, _) =>
-              Source.future(entity.discardBytes().future().map(_ => None)(ExecutionContexts.parasitic))
-            case response: HttpResponse => Source.future(unmarshalError(response.status, response.entity))
-          }
-      }
-      .mapMaterializedValue(_ => NotUsed)
+  private[storage] def getBlobProperties(objectPath: String,
+                                         requestBuilder: GetProperties): Source[Option[ObjectMetadata], NotUsed] =
+    handleRequest(successCode = OK, storageType = BlobType, objectPath = objectPath, requestBuilder = requestBuilder)
 
-  private[storage] def deleteObject(storageType: String,
-                                    objectPath: String,
-                                    requestBuilder: RequestBuilder): Source[Option[ObjectMetadata], NotUsed] =
-    Source
-      .fromMaterializer { (mat, attr) =>
-        implicit val system: ActorSystem = mat.system
-        import mat.executionContext
-        val settings = resolveSettings(attr, system)
-        val request = requestBuilder.createRequest(settings, storageType, objectPath)
-        signAndRequest(request, settings)
-          .flatMapConcat {
-            case HttpResponse(Accepted, headers, entity, _) =>
-              Source.future(
-                entity.withoutSizeLimit().discardBytes().future().map(_ => Some(computeMetaData(headers, entity)))
-              )
-            case HttpResponse(NotFound, _, entity, _) =>
-              Source.future(entity.discardBytes().future().map(_ => None)(ExecutionContexts.parasitic))
-            case response: HttpResponse => Source.future(unmarshalError(response.status, response.entity))
-          }
-      }
-      .mapMaterializedValue(_ => NotUsed)
+  private[storage] def getFileProperties(objectPath: String,
+                                         requestBuilder: GetProperties): Source[Option[ObjectMetadata], NotUsed] =
+    handleRequest(successCode = OK, storageType = FileType, objectPath = objectPath, requestBuilder = requestBuilder)
+
+  private[storage] def deleteBlob(objectPath: String,
+                                  requestBuilder: RequestBuilder): Source[Option[ObjectMetadata], NotUsed] =
+    handleRequest(successCode = Accepted,
+                  storageType = BlobType,
+                  objectPath = objectPath,
+                  requestBuilder = requestBuilder)
+
+  private[storage] def deleteFile(objectPath: String,
+                                  requestBuilder: RequestBuilder): Source[Option[ObjectMetadata], NotUsed] =
+    handleRequest(successCode = Accepted,
+                  storageType = FileType,
+                  objectPath = objectPath,
+                  requestBuilder = requestBuilder)
 
   private[storage] def putBlob(objectPath: String,
                                requestBuilder: RequestBuilder,
                                maybeHttpEntity: Option[MessageEntity]): Source[Option[ObjectMetadata], NotUsed] =
-    putRequest(objectPath = objectPath,
-               storageType = BlobType,
-               requestBuilder = requestBuilder,
-               maybeHttpEntity = maybeHttpEntity)
+    handleRequest(successCode = Created,
+                  storageType = BlobType,
+                  objectPath = objectPath,
+                  requestBuilder = requestBuilder,
+                  maybeHttpEntity = maybeHttpEntity)
 
   private[storage] def createFile(objectPath: String,
                                   requestBuilder: CreateFile): Source[Option[ObjectMetadata], NotUsed] =
-    putRequest(objectPath = objectPath, storageType = FileType, requestBuilder = requestBuilder)
+    handleRequest(successCode = Created,
+                  storageType = FileType,
+                  objectPath = objectPath,
+                  requestBuilder = requestBuilder)
 
   private[storage] def updateRange(objectPath: String,
                                    httpEntity: MessageEntity,
                                    requestBuilder: UpdateFileRange): Source[Option[ObjectMetadata], NotUsed] =
-    putRequest(
-      objectPath = objectPath,
+    handleRequest(
+      successCode = Created,
       storageType = FileType,
+      objectPath = objectPath,
       requestBuilder = requestBuilder,
       maybeHttpEntity = Some(httpEntity)
     )
 
   private[storage] def clearRange(objectPath: String,
                                   requestBuilder: ClearFileRange): Source[Option[ObjectMetadata], NotUsed] =
-    putRequest(objectPath = objectPath, storageType = FileType, requestBuilder = requestBuilder)
+    handleRequest(successCode = Created,
+                  storageType = FileType,
+                  objectPath = objectPath,
+                  requestBuilder = requestBuilder)
 
   private[storage] def createContainer(objectPath: String,
                                        requestBuilder: CreateContainer): Source[Option[ObjectMetadata], NotUsed] =
-    putRequest(objectPath = objectPath, storageType = BlobType, requestBuilder = requestBuilder)
+    handleRequest(successCode = Created,
+                  storageType = BlobType,
+                  objectPath = objectPath,
+                  requestBuilder = requestBuilder)
 
   /**
-   *Common function for "PUT" request where we don't expect response body.
+   * Common function to handle all requests where we don't expect response body.
    *
-   * @param objectPath path of the object.
+   * @param successCode status code for successful response
    * @param storageType storage type
+   * @param objectPath path of the object.
    * @param requestBuilder request builder
    * @param maybeHttpEntity optional http entity
    * @return Source with metadata containing response headers
    */
-  private def putRequest(objectPath: String,
-                         storageType: String,
-                         requestBuilder: RequestBuilder,
-                         maybeHttpEntity: Option[MessageEntity] = None): Source[Option[ObjectMetadata], NotUsed] = {
+  private def handleRequest(
+      successCode: StatusCode,
+      storageType: String,
+      objectPath: String,
+      requestBuilder: RequestBuilder,
+      maybeHttpEntity: Option[MessageEntity] = None
+  ): Source[Option[ObjectMetadata], NotUsed] =
     Source
       .fromMaterializer { (mat, attr) =>
         implicit val system: ActorSystem = mat.system
+        import system.dispatcher
         val settings = resolveSettings(attr, system)
         val httpEntity = maybeHttpEntity.getOrElse(HttpEntity.Empty)
         val request = requestBuilder.createRequest(settings, storageType, objectPath).withEntity(httpEntity)
-        handlePutRequest(request, settings)
+        signAndRequest(request, settings).flatMapConcat {
+          case HttpResponse(sc, h, entity, _) if sc == successCode =>
+            Source.future(entity.withoutSizeLimit().discardBytes().future().map(_ => Some(computeMetaData(h, entity))))
+          case HttpResponse(NotFound, _, entity, _) =>
+            Source.future(entity.withoutSizeLimit().discardBytes().future().map(_ => None)(ExecutionContexts.parasitic))
+          case response: HttpResponse => Source.future(unmarshalError(response.status, response.entity))
+        }
       }
       .mapMaterializedValue(_ => NotUsed)
-  }
-
-  private def handlePutRequest(request: HttpRequest, settings: StorageSettings)(implicit system: ActorSystem) = {
-    import system.dispatcher
-    signAndRequest(request, settings).flatMapConcat {
-      case HttpResponse(Created, h, entity, _) =>
-        Source.future(entity.discardBytes().future().map { _ =>
-          val contentLengthHeader = `Content-Length`
-            .parseFromValueString(entity.contentLengthOption.getOrElse(0L).toString)
-            .map(Seq(_))
-            .getOrElse(Nil)
-          Some(ObjectMetadata(h ++ contentLengthHeader))
-        })
-      case HttpResponse(NotFound, _, entity, _) =>
-        Source.future(entity.discardBytes().future().map(_ => None)(ExecutionContexts.parasitic))
-      case response: HttpResponse => Source.future(unmarshalError(response.status, response.entity))
-    }
-  }
 
   private def signAndRequest(
       request: HttpRequest,
@@ -195,7 +176,8 @@ object AzureStorageStream {
     val retriableFlow = Flow[HttpRequest]
       .mapAsync(parallelism = 1)(
         req =>
-          singleRequest(req)
+          Http()
+            .singleRequest(req)
             .map(Success.apply)
             .recover[Try[HttpResponse]] {
               case t =>
@@ -220,24 +202,17 @@ object AzureStorageStream {
       .mapAsync(1)(Future.fromTry)
   }
 
-  private def singleRequest(request: HttpRequest)(implicit system: ActorSystem) =
-    Http().singleRequest(request)
-
-  private def computeMetaData(headers: immutable.Seq[HttpHeader], entity: ResponseEntity): ObjectMetadata = {
-    val contentLengthHeader: Seq[HttpHeader] = `Content-Length`
+  private def computeMetaData(headers: Seq[HttpHeader], entity: ResponseEntity): ObjectMetadata = {
+    val contentLengthHeader = `Content-Length`
       .parseFromValueString(entity.contentLengthOption.getOrElse(0L).toString)
       .map(Seq(_))
       .getOrElse(Nil)
-    val contentTypeHeader: Seq[HttpHeader] = `Content-Type`
+    val contentTypeHeader = `Content-Type`
       .parseFromValueString(entity.contentType.value)
       .map(Seq(_))
       .getOrElse(Nil)
     ObjectMetadata(
-      headers ++
-      contentLengthHeader ++ contentTypeHeader ++
-      immutable.Seq(
-        CustomContentTypeHeader(entity.contentType)
-      )
+      headers ++ contentLengthHeader ++ contentTypeHeader ++ Seq(CustomContentTypeHeader(entity.contentType))
     )
   }
 

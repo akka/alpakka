@@ -49,7 +49,7 @@ object BlobService {
    *         [[akka.stream.alpakka.azure.storage.ObjectMetadata]], will be [[scala.None]] in case the object does not exist
    */
   def getProperties(objectPath: String, requestBuilder: GetProperties): Source[Option[ObjectMetadata], NotUsed] =
-    AzureStorageStream.getObjectProperties(BlobType, objectPath, requestBuilder)
+    AzureStorageStream.getBlobProperties(objectPath, requestBuilder)
 
   /**
    * Deletes blob.
@@ -60,7 +60,7 @@ object BlobService {
    *         [[akka.stream.alpakka.azure.storage.ObjectMetadata]], will be [[scala.None]] in case the object does not exist
    */
   def deleteBlob(objectPath: String, requestBuilder: DeleteBlob): Source[Option[ObjectMetadata], NotUsed] =
-    AzureStorageStream.deleteObject(BlobType, objectPath, requestBuilder)
+    AzureStorageStream.deleteBlob(objectPath, requestBuilder)
 
   /**
    * Put Block blob.

@@ -56,7 +56,7 @@ object FileService {
    */
   def getProperties(objectPath: String, requestBuilder: GetProperties): Source[Optional[ObjectMetadata], NotUsed] =
     AzureStorageStream
-      .getObjectProperties(FileType, objectPath, requestBuilder)
+      .getFileProperties(objectPath, requestBuilder)
       .map(opt => Optional.ofNullable(opt.orNull))
       .asJava
 
@@ -70,7 +70,7 @@ object FileService {
    */
   def deleteFile(objectPath: String, requestBuilder: DeleteFile): Source[Optional[ObjectMetadata], NotUsed] =
     AzureStorageStream
-      .deleteObject(FileType, objectPath, requestBuilder)
+      .deleteFile(objectPath, requestBuilder)
       .map(opt => Optional.ofNullable(opt.orNull))
       .asJava
 

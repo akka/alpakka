@@ -48,7 +48,7 @@ object FileService {
    *         [[akka.stream.alpakka.azure.storage.ObjectMetadata]], will be [[scala.None]] in case the object does not exist
    */
   def getProperties(objectPath: String, requestBuilder: GetProperties): Source[Option[ObjectMetadata], NotUsed] =
-    AzureStorageStream.getObjectProperties(FileType, objectPath, requestBuilder)
+    AzureStorageStream.getFileProperties(objectPath, requestBuilder)
 
   /**
    * Deletes file.
@@ -59,7 +59,7 @@ object FileService {
    *         [[akka.stream.alpakka.azure.storage.ObjectMetadata]], will be [[scala.None]] in case the object does not exist
    */
   def deleteFile(objectPath: String, requestBuilder: DeleteFile): Source[Option[ObjectMetadata], NotUsed] =
-    AzureStorageStream.deleteObject(FileType, objectPath, requestBuilder)
+    AzureStorageStream.deleteFile(objectPath, requestBuilder)
 
   /**
    * Creates a file.

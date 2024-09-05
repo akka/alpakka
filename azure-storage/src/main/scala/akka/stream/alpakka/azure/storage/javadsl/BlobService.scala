@@ -56,7 +56,7 @@ object BlobService {
    */
   def getProperties(objectPath: String, requestBuilder: GetProperties): Source[Optional[ObjectMetadata], NotUsed] =
     AzureStorageStream
-      .getObjectProperties(BlobType, objectPath, requestBuilder)
+      .getBlobProperties(objectPath, requestBuilder)
       .map(opt => Optional.ofNullable(opt.orNull))
       .asJava
 
@@ -70,7 +70,7 @@ object BlobService {
    */
   def deleteBlob(objectPath: String, requestBuilder: DeleteFile): Source[Optional[ObjectMetadata], NotUsed] =
     AzureStorageStream
-      .deleteObject(BlobType, objectPath, requestBuilder)
+      .deleteBlob(objectPath, requestBuilder)
       .map(opt => Optional.ofNullable(opt.orNull))
       .asJava
 
