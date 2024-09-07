@@ -26,7 +26,6 @@ package object storage {
   private[storage] val PageBlobSequenceNumberHeaderKey = "x-ms-blob-sequence-number"
   private[storage] val AnonymousAuthorizationType = "anon"
   private[storage] val SharedKeyAuthorizationType = "SharedKey"
-  private[storage] val SharedKeyLiteAuthorizationType = "SharedKeyLite"
   private[storage] val SasAuthorizationType = "sas"
   private[storage] val BlobType = "blob"
   private[storage] val FileType = "file"

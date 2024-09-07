@@ -51,7 +51,7 @@ Java
 
 At minimum following configurations needs to be set:
 
-* `authorization-type`, this is the type of authorization to use as described [here](https://learn.microsoft.com/en-us/rest/api/storageservices/authorize-requests-to-azure-storage), possible values are `anon`, `SharedKey`, `SharedKeyLite`, or `sas`. Environment variable `AZURE_STORAGE_AUTHORIZATION_TYPE` can be set to override this configuration.
+* `authorization-type`, this is the type of authorization to use as described [here](https://learn.microsoft.com/en-us/rest/api/storageservices/authorize-requests-to-azure-storage), possible values are `anon`, `SharedKey`, or `sas`. Environment variable `AZURE_STORAGE_AUTHORIZATION_TYPE` can be set to override this configuration.
 * `account-name`, this is the name of the blob storage or file share. Environment variable `AZURE_STORAGE_ACCOUNT_NAME` can be set to override this configuration.
 * `account-key`, Account key to use to create authorization signature, mandatory for `SharedKey` or `SharedKeyLite` authorization types, as described [here](https://learn.microsoft.com/en-us/rest/api/storageservices/authorize-with-shared-key). Environment variable `AZURE_STORAGE_ACCOUNT_KEY` can be set to override this configuration.
 * `sas-token` if authorization type is `sas`. Environment variable `AZURE_STORAGE_SAS_TOKEN` can be set to override this configuration.

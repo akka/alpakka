@@ -98,9 +98,7 @@ final case class Signer(initialRequest: HttpRequest, settings: StorageSettings)(
   private[auth] def generateAuthorizationHeader: String = {
     import Signer._
     val authorizationType = settings.authorizationType
-    val headersToSign =
-      if (authorizationType == SharedKeyLiteAuthorizationType) buildHeadersToSign(SharedKeyLiteHeaders)
-      else buildHeadersToSign(SharedKeyHeaders)
+    val headersToSign = buildHeadersToSign(SharedKeyHeaders)
     val signature = Base64.getEncoder.encodeToString(mac.doFinal(headersToSign.mkString(NewLine).getBytes))
     s"$authorizationType ${credential.accountName}:$signature"
   }
@@ -121,6 +119,4 @@ object Signer {
       `If-Unmodified-Since`.name,
       Range.name
     )
-
-  private val SharedKeyLiteHeaders = Seq("Content-MD5", `Content-Type`.name, Date.name)
 }
