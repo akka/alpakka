@@ -35,6 +35,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import scala.Option;
 
 import java.util.List;
 import java.util.Optional;
@@ -128,7 +129,7 @@ public class StorageTest extends StorageWireMockBase {
         //#put-append-blob
         final Source<Optional<ObjectMetadata>, NotUsed> source =
                 BlobService.putAppendBlock(containerName() + "/" + blobName(),
-                         PutAppendBlock.create(ContentTypes.TEXT_PLAIN_UTF8));
+                        PutAppendBlock.create(ContentTypes.TEXT_PLAIN_UTF8));
 
         final CompletionStage<Optional<ObjectMetadata>> optionalCompletionStage = source.runWith(Sink.head(), system);
         //#put-append-blob
@@ -139,7 +140,7 @@ public class StorageTest extends StorageWireMockBase {
 
     @Test
     public void getBlob() throws Exception {
-        mockGetBlob();
+        mockGetBlob(Option.empty(), Option.empty());
 
         //#get-blob
         final Source<ByteString, CompletionStage<ObjectMetadata>> source =
@@ -213,7 +214,7 @@ public class StorageTest extends StorageWireMockBase {
         //#create-file
         final Source<Optional<ObjectMetadata>, NotUsed> source =
                 FileService.createFile(containerName() + "/" + blobName(),
-                         CreateFile.create(contentLength(), ContentTypes.TEXT_PLAIN_UTF8));
+                        CreateFile.create(contentLength(), ContentTypes.TEXT_PLAIN_UTF8));
 
         final CompletionStage<Optional<ObjectMetadata>> optionalCompletionStage = source.runWith(Sink.head(), system);
         //#create-file
@@ -237,7 +238,7 @@ public class StorageTest extends StorageWireMockBase {
         final Source<Optional<ObjectMetadata>, NotUsed> source =
                 FileService.updateRange(containerName() + "/" + blobName(),
                         UpdateFileRange.create(contentRange(), ContentTypes.TEXT_PLAIN_UTF8),
-                          Source.single(ByteString.fromString(payload())));
+                        Source.single(ByteString.fromString(payload())));
 
         final CompletionStage<Optional<ObjectMetadata>> optionalCompletionStage = source.runWith(Sink.head(), system);
         //#update-range
@@ -251,7 +252,7 @@ public class StorageTest extends StorageWireMockBase {
 
     @Test
     public void getFile() throws Exception {
-        mockGetBlob();
+        mockGetBlob(Option.empty(), Option.empty());
 
         //#get-file
         final Source<ByteString, CompletionStage<ObjectMetadata>> source =

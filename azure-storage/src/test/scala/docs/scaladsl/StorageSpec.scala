@@ -5,7 +5,9 @@
 package docs.scaladsl
 
 import akka.NotUsed
-import akka.http.scaladsl.model.ContentTypes
+import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
+import akka.stream.alpakka.azure.storage.StorageException
+import akka.stream.alpakka.azure.storage.headers.ServerSideEncryption
 import akka.stream.alpakka.azure.storage.requests._
 import akka.stream.alpakka.azure.storage.scaladsl.StorageWireMockBase
 import akka.stream.alpakka.azure.storage.scaladsl.StorageWireMockBase.ETagRawValue
@@ -147,6 +149,70 @@ class StorageSpec
       //#get-blob
 
       eventualText.futureValue.map(_.utf8String).mkString("") shouldBe payload
+    }
+
+    "get blob with versionId" in {
+      mockGetBlob(Some("versionId"))
+
+      import akka.stream.alpakka.azure.storage.scaladsl.BlobService
+      import akka.stream.alpakka.azure.storage.ObjectMetadata
+
+      val source: Source[ByteString, Future[ObjectMetadata]] =
+        BlobService.getBlob(objectPath = s"$containerName/$blobName", GetBlob().withVersionId("versionId"))
+
+      val eventualText = source.toMat(Sink.seq)(Keep.right).run()
+
+      eventualText.futureValue.map(_.utf8String).mkString("") shouldBe payload
+    }
+
+    "get blob with optional header" in {
+      mockGetBlob(leaseId = Some("leaseId"))
+
+      import akka.stream.alpakka.azure.storage.scaladsl.BlobService
+      import akka.stream.alpakka.azure.storage.ObjectMetadata
+
+      val source: Source[ByteString, Future[ObjectMetadata]] =
+        BlobService.getBlob(objectPath = s"$containerName/$blobName", GetBlob().withLeaseId("leaseId"))
+
+      val eventualText = source.toMat(Sink.seq)(Keep.right).run()
+
+      eventualText.futureValue.map(_.utf8String).mkString("") shouldBe payload
+    }
+
+    "get blob with ServerSideEncryption" in {
+      mockGetBlobWithServerSideEncryption()
+
+      import akka.stream.alpakka.azure.storage.scaladsl.BlobService
+      import akka.stream.alpakka.azure.storage.ObjectMetadata
+
+      val source: Source[ByteString, Future[ObjectMetadata]] =
+        BlobService.getBlob(objectPath = s"$containerName/$blobName",
+                            GetBlob().withServerSideEncryption(ServerSideEncryption.customerKey("SGVsbG9Xb3JsZA==")))
+
+      val eventualText = source.toMat(Sink.seq)(Keep.right).run()
+
+      eventualText.futureValue.map(_.utf8String).mkString("") shouldBe payload
+    }
+
+    "get blob from non-existing container" in {
+      mock404s()
+
+      import akka.stream.alpakka.azure.storage.scaladsl.BlobService
+      import akka.stream.alpakka.azure.storage.ObjectMetadata
+
+      val source: Source[ByteString, Future[ObjectMetadata]] =
+        BlobService.getBlob(objectPath = s"$containerName/$blobName", GetBlob())
+
+      val eventualMetadata = source.toMat(Sink.seq)(Keep.right).run()
+      eventualMetadata.failed.futureValue shouldBe
+      StorageException(
+        statusCode = StatusCodes.NotFound,
+        errorCode = "ResourceNotFound",
+        errorMessage = "The specified resource doesn't exist.",
+        resourceName = None,
+        resourceValue = None,
+        reason = None
+      )
     }
 
     "get blob range" in {

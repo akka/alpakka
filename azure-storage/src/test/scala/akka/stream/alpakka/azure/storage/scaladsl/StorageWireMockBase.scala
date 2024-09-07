@@ -25,6 +25,8 @@ import com.github.tomakehurst.wiremock.http.Request
 import com.github.tomakehurst.wiremock.stubbing.{ServeEvent, StubMapping}
 import com.typesafe.config.{Config, ConfigFactory}
 
+import scala.util.Try
+
 abstract class StorageWireMockBase(_system: ActorSystem, val _wireMockServer: WireMockServer) extends TestKit(_system) {
 
   private val port = _wireMockServer.port()
@@ -102,9 +104,25 @@ abstract class StorageWireMockBase(_system: ActorSystem, val _wireMockServer: Wi
         )
     )
 
-  protected def mockGetBlob(): StubMapping =
+  protected def mockGetBlob(versionId: Option[String] = None, leaseId: Option[String] = None): StubMapping =
     mock.register(
-      get(urlEqualTo(s"/$AccountName/$containerName/$blobName"))
+      get(urlPathEqualTo(s"/$AccountName/$containerName/$blobName"))
+        .withQueryParam("versionId", toStringValuePattern(versionId))
+        .withHeader(LeaseIdHeaderKey, toStringValuePattern(leaseId))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader(ETag.name, ETagValue)
+            .withBody(payload)
+        )
+    )
+
+  protected def mockGetBlobWithServerSideEncryption(): StubMapping =
+    mock.register(
+      get(urlPathEqualTo(s"/$AccountName/$containerName/$blobName"))
+        .withHeader("x-ms-encryption-algorithm", equalTo("AES256"))
+        .withHeader("x-ms-encryption-key", equalTo("SGVsbG9Xb3JsZA=="))
+        .withHeader("x-ms-encryption-key-sha256", equalTo("hy5OUM6ZkNiwQTMMR8nd0Rvsa1A66ThqmdqFhOm7EsQ="))
         .willReturn(
           aResponse()
             .withStatus(200)
@@ -188,6 +206,19 @@ abstract class StorageWireMockBase(_system: ActorSystem, val _wireMockServer: Wi
         )
     )
 
+  protected def mock404s(): StubMapping =
+    mock.register(
+      any(anyUrl())
+        .willReturn(aResponse().withStatus(404).withBody("""
+          |<Error>
+          | <Code>ResourceNotFound</Code>
+          | <Message>The specified resource doesn't exist.</Message>
+          |</Error>
+          |""".stripMargin))
+    )
+
+  private def toStringValuePattern(maybeValue: Option[String]) = maybeValue.map(equalTo).getOrElse(absent())
+
   private def stopWireMockServer(): Unit = _wireMockServer.stop()
 }
 
@@ -234,7 +265,7 @@ object StorageWireMockBase {
       val headerName = `Content-Length`.name
 
       val updatedRequest =
-        Option(request.header(headerName)).map(_.firstValue()) match {
+        Try(request.getHeader(headerName)).toOption match {
           case Some(contentLengthValue) =>
             RequestWrapper
               .create()
