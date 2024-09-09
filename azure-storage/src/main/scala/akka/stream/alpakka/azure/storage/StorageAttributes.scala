@@ -15,7 +15,7 @@ import akka.stream.Attributes.Attribute
 object StorageAttributes {
 
   /**
-   * Settings to use for the S3 stream
+   * Settings to use for the Azure Blob Storage stream
    */
   def settings(settings: StorageSettings): Attributes = Attributes(StorageSettingsValue(settings))
 
