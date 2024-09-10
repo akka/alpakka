@@ -31,6 +31,7 @@ object StorageAttributes {
 }
 
 final class StorageSettingsPath private (val path: String) extends Attribute
+
 object StorageSettingsPath {
   val Default: StorageSettingsPath = StorageSettingsPath(StorageSettings.ConfigPath)
 
