@@ -64,10 +64,11 @@ object StorageException {
       )
     } match {
       case Failure(ex) =>
+        val errorMessage = emptyStringToOption(ex.getMessage)
         StorageException(
           statusCode = statusCode,
-          errorCode = Option(ex.getMessage).getOrElse("null"),
-          errorMessage = Option(response).getOrElse("null"),
+          errorCode = errorMessage.getOrElse("null"),
+          errorMessage = emptyStringToOption(response).orElse(errorMessage).getOrElse("null"),
           resourceName = None,
           resourceValue = None,
           reason = None
