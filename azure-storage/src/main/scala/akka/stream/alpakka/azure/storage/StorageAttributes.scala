@@ -39,6 +39,7 @@ object StorageSettingsPath {
 }
 
 final class StorageSettingsValue private (val settings: StorageSettings) extends Attribute
+
 object StorageSettingsValue {
   def apply(settings: StorageSettings) = new StorageSettingsValue(settings)
 }
