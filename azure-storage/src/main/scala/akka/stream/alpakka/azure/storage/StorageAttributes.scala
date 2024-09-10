@@ -15,7 +15,7 @@ import akka.stream.Attributes.Attribute
 object StorageAttributes {
 
   /**
-   * Settings to use for the S3 stream
+   * Settings to use for the Azure Blob Storage stream
    */
   def settings(settings: StorageSettings): Attributes = Attributes(StorageSettingsValue(settings))
 
@@ -31,6 +31,7 @@ object StorageAttributes {
 }
 
 final class StorageSettingsPath private (val path: String) extends Attribute
+
 object StorageSettingsPath {
   val Default: StorageSettingsPath = StorageSettingsPath(StorageSettings.ConfigPath)
 
@@ -38,6 +39,7 @@ object StorageSettingsPath {
 }
 
 final class StorageSettingsValue private (val settings: StorageSettings) extends Attribute
+
 object StorageSettingsValue {
   def apply(settings: StorageSettings) = new StorageSettingsValue(settings)
 }

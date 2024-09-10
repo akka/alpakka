@@ -1,6 +1,6 @@
 <configuration>
     <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-        <file>target/s3.log</file>
+        <file>target/azure-blob-storage.log</file>
         <append>false</append>
         <encoder>
             <pattern>%d{ISO8601} %-5level [%thread] [%logger{36}]  %msg%n</pattern>

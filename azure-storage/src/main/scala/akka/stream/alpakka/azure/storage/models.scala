@@ -31,7 +31,7 @@ object AzureNameKeyCredential {
   }
 }
 
-/** Modelled after ObjectMetadata in S3.
+/** Modelled after BlobProperties in Azure Blob Storage.
  *
  * @param metadata
  *   Raw Http headers

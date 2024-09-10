@@ -217,7 +217,7 @@ object AzureStorageStream {
   }
 
   private def isTransientError(status: StatusCode): Boolean = {
-    // 5xx errors from S3 can be treated as transient.
+    // 5xx errors from Azure Blob Storage can be treated as transient.
     status.intValue >= 500
   }
 
