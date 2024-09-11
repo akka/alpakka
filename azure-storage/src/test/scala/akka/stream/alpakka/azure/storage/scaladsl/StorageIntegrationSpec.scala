@@ -7,7 +7,7 @@ package azure
 package storage
 package scaladsl
 
-import akka.{Done, NotUsed}
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.ContentTypes
@@ -33,7 +33,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import java.security.MessageDigest
 import java.util.Base64
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 trait StorageIntegrationSpec
     extends AnyWordSpecLike
@@ -44,10 +44,15 @@ trait StorageIntegrationSpec
     with LogCapturing {
 
   protected val defaultContainerName = "test-container"
-  protected val fileName = "sample-blob.txt"
+  // share was created manually
+  protected val defaultShareName = "test-share"
+  protected val defaultDirectoryName = "test-directory"
+  protected val defaultDirectoryPath = s"$defaultShareName/$defaultDirectoryName"
+  protected val fileName = "sample-file.txt"
   protected val sampleText: String = "The quick brown fox jumps over the lazy dog." + System.lineSeparator()
   protected val contentLength: Long = sampleText.length.toLong
-  protected val objectPath = s"$defaultContainerName/$fileName"
+  protected val blobObjectPath = s"$defaultContainerName/$fileName"
+  protected val fileObjectPath = s"$defaultDirectoryPath/$fileName"
   protected val framing: Flow[ByteString, ByteString, NotUsed] =
     Framing.delimiter(ByteString(System.lineSeparator()), 256, allowTruncation = true)
 
@@ -80,7 +85,7 @@ trait StorageIntegrationSpec
       val maybeObjectMetadata =
         BlobService
           .putBlockBlob(
-            objectPath = objectPath,
+            objectPath = blobObjectPath,
             requestBuilder = PutBlockBlob(contentLength, ContentTypes.`text/plain(UTF-8)`),
             payload = Source.single(ByteString(sampleText))
           )
@@ -96,7 +101,7 @@ trait StorageIntegrationSpec
     "get blob" in {
       val (maybeEventualObjectMetadata, eventualText) =
         BlobService
-          .getBlob(objectPath, GetBlob())
+          .getBlob(blobObjectPath, GetBlob())
           .withAttributes(getDefaultAttributes)
           .via(framing)
           .map(byteString => byteString.utf8String + System.lineSeparator())
@@ -112,7 +117,7 @@ trait StorageIntegrationSpec
     "get blob properties" in {
       val maybeObjectMetadata =
         BlobService
-          .getProperties(objectPath, GetProperties())
+          .getProperties(blobObjectPath, GetProperties())
           .withAttributes(getDefaultAttributes)
           .runWith(Sink.head)
           .futureValue
@@ -127,7 +132,7 @@ trait StorageIntegrationSpec
       val range = ByteRange.Slice(0, 8)
       val (maybeEventualObjectMetadata, eventualText) =
         BlobService
-          .getBlob(objectPath, GetBlob().withRange(range))
+          .getBlob(blobObjectPath, GetBlob().withRange(range))
           .withAttributes(getDefaultAttributes)
           .via(framing)
           .map(_.utf8String)
@@ -142,7 +147,7 @@ trait StorageIntegrationSpec
     "delete blob" in {
       val maybeObjectMetadata =
         BlobService
-          .deleteBlob(objectPath, DeleteBlob())
+          .deleteBlob(blobObjectPath, DeleteBlob())
           .withAttributes(getDefaultAttributes)
           .toMat(Sink.head)(Keep.right)
           .run()
@@ -154,7 +159,7 @@ trait StorageIntegrationSpec
     "get blob after delete" in {
       val maybeObjectMetadata =
         BlobService
-          .getProperties(objectPath, GetProperties())
+          .getProperties(blobObjectPath, GetProperties())
           .withAttributes(getDefaultAttributes)
           .toMat(Sink.head)(Keep.right)
           .run()

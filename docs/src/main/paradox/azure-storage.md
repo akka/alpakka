@@ -125,7 +125,7 @@ Scala
 Java
 : @@snip [snip](/azure-storage/src/test/java/docs/javadsl/StorageTest.java) { #create-container }
 
-### Create Container
+### Delete Container
 
 The [`Delete Container`](https://learn.microsoft.com/en-us/rest/api/storageservices/delete-container) operation creates existing container under the specified account.
 
@@ -134,7 +134,6 @@ Scala
 
 Java
 : @@snip [snip](/azure-storage/src/test/java/docs/javadsl/StorageTest.java) { #delete-container }
-
 
 ### Put Block Blob
 
@@ -213,6 +212,26 @@ Scala
 
 Java
 : @@snip [snip](/azure-storage/src/test/java/docs/javadsl/StorageTest.java) { #clear-range }
+
+### Create Directory
+
+The [`Create Directory`](https://learn.microsoft.com/en-us/rest/api/storageservices/create-directory) operation creates a new container under the specified account.
+
+Scala
+: @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #create-directory }
+
+Java
+: @@snip [snip](/azure-storage/src/test/java/docs/javadsl/StorageTest.java) { #create-directory }
+
+### Delete Directory
+
+The [`Delete Directory`](https://learn.microsoft.com/en-us/rest/api/storageservices/delete-directory) operation creates existing container under the specified account.
+
+Scala
+: @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #delete-directory }
+
+Java
+: @@snip [snip](/azure-storage/src/test/java/docs/javadsl/StorageTest.java) { #delete-directory }
 
 ### Get File
 

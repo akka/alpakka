@@ -13,8 +13,10 @@ import akka.stream.alpakka.azure.storage.javadsl.BlobService;
 import akka.stream.alpakka.azure.storage.javadsl.FileService;
 import akka.stream.alpakka.azure.storage.requests.ClearFileRange;
 import akka.stream.alpakka.azure.storage.requests.CreateContainer;
+import akka.stream.alpakka.azure.storage.requests.CreateDirectory;
 import akka.stream.alpakka.azure.storage.requests.CreateFile;
 import akka.stream.alpakka.azure.storage.requests.DeleteContainer;
+import akka.stream.alpakka.azure.storage.requests.DeleteDirectory;
 import akka.stream.alpakka.azure.storage.requests.DeleteFile;
 import akka.stream.alpakka.azure.storage.requests.GetBlob;
 import akka.stream.alpakka.azure.storage.requests.GetFile;
@@ -65,7 +67,6 @@ public class StorageTest extends StorageWireMockBase {
                 .thenRun(() -> TestKit.shutdownActorSystem(system));
     }
 
-
     @Test
     public void createContainer() throws Exception {
         mockCreateContainer();
@@ -98,7 +99,6 @@ public class StorageTest extends StorageWireMockBase {
         final var objectMetadata = optionalObjectMetadata.get();
         Assert.assertEquals(objectMetadata.getContentLength(), 0L);
     }
-
 
     // TODO: There are couple of issues, firstly there are two `Content-Length` headers being added, one by `putBlob`
     // function and secondly by, most likely, by WireMock. Need to to figure out how to tell WireMock not to add `Content-Length`
@@ -222,6 +222,39 @@ public class StorageTest extends StorageWireMockBase {
         final var objectMetadata = maybeObjectMetadata.get();
         Assert.assertEquals(Optional.of(ETagRawValue()), objectMetadata.getETag());
         Assert.assertEquals(0L, objectMetadata.getContentLength());
+    }
+
+    @Test
+    public void createDirectory() throws Exception {
+        mockCreateDirectory();
+
+        //#create-directory
+        final Source<Optional<ObjectMetadata>, NotUsed> source = FileService.createDirectory(containerName(), CreateDirectory.create());
+
+        final CompletionStage<Optional<ObjectMetadata>> optionalCompletionStage = source.runWith(Sink.head(), system);
+        //#create-directory
+
+        final var optionalObjectMetadata = optionalCompletionStage.toCompletableFuture().get();
+        Assert.assertTrue(optionalObjectMetadata.isPresent());
+        final var objectMetadata = optionalObjectMetadata.get();
+        Assert.assertEquals(objectMetadata.getContentLength(), 0L);
+        Assert.assertEquals(objectMetadata.getETag().get(), ETagRawValue());
+    }
+
+    @Test
+    public void deleteDirectory() throws Exception {
+        mockDeleteDirectory();
+
+        //#delete-directory
+        final Source<Optional<ObjectMetadata>, NotUsed> source = FileService.deleteDirectory(containerName(), DeleteDirectory.create());
+
+        final CompletionStage<Optional<ObjectMetadata>> optionalCompletionStage = source.runWith(Sink.head(), system);
+        //#delete-directory
+
+        final var optionalObjectMetadata = optionalCompletionStage.toCompletableFuture().get();
+        Assert.assertTrue(optionalObjectMetadata.isPresent());
+        final var objectMetadata = optionalObjectMetadata.get();
+        Assert.assertEquals(objectMetadata.getContentLength(), 0L);
     }
 
     @Test

@@ -306,6 +306,27 @@ class StorageSpec
 
   "AzureStorage File connector" should {
 
+    "create directory" in {
+      mockCreateDirectory()
+
+      //#create-directory
+      import akka.stream.alpakka.azure.storage.scaladsl.FileService
+      import akka.stream.alpakka.azure.storage.ObjectMetadata
+      import akka.stream.alpakka.azure.storage.requests.CreateDirectory
+
+      val source: Source[Option[ObjectMetadata], NotUsed] =
+        FileService.createDirectory(directoryPath = containerName, requestBuilder = CreateDirectory())
+
+      val eventualMaybeMetadata: Future[Option[ObjectMetadata]] = source.runWith(Sink.head)
+      //#create-directory
+
+      val maybeMetadata = eventualMaybeMetadata.futureValue
+      maybeMetadata shouldBe defined
+      val metadata = maybeMetadata.get
+      metadata.eTag shouldBe Some(ETagRawValue)
+      metadata.contentLength shouldBe 0L
+    }
+
     "create file" in {
       mockCreateFile()
 
@@ -437,6 +458,26 @@ class StorageSpec
       maybeMetadata shouldBe defined
       val metadata = maybeMetadata.get
       metadata.eTag shouldBe Some(ETagRawValue)
+      metadata.contentLength shouldBe 0L
+    }
+
+    "delete directory" in {
+      mockDeleteDirectory()
+
+      //#delete-directory
+      import akka.stream.alpakka.azure.storage.scaladsl.FileService
+      import akka.stream.alpakka.azure.storage.ObjectMetadata
+      import akka.stream.alpakka.azure.storage.requests.DeleteDirectory
+
+      val source: Source[Option[ObjectMetadata], NotUsed] =
+        FileService.deleteDirectory(directoryPath = containerName, requestBuilder = DeleteDirectory())
+
+      val eventualMaybeMetadata: Future[Option[ObjectMetadata]] = source.runWith(Sink.head)
+      //#delete-directory
+
+      val maybeMetadata = eventualMaybeMetadata.futureValue
+      maybeMetadata shouldBe defined
+      val metadata = maybeMetadata.get
       metadata.contentLength shouldBe 0L
     }
   }

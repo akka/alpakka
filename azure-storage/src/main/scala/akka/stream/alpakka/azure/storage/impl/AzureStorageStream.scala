@@ -29,8 +29,10 @@ import akka.stream.alpakka.azure.storage.impl.auth.Signer
 import akka.stream.alpakka.azure.storage.requests.{
   ClearFileRange,
   CreateContainer,
+  CreateDirectory,
   CreateFile,
   DeleteContainer,
+  DeleteDirectory,
   GetProperties,
   RequestBuilder,
   UpdateFileRange
@@ -140,6 +142,20 @@ object AzureStorageStream {
                   objectPath = objectPath,
                   requestBuilder = requestBuilder)
 
+  private[storage] def createDirectory(directoryPath: String,
+                                       requestBuilder: CreateDirectory): Source[Option[ObjectMetadata], NotUsed] =
+    handleRequest(successCode = Created,
+                  storageType = FileType,
+                  objectPath = directoryPath,
+                  requestBuilder = requestBuilder)
+
+  private[storage] def deleteDirectory(directoryPath: String,
+                                       requestBuilder: DeleteDirectory): Source[Option[ObjectMetadata], NotUsed] =
+    handleRequest(successCode = Accepted,
+                  storageType = FileType,
+                  objectPath = directoryPath,
+                  requestBuilder = requestBuilder)
+
   /**
    * Common function to handle all requests where we don't expect response body.
    *
@@ -168,7 +184,13 @@ object AzureStorageStream {
           case HttpResponse(sc, h, entity, _) if sc == successCode =>
             Source.future(entity.withoutSizeLimit().discardBytes().future().map(_ => Some(computeMetaData(h, entity))))
           case HttpResponse(NotFound, _, entity, _) =>
-            Source.future(entity.withoutSizeLimit().discardBytes().future().map(_ => None)(ExecutionContexts.parasitic))
+            Source.future(
+              entity
+                .withoutSizeLimit()
+                .discardBytes()
+                .future()
+                .map(_ => None)(ExecutionContexts.parasitic)
+            )
           case response: HttpResponse => Source.future(unmarshalError(response.status, response.entity))
         }
       }

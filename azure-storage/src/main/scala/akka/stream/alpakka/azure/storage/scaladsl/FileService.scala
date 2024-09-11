@@ -12,7 +12,9 @@ import akka.http.scaladsl.model.HttpEntity
 import akka.stream.alpakka.azure.storage.impl.AzureStorageStream
 import akka.stream.alpakka.azure.storage.requests.{
   ClearFileRange,
+  CreateDirectory,
   CreateFile,
+  DeleteDirectory,
   DeleteFile,
   GetFile,
   GetProperties,
@@ -101,4 +103,26 @@ object FileService {
    */
   def clearRange(objectPath: String, requestBuilder: ClearFileRange): Source[Option[ObjectMetadata], NotUsed] =
     AzureStorageStream.clearRange(objectPath, requestBuilder)
+
+  /**
+   * Create directory.
+   *
+   * @param directoryPath path of the directory to be created, e.g., `myshare/myparentdirectorypath/mydirectory`
+   * @param requestBuilder builder to build createDirectory request
+   * @return A [[akka.stream.scaladsl.Source Source]] containing an [[scala.Option]] of
+   *         [[akka.stream.alpakka.azure.storage.ObjectMetadata]], will be [[scala.None]] in case the object does not exist
+   */
+  def createDirectory(directoryPath: String, requestBuilder: CreateDirectory): Source[Option[ObjectMetadata], NotUsed] =
+    AzureStorageStream.createDirectory(directoryPath, requestBuilder)
+
+  /**
+   * Delete directory.
+   *
+   * @param directoryPath path of the directory to be deleted, e.g., `myshare/myparentdirectorypath/mydirectory`
+   * @param requestBuilder builder to build deleteDirectory request
+   * @return A [[akka.stream.scaladsl.Source Source]] containing an [[scala.Option]] of
+   *         [[akka.stream.alpakka.azure.storage.ObjectMetadata]], will be [[scala.None]] in case the object does not exist
+   */
+  def deleteDirectory(directoryPath: String, requestBuilder: DeleteDirectory): Source[Option[ObjectMetadata], NotUsed] =
+    AzureStorageStream.deleteDirectory(directoryPath, requestBuilder)
 }
