@@ -13,7 +13,14 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.ContentTypes
 import akka.http.scaladsl.model.headers.ByteRange
 import akka.stream.Attributes
-import akka.stream.alpakka.azure.storage.requests.{CreateContainer, DeleteBlob, GetBlob, GetProperties, PutBlockBlob}
+import akka.stream.alpakka.azure.storage.requests.{
+  CreateContainer,
+  DeleteBlob,
+  DeleteContainer,
+  GetBlob,
+  GetProperties,
+  PutBlockBlob
+}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Flow, Framing, Keep, Sink, Source}
 import akka.testkit.TestKit
@@ -56,6 +63,19 @@ trait StorageIntegrationSpec
   protected def getDefaultAttributes: Attributes = StorageAttributes.settings(StorageSettings())
 
   "BlobService" should {
+    "create container" in {
+      val maybeObjectMetadata =
+        BlobService
+          .createContainer(objectPath = defaultContainerName, requestBuilder = CreateContainer())
+          .withAttributes(getDefaultAttributes)
+          .runWith(Sink.head)
+          .futureValue
+
+      maybeObjectMetadata shouldBe defined
+      val objectMetadata = maybeObjectMetadata.get
+      objectMetadata.contentLength shouldBe 0L
+    }
+
     "put blob" in {
       val maybeObjectMetadata =
         BlobService
@@ -142,13 +162,19 @@ trait StorageIntegrationSpec
 
       maybeObjectMetadata shouldBe empty
     }
-  }
 
-  protected def createContainer(containerName: String): Future[Done] = {
-    BlobService
-      .createContainer(containerName, CreateContainer())
-      .withAttributes(getDefaultAttributes)
-      .runWith(Sink.ignore)
+    "delete container" in {
+      val maybeObjectMetadata =
+        BlobService
+          .deleteContainer(objectPath = defaultContainerName, requestBuilder = DeleteContainer())
+          .withAttributes(getDefaultAttributes)
+          .runWith(Sink.head)
+          .futureValue
+
+      maybeObjectMetadata shouldBe defined
+      val objectMetadata = maybeObjectMetadata.get
+      objectMetadata.contentLength shouldBe 0L
+    }
   }
 
   protected def calculateDigest(text: String): String = {

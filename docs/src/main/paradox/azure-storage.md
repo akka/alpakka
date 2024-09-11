@@ -125,6 +125,17 @@ Scala
 Java
 : @@snip [snip](/azure-storage/src/test/java/docs/javadsl/StorageTest.java) { #create-container }
 
+### Create Container
+
+The [`Delete Container`](https://learn.microsoft.com/en-us/rest/api/storageservices/delete-container) operation creates existing container under the specified account.
+
+Scala
+: @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/StorageSpec.scala) { #delete-container }
+
+Java
+: @@snip [snip](/azure-storage/src/test/java/docs/javadsl/StorageTest.java) { #delete-container }
+
+
 ### Put Block Blob
 
 The [`Put Block Blob`](https://learn.microsoft.com/en-us/rest/api/storageservices/put-blob) operation creates a new block or updates the content of an existing block blob.

@@ -30,6 +30,7 @@ import akka.stream.alpakka.azure.storage.requests.{
   ClearFileRange,
   CreateContainer,
   CreateFile,
+  DeleteContainer,
   GetProperties,
   RequestBuilder,
   UpdateFileRange
@@ -128,6 +129,13 @@ object AzureStorageStream {
   private[storage] def createContainer(objectPath: String,
                                        requestBuilder: CreateContainer): Source[Option[ObjectMetadata], NotUsed] =
     handleRequest(successCode = Created,
+                  storageType = BlobType,
+                  objectPath = objectPath,
+                  requestBuilder = requestBuilder)
+
+  private[storage] def deleteContainer(objectPath: String,
+                                       requestBuilder: DeleteContainer): Source[Option[ObjectMetadata], NotUsed] =
+    handleRequest(successCode = Accepted,
                   storageType = BlobType,
                   objectPath = objectPath,
                   requestBuilder = requestBuilder)

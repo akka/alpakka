@@ -14,6 +14,7 @@ import akka.stream.alpakka.azure.storage.javadsl.FileService;
 import akka.stream.alpakka.azure.storage.requests.ClearFileRange;
 import akka.stream.alpakka.azure.storage.requests.CreateContainer;
 import akka.stream.alpakka.azure.storage.requests.CreateFile;
+import akka.stream.alpakka.azure.storage.requests.DeleteContainer;
 import akka.stream.alpakka.azure.storage.requests.DeleteFile;
 import akka.stream.alpakka.azure.storage.requests.GetBlob;
 import akka.stream.alpakka.azure.storage.requests.GetFile;
@@ -80,6 +81,22 @@ public class StorageTest extends StorageWireMockBase {
         final var objectMetadata = optionalObjectMetadata.get();
         Assert.assertEquals(objectMetadata.getContentLength(), 0L);
         Assert.assertEquals(objectMetadata.getETag().get(), ETagRawValue());
+    }
+
+    @Test
+    public void deleteContainer() throws Exception {
+        mockDeleteContainer();
+
+        //#delete-container
+        final Source<Optional<ObjectMetadata>, NotUsed> source = BlobService.deleteContainer(containerName(), DeleteContainer.create());
+
+        final CompletionStage<Optional<ObjectMetadata>> optionalCompletionStage = source.runWith(Sink.head(), system);
+        //#delete-container
+
+        final var optionalObjectMetadata = optionalCompletionStage.toCompletableFuture().get();
+        Assert.assertTrue(optionalObjectMetadata.isPresent());
+        final var objectMetadata = optionalObjectMetadata.get();
+        Assert.assertEquals(objectMetadata.getContentLength(), 0L);
     }
 
 

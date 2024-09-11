@@ -8,7 +8,6 @@ import akka.NotUsed
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.stream.alpakka.azure.storage.StorageException
 import akka.stream.alpakka.azure.storage.headers.ServerSideEncryption
-import akka.stream.alpakka.azure.storage.requests._
 import akka.stream.alpakka.azure.storage.scaladsl.StorageWireMockBase
 import akka.stream.alpakka.azure.storage.scaladsl.StorageWireMockBase.ETagRawValue
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
@@ -44,6 +43,7 @@ class StorageSpec
       //#create-container
       import akka.stream.alpakka.azure.storage.scaladsl.BlobService
       import akka.stream.alpakka.azure.storage.ObjectMetadata
+      import akka.stream.alpakka.azure.storage.requests.CreateContainer
 
       val source: Source[Option[ObjectMetadata], NotUsed] =
         BlobService.createContainer(containerName, CreateContainer())
@@ -58,6 +58,26 @@ class StorageSpec
       objectMetadata.eTag shouldBe Some(ETagRawValue)
     }
 
+    "delete container" in {
+      mockDeleteContainer()
+
+      //#delete-container
+      import akka.stream.alpakka.azure.storage.scaladsl.BlobService
+      import akka.stream.alpakka.azure.storage.ObjectMetadata
+      import akka.stream.alpakka.azure.storage.requests.DeleteContainer
+
+      val source: Source[Option[ObjectMetadata], NotUsed] =
+        BlobService.deleteContainer(containerName, DeleteContainer())
+
+      val eventualMaybeMetadata: Future[Option[ObjectMetadata]] = source.runWith(Sink.head)
+      //#delete-container
+
+      val maybeObjectMetadata = eventualMaybeMetadata.futureValue
+      maybeObjectMetadata shouldBe defined
+      val objectMetadata = maybeObjectMetadata.get
+      objectMetadata.contentLength shouldBe 0L
+    }
+
     // TODO: There are couple of issues, firstly there are two `Content-Length` headers being added, one by `putBlob`
     // function and secondly by, most likely, by WireMock. Need to to figure out how to tell WireMock not to add `Content-Length`
     // header, secondly once that resolve then we get `akka.http.scaladsl.model.EntityStreamException`.
@@ -67,6 +87,7 @@ class StorageSpec
       //#put-block-blob
       import akka.stream.alpakka.azure.storage.scaladsl.BlobService
       import akka.stream.alpakka.azure.storage.ObjectMetadata
+      import akka.stream.alpakka.azure.storage.requests.PutBlockBlob
 
       val source: Source[Option[ObjectMetadata], NotUsed] =
         BlobService.putBlockBlob(
@@ -94,6 +115,7 @@ class StorageSpec
       //#put-page-blob
       import akka.stream.alpakka.azure.storage.scaladsl.BlobService
       import akka.stream.alpakka.azure.storage.ObjectMetadata
+      import akka.stream.alpakka.azure.storage.requests.PutPageBlock
 
       val source: Source[Option[ObjectMetadata], NotUsed] =
         BlobService.putPageBlock(
@@ -120,6 +142,7 @@ class StorageSpec
       //#put-append-blob
       import akka.stream.alpakka.azure.storage.scaladsl.BlobService
       import akka.stream.alpakka.azure.storage.ObjectMetadata
+      import akka.stream.alpakka.azure.storage.requests.PutAppendBlock
 
       val source: Source[Option[ObjectMetadata], NotUsed] =
         BlobService.putAppendBlock(objectPath = s"$containerName/$blobName",
@@ -141,6 +164,7 @@ class StorageSpec
       //#get-blob
       import akka.stream.alpakka.azure.storage.scaladsl.BlobService
       import akka.stream.alpakka.azure.storage.ObjectMetadata
+      import akka.stream.alpakka.azure.storage.requests.GetBlob
 
       val source: Source[ByteString, Future[ObjectMetadata]] =
         BlobService.getBlob(objectPath = s"$containerName/$blobName", GetBlob())
@@ -156,6 +180,7 @@ class StorageSpec
 
       import akka.stream.alpakka.azure.storage.scaladsl.BlobService
       import akka.stream.alpakka.azure.storage.ObjectMetadata
+      import akka.stream.alpakka.azure.storage.requests.GetBlob
 
       val source: Source[ByteString, Future[ObjectMetadata]] =
         BlobService.getBlob(objectPath = s"$containerName/$blobName", GetBlob().withVersionId("versionId"))
@@ -170,6 +195,7 @@ class StorageSpec
 
       import akka.stream.alpakka.azure.storage.scaladsl.BlobService
       import akka.stream.alpakka.azure.storage.ObjectMetadata
+      import akka.stream.alpakka.azure.storage.requests.GetBlob
 
       val source: Source[ByteString, Future[ObjectMetadata]] =
         BlobService.getBlob(objectPath = s"$containerName/$blobName", GetBlob().withLeaseId("leaseId"))
@@ -184,6 +210,7 @@ class StorageSpec
 
       import akka.stream.alpakka.azure.storage.scaladsl.BlobService
       import akka.stream.alpakka.azure.storage.ObjectMetadata
+      import akka.stream.alpakka.azure.storage.requests.GetBlob
 
       val source: Source[ByteString, Future[ObjectMetadata]] =
         BlobService.getBlob(objectPath = s"$containerName/$blobName",
@@ -199,6 +226,7 @@ class StorageSpec
 
       import akka.stream.alpakka.azure.storage.scaladsl.BlobService
       import akka.stream.alpakka.azure.storage.ObjectMetadata
+      import akka.stream.alpakka.azure.storage.requests.GetBlob
 
       val source: Source[ByteString, Future[ObjectMetadata]] =
         BlobService.getBlob(objectPath = s"$containerName/$blobName", GetBlob())
@@ -221,6 +249,7 @@ class StorageSpec
       //#get-blob-range
       import akka.stream.alpakka.azure.storage.scaladsl.BlobService
       import akka.stream.alpakka.azure.storage.ObjectMetadata
+      import akka.stream.alpakka.azure.storage.requests.GetBlob
 
       val source: Source[ByteString, Future[ObjectMetadata]] =
         BlobService.getBlob(objectPath = s"$containerName/$blobName", requestBuilder = GetBlob().withRange(subRange))
@@ -237,6 +266,7 @@ class StorageSpec
       //#get-blob-properties
       import akka.stream.alpakka.azure.storage.scaladsl.BlobService
       import akka.stream.alpakka.azure.storage.ObjectMetadata
+      import akka.stream.alpakka.azure.storage.requests.GetProperties
 
       val source: Source[Option[ObjectMetadata], NotUsed] =
         BlobService.getProperties(objectPath = s"$containerName/$blobName", GetProperties())
@@ -258,6 +288,7 @@ class StorageSpec
       //#delete-blob
       import akka.stream.alpakka.azure.storage.scaladsl.BlobService
       import akka.stream.alpakka.azure.storage.ObjectMetadata
+      import akka.stream.alpakka.azure.storage.requests.DeleteBlob
 
       val source: Source[Option[ObjectMetadata], NotUsed] =
         BlobService.deleteBlob(objectPath = s"$containerName/$blobName", DeleteBlob())
@@ -281,6 +312,7 @@ class StorageSpec
       //#create-file
       import akka.stream.alpakka.azure.storage.scaladsl.FileService
       import akka.stream.alpakka.azure.storage.ObjectMetadata
+      import akka.stream.alpakka.azure.storage.requests.CreateFile
 
       val source: Source[Option[ObjectMetadata], NotUsed] =
         FileService.createFile(objectPath = s"$containerName/$blobName",
@@ -305,6 +337,7 @@ class StorageSpec
       //#update-range
       import akka.stream.alpakka.azure.storage.scaladsl.FileService
       import akka.stream.alpakka.azure.storage.ObjectMetadata
+      import akka.stream.alpakka.azure.storage.requests.UpdateFileRange
 
       val source: Source[Option[ObjectMetadata], NotUsed] =
         FileService.updateRange(
@@ -329,6 +362,7 @@ class StorageSpec
       //#get-file
       import akka.stream.alpakka.azure.storage.scaladsl.FileService
       import akka.stream.alpakka.azure.storage.ObjectMetadata
+      import akka.stream.alpakka.azure.storage.requests.GetFile
 
       val source: Source[ByteString, Future[ObjectMetadata]] =
         FileService.getFile(objectPath = s"$containerName/$blobName", GetFile())
@@ -345,6 +379,7 @@ class StorageSpec
       //#get-file-properties
       import akka.stream.alpakka.azure.storage.scaladsl.FileService
       import akka.stream.alpakka.azure.storage.ObjectMetadata
+      import akka.stream.alpakka.azure.storage.requests.GetProperties
 
       val source: Source[Option[ObjectMetadata], NotUsed] =
         FileService.getProperties(objectPath = s"$containerName/$blobName", GetProperties())
@@ -369,6 +404,7 @@ class StorageSpec
       //#clear-range
       import akka.stream.alpakka.azure.storage.scaladsl.FileService
       import akka.stream.alpakka.azure.storage.ObjectMetadata
+      import akka.stream.alpakka.azure.storage.requests.ClearFileRange
 
       val source: Source[Option[ObjectMetadata], NotUsed] =
         FileService.clearRange(objectPath = s"$containerName/$blobName", requestBuilder = ClearFileRange(subRange))
@@ -389,6 +425,7 @@ class StorageSpec
       //#delete-file
       import akka.stream.alpakka.azure.storage.scaladsl.FileService
       import akka.stream.alpakka.azure.storage.ObjectMetadata
+      import akka.stream.alpakka.azure.storage.requests.DeleteFile
 
       val source: Source[Option[ObjectMetadata], NotUsed] =
         FileService.deleteFile(objectPath = s"$containerName/$blobName", DeleteFile())

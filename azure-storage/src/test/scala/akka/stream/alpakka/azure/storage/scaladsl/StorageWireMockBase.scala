@@ -62,6 +62,16 @@ abstract class StorageWireMockBase(_system: ActorSystem, val _wireMockServer: Wi
         )
     )
 
+  protected def mockDeleteContainer(): StubMapping =
+    mock.register(
+      delete(urlEqualTo(s"/$AccountName/$containerName?restype=container"))
+        .willReturn(
+          aResponse()
+            .withStatus(202)
+            .withHeader(`Content-Length`.name, "0")
+        )
+    )
+
   protected def mockPutBlockBlob(): StubMapping =
     mock.register(
       put(urlEqualTo(s"/$AccountName/$containerName/$blobName"))

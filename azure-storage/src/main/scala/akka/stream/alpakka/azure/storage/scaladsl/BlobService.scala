@@ -13,6 +13,7 @@ import akka.stream.alpakka.azure.storage.impl.AzureStorageStream
 import akka.stream.alpakka.azure.storage.requests.{
   CreateContainer,
   DeleteBlob,
+  DeleteContainer,
   GetBlob,
   GetProperties,
   PutAppendBlock,
@@ -110,4 +111,15 @@ object BlobService {
    */
   def createContainer(objectPath: String, requestBuilder: CreateContainer): Source[Option[ObjectMetadata], NotUsed] =
     AzureStorageStream.createContainer(objectPath, requestBuilder)
+
+  /**
+   * Delete container.
+   *
+   * @param objectPath name of the container
+   * @param requestBuilder builder to build deleteContainer request
+   * @return A [[akka.stream.scaladsl.Source Source]] containing an [[scala.Option]] of
+   *         [[akka.stream.alpakka.azure.storage.ObjectMetadata]], will be [[scala.None]] in case the object does not exist
+   */
+  def deleteContainer(objectPath: String, requestBuilder: DeleteContainer): Source[Option[ObjectMetadata], NotUsed] =
+    AzureStorageStream.deleteContainer(objectPath, requestBuilder)
 }
