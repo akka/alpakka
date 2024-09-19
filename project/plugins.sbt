@@ -18,3 +18,6 @@ addSbtPlugin("com.github.sbt" % "sbt-site-paradox" % "1.5.0")
 addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "2.4.3")
 // templating
 addSbtPlugin("com.github.sbt" % "sbt-boilerplate" % "0.7.0")
+
+// sbt plugin for tubi media group scala projects: https://github.com/adRise/sbt-tmg-project
+addSbtPlugin("com.tubitv" % "sbt-tmg-project" % "0.8.2")
