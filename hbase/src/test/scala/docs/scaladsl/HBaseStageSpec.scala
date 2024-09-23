@@ -49,7 +49,7 @@ class HBaseStageSpec
   val appendHBaseConverter: Person => immutable.Seq[Mutation] = { person =>
     // Append to a cell
     val append = new Append(s"id_${person.id}")
-    append.add("info", "aliases", person.name)
+    append.addColumn("info", "aliases", person.name)
     List(append)
   }
   //#create-converter-append
