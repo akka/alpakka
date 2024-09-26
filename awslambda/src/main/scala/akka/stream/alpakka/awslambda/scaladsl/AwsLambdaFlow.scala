@@ -8,7 +8,7 @@ import akka.NotUsed
 import akka.stream.scaladsl.Flow
 import software.amazon.awssdk.services.lambda.model.{InvokeRequest, InvokeResponse}
 import software.amazon.awssdk.services.lambda.LambdaAsyncClient
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
 
 object AwsLambdaFlow {
 
@@ -18,6 +18,6 @@ object AwsLambdaFlow {
   def apply(
       parallelism: Int
   )(implicit awsLambdaClient: LambdaAsyncClient): Flow[InvokeRequest, InvokeResponse, NotUsed] =
-    Flow[InvokeRequest].mapAsyncUnordered(parallelism)(awsLambdaClient.invoke(_).toScala)
+    Flow[InvokeRequest].mapAsyncUnordered(parallelism)(awsLambdaClient.invoke(_).asScala)
 
 }

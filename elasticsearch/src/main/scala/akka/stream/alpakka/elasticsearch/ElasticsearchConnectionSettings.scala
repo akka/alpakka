@@ -8,7 +8,7 @@ import akka.http.scaladsl.{ConnectionContext, HttpsConnectionContext}
 import akka.http.scaladsl.model.HttpHeader
 import akka.http.scaladsl.model.HttpHeader.ParsingResult
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import javax.net.ssl.SSLContext
 
 final class ElasticsearchConnectionSettings private (

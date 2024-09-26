@@ -9,7 +9,7 @@ import java.time.temporal.ChronoUnit
 import software.amazon.awssdk.services.sqs.model
 
 import scala.collection.immutable
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.duration.FiniteDuration
 
 final class SqsSourceSettings private (

@@ -12,7 +12,7 @@ import akka.stream.alpakka.google.auth.ServiceAccountCredentials
 
 import scala.annotation.nowarn
 import scala.collection.immutable
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * @param projectId (deprecated) the project Id in the google account

@@ -15,7 +15,7 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.Writable
 import org.apache.hadoop.io.compress.CompressionCodec
 
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
 
 object HdfsSource {
 
@@ -29,7 +29,7 @@ object HdfsSource {
       fs: FileSystem,
       path: Path
   ): javadsl.Source[ByteString, CompletionStage[IOResult]] =
-    ScalaHdfsSource.data(fs, path).mapMaterializedValue(_.toJava).asJava
+    ScalaHdfsSource.data(fs, path).mapMaterializedValue(_.asJava).asJava
 
   /**
    * Java API: creates a [[Source]] that consumes as [[ByteString]]
@@ -43,7 +43,7 @@ object HdfsSource {
       path: Path,
       chunkSize: Int
   ): javadsl.Source[ByteString, CompletionStage[IOResult]] =
-    ScalaHdfsSource.data(fs, path, chunkSize).mapMaterializedValue(_.toJava).asJava
+    ScalaHdfsSource.data(fs, path, chunkSize).mapMaterializedValue(_.asJava).asJava
 
   /**
    * Java API: creates a [[Source]] that consumes as [[ByteString]]
@@ -57,7 +57,7 @@ object HdfsSource {
       path: Path,
       codec: CompressionCodec
   ): javadsl.Source[ByteString, CompletionStage[IOResult]] =
-    ScalaHdfsSource.compressed(fs, path, codec).mapMaterializedValue(_.toJava).asJava
+    ScalaHdfsSource.compressed(fs, path, codec).mapMaterializedValue(_.asJava).asJava
 
   /**
    * Java API: creates a [[Source]] that consumes as [[ByteString]]
@@ -73,7 +73,7 @@ object HdfsSource {
       codec: CompressionCodec,
       chunkSize: Int = 8192
   ): javadsl.Source[ByteString, CompletionStage[IOResult]] =
-    ScalaHdfsSource.compressed(fs, path, codec, chunkSize).mapMaterializedValue(_.toJava).asJava
+    ScalaHdfsSource.compressed(fs, path, codec, chunkSize).mapMaterializedValue(_.asJava).asJava
 
   /**
    * Java API: creates a [[Source]] that consumes as [[(K, V]]

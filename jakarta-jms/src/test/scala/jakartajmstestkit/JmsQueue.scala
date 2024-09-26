@@ -8,7 +8,7 @@ import java.util.{Collections, UUID}
 
 import jakarta.jms.{ConnectionFactory, QueueConnectionFactory, TextMessage}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.util.Try
 
 /**

@@ -16,7 +16,7 @@ import org.apache.kudu.{ColumnSchema, Schema, Type}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.BeforeAndAfterAll
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import org.scalatest.matchers.should.Matchers

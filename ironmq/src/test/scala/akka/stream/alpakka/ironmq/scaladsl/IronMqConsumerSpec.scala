@@ -5,7 +5,6 @@
 package akka.stream.alpakka.ironmq.scaladsl
 
 import akka.NotUsed
-import akka.dispatch.ExecutionContexts
 import akka.stream.alpakka.ironmq.{IronMqSettings, IronMqSpec, PushMessage}
 import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.config.{Config, ConfigFactory}
@@ -16,7 +15,7 @@ import scala.concurrent.ExecutionContext
 
 class IronMqConsumerSpec extends IronMqSpec with ParallelTestExecution {
 
-  implicit val ec: ExecutionContext = ExecutionContexts.global()
+  implicit val ec: ExecutionContext = ExecutionContext.global
 
   val messages: Source[PushMessage, NotUsed] =
     Source.fromIterator(() => Iterator.from(0)).map(i => PushMessage(s"test-$i"))

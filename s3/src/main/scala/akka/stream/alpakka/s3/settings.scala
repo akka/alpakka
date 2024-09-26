@@ -18,7 +18,7 @@ import software.amazon.awssdk.auth.credentials._
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.regions.providers._
 
-import scala.compat.java8.OptionConverters._
+import scala.jdk.OptionConverters._
 import scala.concurrent.duration._
 import scala.util.Try
 
@@ -135,7 +135,7 @@ final class ForwardProxy private (val scheme: String,
   def getPort: Int = port
 
   /** Java API */
-  def getCredentials: java.util.Optional[ForwardProxyCredentials] = credentials.asJava
+  def getCredentials: java.util.Optional[ForwardProxyCredentials] = credentials.toJava
 
   def withScheme(value: String): ForwardProxy = copy(scheme = value)
   def withHost(host: String): ForwardProxy = copy(host = host)
@@ -176,7 +176,7 @@ object ForwardProxy {
 
   /** Java API */
   def create(host: String, port: Int, credentials: Optional[ForwardProxyCredentials]): ForwardProxy =
-    apply(host, port, credentials.asScala)
+    apply(host, port, credentials.toScala)
 
   /** Use an HTTP proxy. */
   def http(host: String, port: Int): ForwardProxy = new ForwardProxy("http", host, port, credentials = None)
@@ -369,13 +369,13 @@ final class S3Settings private (
   def pathStyleAccess: Boolean = accessStyle == PathAccessStyle
 
   /** Java API */
-  def getEndpointUrl: java.util.Optional[String] = endpointUrl.asJava
+  def getEndpointUrl: java.util.Optional[String] = endpointUrl.toJava
 
   /** Java API */
   def getListBucketApiVersion: ApiVersion = listBucketApiVersion
 
   /** Java API */
-  def getForwardProxy: java.util.Optional[ForwardProxy] = forwardProxy.asJava
+  def getForwardProxy: java.util.Optional[ForwardProxy] = forwardProxy.toJava
 
   /** Java API */
   def getAccessStyle: AccessStyle = accessStyle
@@ -707,7 +707,7 @@ sealed trait BufferType {
   def path: Option[Path]
 
   /** Java API */
-  def getPath: java.util.Optional[Path] = path.asJava
+  def getPath: java.util.Optional[Path] = path.toJava
 }
 
 case object MemoryBufferType extends BufferType {

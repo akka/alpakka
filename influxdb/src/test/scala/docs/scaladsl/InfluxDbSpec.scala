@@ -18,7 +18,7 @@ import akka.testkit.TestKit
 import docs.javadsl.TestUtils._
 import akka.stream.scaladsl.Sink
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import docs.javadsl.TestConstants.{INFLUXDB_URL, PASSWORD, USERNAME}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec

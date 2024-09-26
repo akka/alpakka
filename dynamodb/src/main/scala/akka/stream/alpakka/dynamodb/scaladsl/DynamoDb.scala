@@ -6,14 +6,14 @@ package akka.stream.alpakka.dynamodb.scaladsl
 
 import akka.NotUsed
 import akka.actor.ClassicActorSystemProvider
-import akka.dispatch.ExecutionContexts
 
-import scala.annotation.implicitNotFound
 import akka.stream.alpakka.dynamodb.{DynamoDbOp, DynamoDbPaginatedOp}
 import akka.stream.scaladsl.{Flow, FlowWithContext, Sink, Source}
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
 import software.amazon.awssdk.services.dynamodb.model._
 
+import scala.annotation.implicitNotFound
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
@@ -52,8 +52,8 @@ object DynamoDb {
           case (in, ctx) =>
             operation
               .execute(in)
-              .map[(Try[Out], Ctx)](res => (Success(res), ctx))(ExecutionContexts.parasitic)
-              .recover { case t => (Failure(t), ctx) }(ExecutionContexts.parasitic)
+              .map[(Try[Out], Ctx)](res => (Success(res), ctx))(ExecutionContext.parasitic)
+              .recover { case t => (Failure(t), ctx) }(ExecutionContext.parasitic)
         }
     )
 

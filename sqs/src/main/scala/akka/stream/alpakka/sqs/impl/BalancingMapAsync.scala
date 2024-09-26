@@ -11,8 +11,8 @@ import akka.stream._
 import akka.stream.impl.fusing.MapAsync
 import akka.stream.impl.{BoundedBuffer, Buffer, FixedSizeBuffer}
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
-
 import scala.annotation.tailrec
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
@@ -80,7 +80,7 @@ import scala.util.{Failure, Success}
           buffer.enqueue(holder)
 
           future.value match {
-            case None => future.onComplete(holder)(akka.dispatch.ExecutionContexts.parasitic)
+            case None => future.onComplete(holder)(ExecutionContext.parasitic)
             case Some(v) =>
               // #20217 the future is already here, optimization: avoid scheduling it on the dispatcher and
               // run the logic directly on this thread

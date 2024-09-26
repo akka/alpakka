@@ -11,9 +11,9 @@ import spray.json.{JsonFormat, RootJsonFormat}
 import java.util
 
 import scala.annotation.nowarn
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.immutable.Seq
-import scala.compat.java8.OptionConverters._
+import scala.jdk.OptionConverters._
 
 /**
  * Job model
@@ -27,24 +27,24 @@ final case class Job private (configuration: Option[JobConfiguration],
                               jobReference: Option[JobReference],
                               status: Option[JobStatus]) {
 
-  def getConfiguration = configuration.asJava
-  def getJobReference = jobReference.asJava
-  def getStatus = status.asJava
+  def getConfiguration = configuration.toJava
+  def getJobReference = jobReference.toJava
+  def getStatus = status.toJava
 
   def withConfiguration(configuration: Option[JobConfiguration]) =
     copy(configuration = configuration)
   def withConfiguration(configuration: util.Optional[JobConfiguration]) =
-    copy(configuration = configuration.asScala)
+    copy(configuration = configuration.toScala)
 
   def withJobReference(jobReference: Option[JobReference]) =
     copy(jobReference = jobReference)
   def withJobReference(jobReference: util.Optional[JobReference]) =
-    copy(jobReference = jobReference.asScala)
+    copy(jobReference = jobReference.toScala)
 
   def withStatus(status: Option[JobStatus]) =
     copy(status = status)
   def withStatus(status: util.Optional[JobStatus]) =
-    copy(status = status.asScala)
+    copy(status = status.toScala)
 }
 
 object Job {
@@ -61,7 +61,7 @@ object Job {
   def create(configuration: util.Optional[JobConfiguration],
              jobReference: util.Optional[JobReference],
              status: util.Optional[JobStatus]) =
-    Job(configuration.asScala, jobReference.asScala, status.asScala)
+    Job(configuration.toScala, jobReference.toScala, status.toScala)
 
   implicit val format: RootJsonFormat[Job] = jsonFormat3(apply)
 }
@@ -74,18 +74,18 @@ object Job {
  * @param labels the labels associated with this job
  */
 final case class JobConfiguration private (load: Option[JobConfigurationLoad], labels: Option[Map[String, String]]) {
-  def getLoad = load.asJava
-  def getLabels = labels.asJava
+  def getLoad = load.toJava
+  def getLabels = labels.toJava
 
   def withLoad(load: Option[JobConfigurationLoad]) =
     copy(load = load)
   def withLoad(load: util.Optional[JobConfigurationLoad]) =
-    copy(load = load.asScala)
+    copy(load = load.toScala)
 
   def withLabels(labels: Option[Map[String, String]]) =
     copy(labels = labels)
   def withLabels(labels: util.Optional[util.Map[String, String]]) =
-    copy(labels = labels.asScala.map(_.asScala.toMap))
+    copy(labels = labels.toScala.map(_.asScala.toMap))
 }
 
 object JobConfiguration {
@@ -108,7 +108,7 @@ object JobConfiguration {
    * @return a [[JobConfiguration]]
    */
   def create(load: util.Optional[JobConfigurationLoad]) =
-    JobConfiguration(load.asScala)
+    JobConfiguration(load.toScala)
 
   /**
    * Java API: JobConfiguration model
@@ -119,7 +119,7 @@ object JobConfiguration {
    * @return a [[JobConfiguration]]
    */
   def create(load: util.Optional[JobConfigurationLoad], labels: util.Optional[util.Map[String, String]]) =
-    JobConfiguration(load.asScala, labels.asScala.map(_.asScala.toMap))
+    JobConfiguration(load.toScala, labels.toScala.map(_.asScala.toMap))
 
   implicit val format: JsonFormat[JobConfiguration] = jsonFormat2(apply)
 }
@@ -140,36 +140,36 @@ final case class JobConfigurationLoad private (schema: Option[TableSchema],
                                                writeDisposition: Option[WriteDisposition],
                                                sourceFormat: Option[SourceFormat]) {
 
-  def getSchema = schema.asJava
-  def getDestinationTable = destinationTable.asJava
-  def getCreateDisposition = createDisposition.asJava
-  def getWriteDisposition = writeDisposition.asJava
-  def getSourceFormat = sourceFormat.asJava
+  def getSchema = schema.toJava
+  def getDestinationTable = destinationTable.toJava
+  def getCreateDisposition = createDisposition.toJava
+  def getWriteDisposition = writeDisposition.toJava
+  def getSourceFormat = sourceFormat.toJava
 
   def withSchema(schema: Option[TableSchema]) =
     copy(schema = schema)
   def withSchema(schema: util.Optional[TableSchema]) =
-    copy(schema = schema.asScala)
+    copy(schema = schema.toScala)
 
   def withDestinationTable(destinationTable: Option[TableReference]) =
     copy(destinationTable = destinationTable)
   def withDestinationTable(destinationTable: util.Optional[TableReference]) =
-    copy(destinationTable = destinationTable.asScala)
+    copy(destinationTable = destinationTable.toScala)
 
   def withCreateDisposition(createDisposition: Option[CreateDisposition]) =
     copy(createDisposition = createDisposition)
   def withCreateDisposition(createDisposition: util.Optional[CreateDisposition]) =
-    copy(createDisposition = createDisposition.asScala)
+    copy(createDisposition = createDisposition.toScala)
 
   def withWriteDisposition(writeDisposition: Option[WriteDisposition]) =
     copy(writeDisposition = writeDisposition)
   def withWriteDisposition(writeDisposition: util.Optional[WriteDisposition]) =
-    copy(writeDisposition = writeDisposition.asScala)
+    copy(writeDisposition = writeDisposition.toScala)
 
   def withSourceFormat(sourceFormat: Option[SourceFormat]) =
     copy(sourceFormat = sourceFormat)
   def withSourceFormat(sourceFormat: util.Optional[SourceFormat]) =
-    copy(sourceFormat = sourceFormat.asScala)
+    copy(sourceFormat = sourceFormat.toScala)
 }
 
 object JobConfigurationLoad {
@@ -191,11 +191,11 @@ object JobConfigurationLoad {
              writeDisposition: util.Optional[WriteDisposition],
              sourceFormat: util.Optional[SourceFormat]) =
     JobConfigurationLoad(
-      schema.asScala,
-      destinationTable.asScala,
-      createDisposition.asScala,
-      writeDisposition.asScala,
-      sourceFormat.asScala
+      schema.toScala,
+      destinationTable.toScala,
+      createDisposition.toScala,
+      writeDisposition.toScala,
+      sourceFormat.toScala
     )
 
   implicit val configurationLoadFormat: JsonFormat[JobConfigurationLoad] = jsonFormat5(apply)
@@ -269,24 +269,24 @@ final case class JobReference private (projectId: Option[String], jobId: Option[
                    @JsonProperty("location") location: String) =
     this(Option(projectId), Option(jobId), Option(location))
 
-  def getProjectId = projectId.asJava
-  def getJobId = jobId.asJava
-  def getLocation = location.asJava
+  def getProjectId = projectId.toJava
+  def getJobId = jobId.toJava
+  def getLocation = location.toJava
 
   def withProjectId(projectId: Option[String]) =
     copy(projectId = projectId)
   def withProjectId(projectId: util.Optional[String]) =
-    copy(projectId = projectId.asScala)
+    copy(projectId = projectId.toScala)
 
   def withJobId(jobId: Option[String]) =
     copy(jobId = jobId)
   def withJobId(jobId: util.Optional[String]) =
-    copy(jobId = jobId.asScala)
+    copy(jobId = jobId.toScala)
 
   def withLocation(location: Option[String]) =
     copy(location = location)
   def withLocation(location: util.Optional[String]) =
-    copy(location = location.asScala)
+    copy(location = location.toScala)
 }
 
 object JobReference {
@@ -301,7 +301,7 @@ object JobReference {
    * @return a [[JobReference]]
    */
   def create(projectId: util.Optional[String], jobId: util.Optional[String], location: util.Optional[String]) =
-    JobReference(projectId.asScala, jobId.asScala, location.asScala)
+    JobReference(projectId.toScala, jobId.toScala, location.toScala)
 
   implicit val format: JsonFormat[JobReference] = jsonFormat3(apply)
 }
@@ -316,19 +316,19 @@ object JobReference {
  */
 final case class JobStatus private (errorResult: Option[ErrorProto], errors: Option[Seq[ErrorProto]], state: JobState) {
 
-  def getErrorResult = errorResult.asJava
-  def getErrors = errors.map(_.asJava).asJava
+  def getErrorResult = errorResult.toJava
+  def getErrors = errors.map(_.asJava).toJava
   def getState = state
 
   def withErrorResult(errorResult: Option[ErrorProto]) =
     copy(errorResult = errorResult)
   def withErrorResult(errorResult: util.Optional[ErrorProto]) =
-    copy(errorResult = errorResult.asScala)
+    copy(errorResult = errorResult.toScala)
 
   def withErrors(errors: Option[Seq[ErrorProto]]) =
     copy(errors = errors)
   def withErrors(errors: util.Optional[util.List[ErrorProto]]) =
-    copy(errors = errors.asScala.map(_.asScala.toList))
+    copy(errors = errors.toScala.map(_.asScala.toList))
 
   def withState(state: JobState) =
     copy(state = state)
@@ -346,7 +346,7 @@ object JobStatus {
    * @return a [[JobStatus]]
    */
   def create(errorResult: util.Optional[ErrorProto], errors: util.Optional[util.List[ErrorProto]], state: JobState) =
-    JobStatus(errorResult.asScala, errors.asScala.map(_.asScala.toList), state)
+    JobStatus(errorResult.toScala, errors.toScala.map(_.asScala.toList), state)
 
   implicit val format: JsonFormat[JobStatus] = jsonFormat3(apply)
 }

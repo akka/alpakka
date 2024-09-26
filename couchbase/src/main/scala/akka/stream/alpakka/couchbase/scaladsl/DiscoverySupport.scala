@@ -10,12 +10,12 @@ import akka.actor.{ActorSystem, ClassicActorSystemProvider}
 import akka.annotation.InternalApi
 import akka.discovery.Discovery
 import akka.stream.alpakka.couchbase.CouchbaseSessionSettings
-import akka.util.JavaDurationConverters._
 import com.typesafe.config.Config
 
 import scala.collection.immutable
-import scala.compat.java8.FunctionConverters._
-import scala.compat.java8.FutureConverters._
+import scala.jdk.DurationConverters._
+import scala.jdk.FunctionConverters._
+import scala.jdk.FutureConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
@@ -44,7 +44,7 @@ sealed class DiscoverySupport private {
   private def readNodes(config: Config)(implicit system: ClassicActorSystemProvider): Future[immutable.Seq[String]] =
     if (config.hasPath("service")) {
       val serviceName = config.getString("service.name")
-      val lookupTimeout = config.getDuration("service.lookup-timeout").asScala
+      val lookupTimeout = config.getDuration("service.lookup-timeout").toScala
       readNodes(serviceName, lookupTimeout)
     } else throw new IllegalArgumentException(s"config $config does not contain `service` section")
 
@@ -75,7 +75,7 @@ sealed class DiscoverySupport private {
       config: Config,
       system: ClassicActorSystemProvider
   ): java.util.function.Function[CouchbaseSessionSettings, CompletionStage[CouchbaseSessionSettings]] =
-    nodes(config)(system).andThen(_.toJava).asJava
+    nodes(config)(system).andThen(_.asJava).asJava
 
   /**
    * Expects a `service` section in `alpakka.couchbase.session` and reads the given service name's address

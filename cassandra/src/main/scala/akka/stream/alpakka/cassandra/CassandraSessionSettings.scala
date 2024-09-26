@@ -8,8 +8,8 @@ import java.util.concurrent.CompletionStage
 
 import akka.Done
 import com.datastax.oss.driver.api.core.CqlSession
-import scala.compat.java8.FunctionConverters._
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FunctionConverters._
+import scala.jdk.FutureConverters._
 
 import scala.concurrent.Future
 
@@ -30,7 +30,7 @@ class CassandraSessionSettings private (val configPath: String,
    * only execute the first.
    */
   def withInit(value: java.util.function.Function[CqlSession, CompletionStage[Done]]): CassandraSessionSettings =
-    copy(init = Some(value.asScala.andThen(_.toScala)))
+    copy(init = Some(value.asScala.andThen(_.asScala)))
 
   /**
    * The `init` function will be performed once when the session is created, i.e.

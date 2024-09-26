@@ -19,8 +19,9 @@ import akka.stream.javadsl.Source;
 
 import io.pravega.client.ClientConfig;
 import io.pravega.client.stream.ReaderGroup;
-import scala.compat.java8.FutureConverters;
 import java.util.concurrent.CompletionStage;
+
+import scala.jdk.javaapi.FutureConverters;
 
 import akka.stream.alpakka.pravega.impl.PravegaFlow;
 import akka.stream.alpakka.pravega.impl.PravegaSource;
@@ -40,7 +41,7 @@ public class Pravega {
   public static <V> Source<PravegaEvent<V>, CompletionStage<Done>> source(
       ReaderGroup readerGroup, ReaderSettings<V> readerSettings) {
     return Source.fromGraph(new PravegaSource<>(readerGroup, readerSettings))
-        .mapMaterializedValue(FutureConverters::<Done>toJava);
+        .mapMaterializedValue(FutureConverters::asJava);
   }
 
   /** Incoming messages are written to Pravega stream and emitted unchanged. */

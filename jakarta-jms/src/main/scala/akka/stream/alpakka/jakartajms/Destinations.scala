@@ -5,7 +5,7 @@
 package akka.stream.alpakka.jakartajms
 
 import jakarta.jms
-import scala.compat.java8.FunctionConverters._
+import scala.jdk.FunctionConverters._
 
 /**
  * A destination to send to/receive from.

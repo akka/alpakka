@@ -10,7 +10,7 @@ object Dependencies {
   val Scala2Versions = Seq(Scala213)
   val ScalaVersions = Dependencies.Scala2Versions :+ Dependencies.Scala3
 
-  val AkkaVersion = "2.9.3"
+  val AkkaVersion = "2.10.0-M1"
   val AkkaBinaryVersion = "2.9"
 
   val InfluxDBJavaVersion = "2.15"
@@ -22,7 +22,7 @@ object Dependencies {
   // sync ignore prefix in scripts/link-validator.conf#L30
   val AkkaHttpVersion = "10.6.3"
   val AkkaHttpBinaryVersion = "10.6"
-  val AlpakkaKafkaVersion = "6.0.0"
+  val AlpakkaKafkaVersion = "7.0.0-M1"
   val ScalaTestVersion = "3.2.19"
   val TestContainersScalaTestVersion = "0.40.3" // pulls Testcontainers 1.16.2
   val mockitoVersion = "4.11.0" // check even https://github.com/scalatest/scalatestplus-mockito/releases
@@ -35,13 +35,13 @@ object Dependencies {
   val JwtScalaVersion = "9.4.6"
 
   // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L20
-  val slf4jVersion = "1.7.36"
+  val slf4jVersion = "2.0.16"
   val log4jOverSlf4jVersion = slf4jVersion
   val jclOverSlf4jVersion = slf4jVersion
 
   // Akka 2.9 expects Slf4j 1.x
   // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L28
-  val LogbackWithSlf4jV1 = "1.2.13"
+  val LogbackWithSlf4jV1 = "1.5.7"
   val wiremock = ("com.github.tomakehurst" % "wiremock" % "3.0.1" % Test).exclude("org.slf4j", "slf4j-api")
 
   val Common = Seq(
@@ -75,7 +75,7 @@ object Dependencies {
   // CVE issues https://github.com/FasterXML/jackson-databind/issues?utf8=%E2%9C%93&q=+label%3ACVE
   // This should align with the Jackson minor version used in Akka
   // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L31
-  val JacksonVersion = "2.15.4"
+  val JacksonVersion = "2.17.2"
   val JacksonDatabindVersion = JacksonVersion
   val JacksonDatabindDependencies = Seq(
     "com.fasterxml.jackson.core" % "jackson-core" % JacksonVersion,

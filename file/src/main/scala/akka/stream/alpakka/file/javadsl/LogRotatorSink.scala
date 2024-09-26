@@ -16,11 +16,11 @@ import akka.stream.javadsl.Sink
 import akka.util.ByteString
 import akka.japi.function
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.Future
 
-import scala.compat.java8.FutureConverters._
-import scala.compat.java8.OptionConverters._
+import scala.jdk.FutureConverters._
+import scala.jdk.OptionConverters._
 
 /**
  * Java API.
@@ -70,7 +70,7 @@ object LogRotatorSink {
       sinkFactory: function.Function[C, Sink[ByteString, CompletionStage[R]]]
   ): javadsl.Sink[ByteString, CompletionStage[Done]] = {
     val t: C => scaladsl.Sink[ByteString, Future[R]] = path =>
-      sinkFactory.apply(path).asScala.mapMaterializedValue(_.toScala)
+      sinkFactory.apply(path).asScala.mapMaterializedValue(_.asScala)
     new Sink(
       akka.stream.alpakka.file.scaladsl.LogRotatorSink
         .withSinkFactory(asScala[C](triggerGeneratorCreator), t)
@@ -82,7 +82,7 @@ object LogRotatorSink {
       f: function.Creator[function.Function[ByteString, Optional[C]]]
   ): () => ByteString => Option[C] = () => {
     val fun = f.create()
-    elem => fun(elem).asScala
+    elem => fun(elem).toScala
   }
 
 }

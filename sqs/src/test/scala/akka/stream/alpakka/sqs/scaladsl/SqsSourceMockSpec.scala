@@ -18,7 +18,7 @@ import org.scalatest.matchers.should.Matchers
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{Message, ReceiveMessageRequest, ReceiveMessageResponse}
 
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
@@ -76,7 +76,7 @@ class SqsSourceMockSpec extends AnyFlatSpec with Matchers with DefaultTestContex
                   .build()
               )
             }(system.dispatcher)
-            .toJava
+            .asJava
             .toCompletableFuture
       })
 
@@ -118,7 +118,7 @@ class SqsSourceMockSpec extends AnyFlatSpec with Matchers with DefaultTestContex
                     .build()
                 )
               }(system.dispatcher)
-              .toJava
+              .asJava
               .toCompletableFuture
           } else {
             CompletableFuture.completedFuture(

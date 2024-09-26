@@ -8,7 +8,6 @@ import java.util.concurrent.CompletionException
 
 import akka.NotUsed
 import akka.annotation.{ApiMayChange, InternalApi}
-import akka.dispatch.ExecutionContexts.parasitic
 import akka.stream.FlowShape
 import akka.stream.alpakka.sqs.MessageAction._
 import akka.stream.alpakka.sqs.SqsAckResult._
@@ -17,10 +16,10 @@ import akka.stream.alpakka.sqs._
 import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Partition}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model._
-
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.immutable
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
 /**
@@ -48,8 +47,8 @@ object SqsAckFlow {
 
           sqsClient
             .deleteMessage(request)
-            .toScala
-            .map(resp => new SqsDeleteResult(messageAction, resp))(parasitic)
+            .asScala
+            .map(resp => new SqsDeleteResult(messageAction, resp))(ExecutionContext.parasitic)
 
         case messageAction: MessageAction.ChangeMessageVisibility =>
           val request =
@@ -62,8 +61,8 @@ object SqsAckFlow {
 
           sqsClient
             .changeMessageVisibility(request)
-            .toScala
-            .map(resp => new SqsChangeMessageVisibilityResult(messageAction, resp))(parasitic)
+            .asScala
+            .map(resp => new SqsChangeMessageVisibilityResult(messageAction, resp))(ExecutionContext.parasitic)
 
         case messageAction: MessageAction.Ignore =>
           Future.successful(new SqsIgnoreResult(messageAction))
@@ -128,7 +127,7 @@ object SqsAckFlow {
         case (actions: immutable.Seq[Delete], request) =>
           sqsClient
             .deleteMessageBatch(request)
-            .toScala
+            .asScala
             .map {
               case response if response.failed().isEmpty =>
                 val responseMetadata = response.responseMetadata()
@@ -145,13 +144,13 @@ object SqsAckFlow {
                   numberOfMessages,
                   s"Some messages are failed to delete. $nrOfFailedMessages of $numberOfMessages messages are failed"
                 )
-            }(parasitic)
+            }(ExecutionContext.parasitic)
             .recoverWith {
               case e: CompletionException =>
                 Future.failed(new SqsBatchException(request.entries().size(), e.getMessage, e.getCause))
               case e =>
                 Future.failed(new SqsBatchException(request.entries().size(), e.getMessage, e))
-            }(parasitic)
+            }(ExecutionContext.parasitic)
       }
       .mapConcat(identity)
   }
@@ -182,7 +181,7 @@ object SqsAckFlow {
         case (actions, request) =>
           sqsClient
             .changeMessageVisibilityBatch(request)
-            .toScala
+            .asScala
             .map {
               case response if response.failed().isEmpty =>
                 val responseMetadata = response.responseMetadata()
@@ -199,13 +198,13 @@ object SqsAckFlow {
                   numberOfMessages,
                   s"Some messages are failed to change visibility. $nrOfFailedMessages of $numberOfMessages messages are failed"
                 )
-            }(parasitic)
+            }(ExecutionContext.parasitic)
             .recoverWith {
               case e: CompletionException =>
                 Future.failed(new SqsBatchException(request.entries().size(), e.getMessage, e.getCause))
               case e =>
                 Future.failed(new SqsBatchException(request.entries().size(), e.getMessage, e))
-            }(parasitic)
+            }(ExecutionContext.parasitic)
       }
       .mapConcat(identity)
 

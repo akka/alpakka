@@ -5,7 +5,6 @@
 package akka.stream.alpakka.amqp
 
 import akka.actor.ActorSystem
-import akka.dispatch.ExecutionContexts
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
@@ -17,7 +16,7 @@ import scala.concurrent.ExecutionContext
 abstract class AmqpSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with ScalaFutures with LogCapturing {
 
   implicit val system: ActorSystem = ActorSystem(this.getClass.getSimpleName)
-  implicit val executionContext: ExecutionContext = ExecutionContexts.parasitic
+  implicit val executionContext: ExecutionContext = ExecutionContext.parasitic
 
   override protected def afterAll(): Unit =
     system.terminate()

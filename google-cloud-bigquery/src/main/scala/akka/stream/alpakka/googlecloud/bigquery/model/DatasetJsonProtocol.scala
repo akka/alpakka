@@ -9,9 +9,9 @@ import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRestJsonP
 import spray.json.{JsonFormat, RootJsonFormat}
 
 import java.util
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.immutable.Seq
-import scala.compat.java8.OptionConverters._
+import scala.jdk.OptionConverters._
 
 /**
  * Dataset resource model
@@ -28,9 +28,9 @@ final case class Dataset private (datasetReference: DatasetReference,
                                   location: Option[String]) {
 
   def getDatasetReference = datasetReference
-  def getFriendlyName = friendlyName.asJava
-  def getLabels = labels.map(_.asJava).asJava
-  def getLocation = location.asJava
+  def getFriendlyName = friendlyName.toJava
+  def getLabels = labels.map(_.asJava).toJava
+  def getLocation = location.toJava
 
   def withDatasetReference(datasetReference: DatasetReference) =
     copy(datasetReference = datasetReference)
@@ -38,15 +38,15 @@ final case class Dataset private (datasetReference: DatasetReference,
   def withFriendlyName(friendlyName: Option[String]) =
     copy(friendlyName = friendlyName)
   def withFriendlyName(friendlyName: util.Optional[String]) =
-    copy(friendlyName = friendlyName.asScala)
+    copy(friendlyName = friendlyName.toScala)
 
   def withLabels(labels: Option[Map[String, String]]) =
     copy(labels = labels)
   def withLabels(labels: util.Optional[util.Map[String, String]]) =
-    copy(labels = labels.asScala.map(_.asScala.toMap))
+    copy(labels = labels.toScala.map(_.asScala.toMap))
 
   def withLocation(location: util.Optional[String]) =
-    copy(location = location.asScala)
+    copy(location = location.toScala)
 }
 
 object Dataset {
@@ -65,7 +65,7 @@ object Dataset {
              friendlyName: util.Optional[String],
              labels: util.Optional[util.Map[String, String]],
              location: util.Optional[String]) =
-    Dataset(datasetReference, friendlyName.asScala, labels.asScala.map(_.asScala.toMap), location.asScala)
+    Dataset(datasetReference, friendlyName.toScala, labels.toScala.map(_.asScala.toMap), location.toScala)
 
   implicit val format: RootJsonFormat[Dataset] = jsonFormat4(apply)
 }
@@ -79,18 +79,18 @@ object Dataset {
  */
 final case class DatasetReference private (datasetId: Option[String], projectId: Option[String]) {
 
-  def getDatasetId = datasetId.asJava
-  def getProjectId = projectId.asJava
+  def getDatasetId = datasetId.toJava
+  def getProjectId = projectId.toJava
 
   def withDatasetId(datasetId: Option[String]) =
     copy(datasetId = datasetId)
   def withDatasetId(datasetId: util.Optional[String]) =
-    copy(datasetId = datasetId.asScala)
+    copy(datasetId = datasetId.toScala)
 
   def withProjectId(projectId: Option[String]) =
     copy(projectId = projectId)
   def withProjectId(projectId: util.Optional[String]) =
-    copy(projectId = projectId.asScala)
+    copy(projectId = projectId.toScala)
 }
 
 object DatasetReference {
@@ -104,7 +104,7 @@ object DatasetReference {
    * @return a [[DatasetReference]]
    */
   def create(datasetId: util.Optional[String], projectId: util.Optional[String]) =
-    DatasetReference(datasetId.asScala, projectId.asScala)
+    DatasetReference(datasetId.toScala, projectId.toScala)
 
   implicit val format: JsonFormat[DatasetReference] = jsonFormat2(apply)
 }
@@ -118,18 +118,18 @@ object DatasetReference {
  */
 final case class DatasetListResponse private (nextPageToken: Option[String], datasets: Option[Seq[Dataset]]) {
 
-  def getNextPageToken = nextPageToken.asJava
-  def getDatasets = datasets.map(_.asJava).asJava
+  def getNextPageToken = nextPageToken.toJava
+  def getDatasets = datasets.map(_.asJava).toJava
 
   def withNextPageToken(nextPageToken: Option[String]) =
     copy(nextPageToken = nextPageToken)
   def withNextPageToken(nextPageToken: util.Optional[String]) =
-    copy(nextPageToken = nextPageToken.asScala)
+    copy(nextPageToken = nextPageToken.toScala)
 
   def withDatasets(datasets: Option[Seq[Dataset]]) =
     copy(datasets = datasets)
   def withDatasets(datasets: util.Optional[util.List[Dataset]]) =
-    copy(datasets = datasets.asScala.map(_.asScala.toList))
+    copy(datasets = datasets.toScala.map(_.asScala.toList))
 }
 
 object DatasetListResponse {
@@ -143,7 +143,7 @@ object DatasetListResponse {
    * @return a [[DatasetListResponse]]
    */
   def create(nextPageToken: util.Optional[String], datasets: util.Optional[util.List[Dataset]]) =
-    DatasetListResponse(nextPageToken.asScala, datasets.asScala.map(_.asScala.toList))
+    DatasetListResponse(nextPageToken.toScala, datasets.toScala.map(_.asScala.toList))
 
   implicit val format: RootJsonFormat[DatasetListResponse] = jsonFormat2(apply)
   implicit val paginated: Paginated[DatasetListResponse] = _.nextPageToken

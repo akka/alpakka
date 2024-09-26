@@ -31,8 +31,9 @@ import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import org.junit.*;
+
 import scala.Tuple2;
-import scala.collection.JavaConverters;
+import scala.jdk.javaapi.CollectionConverters;
 
 import java.util.Collection;
 import java.util.List;
@@ -185,8 +186,7 @@ public class MqttFlowTest {
                           } else if (cp instanceof Subscribe) {
                             Subscribe subscribe = (Subscribe) cp;
                             Collection<Tuple2<String, ControlPacketFlags>> topicFilters =
-                                JavaConverters.asJavaCollectionConverter(subscribe.topicFilters())
-                                    .asJavaCollection();
+                                CollectionConverters.asJava(subscribe.topicFilters());
                             List<Integer> flags =
                                 topicFilters.stream()
                                     .map(x -> x._2().underlying())

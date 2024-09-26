@@ -11,7 +11,7 @@ import akka.stream.alpakka.sqs.{MessageAction, SqsAckGroupedSettings, SqsAckSett
 import akka.stream.javadsl.Sink
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 
-import scala.compat.java8.FutureConverters.FutureOps
+import scala.jdk.FutureConverters.FutureOps
 
 /**
  * Java API to create acknowledging sinks.
@@ -26,7 +26,7 @@ object SqsAckSink {
              sqsClient: SqsAsyncClient): Sink[MessageAction, CompletionStage[Done]] =
     akka.stream.alpakka.sqs.scaladsl.SqsAckSink
       .apply(queueUrl, settings)(sqsClient)
-      .mapMaterializedValue(_.toJava)
+      .mapMaterializedValue(_.asJava)
       .asJava
 
   /**
@@ -37,6 +37,6 @@ object SqsAckSink {
                     sqsClient: SqsAsyncClient): Sink[MessageAction, CompletionStage[Done]] =
     akka.stream.alpakka.sqs.scaladsl.SqsAckSink
       .grouped(queueUrl, settings)(sqsClient)
-      .mapMaterializedValue(_.toJava)
+      .mapMaterializedValue(_.asJava)
       .asJava
 }

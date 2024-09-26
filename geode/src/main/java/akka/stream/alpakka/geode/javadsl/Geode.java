@@ -19,7 +19,7 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import org.apache.geode.cache.client.ClientCacheFactory;
 
-import scala.compat.java8.FutureConverters;
+import scala.jdk.javaapi.FutureConverters;
 
 import java.util.concurrent.CompletionStage;
 
@@ -42,7 +42,7 @@ public class Geode extends GeodeCache {
 
     registerPDXSerializer(serializer, serializer.clazz());
     return Source.fromGraph(new GeodeFiniteSourceStage<V>(cache(), query))
-        .mapMaterializedValue(FutureConverters::<Done>toJava);
+        .mapMaterializedValue(FutureConverters::asJava);
   }
 
   public <K, V> Flow<V, V, NotUsed> flow(

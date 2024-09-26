@@ -17,8 +17,8 @@ import com.google.cloud.bigquery.storage.v1.storage.ReadRowsResponse
 import com.google.cloud.bigquery.storage.v1.stream.ReadSession
 
 import java.util.concurrent.CompletionStage
-import scala.compat.java8.FutureConverters.FutureOps
-import scala.collection.JavaConverters._
+import scala.jdk.FutureConverters.FutureOps
+import scala.jdk.CollectionConverters._
 
 /**
  * Google BigQuery Storage Api Akka Stream operator factory.
@@ -116,7 +116,7 @@ object BigQueryStorage {
         (stream._1, stream._2.map(_.asJava).asJava)
       })
       .asJava
-      .mapMaterializedValue(_.toJava)
+      .mapMaterializedValue(_.asJava)
 
   /**
    * Create a source that contains a number of sources, one for each stream, or section of the table data.
@@ -207,6 +207,6 @@ object BigQueryStorage {
     scstorage.BigQueryStorage
       .createMergedStreams(projectId, datasetId, tableId, dataFormat, readOptions.map(_.asScala()), maxNumStreams)(um)
       .asJava
-      .mapMaterializedValue(_.toJava)
+      .mapMaterializedValue(_.asJava)
 
 }

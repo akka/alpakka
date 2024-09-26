@@ -10,7 +10,7 @@ import akka.Done
 import akka.stream.alpakka.amqp._
 import akka.util.ByteString
 
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
 
 object AmqpSink {
 
@@ -21,7 +21,7 @@ object AmqpSink {
    * either normally or because of an amqp failure.
    */
   def create(settings: AmqpWriteSettings): akka.stream.javadsl.Sink[WriteMessage, CompletionStage[Done]] =
-    akka.stream.alpakka.amqp.scaladsl.AmqpSink(settings).mapMaterializedValue(f => f.toJava).asJava
+    akka.stream.alpakka.amqp.scaladsl.AmqpSink(settings).mapMaterializedValue(f => f.asJava).asJava
 
   /**
    * Creates an `AmqpSink` that accepts `ByteString` elements.
@@ -30,7 +30,7 @@ object AmqpSink {
    * either normally or because of an amqp failure.
    */
   def createSimple(settings: AmqpWriteSettings): akka.stream.javadsl.Sink[ByteString, CompletionStage[Done]] =
-    akka.stream.alpakka.amqp.scaladsl.AmqpSink.simple(settings).mapMaterializedValue(f => f.toJava).asJava
+    akka.stream.alpakka.amqp.scaladsl.AmqpSink.simple(settings).mapMaterializedValue(f => f.asJava).asJava
 
   /**
    * Connects to an AMQP server upon materialization and sends incoming messages to the server.
@@ -43,6 +43,6 @@ object AmqpSink {
   def createReplyTo(
       settings: AmqpReplyToSinkSettings
   ): akka.stream.javadsl.Sink[WriteMessage, CompletionStage[Done]] =
-    akka.stream.alpakka.amqp.scaladsl.AmqpSink.replyTo(settings).mapMaterializedValue(f => f.toJava).asJava
+    akka.stream.alpakka.amqp.scaladsl.AmqpSink.replyTo(settings).mapMaterializedValue(f => f.asJava).asJava
 
 }

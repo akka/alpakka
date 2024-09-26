@@ -5,8 +5,6 @@
 package akka.stream.alpakka.googlecloud.storage.impl
 
 import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
-import akka.dispatch.ExecutionContexts.parasitic
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.HttpMethods.{DELETE, POST}
@@ -27,6 +25,7 @@ import akka.{Done, NotUsed}
 import spray.json._
 
 import scala.annotation.nowarn
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
 @InternalApi private[storage] object GCStorageStream {
@@ -45,7 +44,7 @@ import scala.concurrent.Future
       val uri = Uri(gcsSettings.endpointUrl)
         .withPath(Path(gcsSettings.basePath) / "b")
         .withQuery(Query("project" -> settings.projectId))
-      implicit val ec = parasitic
+      implicit val ec = ExecutionContext.parasitic
       val request = Marshal(BucketInfo(bucketName, location)).to[RequestEntity].map { entity =>
         HttpRequest(POST, uri, entity = entity)
       }
@@ -210,7 +209,7 @@ import scala.concurrent.Future
             case Some(resource) => Future.successful(resource)
             case None => Future.failed(new RuntimeException("Storage object is missing"))
           }
-        )(ExecutionContexts.parasitic)
+        )(ExecutionContext.parasitic)
       )
   }
 
@@ -224,7 +223,7 @@ import scala.concurrent.Future
         Source.lazyFuture { () =>
           request.flatMap { request =>
             GoogleHttp()(mat.system).singleAuthenticatedRequest[T](request)
-          }(ExecutionContexts.parasitic)
+          }(ExecutionContext.parasitic)
         }
       }
       .mapMaterializedValue(_ => NotUsed)

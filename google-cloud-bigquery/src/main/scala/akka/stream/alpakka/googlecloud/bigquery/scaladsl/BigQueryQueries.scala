@@ -5,7 +5,6 @@
 package akka.stream.alpakka.googlecloud.bigquery.scaladsl
 
 import akka.NotUsed
-import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.HttpMethods.POST
@@ -20,8 +19,9 @@ import akka.stream.alpakka.googlecloud.bigquery.model.{QueryRequest, QueryRespon
 import akka.stream.alpakka.googlecloud.bigquery.{BigQueryEndpoints, BigQueryException}
 import akka.stream.scaladsl.{Keep, RestartSource, Sink, Source}
 
-import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
@@ -62,7 +62,7 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
         import BigQueryException._
         import SprayJsonSupport._
         implicit val system = mat.system
-        implicit val ec = ExecutionContexts.parasitic
+        implicit val ec = ExecutionContext.parasitic
         implicit val settings = GoogleAttributes.resolveSettings(mat, attr)
 
         Source.lazyFutureSource { () =>

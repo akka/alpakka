@@ -45,7 +45,7 @@ Alpakka, same as Akka, aims to keep 100% feature parity between the various lang
 
 1. If the underlying Scala code requires an `ExecutionContext`, make the Java API take an `Executor` and use `ExecutionContext.fromExecutor(executor)` for conversion.
 
-1. Make use of `scala-java8-compat` conversions, see [GitHub](https://github.com/scala/scala-java8-compat) (eg. `scala.compat.java8.FutureConverters` to translate Futures to `CompletionStage`s).
+1. Make use of `scala-java8-compat` conversions, see [GitHub](https://github.com/scala/scala-java8-compat) (eg. `scala.jdk.FutureConverters` to translate Futures to `CompletionStage`s).
 
 
 ### Overview of Scala types and their Java counterparts

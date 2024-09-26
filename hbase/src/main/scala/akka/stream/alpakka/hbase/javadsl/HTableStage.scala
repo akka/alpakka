@@ -12,7 +12,7 @@ import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.{Done, NotUsed}
 import org.apache.hadoop.hbase.client.{Result, Scan}
 
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
 
 object HTableStage {
 
@@ -21,7 +21,7 @@ object HTableStage {
    * HBase mutations for every incoming element are derived from the converter functions defined in the config.
    */
   def sink[A](config: HTableSettings[A]): akka.stream.javadsl.Sink[A, CompletionStage[Done]] =
-    Flow[A].via(flow(config)).toMat(Sink.ignore)(Keep.right).mapMaterializedValue(toJava).asJava
+    Flow[A].via(flow(config)).toMat(Sink.ignore)(Keep.right).mapMaterializedValue(_.asJava).asJava
 
   /**
    * Writes incoming element to HBase.

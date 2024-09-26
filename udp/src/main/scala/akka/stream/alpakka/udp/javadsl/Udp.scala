@@ -13,9 +13,9 @@ import akka.actor.{ActorSystem, ClassicActorSystemProvider}
 import akka.stream.alpakka.udp.Datagram
 import akka.stream.javadsl.{Flow, Sink}
 import akka.stream.alpakka.udp.scaladsl
-import akka.util.ccompat.JavaConverters._
 
-import scala.compat.java8.FutureConverters._
+import scala.jdk.CollectionConverters._
+import scala.jdk.FutureConverters._
 
 object Udp {
   import java.lang.{Iterable => JIterable}
@@ -111,7 +111,7 @@ object Udp {
    */
   def bindFlow(localAddress: InetSocketAddress,
                system: ActorSystem): Flow[Datagram, Datagram, CompletionStage[InetSocketAddress]] =
-    scaladsl.Udp.bindFlow(localAddress)(system).mapMaterializedValue(_.toJava).asJava
+    scaladsl.Udp.bindFlow(localAddress)(system).mapMaterializedValue(_.asJava).asJava
 
   /**
    * Creates a flow that upon materialization binds to the given `localAddress`. All incoming
@@ -123,7 +123,7 @@ object Udp {
    */
   def bindFlow(localAddress: InetSocketAddress,
                system: ClassicActorSystemProvider): Flow[Datagram, Datagram, CompletionStage[InetSocketAddress]] =
-    scaladsl.Udp.bindFlow(localAddress)(system).mapMaterializedValue(_.toJava).asJava
+    scaladsl.Udp.bindFlow(localAddress)(system).mapMaterializedValue(_.asJava).asJava
 
   /**
    * Creates a flow that upon materialization binds to the given `localAddress`. All incoming
@@ -137,7 +137,7 @@ object Udp {
   def bindFlow(localAddress: InetSocketAddress,
                options: JIterable[SocketOption],
                system: ActorSystem): Flow[Datagram, Datagram, CompletionStage[InetSocketAddress]] =
-    scaladsl.Udp.bindFlow(localAddress, options.asScala.toIndexedSeq)(system).mapMaterializedValue(_.toJava).asJava
+    scaladsl.Udp.bindFlow(localAddress, options.asScala.toIndexedSeq)(system).mapMaterializedValue(_.asJava).asJava
 
   /**
    * Creates a flow that upon materialization binds to the given `localAddress`. All incoming
@@ -151,5 +151,5 @@ object Udp {
   def bindFlow(localAddress: InetSocketAddress,
                options: JIterable[SocketOption],
                system: ClassicActorSystemProvider): Flow[Datagram, Datagram, CompletionStage[InetSocketAddress]] =
-    scaladsl.Udp.bindFlow(localAddress, options.asScala.toIndexedSeq)(system).mapMaterializedValue(_.toJava).asJava
+    scaladsl.Udp.bindFlow(localAddress, options.asScala.toIndexedSeq)(system).mapMaterializedValue(_.asJava).asJava
 }

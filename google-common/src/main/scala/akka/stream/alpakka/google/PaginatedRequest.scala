@@ -6,7 +6,6 @@ package akka.stream.alpakka.google
 
 import akka.actor.ActorSystem
 import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.model.HttpMethods.GET
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.Uri.Query
@@ -16,6 +15,7 @@ import akka.stream.alpakka.google.scaladsl.Paginated
 import akka.stream.scaladsl.Source
 import akka.{Done, NotUsed}
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
 @InternalApi
@@ -59,7 +59,7 @@ private[alpakka] object PaginatedRequest {
                   .pageToken(out)
                   .fold[Either[Done, Option[String]]](Left(Done))(pageToken => Right(Some(pageToken)))
                 Some((nextPageToken, out))
-              }(ExecutionContexts.parasitic)
+              }(ExecutionContext.parasitic)
         }
       }
       .mapMaterializedValue(_ => NotUsed)

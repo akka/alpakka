@@ -42,7 +42,7 @@ class CharsetCodingFlowsDoc
       import akka.stream.scaladsl.FileIO
 
       // #encoding
-      import scala.collection.JavaConverters._
+      import scala.jdk.CollectionConverters._
       val targetFile = Paths.get("target/outdata.txt")
       val strings = System.getProperties.asScala.map(p => p._1 + " -> " + p._2).toList
       // #encoding
