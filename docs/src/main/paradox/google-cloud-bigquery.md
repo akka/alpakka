@@ -130,7 +130,7 @@ The BigQuery connector enables loading data into tables via real-time streaming 
 For an overview of these strategies see the [BigQuery documentation](https://cloud.google.com/bigquery/docs/loading-data).
 
 The @scala[@apidoc[BigQuery.insertAll[In]](BigQuery$)] @java[@apidoc[BigQuery.<In>insertAll](BigQuery$)] method creates a sink that accepts batches of @scala[`Seq[In]`] @java[`List<In>`]
-(for example created via the [`batch`](https://doc.akka.io/docs/akka/current/stream/operators/Source-or-Flow/batch.html) operator) and streams them directly into a table.
+(for example created via the [`batch`](https://doc.akka.io/libraries/akka-core/current/stream/operators/Source-or-Flow/batch.html) operator) and streams them directly into a table.
 To enable/disable BigQuery’s best-effort deduplication feature use the appropriate @apidoc[InsertAllRetryPolicy$].
 
 Scala

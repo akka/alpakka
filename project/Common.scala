@@ -24,11 +24,11 @@ object Common extends AutoPlugin {
     organization := "com.lightbend.akka",
     organizationName := "Lightbend Inc.",
     organizationHomepage := Some(url("https://www.lightbend.com/")),
-    homepage := Some(url("https://doc.akka.io/docs/alpakka/current")),
+    homepage := Some(url("https://doc.akka.io/libraries/alpakka/current")),
     scmInfo := Some(ScmInfo(url("https://github.com/akka/alpakka"), "git@github.com:akka/alpakka.git")),
     developers += Developer("contributors",
                             "Contributors",
-                            "https://gitter.im/akka/dev",
+                            "",
                             url("https://github.com/akka/alpakka/graphs/contributors")),
     releaseNotesURL := (
         if ((ThisBuild / isSnapshot).value) None
@@ -77,7 +77,13 @@ object Common extends AutoPlugin {
           "-doc-version",
           version.value,
           "-sourcepath",
-          (ThisBuild / baseDirectory).value.toString
+          (ThisBuild / baseDirectory).value.toString,
+          "-doc-source-url", {
+            val branch = if (isSnapshot.value) "main" else s"v${version.value}"
+            s"https://github.com/akka/alpakka/tree/${branch}€{FILE_PATH_EXT}#L€{FILE_LINE}"
+          },
+          "-doc-canonical-base-url",
+          "https://doc.akka.io/api/alpakka/current/"
         ) ++ {
           // excluding generated grpc classes, except the model ones (com.google.pubsub)
           val skip = "akka.pattern:" + // for some reason Scaladoc creates this
@@ -86,20 +92,17 @@ object Common extends AutoPlugin {
             "com.google.api:com.google.cloud:com.google.iam:com.google.logging:" +
             "com.google.longrunning:com.google.protobuf:com.google.rpc:com.google.type"
           if (scalaBinaryVersion.value.startsWith("3")) {
-            Seq(s"-skip-packages:$skip") // different usage in scala3
+            Seq(
+              s"-external-mappings:https://docs.oracle.com/en/java/javase/${Dependencies.JavaDocLinkVersion}/docs/api/java.base/",
+              s"-skip-packages:$skip"
+            )
           } else {
-            Seq("-skip-packages", skip)
+            Seq("-jdk-api-doc-base",
+                s"https://docs.oracle.com/en/java/javase/${Dependencies.JavaDocLinkVersion}/docs/api/java.base/",
+                "-skip-packages",
+                skip)
           }
         },
-      Compile / doc / scalacOptions ++=
-        Seq(
-          "-doc-source-url", {
-            val branch = if (isSnapshot.value) "main" else s"v${version.value}"
-            s"https://github.com/akka/alpakka/tree/${branch}€{FILE_PATH_EXT}#L€{FILE_LINE}"
-          },
-          "-doc-canonical-base-url",
-          "https://doc.akka.io/api/alpakka/current/"
-        ),
       Compile / doc / scalacOptions -= "-Werror",
       compile / javacOptions ++= Seq(
           "-Xlint:cast",

@@ -13,7 +13,7 @@ import java.util.concurrent.CompletionStage;
 
 /**
  * Utility to delegate Couchbase node address lookup to
- * [[https://doc.akka.io/docs/akka/current/discovery/index.html Akka Discovery]].
+ * [[https://doc.akka.io/libraries/akka-core/current/discovery/index.html Akka Discovery]].
  */
 public final class DiscoverySupport {
 

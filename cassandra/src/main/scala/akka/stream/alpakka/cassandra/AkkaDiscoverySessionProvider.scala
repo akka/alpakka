@@ -17,7 +17,7 @@ import scala.jdk.DurationConverters._
 import scala.jdk.FutureConverters._
 
 /**
- * [[https://doc.akka.io/docs/akka/current/discovery/index.html Akka Discovery]]
+ * [[https://doc.akka.io/libraries/akka-core/current/discovery/index.html Akka Discovery]]
  * is enabled by setting the `service-discovery.name` in the given `CassandraSession` config.
  *
  * Akka Discovery overwrites the basic.contact-points` from the configuration with addresses

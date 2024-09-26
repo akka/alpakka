@@ -4,4 +4,4 @@ The **Alpakka Kafka connector** (originally known as **Reactive Kafka** or even 
 
 ## Separate repository
 
-Please read more about it in the [Alpakka Kafka documentation](https://doc.akka.io/docs/alpakka-kafka/current/).
+Please read more about it in the [Alpakka Kafka documentation](https://doc.akka.io/libraries/alpakka-kafka/current/).

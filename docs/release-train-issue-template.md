@@ -30,7 +30,7 @@ Key links:
 ### Check availability
 
 - [ ] Check [API](https://doc.akka.io/api/alpakka/$VERSION$/) documentation
-- [ ] Check [reference](https://doc.akka.io/docs/alpakka/$VERSION$/) documentation. Check that the reference docs were deployed and show a version warning (see section below on how to fix the version warning).
+- [ ] Check [reference](https://doc.akka.io/libraries/alpakka/$VERSION$/) documentation. Check that the reference docs were deployed and show a version warning (see section below on how to fix the version warning).
 - [ ] Check the release on https://repo.akka.io/maven/com/lightbend/akka/akka-stream-alpakka-xml_2.13/$VERSION$/akka-stream-alpakka-xml_2.13-$VERSION$.pom
 
 ### When everything is on https://repo.akka.io/maven
@@ -40,7 +40,7 @@ Key links:
          ```
          cd ~/www
          git status
-         git add docs/alpakka/current docs/alpakka/$VERSION$
+         git add libraries/alpakka/current libraries/alpakka/$VERSION$
          git add api/alpakka/current api/alpakka/$VERSION$
          git commit -m "Alpakka $VERSION$"
          ```

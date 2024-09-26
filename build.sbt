@@ -387,7 +387,7 @@ lazy val docs = project
         ("http://www\\.scala-lang\\.org/".r, _ => "https://www\\.scala-lang\\.org/"),
         ("https://javadoc\\.io/page/".r, _ => "https://javadoc\\.io/static/")
       ),
-    Paradox / siteSubdirName := s"docs/alpakka/${projectInfoVersion.value}",
+    Paradox / siteSubdirName := s"libraries/alpakka/${projectInfoVersion.value}",
     // make use of https://github.com/scala/scala/pull/8663
     Compile / doc / scalacOptions ++= Seq(
         "-jdk-api-doc-base",
@@ -399,16 +399,16 @@ lazy val docs = project
         "hadoop.version" -> Dependencies.HadoopVersion,
         "extref.github.base_url" -> s"https://github.com/akka/alpakka/tree/${if (isSnapshot.value) "main"
         else "v" + version.value}/%s",
-        "extref.akka.base_url" -> s"https://doc.akka.io/docs/akka/${Dependencies.AkkaBinaryVersion}/%s",
+        "extref.akka.base_url" -> s"https://doc.akka.io/libraries/akka-core/${Dependencies.AkkaBinaryVersion}/%s",
         "scaladoc.akka.base_url" -> s"https://doc.akka.io/api/akka/${Dependencies.AkkaBinaryVersion}",
         "javadoc.akka.base_url" -> s"https://doc.akka.io/japi/akka/${Dependencies.AkkaBinaryVersion}/",
         "javadoc.akka.link_style" -> "direct",
-        "extref.akka-http.base_url" -> s"https://doc.akka.io/docs/akka-http/${Dependencies.AkkaHttpBinaryVersion}/%s",
+        "extref.akka-http.base_url" -> s"https://doc.akka.io/libraries/akka-http/${Dependencies.AkkaHttpBinaryVersion}/%s",
         "scaladoc.akka.http.base_url" -> s"https://doc.akka.io/api/akka-http/${Dependencies.AkkaHttpBinaryVersion}/",
         "javadoc.akka.http.base_url" -> s"https://doc.akka.io/japi/akka-http/${Dependencies.AkkaHttpBinaryVersion}/",
         // Akka gRPC
         "akka-grpc.version" -> Dependencies.AkkaGrpcBinaryVersion,
-        "extref.akka-grpc.base_url" -> s"https://doc.akka.io/docs/akka-grpc/${Dependencies.AkkaGrpcBinaryVersion}/%s",
+        "extref.akka-grpc.base_url" -> s"https://doc.akka.io/libraries/akka-grpc/${Dependencies.AkkaGrpcBinaryVersion}/%s",
         // Couchbase
         "couchbase.version" -> Dependencies.CouchbaseVersion,
         "extref.couchbase.base_url" -> s"https://docs.couchbase.com/java-sdk/${Dependencies.CouchbaseVersionForDocs}/%s",

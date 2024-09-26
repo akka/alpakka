@@ -20,7 +20,7 @@
 
 ## 2.0.0-RC1
 
-**Alpakka Cassandra is completely rewritten and now based on the Cassandra Java driver version 4.6. It now becomes the base for [Akka Persistence Cassandra](https://doc.akka.io/docs/akka-persistence-cassandra/1.0/).**
+**Alpakka Cassandra is completely rewritten and now based on the Cassandra Java driver version 4.6. It now becomes the base for [Akka Persistence Cassandra](https://doc.akka.io/libraries/akka-persistence-cassandra/1.0/).**
 
 - Cassandra: rewrite on top of Java driver 4.6.0 [#2182](https://github.com/akka/alpakka/issues/2182) by [@ennru](https://github.com/ennru)
 - Cassandra: new actors API in Metrics Registry [#2214](https://github.com/akka/alpakka/issues/2214) by [@ennru](https://github.com/ennru)

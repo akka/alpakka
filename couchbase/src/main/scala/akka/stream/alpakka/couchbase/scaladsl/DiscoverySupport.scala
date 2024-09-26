@@ -20,7 +20,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
 /**
- * Utility to delegate Couchbase node address lookup to [[https://doc.akka.io/docs/akka/current/discovery/index.html Akka Discovery]].
+ * Utility to delegate Couchbase node address lookup to [[https://doc.akka.io/libraries/akka-core/current/discovery/index.html Akka Discovery]].
  */
 sealed class DiscoverySupport private {
 
@@ -96,7 +96,7 @@ sealed class DiscoverySupport private {
 }
 
 /**
- * Utility to delegate Couchbase node address lookup to [[https://doc.akka.io/docs/akka/current/discovery/index.html Akka Discovery]].
+ * Utility to delegate Couchbase node address lookup to [[https://doc.akka.io/libraries/akka-core/current/discovery/index.html Akka Discovery]].
  */
 object DiscoverySupport extends DiscoverySupport {
 

@@ -43,7 +43,7 @@ object SqsPublishFlow {
 
   /**
    * creates a [[akka.stream.javadsl.Flow Flow]] that groups messages and publish them in batches to a SQS queue using an [[software.amazon.awssdk.services.sqs.SqsAsyncClient AmazonSQSAsync]]
-   * @see https://doc.akka.io/docs/akka/current/stream/operators/Source-or-Flow/groupedWithin.html#groupedwithin
+   * @see https://doc.akka.io/libraries/akka-core/current/stream/operators/Source-or-Flow/groupedWithin.html#groupedwithin
    */
   def grouped(
       queueUrl: String,

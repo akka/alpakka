@@ -38,7 +38,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 Use the `FileIO` class to create streams reading from or writing to files. It is part part of Akka streams. 
 
-[Akka Streaming File IO documentation](https://doc.akka.io/docs/akka/current/stream/stream-io.html#streaming-file-io)
+[Akka Streaming File IO documentation](https://doc.akka.io/libraries/akka-core/current/stream/stream-io.html#streaming-file-io)
 
 
 ## Tailing a file into a stream

@@ -3,16 +3,16 @@ Alpakka
 
 Systems don't come alone. In the modern world of microservices and cloud deployment, new components must interact with legacy systems, making integration an important key to success. Reactive Streams give us a technology-independent tool to let these heterogeneous systems communicate without overwhelming each other.
 
-The Alpakka project implements stream-aware & reactive integration pipelines for Java and Scala. It is built on top of [Akka Streams](https://doc.akka.io/docs/akka/current/stream/index.html), and has been designed from the ground up to understand streaming natively and provide a DSL for reactive and stream-oriented programming, with built-in support for backpressure. Akka Streams is a [Reactive Streams](http://www.reactive-streams.org/) and JDK 9+ [java.util.concurrent.Flow](https://docs.oracle.com/javase/10/docs/api/java/util/concurrent/Flow.html)-compliant implementation and therefore [fully interoperable](https://doc.akka.io/docs/akka/current/general/stream/stream-design.html#interoperation-with-other-reactive-streams-implementations) with other implementations.
+The Alpakka project implements stream-aware & reactive integration pipelines for Java and Scala. It is built on top of [Akka Streams](https://doc.akka.io/libraries/akka-core/current/stream/index.html), and has been designed from the ground up to understand streaming natively and provide a DSL for reactive and stream-oriented programming, with built-in support for backpressure. Akka Streams is a [Reactive Streams](http://www.reactive-streams.org/) and JDK 9+ [java.util.concurrent.Flow](https://docs.oracle.com/javase/10/docs/api/java/util/concurrent/Flow.html)-compliant implementation and therefore [fully interoperable](https://doc.akka.io/libraries/akka-core/current/general/stream/stream-design.html#interoperation-with-other-reactive-streams-implementations) with other implementations.
 
 The Akka family of projects is managed by teams at [Lightbend](https://lightbend.com) with help from the community.
 
 Documentation
 -------------
 
-- [Alpakka reference](https://doc.akka.io/docs/alpakka/current/) documentation
+- [Alpakka reference](https://doc.akka.io/libraries/alpakka/current/) documentation
 
-- [Alpakka Kafka connector reference](https://doc.akka.io/docs/akka-stream-kafka/current/) documentation
+- [Alpakka Kafka connector reference](https://doc.akka.io/libraries/akka-stream-kafka/current/) documentation
 
 To keep up with the latest Alpakka releases check out [Alpakka releases](https://github.com/akka/alpakka/releases) and [Alpakka Kafka connector releases](https://github.com/akka/alpakka-kafka/releases).
 

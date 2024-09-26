@@ -71,7 +71,7 @@ Java
 With this type of send you can get responses from the server.
 These responses can be @scaladoc[FcmSuccessResponse](akka.stream.alpakka.google.firebase.fcm.FcmSuccessResponse) or @scaladoc[FcmErrorResponse](akka.stream.alpakka.google.firebase.fcm.FcmErrorResponse).
 You can choose what you want to do with this information, but keep in mind
-if you try to resend the failed messages you will need to use exponential backoff! (see [Akka docs `RestartFlow.onFailuresWithBackoff`](https://doc.akka.io/docs/akka/current/stream/operators/RestartFlow/onFailuresWithBackoff.html))
+if you try to resend the failed messages you will need to use exponential backoff! (see [Akka docs `RestartFlow.onFailuresWithBackoff`](https://doc.akka.io/libraries/akka-core/current/stream/operators/RestartFlow/onFailuresWithBackoff.html))
 
 If you don't care if the notification was sent successfully, you may use `fireAndForget`.
 

@@ -23,14 +23,14 @@ object Examples {
     import software.amazon.awssdk.services.lambda.LambdaAsyncClient
 
     // Don't encode credentials in your source code!
-    // see https://doc.akka.io/docs/alpakka/current/aws-shared-configuration.html
+    // see https://doc.akka.io/libraries/alpakka/current/aws-shared-configuration.html
     val credentialsProvider = StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x"))
     implicit val lambdaClient: LambdaAsyncClient = LambdaAsyncClient
       .builder()
       .credentialsProvider(credentialsProvider)
       .httpClient(AkkaHttpClient.builder().withActorSystem(system).build())
       // Possibility to configure the retry policy
-      // see https://doc.akka.io/docs/alpakka/current/aws-shared-configuration.html
+      // see https://doc.akka.io/libraries/alpakka/current/aws-shared-configuration.html
       // .overrideConfiguration(...)
       .build()
 
