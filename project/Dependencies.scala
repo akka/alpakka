@@ -25,7 +25,7 @@ object Dependencies {
   val AlpakkaKafkaVersion = "6.0.0"
   val ScalaTestVersion = "3.2.19"
   val TestContainersScalaTestVersion = "0.40.3" // pulls Testcontainers 1.16.2
-  val mockitoVersion = "4.11.0" // check even https://github.com/scalatest/scalatestplus-mockito/releases
+  val mockitoVersion = "5.13.0" // check even https://github.com/scalatest/scalatestplus-mockito/releases
   val hoverflyVersion = "0.14.1"
 
   val CouchbaseVersion = "2.7.23"
@@ -66,9 +66,7 @@ object Dependencies {
   )
 
   val Mockito = Seq(
-    "org.mockito" % "mockito-core" % mockitoVersion % Test,
-    // Force bump byte-buddy for JDK 21
-    "net.bytebuddy" % "byte-buddy" % "1.14.12" % Test
+    "org.mockito" % "mockito-core" % mockitoVersion % Test
   )
 
   // Releases https://github.com/FasterXML/jackson-databind/releases
@@ -524,8 +522,7 @@ object Dependencies {
           ExclusionRule("software.amazon.awssdk", "apache-client"),
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         ),
-        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
-        "org.mockito" % "mockito-inline" % mockitoVersion % Test // MIT
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion
       ) ++ Mockito
   )
 
