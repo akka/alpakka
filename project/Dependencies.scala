@@ -199,7 +199,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "commons-net" % "commons-net" % "3.8.0", // ApacheV2
         // Versions after sshj 0.35.0 depend on SLF4J 2.x
-        "com.hierynomus" % "sshj" % "0.35.0",
+        "com.hierynomus" % "sshj" % "0.39.0",
         ("io.github.hakky54" % "sslcontext-kickstart-for-pem" % "8.3.5" % Test).exclude("org.slf4j", "slf4j-api")
       )
   )
