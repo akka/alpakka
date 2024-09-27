@@ -21,7 +21,9 @@ object Dependencies {
   val AkkaGrpcBinaryVersion = "2.4"
   // sync ignore prefix in scripts/link-validator.conf#L30
   val AkkaHttpVersion = "10.7.0-M1"
-  val AkkaHttpBinaryVersion = VersionNumber(AkkaHttpVersion).numbers match { case Seq(major, minor, _*) => s"$major.$minor" }
+  val AkkaHttpBinaryVersion = VersionNumber(AkkaHttpVersion).numbers match {
+    case Seq(major, minor, _*) => s"$major.$minor"
+  }
   val AlpakkaKafkaVersion = "7.0.0-M1"
   val ScalaTestVersion = "3.2.19"
   val TestContainersScalaTestVersion = "0.40.3" // pulls Testcontainers 1.16.2
@@ -151,6 +153,7 @@ object Dependencies {
         (
           ExclusionRule(organization = "com.typesafe.akka")
         ),
+        "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2",
         "software.amazon.awssdk" % "dynamodb" % AwsSdk2Version excludeAll // ApacheV2
         (
           ExclusionRule("software.amazon.awssdk", "apache-client"),
@@ -499,6 +502,7 @@ object Dependencies {
         (
           ExclusionRule(organization = "com.typesafe.akka")
         ),
+        "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2",
         "software.amazon.awssdk" % "sns" % AwsSdk2Version excludeAll // ApacheV2
         (
           ExclusionRule("software.amazon.awssdk", "apache-client"),
