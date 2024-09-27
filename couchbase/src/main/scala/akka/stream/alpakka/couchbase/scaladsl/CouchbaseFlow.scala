@@ -14,7 +14,8 @@ import com.couchbase.client.java.document.{Document, JsonDocument}
 object CouchbaseFlow {
 
   /**
-   * Create a flow to query Couchbase for by `id` and emit [[com.couchbase.client.java.document.JsonDocument JsonDocument]]s.
+   * Create a flow to query Couchbase for by `id` and
+   * emit [[com.couchbase.client.java.document.JsonDocument JsonDocument]]s.
    */
   def fromId(sessionSettings: CouchbaseSessionSettings, bucketName: String): Flow[String, JsonDocument, NotUsed] =
     Flow
