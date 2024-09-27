@@ -5,13 +5,13 @@
 package akka.stream.alpakka.googlecloud.pubsub.grpc.scaladsl
 
 import akka.actor.Cancellable
-import akka.dispatch.ExecutionContexts
 import akka.stream.{Attributes, Materializer}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.{Done, NotUsed}
 import com.google.pubsub.v1.pubsub._
 
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext
 import scala.concurrent.{Future, Promise}
 
 /**
@@ -67,7 +67,7 @@ object GooglePubSub {
           .mapConcat(_.receivedMessages.toVector)
           .mapMaterializedValue(_ => cancellable.future)
       }
-      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.parasitic))
+      .mapMaterializedValue(_.flatMap(identity)(ExecutionContext.parasitic))
 
   /**
    * Create a source that emits messages for a given subscription using a synchronous PullRequest.
@@ -92,7 +92,7 @@ object GooglePubSub {
           .mapConcat(_.receivedMessages.toVector)
           .mapMaterializedValue(_ => cancellable.future)
       }
-      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.parasitic))
+      .mapMaterializedValue(_.flatMap(identity)(ExecutionContext.parasitic))
 
   /**
    * Create a flow that accepts consumed message acknowledgements.
@@ -124,7 +124,7 @@ object GooglePubSub {
           .mapAsyncUnordered(parallelism)(subscriber(mat, attr).client.acknowledge)
           .toMat(Sink.ignore)(Keep.right)
       }
-      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.parasitic))
+      .mapMaterializedValue(_.flatMap(identity)(ExecutionContext.parasitic))
   }
 
   private def publisher(mat: Materializer, attr: Attributes) =

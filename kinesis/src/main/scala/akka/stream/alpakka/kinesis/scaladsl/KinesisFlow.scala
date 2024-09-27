@@ -5,9 +5,9 @@
 package akka.stream.alpakka.kinesis.scaladsl
 
 import java.nio.ByteBuffer
+
 import akka.NotUsed
 import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts.parasitic
 import akka.stream.ThrottleMode
 import akka.stream.alpakka.kinesis.KinesisFlowSettings
 import akka.stream.alpakka.kinesis.KinesisErrors.FailurePublishingRecords
@@ -21,11 +21,11 @@ import software.amazon.awssdk.services.kinesis.model.{
   PutRecordsResponse,
   PutRecordsResultEntry
 }
-
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.immutable.Queue
 import scala.concurrent.duration._
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
+import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
 object KinesisFlow {
@@ -93,8 +93,8 @@ object KinesisFlow {
             .putRecords(
               PutRecordsRequest.builder().streamName(streamName).records(entries.map(_._1).asJavaCollection).build
             )
-            .toScala
-            .transform(handleBatch(entries))(parasitic)
+            .asScala
+            .transform(handleBatch(entries))(ExecutionContext.parasitic)
       )
       .mapConcat(identity)
   }

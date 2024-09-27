@@ -17,7 +17,6 @@ import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 
-import scala.compat.java8.FutureConverters;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -25,8 +24,9 @@ import java.nio.ByteBuffer;
 
 import io.pravega.client.tables.TableKey;
 
-import scala.compat.java8.functionConverterImpls.FromJavaFunction;
-import scala.compat.java8.OptionConverters;
+import scala.jdk.javaapi.FutureConverters;
+import scala.jdk.javaapi.FunctionConverters;
+import scala.jdk.javaapi.OptionConverters;
 
 import scala.Option;
 
@@ -59,12 +59,12 @@ public class PravegaTable {
   public static <K, V> Source<TableEntry<V>, CompletionStage<Done>> source(
       String scope, String tableName, TableReaderSettings<K, V> tableReaderSettings) {
     return Source.fromGraph(new PravegaTableSource<K, V>(scope, tableName, tableReaderSettings))
-        .mapMaterializedValue(FutureConverters::toJava);
+        .mapMaterializedValue(FutureConverters::asJava);
   }
   /** A flow from key to and Option[value]. */
   public static <K, V> Flow<K, Optional<V>, NotUsed> readFlow(
       String scope, String tableName, TableSettings<K, V> tableSettings) {
     return Flow.fromGraph(new PravegaTableReadFlow<K, V>(scope, tableName, tableSettings))
-        .map(o -> OptionConverters.toJava(o));
+        .map(OptionConverters::toJava);
   }
 }

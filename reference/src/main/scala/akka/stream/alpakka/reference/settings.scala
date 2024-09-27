@@ -9,8 +9,8 @@ import java.time.{Duration => JavaDuration}
 import java.util.Optional
 import java.util.function.Predicate
 
-import scala.compat.java8.FunctionConverters._
-import scala.compat.java8.OptionConverters._
+import scala.jdk.FunctionConverters._
+import scala.jdk.OptionConverters._
 import scala.concurrent.duration._
 
 /**
@@ -60,7 +60,7 @@ final class SourceSettings private (
    * A separate getter for Java API that converts Scala Option to Java Optional.
    */
   def getTraceId(): Optional[String] =
-    traceId.asJava
+    traceId.toJava
 
   /**
    * Java API

@@ -8,14 +8,14 @@ import java.util.concurrent.CompletionStage
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor.{ClassicActorSystemProvider, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
-import akka.dispatch.ExecutionContexts
 import akka.stream.alpakka.couchbase.impl.CouchbaseClusterRegistry
 import akka.stream.alpakka.couchbase.javadsl.{CouchbaseSession => JCouchbaseSession}
 import akka.stream.alpakka.couchbase.scaladsl.CouchbaseSession
 
 import scala.annotation.tailrec
-import scala.compat.java8.FutureConverters._
+import scala.concurrent.ExecutionContext
 import scala.concurrent.{Future, Promise}
+import scala.jdk.FutureConverters._
 
 /**
  * This Couchbase session registry makes it possible to share Couchbase sessions between multiple use sites
@@ -78,8 +78,8 @@ final class CouchbaseSessionRegistry(system: ExtendedActorSystem) extends Extens
    */
   def getSessionFor(settings: CouchbaseSessionSettings, bucketName: String): CompletionStage[JCouchbaseSession] =
     sessionFor(settings, bucketName)
-      .map(_.asJava)(ExecutionContexts.parasitic)
-      .toJava
+      .map(_.asJava)(ExecutionContext.parasitic)
+      .asJava
 
   @tailrec
   private def startSession(key: SessionKey): Future[CouchbaseSession] = {
@@ -91,7 +91,7 @@ final class CouchbaseSessionRegistry(system: ExtendedActorSystem) extends Extens
       val session = clusterRegistry
         .clusterFor(key.settings)
         .flatMap(cluster => CouchbaseSession(cluster, key.bucketName)(blockingDispatcher))(
-          ExecutionContexts.parasitic
+          ExecutionContext.parasitic
         )
       promise.completeWith(session)
       promise.future

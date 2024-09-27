@@ -10,19 +10,21 @@ object Dependencies {
   val Scala2Versions = Seq(Scala213)
   val ScalaVersions = Dependencies.Scala2Versions :+ Dependencies.Scala3
 
-  val AkkaVersion = "2.9.3"
-  val AkkaBinaryVersion = "2.9"
+  val AkkaVersion = "2.10.0-M1"
+  val AkkaBinaryVersion = VersionNumber(AkkaVersion).numbers match { case Seq(major, minor, _*) => s"$major.$minor" }
 
   val InfluxDBJavaVersion = "2.15"
 
   val AwsSdk2Version = "2.25.16"
   val AwsSpiAkkaHttpVersion = "1.0.1"
   // Sync with plugins.sbt
-  val AkkaGrpcBinaryVersion = "2.4"
+  val AkkaGrpcBinaryVersion = "2.5"
   // sync ignore prefix in scripts/link-validator.conf#L30
-  val AkkaHttpVersion = "10.6.3"
-  val AkkaHttpBinaryVersion = "10.6"
-  val AlpakkaKafkaVersion = "6.0.0"
+  val AkkaHttpVersion = "10.7.0-M1"
+  val AkkaHttpBinaryVersion = VersionNumber(AkkaHttpVersion).numbers match {
+    case Seq(major, minor, _*) => s"$major.$minor"
+  }
+  val AlpakkaKafkaVersion = "7.0.0-M1"
   val ScalaTestVersion = "3.2.19"
   val TestContainersScalaTestVersion = "0.40.3" // pulls Testcontainers 1.16.2
   val mockitoVersion = "5.13.0" // check even https://github.com/scalatest/scalatestplus-mockito/releases
@@ -34,14 +36,13 @@ object Dependencies {
   // https://github.com/jwt-scala/jwt-scala/releases
   val JwtScalaVersion = "9.4.6"
 
-  // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L20
-  val slf4jVersion = "1.7.36"
+  // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L16
+  val slf4jVersion = "2.0.16"
   val log4jOverSlf4jVersion = slf4jVersion
   val jclOverSlf4jVersion = slf4jVersion
 
-  // Akka 2.9 expects Slf4j 1.x
-  // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L28
-  val LogbackWithSlf4jV1 = "1.2.13"
+  // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L26
+  val LogbackWithSlf4jV1 = "1.5.7"
   val wiremock = ("com.github.tomakehurst" % "wiremock" % "3.0.1" % Test).exclude("org.slf4j", "slf4j-api")
 
   val Common = Seq(
@@ -72,8 +73,8 @@ object Dependencies {
   // Releases https://github.com/FasterXML/jackson-databind/releases
   // CVE issues https://github.com/FasterXML/jackson-databind/issues?utf8=%E2%9C%93&q=+label%3ACVE
   // This should align with the Jackson minor version used in Akka
-  // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L31
-  val JacksonVersion = "2.15.4"
+  // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L29
+  val JacksonVersion = "2.17.2"
   val JacksonDatabindVersion = JacksonVersion
   val JacksonDatabindDependencies = Seq(
     "com.fasterxml.jackson.core" % "jackson-core" % JacksonVersion,
@@ -89,6 +90,7 @@ object Dependencies {
   val AwsLambda = Seq(
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
+        "com.typesafe.akka" %% "akka-pki" % AkkaVersion,
         "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll // ApacheV2
         (
           ExclusionRule(organization = "com.typesafe.akka")
@@ -127,7 +129,8 @@ object Dependencies {
         "io.reactivex" % "rxjava-reactive-streams" % "1.2.1", //ApacheV2
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion % Provided, // Apache V2
         "com.typesafe.play" %% "play-json" % "2.9.4" % Test, // Apache V2
-        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion % Test // Apache V2
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion % Test, // Apache V2
+        "com.typesafe.akka" %% "akka-pki" % AkkaVersion
       )
   )
 
@@ -147,12 +150,14 @@ object Dependencies {
         (
           ExclusionRule(organization = "com.typesafe.akka")
         ),
+        "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2",
         "software.amazon.awssdk" % "dynamodb" % AwsSdk2Version excludeAll // ApacheV2
         (
           ExclusionRule("software.amazon.awssdk", "apache-client"),
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         ),
-        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
+        "com.typesafe.akka" %% "akka-pki" % AkkaVersion
       )
   )
 
@@ -160,6 +165,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
+        "com.typesafe.akka" %% "akka-pki" % AkkaVersion,
         "org.slf4j" % "jcl-over-slf4j" % jclOverSlf4jVersion % Test
       ) ++ JacksonDatabindDependencies
   )
@@ -229,6 +235,7 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-jackson" % AkkaHttpVersion % Provided,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
+        "com.typesafe.akka" %% "akka-pki" % AkkaVersion,
         "io.spray" %% "spray-json" % "1.3.6",
         "com.fasterxml.jackson.core" % "jackson-annotations" % JacksonVersion,
         "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % JacksonVersion % Test, // used from `hoverfly-java`
@@ -480,7 +487,9 @@ object Dependencies {
           ExclusionRule("software.amazon.awssdk", "apache-client"),
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         ),
-        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
+        "com.typesafe.akka" %% "akka-pki" % AkkaVersion,
+        "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"
       ) ++ Mockito
   )
 
@@ -490,6 +499,7 @@ object Dependencies {
         (
           ExclusionRule(organization = "com.typesafe.akka")
         ),
+        "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2",
         "software.amazon.awssdk" % "sns" % AwsSdk2Version excludeAll // ApacheV2
         (
           ExclusionRule("software.amazon.awssdk", "apache-client"),
@@ -505,7 +515,7 @@ object Dependencies {
   val Solr = Seq(
     libraryDependencies ++= Seq(
         "org.apache.solr" % "solr-solrj" % SolrjVersion, // ApacheV2
-        "org.apache.solr" % "solr-test-framework" % SolrjVersion % Test exclude ("org.apache.logging.log4j", "log4j-slf4j-impl"), // ApacheV2
+        "org.apache.solr" % "solr-test-framework" % SolrjVersion % Test, // ApacheV2
         "org.slf4j" % "log4j-over-slf4j" % log4jOverSlf4jVersion % Test // MIT like: http://www.slf4j.org/license.html
       ),
     resolvers += ("restlet" at "https://maven.restlet.com")
@@ -517,6 +527,7 @@ object Dependencies {
         (
           ExclusionRule(organization = "com.typesafe.akka")
         ),
+        "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2",
         "software.amazon.awssdk" % "sqs" % AwsSdk2Version excludeAll // ApacheV2
         (
           ExclusionRule("software.amazon.awssdk", "apache-client"),

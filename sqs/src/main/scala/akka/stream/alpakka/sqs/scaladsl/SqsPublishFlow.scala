@@ -8,14 +8,14 @@ import java.util.concurrent.CompletionException
 
 import akka.NotUsed
 import akka.annotation.ApiMayChange
-import akka.dispatch.ExecutionContexts.parasitic
 import akka.stream.alpakka.sqs.{SqsBatchException, _}
 import akka.stream.scaladsl.{Flow, Source}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model._
 
-import scala.collection.JavaConverters._
-import scala.compat.java8.FutureConverters._
+import scala.jdk.CollectionConverters._
+import scala.concurrent.ExecutionContext
+import scala.jdk.FutureConverters._
 
 /**
  * Scala API to create publishing SQS flows.
@@ -52,8 +52,8 @@ object SqsPublishFlow {
       .mapAsync(settings.maxInFlight) { req =>
         sqsClient
           .sendMessage(req)
-          .toScala
-          .map(req -> _)(parasitic)
+          .asScala
+          .map(req -> _)(ExecutionContext.parasitic)
       }
       .map { case (request, response) => new SqsPublishResult(request, response) }
   }
@@ -103,7 +103,7 @@ object SqsPublishFlow {
         case (requests, batchRequest) =>
           sqsClient
             .sendMessageBatch(batchRequest)
-            .toScala
+            .asScala
             .map {
               case response if response.failed().isEmpty =>
                 val responseMetadata = response.responseMetadata()
@@ -120,7 +120,7 @@ object SqsPublishFlow {
                   numberOfMessages,
                   s"Some messages are failed to send. $nrOfFailedMessages of $numberOfMessages messages are failed"
                 )
-            }(parasitic)
+            }(ExecutionContext.parasitic)
       }
       .recoverWithRetries(1, {
         case e: CompletionException =>

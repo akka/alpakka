@@ -7,14 +7,14 @@ package akka.stream.alpakka.cassandra
 import akka.ConfigurationException
 import akka.actor.{ActorSystem, ClassicActorSystemProvider}
 import akka.discovery.Discovery
-import akka.util.JavaDurationConverters._
 import com.datastax.oss.driver.api.core.CqlSession
 import com.typesafe.config.{Config, ConfigFactory}
 
 import scala.collection.immutable
-import scala.compat.java8.FutureConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.DurationConverters._
+import scala.jdk.FutureConverters._
 
 /**
  * [[https://doc.akka.io/docs/akka/current/discovery/index.html Akka Discovery]]
@@ -62,7 +62,7 @@ private[cassandra] object AkkaDiscoverySessionProvider {
         basic.contact-points = [${contactPoints.mkString("\"", "\", \"", "\"")}]
         """).withFallback(CqlSessionProvider.driverConfig(system, config))
       val driverConfigLoader = DriverConfigLoaderFromConfig.fromConfig(driverConfigWithContactPoints)
-      CqlSession.builder().withConfigLoader(driverConfigLoader).buildAsync().toScala
+      CqlSession.builder().withConfigLoader(driverConfigLoader).buildAsync().asScala
     }
   }
 
@@ -76,7 +76,7 @@ private[cassandra] object AkkaDiscoverySessionProvider {
                                         ec: ExecutionContext): Future[immutable.Seq[String]] = {
     val serviceConfig = config.getConfig("service-discovery")
     val serviceName = serviceConfig.getString("name")
-    val lookupTimeout = serviceConfig.getDuration("lookup-timeout").asScala
+    val lookupTimeout = serviceConfig.getDuration("lookup-timeout").toScala
     readNodes(serviceName, lookupTimeout)
   }
 

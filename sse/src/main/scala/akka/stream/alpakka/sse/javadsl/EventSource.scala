@@ -17,8 +17,8 @@ import java.util.function.{Function => JFunction}
 
 import akka.actor.ClassicActorSystemProvider
 
-import scala.compat.java8.FutureConverters
-import scala.compat.java8.OptionConverters
+import scala.jdk.FutureConverters
+import scala.jdk.OptionConverters
 
 /**
  * This stream processing stage establishes a continuous source of server-sent events from the given URI.
@@ -82,8 +82,8 @@ object EventSource {
       scaladsl
         .EventSource(
           uri.asScala,
-          send(_).toScala.map(_.asInstanceOf[SHttpResponse])(system.classicSystem.dispatcher),
-          lastEventId.asScala
+          send(_).asScala.map(_.asInstanceOf[SHttpResponse])(system.classicSystem.dispatcher),
+          lastEventId.toScala
         )(system)
         .map(v => v: ServerSentEvent)
     eventSource.asJava
@@ -106,8 +106,8 @@ object EventSource {
       scaladsl
         .EventSource(
           uri.asScala,
-          send(_).toScala.map(_.asInstanceOf[SHttpResponse])(mat.executionContext),
-          lastEventId.asScala
+          send(_).asScala.map(_.asInstanceOf[SHttpResponse])(mat.executionContext),
+          lastEventId.toScala
         )(mat.system)
         .map(v => v: ServerSentEvent)
     eventSource.asJava

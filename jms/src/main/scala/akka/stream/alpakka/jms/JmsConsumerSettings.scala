@@ -5,10 +5,10 @@
 package akka.stream.alpakka.jms
 
 import akka.actor.{ActorSystem, ClassicActorSystemProvider}
-import akka.util.JavaDurationConverters._
 import com.typesafe.config.{Config, ConfigValueType}
 
 import scala.concurrent.duration.FiniteDuration
+import scala.jdk.DurationConverters._
 
 /**
  * Settings for [[akka.stream.alpakka.jms.scaladsl.JmsConsumer]] and [[akka.stream.alpakka.jms.javadsl.JmsConsumer]].
@@ -74,7 +74,7 @@ final class JmsConsumerSettings private (
   def withAckTimeout(value: scala.concurrent.duration.Duration): JmsConsumerSettings = copy(ackTimeout = value)
 
   /** Java API: Timeout for acknowledge. (Used by TX consumers.) */
-  def withAckTimeout(value: java.time.Duration): JmsConsumerSettings = copy(ackTimeout = value.asScala)
+  def withAckTimeout(value: java.time.Duration): JmsConsumerSettings = copy(ackTimeout = value.toScala)
 
   /** Max interval before sending queued acknowledges back to the broker. (Used by AckSources.) */
   def withMaxAckInterval(value: scala.concurrent.duration.FiniteDuration): JmsConsumerSettings =
@@ -82,7 +82,7 @@ final class JmsConsumerSettings private (
 
   /** Java API: Max interval before sending queued acknowledges back to the broker. (Used by AckSources.) */
   def withMaxAckInterval(value: java.time.Duration): JmsConsumerSettings =
-    copy(maxAckInterval = Option(value.asScala))
+    copy(maxAckInterval = Option(value.toScala))
 
   /** Max number of acks queued by AckSource before they are sent to broker. (Unless MaxAckInterval is specified) */
   def withMaxPendingAcks(value: Int): JmsConsumerSettings = copy(maxPendingAcks = value)
@@ -99,7 +99,7 @@ final class JmsConsumerSettings private (
 
   /** Java API: Timeout for connection status subscriber */
   def withConnectionStatusSubscriptionTimeout(value: java.time.Duration): JmsConsumerSettings =
-    copy(connectionStatusSubscriptionTimeout = value.asScala)
+    copy(connectionStatusSubscriptionTimeout = value.toScala)
 
   private def copy(
       connectionFactory: javax.jms.ConnectionFactory = connectionFactory,
@@ -176,12 +176,12 @@ object JmsConsumerSettings {
     val bufferSize = c.getInt("buffer-size")
     val selector = getStringOption("selector")
     val acknowledgeMode = getOption("acknowledge-mode", c => AcknowledgeMode.from(c.getString("acknowledge-mode")))
-    val ackTimeout = c.getDuration("ack-timeout").asScala
-    val maxAckIntervalDuration = getOption("max-ack-interval", config => config.getDuration("max-ack-interval").asScala)
+    val ackTimeout = c.getDuration("ack-timeout").toScala
+    val maxAckIntervalDuration = getOption("max-ack-interval", config => config.getDuration("max-ack-interval").toScala)
     val maxAckInterval = maxAckIntervalDuration.map(duration => FiniteDuration(duration.length, duration.unit))
     val maxPendingAcks = c.getInt("max-pending-acks")
     val failStreamOnAckTimeout = c.getBoolean("fail-stream-on-ack-timeout")
-    val connectionStatusSubscriptionTimeout = c.getDuration("connection-status-subscription-timeout").asScala
+    val connectionStatusSubscriptionTimeout = c.getDuration("connection-status-subscription-timeout").toScala
     new JmsConsumerSettings(
       connectionFactory,
       connectionRetrySettings,

@@ -9,7 +9,7 @@ import java.util.concurrent.CompletionStage
 import akka.Done
 import akka.stream.alpakka.amqp._
 
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
 
 object AmqpFlowWithContext {
 
@@ -23,7 +23,7 @@ object AmqpFlowWithContext {
   ): akka.stream.javadsl.FlowWithContext[WriteMessage, T, WriteResult, T, CompletionStage[Done]] =
     akka.stream.alpakka.amqp.scaladsl.AmqpFlowWithContext
       .apply(settings)
-      .mapMaterializedValue(_.toJava)
+      .mapMaterializedValue(_.asJava)
       .asJava
 
   /**
@@ -40,6 +40,6 @@ object AmqpFlowWithContext {
   ): akka.stream.javadsl.FlowWithContext[WriteMessage, T, WriteResult, T, CompletionStage[Done]] =
     akka.stream.alpakka.amqp.scaladsl.AmqpFlowWithContext
       .withConfirm(settings)
-      .mapMaterializedValue(_.toJava)
+      .mapMaterializedValue(_.asJava)
       .asJava
 }

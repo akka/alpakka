@@ -10,7 +10,7 @@ import akka.stream.alpakka.jms.impl._
 import akka.stream.scaladsl.Source
 import javax.jms
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * Factory methods to create JMS consumers.

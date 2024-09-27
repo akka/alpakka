@@ -7,7 +7,6 @@ package akka.stream.alpakka.couchbase.impl
 import java.util.concurrent.TimeUnit
 
 import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
 import akka.stream.alpakka.couchbase.scaladsl.CouchbaseSession
 import akka.stream.alpakka.couchbase.{javadsl, CouchbaseWriteSettings}
 import akka.stream.scaladsl.Source
@@ -20,8 +19,9 @@ import com.couchbase.client.java.query.{N1qlQuery, Statement}
 import com.couchbase.client.java.{AsyncBucket, AsyncCluster}
 import rx.RxReactiveStreams
 
-import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
 /**
  * INTERNAL API
@@ -101,7 +101,7 @@ final private[couchbase] class CouchbaseSessionImpl(asyncBucket: AsyncBucket, cl
 
   def remove(id: String): Future[Done] =
     singleObservableToFuture(asyncBucket.remove(id), id)
-      .map(_ => Done)(ExecutionContexts.parasitic)
+      .map(_ => Done)(ExecutionContext.parasitic)
 
   def remove(id: String, writeSettings: CouchbaseWriteSettings): Future[Done] =
     singleObservableToFuture(asyncBucket.remove(id,
@@ -110,7 +110,7 @@ final private[couchbase] class CouchbaseSessionImpl(asyncBucket: AsyncBucket, cl
                                                 writeSettings.timeout.toMillis,
                                                 TimeUnit.MILLISECONDS),
                              id)
-      .map(_ => Done)(ExecutionContexts.parasitic)
+      .map(_ => Done)(ExecutionContext.parasitic)
 
   def streamedQuery(query: N1qlQuery): Source[JsonObject, NotUsed] =
     // FIXME verify cancellation works
@@ -126,7 +126,7 @@ final private[couchbase] class CouchbaseSessionImpl(asyncBucket: AsyncBucket, cl
 
   def counter(id: String, delta: Long, initial: Long): Future[Long] =
     singleObservableToFuture(asyncBucket.counter(id, delta, initial), id)
-      .map(_.content(): Long)(ExecutionContexts.parasitic)
+      .map(_.content(): Long)(ExecutionContext.parasitic)
 
   def counter(id: String, delta: Long, initial: Long, writeSettings: CouchbaseWriteSettings): Future[Long] =
     singleObservableToFuture(asyncBucket.counter(id,
@@ -137,7 +137,7 @@ final private[couchbase] class CouchbaseSessionImpl(asyncBucket: AsyncBucket, cl
                                                  writeSettings.timeout.toMillis,
                                                  TimeUnit.MILLISECONDS),
                              id)
-      .map(_.content(): Long)(ExecutionContexts.parasitic)
+      .map(_.content(): Long)(ExecutionContext.parasitic)
 
   def close(): Future[Done] =
     if (!asyncBucket.isClosed) {
@@ -145,10 +145,10 @@ final private[couchbase] class CouchbaseSessionImpl(asyncBucket: AsyncBucket, cl
         .flatMap { _ =>
           cluster match {
             case Some(cluster) =>
-              singleObservableToFuture(cluster.disconnect(), "close").map(_ => Done)(ExecutionContexts.global())
+              singleObservableToFuture(cluster.disconnect(), "close").map(_ => Done)(ExecutionContext.global)
             case None => Future.successful(Done)
           }
-        }(ExecutionContexts.global())
+        }(ExecutionContext.global)
     } else {
       Future.successful(Done)
     }

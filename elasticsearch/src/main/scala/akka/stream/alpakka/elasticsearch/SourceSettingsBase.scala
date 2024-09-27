@@ -4,12 +4,12 @@
 
 package akka.stream.alpakka.elasticsearch
 
-import akka.util.JavaDurationConverters._
 import java.util.concurrent.TimeUnit
 
 import akka.stream.alpakka.elasticsearch.ElasticsearchConnectionSettings
 
 import scala.concurrent.duration.FiniteDuration
+import scala.jdk.DurationConverters._
 
 /**
  * Configure Elastiscsearch/OpenSearch sources.
@@ -28,7 +28,7 @@ abstract class SourceSettingsBase[Version <: ApiVersionBase, S <: SourceSettings
 
   def withScrollDuration(value: FiniteDuration): S = copy(scrollDuration = value)
 
-  def withScrollDuration(value: java.time.Duration): S = copy(scrollDuration = value.asScala)
+  def withScrollDuration(value: java.time.Duration): S = copy(scrollDuration = value.toScala)
 
   /**
    * If includeDocumentVersion is true, '_version' is returned with the search-results

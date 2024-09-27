@@ -5,7 +5,6 @@
 package akka.stream.alpakka.googlecloud.bigquery.scaladsl
 
 import akka.NotUsed
-import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.marshalling.{Marshal, ToEntityMarshaller}
 import akka.http.scaladsl.model.HttpMethods.POST
@@ -23,9 +22,9 @@ import akka.stream.alpakka.googlecloud.bigquery.model.{
 }
 import akka.stream.alpakka.googlecloud.bigquery.{BigQueryEndpoints, BigQueryException, InsertAllRetryPolicy}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
-
 import java.util.{SplittableRandom, UUID}
-import scala.collection.immutable.Seq
+
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
 private[scaladsl] trait BigQueryTableData { this: BigQueryRest =>
@@ -122,7 +121,7 @@ private[scaladsl] trait BigQueryTableData { this: BigQueryRest =>
         import BigQueryException._
         import SprayJsonSupport._
         implicit val system = mat.system
-        implicit val ec = ExecutionContexts.parasitic
+        implicit val ec = ExecutionContext.parasitic
         implicit val settings = GoogleAttributes.resolveSettings(mat, attr)
 
         val uri = BigQueryEndpoints.tableDataInsertAll(settings.projectId, datasetId, tableId)

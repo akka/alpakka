@@ -7,7 +7,7 @@ package akka.stream.alpakka.google.javadsl
 import akka.stream.alpakka.google.scaladsl
 
 import java.util
-import scala.compat.java8.OptionConverters._
+import scala.jdk.OptionConverters._
 
 /**
  * Models a paginated resource
@@ -22,6 +22,6 @@ trait Paginated {
 
 private[alpakka] object Paginated {
   implicit object paginatedIsPaginated extends scaladsl.Paginated[Paginated] {
-    override def pageToken(paginated: Paginated): Option[String] = paginated.getPageToken.asScala
+    override def pageToken(paginated: Paginated): Option[String] = paginated.getPageToken.toScala
   }
 }

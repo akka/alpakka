@@ -11,8 +11,8 @@ import com.google.cloud.bigquery.storage.v1.avro.{AvroRows, AvroSchema}
 import com.google.cloud.bigquery.storage.v1.stream.ReadSession.TableReadOptions
 
 import java.util.concurrent.CompletionStage
-import scala.collection.JavaConverters._
-import scala.compat.java8.FutureConverters.FutureOps
+import scala.jdk.CollectionConverters._
+import scala.jdk.FutureConverters.FutureOps
 
 /**
  * Google BigQuery Storage Api Akka Stream operator factory using Avro Format.
@@ -58,7 +58,7 @@ object BigQueryAvroStorage {
         stream.asJava
       })
       .asJava
-      .mapMaterializedValue(_.toJava)
+      .mapMaterializedValue(_.asJava)
 
   def readRecords(projectId: String,
                   datasetId: String,
@@ -103,7 +103,7 @@ object BigQueryAvroStorage {
         stream.map(_.asJava).asJava
       })
       .asJava
-      .mapMaterializedValue(_.toJava)
+      .mapMaterializedValue(_.asJava)
 
   def readMerged(projectId: String,
                  datasetId: String,
@@ -144,7 +144,7 @@ object BigQueryAvroStorage {
         (stream._1, stream._2.asJava)
       })
       .asJava
-      .mapMaterializedValue(_.toJava)
+      .mapMaterializedValue(_.asJava)
 
   def read(projectId: String,
            datasetId: String,
@@ -189,6 +189,6 @@ object BigQueryAvroStorage {
         (stream._1, stream._2.map(_.asJava).asJava)
       })
       .asJava
-      .mapMaterializedValue(_.toJava)
+      .mapMaterializedValue(_.asJava)
 
 }

@@ -21,8 +21,8 @@ import slick.jdbc.SQLActionBuilder
 import slick.jdbc.SetParameter
 import slick.jdbc.SimpleJdbcAction
 
-import scala.compat.java8.FunctionConverters._
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FunctionConverters._
+import scala.jdk.FutureConverters._
 import scala.concurrent.ExecutionContext
 
 object Slick {
@@ -305,7 +305,7 @@ object Slick {
   ): Sink[T, CompletionStage[Done]] =
     ScalaSlick
       .sink[T](parallelism, toDBIO(toStatement))(session)
-      .mapMaterializedValue(_.toJava)
+      .mapMaterializedValue(_.asJava)
       .asJava
 
   /**
@@ -329,7 +329,7 @@ object Slick {
   ): Sink[T, CompletionStage[Done]] =
     ScalaSlick
       .sink[T](parallelism, toDBIO(toStatement))(session)
-      .mapMaterializedValue(_.toJava)
+      .mapMaterializedValue(_.asJava)
       .asJava
 
   /**

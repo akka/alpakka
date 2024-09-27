@@ -7,7 +7,7 @@ package akka.stream.alpakka.kinesis
 import software.amazon.awssdk.services.kinesis.model.ShardIteratorType
 
 import scala.concurrent.duration._
-import akka.util.JavaDurationConverters._
+import scala.jdk.DurationConverters._
 
 final class ShardSettings private (
     val streamName: String,
@@ -47,7 +47,7 @@ final class ShardSettings private (
     copy(refreshInterval = value)
 
   /** Java API */
-  def withRefreshInterval(value: java.time.Duration): ShardSettings = copy(refreshInterval = value.asScala)
+  def withRefreshInterval(value: java.time.Duration): ShardSettings = copy(refreshInterval = value.toScala)
   def withLimit(value: Int): ShardSettings = copy(limit = value)
 
   private def copy(

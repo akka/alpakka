@@ -10,7 +10,7 @@ import akka.stream.alpakka.google.{ForwardProxy => CommonForwardProxy}
 
 import java.util.Objects
 import scala.annotation.nowarn
-import scala.compat.java8.OptionConverters._
+import scala.jdk.OptionConverters._
 
 @nowarn("msg=deprecated")
 final class FcmSettings private (
@@ -234,9 +234,9 @@ final class ForwardProxy private (val host: String,
   def getPort: Int = port
 
   /** Java API */
-  def getCredentials: java.util.Optional[ForwardProxyCredentials] = credentials.asJava
+  def getCredentials: java.util.Optional[ForwardProxyCredentials] = credentials.toJava
 
-  def getForwardProxyTrustPem: java.util.Optional[ForwardProxyTrustPem] = trustPem.asJava
+  def getForwardProxyTrustPem: java.util.Optional[ForwardProxyTrustPem] = trustPem.toJava
 
   def withHost(host: String) = copy(host = host)
   def withPort(port: Int) = copy(port = port)

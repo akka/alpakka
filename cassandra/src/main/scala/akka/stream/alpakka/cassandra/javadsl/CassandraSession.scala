@@ -10,9 +10,9 @@ import java.util.concurrent.{CompletionStage, Executor}
 import java.util.function.{Function => JFunction}
 
 import scala.annotation.varargs
-import scala.collection.JavaConverters._
-import scala.compat.java8.FutureConverters._
-import scala.compat.java8.OptionConverters._
+import scala.jdk.CollectionConverters._
+import scala.jdk.FutureConverters._
+import scala.jdk.OptionConverters._
 import scala.concurrent.ExecutionContext
 import akka.Done
 import akka.NotUsed
@@ -58,7 +58,7 @@ final class CassandraSession(@InternalApi private[akka] val delegate: scaladsl.C
                                     executionContext,
                                     log,
                                     metricsCategory,
-                                    session => init.apply(session).toScala,
+                                    session => init.apply(session).asScala,
                                     () => onClose.run())
     )
 
@@ -80,13 +80,13 @@ final class CassandraSession(@InternalApi private[akka] val delegate: scaladsl.C
    * Closes the underlying Cassandra session.
    * @param executor as this might be used after actor system termination, the actor systems dispatcher can't be used
    */
-  def close(executor: Executor): CompletionStage[Done] = delegate.close(ExecutionContext.fromExecutor(executor)).toJava
+  def close(executor: Executor): CompletionStage[Done] = delegate.close(ExecutionContext.fromExecutor(executor)).asJava
 
   /**
    * Meta data about the Cassandra server, such as its version.
    */
   def serverMetaData: CompletionStage[CassandraServerMetaData] =
-    delegate.serverMetaData.toJava
+    delegate.serverMetaData.asJava
 
   /**
    * The `Session` of the underlying
@@ -95,7 +95,7 @@ final class CassandraSession(@InternalApi private[akka] val delegate: scaladsl.C
    * API exposed by this class. Be careful to not use blocking calls.
    */
   def underlying(): CompletionStage[CqlSession] =
-    delegate.underlying().toJava
+    delegate.underlying().asJava
 
   /**
    * Execute <a href="https://docs.datastax.com/en/dse/6.7/cql/">CQL commands</a>
@@ -104,14 +104,14 @@ final class CassandraSession(@InternalApi private[akka] val delegate: scaladsl.C
    * The returned `CompletionStage` is completed when the command is done, or if the statement fails.
    */
   def executeDDL(stmt: String): CompletionStage[Done] =
-    delegate.executeDDL(stmt).toJava
+    delegate.executeDDL(stmt).asJava
 
   /**
    * Create a `PreparedStatement` that can be bound and used in
    * `executeWrite` or `select` multiple times.
    */
   def prepare(stmt: String): CompletionStage[PreparedStatement] =
-    delegate.prepare(stmt).toJava
+    delegate.prepare(stmt).asJava
 
   /**
    * Execute several statements in a batch. First you must `prepare` the
@@ -126,7 +126,7 @@ final class CassandraSession(@InternalApi private[akka] val delegate: scaladsl.C
    * successfully executed, or if it fails.
    */
   def executeWriteBatch(batch: BatchStatement): CompletionStage[Done] =
-    delegate.executeWriteBatch(batch).toJava
+    delegate.executeWriteBatch(batch).asJava
 
   /**
    * Execute one statement. First you must `prepare` the
@@ -141,7 +141,7 @@ final class CassandraSession(@InternalApi private[akka] val delegate: scaladsl.C
    * successfully executed, or if it fails.
    */
   def executeWrite(stmt: Statement[_]): CompletionStage[Done] =
-    delegate.executeWrite(stmt).toJava
+    delegate.executeWrite(stmt).asJava
 
   /**
    * Prepare, bind and execute one statement in one go.
@@ -155,7 +155,7 @@ final class CassandraSession(@InternalApi private[akka] val delegate: scaladsl.C
    */
   @varargs
   def executeWrite(stmt: String, bindValues: AnyRef*): CompletionStage[Done] =
-    delegate.executeWrite(stmt, bindValues: _*).toJava
+    delegate.executeWrite(stmt, bindValues: _*).asJava
 
   /**
    * Execute a select statement. First you must `prepare` the
@@ -185,7 +185,7 @@ final class CassandraSession(@InternalApi private[akka] val delegate: scaladsl.C
    * this `Source` and then `run` the stream.
    */
   def select(stmt: CompletionStage[Statement[_]]): Source[Row, NotUsed] =
-    delegate.select(stmt.toScala).asJava
+    delegate.select(stmt.asScala).asJava
 
   /**
    * Prepare, bind and execute a select statement in one go.
@@ -213,7 +213,7 @@ final class CassandraSession(@InternalApi private[akka] val delegate: scaladsl.C
    * The returned `CompletionStage` is completed with the found rows.
    */
   def selectAll(stmt: Statement[_]): CompletionStage[JList[Row]] =
-    delegate.selectAll(stmt).map(_.asJava).toJava
+    delegate.selectAll(stmt).map(_.asJava).asJava
 
   /**
    * Prepare, bind and execute a select statement in one go. Only use this method
@@ -226,7 +226,7 @@ final class CassandraSession(@InternalApi private[akka] val delegate: scaladsl.C
    */
   @varargs
   def selectAll(stmt: String, bindValues: AnyRef*): CompletionStage[JList[Row]] =
-    delegate.selectAll(stmt, bindValues: _*).map(_.asJava).toJava
+    delegate.selectAll(stmt, bindValues: _*).map(_.asJava).asJava
 
   /**
    * Execute a select statement that returns one row. First you must `prepare` the
@@ -239,7 +239,7 @@ final class CassandraSession(@InternalApi private[akka] val delegate: scaladsl.C
    * if any.
    */
   def selectOne(stmt: Statement[_]): CompletionStage[Optional[Row]] =
-    delegate.selectOne(stmt).map(_.asJava).toJava
+    delegate.selectOne(stmt).map(_.toJava).asJava
 
   /**
    * Prepare, bind and execute a select statement that returns one row.
@@ -251,6 +251,6 @@ final class CassandraSession(@InternalApi private[akka] val delegate: scaladsl.C
    */
   @varargs
   def selectOne(stmt: String, bindValues: AnyRef*): CompletionStage[Optional[Row]] =
-    delegate.selectOne(stmt, bindValues: _*).map(_.asJava).toJava
+    delegate.selectOne(stmt, bindValues: _*).map(_.toJava).asJava
 
 }

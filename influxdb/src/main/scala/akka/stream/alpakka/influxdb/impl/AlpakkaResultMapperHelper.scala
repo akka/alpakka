@@ -17,7 +17,7 @@ import akka.annotation.InternalApi
 import org.influxdb.InfluxDBMapperException
 import org.influxdb.dto.Point
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * Internal API.

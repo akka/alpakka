@@ -9,14 +9,15 @@ import java.nio.file.Path
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 
-import scala.compat.java8.OptionConverters._
-import scala.compat.java8.FutureConverters._
+import scala.jdk.OptionConverters._
+import scala.jdk.FutureConverters._
+import scala.concurrent.ExecutionContext
+
 import akka.NotUsed
 import akka.actor.{ClassicActorSystemProvider, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import akka.stream.javadsl.{Flow, Source}
 import akka.stream.Materializer
 import akka.util.ByteString
-
 import scala.concurrent.duration.Duration
 
 object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdProvider {
@@ -37,7 +38,7 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
      *
      * The produced [[java.util.concurrent.CompletionStage]] is fulfilled when the unbinding has been completed.
      */
-    def unbind(): CompletionStage[Unit] = delegate.unbind().toJava
+    def unbind(): CompletionStage[Unit] = delegate.unbind().asJava
   }
 
   /**
@@ -106,7 +107,6 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
 
 final class UnixDomainSocket(system: ExtendedActorSystem) extends akka.actor.Extension {
   import UnixDomainSocket._
-  import akka.dispatch.ExecutionContexts.parasitic
 
   private lazy val delegate: scaladsl.UnixDomainSocket = scaladsl.UnixDomainSocket.apply(system)
 
@@ -136,7 +136,7 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends akka.actor.Ext
       delegate
         .bind(path, backlog, halfClose)
         .map(new IncomingConnection(_))
-        .mapMaterializedValue(_.map(new ServerBinding(_))(parasitic).toJava)
+        .mapMaterializedValue(_.map(new ServerBinding(_))(ExecutionContext.parasitic).asJava)
     )
 
   /**
@@ -152,7 +152,7 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends akka.actor.Ext
       delegate
         .bind(path)
         .map(new IncomingConnection(_))
-        .mapMaterializedValue(_.map(new ServerBinding(_))(parasitic).toJava)
+        .mapMaterializedValue(_.map(new ServerBinding(_))(ExecutionContext.parasitic).asJava)
     )
 
   /**
@@ -182,8 +182,8 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends akka.actor.Ext
                          connectTimeout: Duration): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]] =
     Flow.fromGraph(
       delegate
-        .outgoingConnection(remoteAddress, localAddress.asScala, halfClose, connectTimeout)
-        .mapMaterializedValue(_.map(new OutgoingConnection(_))(parasitic).toJava)
+        .outgoingConnection(remoteAddress, localAddress.toScala, halfClose, connectTimeout)
+        .mapMaterializedValue(_.map(new OutgoingConnection(_))(ExecutionContext.parasitic).asJava)
     )
 
   /**
@@ -200,7 +200,7 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends akka.actor.Ext
     Flow.fromGraph(
       delegate
         .outgoingConnection(new UnixSocketAddress(path))
-        .mapMaterializedValue(_.map(new OutgoingConnection(_))(parasitic).toJava)
+        .mapMaterializedValue(_.map(new OutgoingConnection(_))(ExecutionContext.parasitic).asJava)
     )
 
 }

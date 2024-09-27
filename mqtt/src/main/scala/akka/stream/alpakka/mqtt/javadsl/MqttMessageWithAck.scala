@@ -11,7 +11,7 @@ import akka.annotation.InternalApi
 import akka.stream.alpakka.mqtt.MqttMessage
 import akka.stream.alpakka.mqtt.scaladsl
 
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
 
 /**
  * Java API
@@ -40,7 +40,7 @@ sealed trait MqttMessageWithAck {
 private[javadsl] object MqttMessageWithAck {
   def toJava(cm: scaladsl.MqttMessageWithAck): MqttMessageWithAck = new MqttMessageWithAck {
     override val message: MqttMessage = cm.message
-    override def ack(): CompletionStage[Done] = cm.ack().toJava
+    override def ack(): CompletionStage[Done] = cm.ack().asJava
   }
 }
 

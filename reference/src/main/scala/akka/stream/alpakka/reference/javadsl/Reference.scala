@@ -21,8 +21,8 @@ object Reference {
    * Call Scala source factory and convert both: the source and materialized values to Java classes.
    */
   def source(settings: SourceSettings): Source[ReferenceReadResult, CompletionStage[Done]] = {
-    import scala.compat.java8.FutureConverters._
-    scaladsl.Reference.source(settings).mapMaterializedValue(_.toJava).asJava
+    import scala.jdk.FutureConverters._
+    scaladsl.Reference.source(settings).mapMaterializedValue(_.asJava).asJava
   }
 
   /**

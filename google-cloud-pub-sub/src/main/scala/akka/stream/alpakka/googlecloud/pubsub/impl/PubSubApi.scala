@@ -6,7 +6,6 @@ package akka.stream.alpakka.googlecloud.pubsub.impl
 
 import akka.actor.ActorSystem
 import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.Http.HostConnectionPool
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.marshalling.Marshal
@@ -21,9 +20,10 @@ import akka.stream.scaladsl.{Flow, FlowWithContext}
 import akka.{Done, NotUsed}
 import spray.json.DefaultJsonProtocol._
 import spray.json._
-
 import java.time.Instant
+
 import scala.collection.immutable
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.util.Try
 
@@ -248,7 +248,7 @@ private[pubsub] trait PubSubApi {
                 .to[RequestEntity]
                 .map { entity =>
                   HttpRequest(POST, url, entity = entity)
-                }(ExecutionContexts.parasitic)
+                }(ExecutionContext.parasitic)
             }
             .via(pool[PublishResponse, T](parallelism, host))
             .map(_.get)

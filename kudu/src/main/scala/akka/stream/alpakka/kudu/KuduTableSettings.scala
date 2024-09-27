@@ -5,7 +5,7 @@
 package akka.stream.alpakka.kudu
 
 import org.apache.kudu.client.PartialRow
-import scala.compat.java8.FunctionConverters._
+import scala.jdk.FunctionConverters._
 
 final class KuduTableSettings[T] private (val tableName: String,
                                           val schema: org.apache.kudu.Schema,

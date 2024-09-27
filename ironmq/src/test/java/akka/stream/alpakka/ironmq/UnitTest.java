@@ -15,13 +15,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 
+import scala.jdk.javaapi.CollectionConverters;
+import scala.jdk.javaapi.FutureConverters;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import static scala.collection.JavaConverters.*;
-import static scala.compat.java8.FutureConverters.*;
 
 public abstract class UnitTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
@@ -77,7 +76,7 @@ public abstract class UnitTest {
 
   protected String givenQueue(String name) {
     try {
-      return toJava(ironMqClient.createQueue(name, system.dispatcher()))
+      return FutureConverters.asJava(ironMqClient.createQueue(name, system.dispatcher()))
           .toCompletableFuture()
           .get();
     } catch (Exception e) {
@@ -93,10 +92,10 @@ public abstract class UnitTest {
             .collect(Collectors.toList());
 
     try {
-      return toJava(
+      return FutureConverters.asJava(
               ironMqClient.pushMessages(
                   queueName,
-                  asScalaBufferConverter(messages).asScala().toSeq(),
+                  CollectionConverters.asScala(messages).toSeq(),
                   system.dispatcher()))
           .toCompletableFuture()
           .get();

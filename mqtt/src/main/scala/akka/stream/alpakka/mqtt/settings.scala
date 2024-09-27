@@ -4,12 +4,12 @@
 
 package akka.stream.alpakka.mqtt
 
-import akka.util.JavaDurationConverters._
 import org.eclipse.paho.client.mqttv3.{MqttClientPersistence, MqttConnectOptions}
 
-import scala.collection.JavaConverters._
-import scala.collection.immutable
 import scala.collection.immutable.Map
+import scala.collection.immutable
+import scala.jdk.CollectionConverters._
+import scala.jdk.DurationConverters._
 import scala.concurrent.duration.{FiniteDuration, _}
 
 /**
@@ -184,7 +184,7 @@ final class MqttConnectionSettings private (val broker: String,
   /** Java API */
   def withKeepAliveInterval(value: java.time.Duration): MqttConnectionSettings =
     withKeepAliveInterval(
-      value.asScala
+      value.toScala
     )
 
   /** Scala API */
@@ -194,7 +194,7 @@ final class MqttConnectionSettings private (val broker: String,
   /** Java API */
   def withConnectionTimeout(value: java.time.Duration): MqttConnectionSettings =
     withConnectionTimeout(
-      value.asScala
+      value.toScala
     )
 
   /** Scala API */
@@ -204,7 +204,7 @@ final class MqttConnectionSettings private (val broker: String,
   /** Java API */
   def withDisconnectQuiesceTimeout(value: java.time.Duration): MqttConnectionSettings =
     withDisconnectQuiesceTimeout(
-      value.asScala
+      value.toScala
     )
 
   /** Scala API */
@@ -214,7 +214,7 @@ final class MqttConnectionSettings private (val broker: String,
   /** Java API */
   def withDisconnectTimeout(value: java.time.Duration): MqttConnectionSettings =
     withDisconnectTimeout(
-      value.asScala
+      value.toScala
     )
   def withMaxInFlight(value: Int): MqttConnectionSettings = copy(maxInFlight = value)
   def withMqttVersion(value: Int): MqttConnectionSettings = copy(mqttVersion = value)

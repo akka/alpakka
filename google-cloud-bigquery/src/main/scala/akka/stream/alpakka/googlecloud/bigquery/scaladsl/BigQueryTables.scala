@@ -6,7 +6,6 @@ package akka.stream.alpakka.googlecloud.bigquery.scaladsl
 
 import akka.Done
 import akka.actor.ClassicActorSystemProvider
-import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.HttpMethods.{DELETE, POST}
@@ -19,6 +18,7 @@ import akka.stream.alpakka.googlecloud.bigquery.scaladsl.schema.TableSchemaWrite
 import akka.stream.alpakka.googlecloud.bigquery.{BigQueryEndpoints, BigQueryException}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
 private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
@@ -85,7 +85,7 @@ private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
                                 settings: GoogleSettings): Future[Table] = {
     import BigQueryException._
     import SprayJsonSupport._
-    implicit val ec = ExecutionContexts.parasitic
+    implicit val ec = ExecutionContext.parasitic
     val projectId = table.tableReference.projectId.getOrElse(settings.projectId)
     val datasetId = table.tableReference.datasetId
     val uri = BigQueryEndpoints.tables(projectId, datasetId)

@@ -12,8 +12,8 @@ import akka.stream.scaladsl.{Flow, Keep}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
 
-import scala.collection.JavaConverters._
-import scala.compat.java8.FutureConverters
+import scala.jdk.CollectionConverters._
+import scala.jdk.FutureConverters._
 
 /**
  * Factory methods to create JMS producers.
@@ -50,7 +50,7 @@ object JmsProducer {
   ): akka.stream.javadsl.Sink[R, CompletionStage[Done]] =
     akka.stream.alpakka.jms.scaladsl.JmsProducer
       .sink(settings)
-      .mapMaterializedValue(FutureConverters.toJava)
+      .mapMaterializedValue(_.asJava)
       .asJava
 
   /**
@@ -59,7 +59,7 @@ object JmsProducer {
   def textSink(settings: JmsProducerSettings): akka.stream.javadsl.Sink[String, CompletionStage[Done]] =
     akka.stream.alpakka.jms.scaladsl.JmsProducer
       .textSink(settings)
-      .mapMaterializedValue(FutureConverters.toJava)
+      .mapMaterializedValue(_.asJava)
       .asJava
 
   /**
@@ -68,7 +68,7 @@ object JmsProducer {
   def bytesSink(settings: JmsProducerSettings): akka.stream.javadsl.Sink[Array[Byte], CompletionStage[Done]] =
     akka.stream.alpakka.jms.scaladsl.JmsProducer
       .bytesSink(settings)
-      .mapMaterializedValue(FutureConverters.toJava)
+      .mapMaterializedValue(_.asJava)
       .asJava
 
   /**
@@ -77,7 +77,7 @@ object JmsProducer {
   def byteStringSink(settings: JmsProducerSettings): akka.stream.javadsl.Sink[ByteString, CompletionStage[Done]] =
     akka.stream.alpakka.jms.scaladsl.JmsProducer
       .byteStringSink(settings)
-      .mapMaterializedValue(FutureConverters.toJava)
+      .mapMaterializedValue(_.asJava)
       .asJava
 
   /**
@@ -90,7 +90,7 @@ object JmsProducer {
     val scalaSink =
       akka.stream.alpakka.jms.scaladsl.JmsProducer
         .mapSink(settings)
-        .mapMaterializedValue(FutureConverters.toJava)
+        .mapMaterializedValue(_.asJava)
     val javaToScalaConversion =
       Flow.fromFunction((javaMap: java.util.Map[String, Any]) => javaMap.asScala.toMap)
     javaToScalaConversion.toMat(scalaSink)(Keep.right).asJava
@@ -104,7 +104,7 @@ object JmsProducer {
   ): akka.stream.javadsl.Sink[java.io.Serializable, CompletionStage[Done]] =
     akka.stream.alpakka.jms.scaladsl.JmsProducer
       .objectSink(settings)
-      .mapMaterializedValue(FutureConverters.toJava)
+      .mapMaterializedValue(_.asJava)
       .asJava
 
   private def toProducerStatus(scalaStatus: scaladsl.JmsProducerStatus) = new JmsProducerStatus {

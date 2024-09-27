@@ -6,7 +6,6 @@ package akka.stream.alpakka.googlecloud.bigquery.scaladsl
 
 import akka.NotUsed
 import akka.actor.ClassicActorSystemProvider
-import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.marshalling.{Marshal, ToEntityMarshaller}
 import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
@@ -28,6 +27,7 @@ import akka.stream.scaladsl.{Flow, GraphDSL, Keep, Sink}
 import akka.util.ByteString
 
 import scala.annotation.nowarn
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
 private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
@@ -160,7 +160,7 @@ private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
       .fromMaterializer { (mat, attr) =>
         import BigQueryException._
         implicit val settings = GoogleAttributes.resolveSettings(mat, attr)
-        implicit val ec = ExecutionContexts.parasitic
+        implicit val ec = ExecutionContext.parasitic
         val uri = BigQueryMediaEndpoints.jobs(settings.projectId).withQuery(Query("uploadType" -> "resumable"))
         Sink
           .lazyFutureSink { () =>
@@ -169,7 +169,7 @@ private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
               .map { entity =>
                 val request = HttpRequest(POST, uri, List(`X-Upload-Content-Type`(`application/octet-stream`)), entity)
                 resumableUpload[Job](request)
-              }(ExecutionContexts.parasitic)
+              }(ExecutionContext.parasitic)
           }
           .mapMaterializedValue(_.flatten)
       }

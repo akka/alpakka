@@ -15,12 +15,12 @@ import akka.http.{javadsl => jh}
 import akka.stream.alpakka.google.auth.Credentials
 import akka.stream.alpakka.google.http.{ForwardProxyHttpsContext, ForwardProxyPoolSettings}
 import akka.stream.alpakka.google.implicits._
-import akka.util.JavaDurationConverters._
 import com.typesafe.config.Config
 
 import java.time
 import java.util.Optional
-import scala.compat.java8.OptionConverters._
+import scala.jdk.DurationConverters._
+import scala.jdk.OptionConverters._
 import scala.concurrent.duration._
 
 object GoogleSettings {
@@ -122,7 +122,7 @@ object RequestSettings {
              chunkSize: Int,
              retrySettings: RetrySettings,
              forwardProxy: Optional[ForwardProxy]) =
-    apply(userIp.asScala, quotaUser.asScala, prettyPrint, chunkSize, retrySettings, forwardProxy.asScala)
+    apply(userIp.toScala, quotaUser.toScala, prettyPrint, chunkSize, retrySettings, forwardProxy.toScala)
 }
 
 final case class RequestSettings @InternalApi private (
@@ -139,8 +139,8 @@ final case class RequestSettings @InternalApi private (
     "Chunk size must be a multiple of 256 KiB"
   )
 
-  def getUserIp = userIp.asJava
-  def getQuotaUser = quotaUser.asJava
+  def getUserIp = userIp.toJava
+  def getQuotaUser = quotaUser.toJava
   def getPrettyPrint = prettyPrint
   def getUploadChunkSize = uploadChunkSize
   def getRetrySettings = retrySettings
@@ -149,11 +149,11 @@ final case class RequestSettings @InternalApi private (
   def withUserIp(userIp: Option[String]) =
     copy(userIp = userIp)
   def withUserIp(userIp: Optional[String]) =
-    copy(userIp = userIp.asScala)
+    copy(userIp = userIp.toScala)
   def withQuotaUser(quotaUser: Option[String]) =
     copy(quotaUser = quotaUser)
   def withQuotaUser(quotaUser: Optional[String]) =
-    copy(quotaUser = quotaUser.asScala)
+    copy(quotaUser = quotaUser.toScala)
   def withPrettyPrint(prettyPrint: Boolean) =
     copy(prettyPrint = prettyPrint)
   def withUploadChunkSize(uploadChunkSize: Int) =
@@ -163,7 +163,7 @@ final case class RequestSettings @InternalApi private (
   def withForwardProxy(forwardProxy: Option[ForwardProxy]) =
     copy(forwardProxy = forwardProxy)
   def withForwardProxy(forwardProxy: Optional[ForwardProxy]) =
-    copy(forwardProxy = forwardProxy.asScala)
+    copy(forwardProxy = forwardProxy.toScala)
 
   // Cache query string
   private[google] def query =
@@ -177,8 +177,8 @@ object RetrySettings {
   def apply(config: Config): RetrySettings = {
     RetrySettings(
       config.getInt("max-retries"),
-      config.getDuration("min-backoff").asScala,
-      config.getDuration("max-backoff").asScala,
+      config.getDuration("min-backoff").toScala,
+      config.getDuration("max-backoff").toScala,
       config.getDouble("random-factor")
     )
   }
@@ -188,8 +188,8 @@ object RetrySettings {
   def create(maxRetries: Int, minBackoff: time.Duration, maxBackoff: time.Duration, randomFactor: Double) =
     apply(
       maxRetries,
-      minBackoff.asScala,
-      maxBackoff.asScala,
+      minBackoff.toScala,
+      maxBackoff.toScala,
       randomFactor
     )
 }
@@ -199,8 +199,8 @@ final case class RetrySettings @InternalApi private (maxRetries: Int,
                                                      maxBackoff: FiniteDuration,
                                                      randomFactor: Double) {
   def getMaxRetries = maxRetries
-  def getMinBackoff = minBackoff.asJava
-  def getMaxBackoff = maxBackoff.asJava
+  def getMinBackoff = minBackoff.toJava
+  def getMaxBackoff = maxBackoff.toJava
   def getRandomFactor = randomFactor
 
   def withMaxRetries(maxRetries: Int) =
@@ -208,11 +208,11 @@ final case class RetrySettings @InternalApi private (maxRetries: Int,
   def withMinBackoff(minBackoff: FiniteDuration) =
     copy(minBackoff = minBackoff)
   def withMinBackoff(minBackoff: time.Duration) =
-    copy(minBackoff = minBackoff.asScala)
+    copy(minBackoff = minBackoff.toScala)
   def withMaxBackoff(maxBackoff: FiniteDuration) =
     copy(maxBackoff = maxBackoff)
   def withMaxBackoff(maxBackoff: time.Duration) =
-    copy(maxBackoff = maxBackoff.asScala)
+    copy(maxBackoff = maxBackoff.toScala)
   def withRandomFactor(randomFactor: Double) =
     copy(randomFactor = randomFactor)
 }
@@ -258,7 +258,7 @@ object ForwardProxy {
              credentials: Optional[jm.headers.BasicHttpCredentials],
              trustPem: Optional[String],
              system: ClassicActorSystemProvider) =
-    apply(scheme, host, port, credentials.asScala.map(_.asInstanceOf[BasicHttpCredentials]), trustPem.asScala)(system)
+    apply(scheme, host, port, credentials.toScala.map(_.asInstanceOf[BasicHttpCredentials]), trustPem.toScala)(system)
 
   def create(connectionContext: jh.HttpConnectionContext, poolSettings: jh.settings.ConnectionPoolSettings) =
     apply(connectionContext.asInstanceOf[HttpsConnectionContext], poolSettings.asInstanceOf[ConnectionPoolSettings])

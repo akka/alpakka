@@ -11,7 +11,7 @@ import software.amazon.awssdk.services.sns.model.{PublishRequest, PublishRespons
 
 import scala.concurrent.Future
 
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
 
 /**
  * Scala API
@@ -47,7 +47,7 @@ object SnsPublisher {
   )(implicit snsClient: SnsAsyncClient): Flow[PublishRequest, PublishResponse, NotUsed] = {
     require(snsClient != null, "The `SnsAsyncClient` passed in may not be null.")
     Flow[PublishRequest]
-      .mapAsyncUnordered(settings.concurrency)(snsClient.publish(_).toScala)
+      .mapAsyncUnordered(settings.concurrency)(snsClient.publish(_).asScala)
   }
 
   /**

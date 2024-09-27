@@ -26,8 +26,8 @@ object AzureQueueSink {
    */
   private[javadsl] def fromFunction[T](f: T => Unit): Sink[T, CompletionStage[Done]] = {
     import akka.stream.alpakka.azure.storagequeue.scaladsl.{AzureQueueSink => AzureQueueSinkScalaDSL}
-    import scala.compat.java8.FutureConverters._
-    AzureQueueSinkScalaDSL.fromFunction(f).mapMaterializedValue(_.toJava).asJava
+    import scala.jdk.FutureConverters._
+    AzureQueueSinkScalaDSL.fromFunction(f).mapMaterializedValue(_.asJava).asJava
   }
 }
 

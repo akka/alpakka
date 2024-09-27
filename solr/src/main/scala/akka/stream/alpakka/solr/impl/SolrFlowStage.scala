@@ -19,7 +19,7 @@ import org.apache.solr.common.SolrInputDocument
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import scala.collection.immutable
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * Internal API

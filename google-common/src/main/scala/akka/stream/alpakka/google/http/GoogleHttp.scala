@@ -6,7 +6,6 @@ package akka.stream.alpakka.google.http
 
 import akka.actor.{ActorSystem, ClassicActorSystemProvider, Scheduler}
 import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.Http.HostConnectionPool
 import akka.http.scaladsl.model.headers.Authorization
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
@@ -57,7 +56,7 @@ private[alpakka] final class GoogleHttp private (val http: HttpExt) extends AnyV
       implicit settings: RequestSettings,
       um: FromResponseUnmarshaller[T]
   ): Future[T] = Retry(settings.retrySettings) {
-    singleRawRequest(request).flatMap(Unmarshal(_).to[T])(ExecutionContexts.parasitic)
+    singleRawRequest(request).flatMap(Unmarshal(_).to[T])(ExecutionContext.parasitic)
   }
 
   /**
@@ -69,7 +68,7 @@ private[alpakka] final class GoogleHttp private (val http: HttpExt) extends AnyV
       um: FromResponseUnmarshaller[T]
   ): Future[T] = Retry(settings.requestSettings.retrySettings) {
     implicit val requestSettings: RequestSettings = settings.requestSettings
-    addAuth(request).flatMap(singleRequest(_))(ExecutionContexts.parasitic)
+    addAuth(request).flatMap(singleRequest(_))(ExecutionContext.parasitic)
   }
 
   /**
@@ -131,8 +130,8 @@ private[alpakka] final class GoogleHttp private (val http: HttpExt) extends AnyV
         case (res, ctx) =>
           Future
             .fromTry(res)
-            .flatMap(Unmarshal(_).to[T])(ExecutionContexts.parasitic)
-            .transform(Success(_))(ExecutionContexts.parasitic)
+            .flatMap(Unmarshal(_).to[T])(ExecutionContext.parasitic)
+            .transform(Success(_))(ExecutionContext.parasitic)
             .zip(Future.successful(ctx))
       }
 
@@ -165,6 +164,6 @@ private[alpakka] final class GoogleHttp private (val http: HttpExt) extends AnyV
       .get()
       .map { token =>
         request.addHeader(Authorization(token))
-      }(ExecutionContexts.parasitic)
+      }(ExecutionContext.parasitic)
   }
 }

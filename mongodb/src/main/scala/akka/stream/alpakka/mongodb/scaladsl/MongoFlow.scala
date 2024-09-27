@@ -13,7 +13,7 @@ import com.mongodb.client.result.{DeleteResult, UpdateResult}
 import com.mongodb.reactivestreams.client.MongoCollection
 import org.bson.conversions.Bson
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object MongoFlow {
 

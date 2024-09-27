@@ -23,7 +23,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.kinesis.model._
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class KinesisFlowSpec extends AnyWordSpec with Matchers with KinesisMock with LogCapturing {
 

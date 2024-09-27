@@ -7,7 +7,6 @@ package akka.stream.alpakka.amqp.scaladsl
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.atomic.AtomicInteger
 import akka.actor.ActorSystem
-import akka.dispatch.ExecutionContexts
 import akka.stream.alpakka.amqp.{
   AmqpCachedConnectionProvider,
   AmqpConnectionFactoryConnectionProvider,
@@ -40,7 +39,7 @@ class AmqpGraphStageLogicConnectionShutdownSpec
     with LogCapturing {
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(10.seconds)
-  private implicit val executionContext: ExecutionContext = ExecutionContexts.parasitic
+  private implicit val executionContext: ExecutionContext = ExecutionContext.parasitic
 
   val shutdownsAdded = new AtomicInteger()
   val shutdownsRemoved = new AtomicInteger()
