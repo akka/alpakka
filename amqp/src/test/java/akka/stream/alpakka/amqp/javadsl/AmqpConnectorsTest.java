@@ -161,7 +161,7 @@ public class AmqpConnectorsTest {
             .to(amqpSink)
             .run(system);
 
-    List<ReadResult> probeResult = CollectionConverters.asJavaCollection(result.second().toStrict(Duration.create(3, TimeUnit.SECONDS))).stream().toList();
+    java.util.Collection<ReadResult> probeResult = CollectionConverters.asJavaCollection(result.second().toStrict(Duration.create(3, TimeUnit.SECONDS)));
     assertEquals(
         probeResult.stream().map(s -> s.bytes().utf8String()).collect(Collectors.toList()), input);
     sourceToSink.shutdown();

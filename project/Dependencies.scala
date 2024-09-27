@@ -20,8 +20,8 @@ object Dependencies {
   // Sync with plugins.sbt
   val AkkaGrpcBinaryVersion = "2.4"
   // sync ignore prefix in scripts/link-validator.conf#L30
-  val AkkaHttpVersion = "10.6.3"
-  val AkkaHttpBinaryVersion = "10.6"
+  val AkkaHttpVersion = "10.7.0-M1"
+  val AkkaHttpBinaryVersion = VersionNumber(AkkaHttpVersion).numbers match { case Seq(major, minor, _*) => s"$major.$minor" }
   val AlpakkaKafkaVersion = "7.0.0-M1"
   val ScalaTestVersion = "3.2.19"
   val TestContainersScalaTestVersion = "0.40.3" // pulls Testcontainers 1.16.2
@@ -91,6 +91,7 @@ object Dependencies {
   val AwsLambda = Seq(
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
+        "com.typesafe.akka" %% "akka-pki" % AkkaVersion,
         "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll // ApacheV2
         (
           ExclusionRule(organization = "com.typesafe.akka")
@@ -129,7 +130,8 @@ object Dependencies {
         "io.reactivex" % "rxjava-reactive-streams" % "1.2.1", //ApacheV2
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion % Provided, // Apache V2
         "com.typesafe.play" %% "play-json" % "2.9.4" % Test, // Apache V2
-        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion % Test // Apache V2
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion % Test, // Apache V2
+        "com.typesafe.akka" %% "akka-pki" % AkkaVersion
       )
   )
 
@@ -154,7 +156,8 @@ object Dependencies {
           ExclusionRule("software.amazon.awssdk", "apache-client"),
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         ),
-        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
+        "com.typesafe.akka" %% "akka-pki" % AkkaVersion
       )
   )
 
@@ -162,6 +165,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
+        "com.typesafe.akka" %% "akka-pki" % AkkaVersion,
         "org.slf4j" % "jcl-over-slf4j" % jclOverSlf4jVersion % Test
       ) ++ JacksonDatabindDependencies
   )
@@ -231,6 +235,7 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-jackson" % AkkaHttpVersion % Provided,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
+        "com.typesafe.akka" %% "akka-pki" % AkkaVersion,
         "io.spray" %% "spray-json" % "1.3.6",
         "com.fasterxml.jackson.core" % "jackson-annotations" % JacksonVersion,
         "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % JacksonVersion % Test, // used from `hoverfly-java`
@@ -482,7 +487,9 @@ object Dependencies {
           ExclusionRule("software.amazon.awssdk", "apache-client"),
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         ),
-        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
+        "com.typesafe.akka" %% "akka-pki" % AkkaVersion,
+        "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"
       ) ++ Mockito
   )
 
@@ -519,6 +526,7 @@ object Dependencies {
         (
           ExclusionRule(organization = "com.typesafe.akka")
         ),
+        "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2",
         "software.amazon.awssdk" % "sqs" % AwsSdk2Version excludeAll // ApacheV2
         (
           ExclusionRule("software.amazon.awssdk", "apache-client"),
