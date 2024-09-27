@@ -518,7 +518,7 @@ object Dependencies {
   val Solr = Seq(
     libraryDependencies ++= Seq(
         "org.apache.solr" % "solr-solrj" % SolrjVersion, // ApacheV2
-        "org.apache.solr" % "solr-test-framework" % SolrjVersion % Test exclude ("org.apache.logging.log4j", "log4j-slf4j-impl"), // ApacheV2
+        "org.apache.solr" % "solr-test-framework" % SolrjVersion % Test, // ApacheV2
         "org.slf4j" % "log4j-over-slf4j" % log4jOverSlf4jVersion % Test // MIT like: http://www.slf4j.org/license.html
       ),
     resolvers += ("restlet" at "https://maven.restlet.com")
