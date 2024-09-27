@@ -150,18 +150,18 @@ services:
     ports:
       - "1414:1414"
       - "9443:9443"
-  ironauth:
-    image: iron/auth
-    ports:
-      - "8090:8090"
-  ironmq:
-    image: iron/mq
-    links:
-      - "ironauth:ironauth"
-    environment:
-      - "AUTH_HOST=http://ironauth:8090"
-    ports:
-      - "8080:8080"
+#  ironauth:
+#    image: iron/auth
+#    ports:
+#      - "8090:8090"
+#  ironmq:
+#    image: iron/mq
+#    links:
+#      - "ironauth:ironauth"
+#    environment:
+#      - "AUTH_HOST=http://ironauth:8090"
+#    ports:
+#      - "8080:8080"
   kudu-master-data:
     image: kunickiaj/kudu
     volumes:
