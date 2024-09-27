@@ -11,14 +11,14 @@ object Dependencies {
   val ScalaVersions = Dependencies.Scala2Versions :+ Dependencies.Scala3
 
   val AkkaVersion = "2.10.0-M1"
-  val AkkaBinaryVersion = "2.9"
+  val AkkaBinaryVersion = VersionNumber(AkkaVersion).numbers match { case Seq(major, minor, _*) => s"$major.$minor" }
 
   val InfluxDBJavaVersion = "2.15"
 
   val AwsSdk2Version = "2.25.16"
   val AwsSpiAkkaHttpVersion = "1.0.1"
   // Sync with plugins.sbt
-  val AkkaGrpcBinaryVersion = "2.4"
+  val AkkaGrpcBinaryVersion = "2.5"
   // sync ignore prefix in scripts/link-validator.conf#L30
   val AkkaHttpVersion = "10.7.0-M1"
   val AkkaHttpBinaryVersion = VersionNumber(AkkaHttpVersion).numbers match {
@@ -36,13 +36,12 @@ object Dependencies {
   // https://github.com/jwt-scala/jwt-scala/releases
   val JwtScalaVersion = "9.4.6"
 
-  // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L20
+  // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L16
   val slf4jVersion = "2.0.16"
   val log4jOverSlf4jVersion = slf4jVersion
   val jclOverSlf4jVersion = slf4jVersion
 
-  // Akka 2.9 expects Slf4j 1.x
-  // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L28
+  // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L26
   val LogbackWithSlf4jV1 = "1.5.7"
   val wiremock = ("com.github.tomakehurst" % "wiremock" % "3.0.1" % Test).exclude("org.slf4j", "slf4j-api")
 
@@ -76,7 +75,7 @@ object Dependencies {
   // Releases https://github.com/FasterXML/jackson-databind/releases
   // CVE issues https://github.com/FasterXML/jackson-databind/issues?utf8=%E2%9C%93&q=+label%3ACVE
   // This should align with the Jackson minor version used in Akka
-  // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L31
+  // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L29
   val JacksonVersion = "2.17.2"
   val JacksonDatabindVersion = JacksonVersion
   val JacksonDatabindDependencies = Seq(
