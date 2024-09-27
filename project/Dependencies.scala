@@ -66,9 +66,7 @@ object Dependencies {
   )
 
   val Mockito = Seq(
-    "org.mockito" % "mockito-core" % mockitoVersion % Test,
-    // Force bump byte-buddy for JDK 21
-    "net.bytebuddy" % "byte-buddy" % "1.14.12" % Test
+    "org.mockito" % "mockito-core" % mockitoVersion % Test
   )
 
   // Releases https://github.com/FasterXML/jackson-databind/releases
@@ -524,8 +522,7 @@ object Dependencies {
           ExclusionRule("software.amazon.awssdk", "apache-client"),
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         ),
-        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
-        "org.mockito" % "mockito-inline" % mockitoVersion % Test // MIT
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion
       ) ++ Mockito
   )
 
