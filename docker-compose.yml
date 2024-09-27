@@ -42,28 +42,11 @@ services:
             printf '.'
             sleep 2
         done
-        couchbase-cli cluster-init -c couchbase \
-          --cluster-username Administrator --cluster-password password \
-          --cluster-ramsize 300 \
-          --cluster-index-ramsize 256 \
-          --services data,index,query,fts
-        couchbase-cli bucket-create -c couchbase \
-          -u Administrator -p password \
-          --bucket akka \
-          --bucket-type couchbase \
-          --bucket-ramsize 100 \
-          --bucket-replica 1 \
-          --wait
-        couchbase-cli bucket-create -c couchbase \
-          -u Administrator -p password \
-          --bucket akkaquery \
-          --bucket-type couchbase \
-          --bucket-ramsize 100 \
-          --bucket-replica 1 \
-          --wait
+        couchbase-cli cluster-init -c couchbase --cluster-username Administrator --cluster-password password --cluster-ramsize 300 --cluster-index-ramsize 256 --services data,index,query,fts
+        couchbase-cli bucket-create -c couchbase -u Administrator -p password --bucket akka --bucket-type couchbase --bucket-ramsize 100 --bucket-replica 1 --wait
+        couchbase-cli bucket-create -c couchbase -u Administrator -p password --bucket akkaquery --bucket-type couchbase --bucket-ramsize 100 --bucket-replica 1 --wait
         sleep 2 # just wait a tiny bit more after creating the bucket
-        echo 'CREATE PRIMARY INDEX ON akkaquery USING GSI;' | \
-          cbq -c Administrator:password -e http://couchbase:8093
+        echo 'CREATE PRIMARY INDEX ON akkaquery USING GSI;' | cbq -c Administrator:password -e http://couchbase:8093
       "
   elasticmq:
     image: softwaremill/elasticmq-native:1.5.8
