@@ -9,7 +9,6 @@ package impl
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes.{Accepted, Created, NotFound, OK}
 import akka.http.scaladsl.model.headers.{`Content-Length`, `Content-Type`}
@@ -41,7 +40,7 @@ import akka.stream.scaladsl.{Flow, RetryFlow, Source}
 import akka.util.ByteString
 
 import java.time.Clock
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success, Try}
 
 object AzureStorageStream {
@@ -70,7 +69,7 @@ object AzureStorageStream {
           }
           .mapMaterializedValue(_ => objectMetadataMat.future)
       }
-      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.parasitic))
+      .mapMaterializedValue(_.flatMap(identity)(ExecutionContext.parasitic))
 
   private[storage] def getBlobProperties(objectPath: String,
                                          requestBuilder: GetProperties): Source[Option[ObjectMetadata], NotUsed] =
@@ -189,7 +188,7 @@ object AzureStorageStream {
                 .withoutSizeLimit()
                 .discardBytes()
                 .future()
-                .map(_ => None)(ExecutionContexts.parasitic)
+                .map(_ => None)(ExecutionContext.parasitic)
             )
           case response: HttpResponse => Source.future(unmarshalError(response.status, response.entity))
         }
