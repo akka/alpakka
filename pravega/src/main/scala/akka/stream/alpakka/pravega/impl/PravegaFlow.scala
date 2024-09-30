@@ -12,7 +12,7 @@ import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import io.pravega.client.stream.EventStreamWriter
 
 import scala.util.control.NonFatal
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import akka.stream.alpakka.pravega.WriterSettings
 
@@ -55,7 +55,7 @@ import scala.util.{Failure, Success, Try}
     }
 
   def handleSentEvent(completableFuture: CompletableFuture[Void], msg: A): Unit =
-    completableFuture.toScala.onComplete { t =>
+    completableFuture.asScala.onComplete { t =>
       semaphore.acquire()
       asyncPushback.invoke((t, msg))
     }

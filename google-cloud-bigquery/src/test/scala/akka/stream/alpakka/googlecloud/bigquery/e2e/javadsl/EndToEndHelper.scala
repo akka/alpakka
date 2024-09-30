@@ -5,7 +5,7 @@
 package akka.stream.alpakka.googlecloud.bigquery.e2e.javadsl
 
 import akka.stream.alpakka.googlecloud.bigquery.e2e.scaladsl;
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 abstract class EndToEndHelper extends scaladsl.EndToEndHelper {
 

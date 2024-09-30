@@ -13,7 +13,7 @@ import spray.json.DefaultJsonProtocol._
 import spray.json.{JsonParser, RootJsonFormat}
 
 import java.time.Clock
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.Future
 import scala.io.Source
 

@@ -7,10 +7,11 @@ package akka.stream.alpakka.s3.impl
 import java.io.{File, FileOutputStream}
 import java.nio.BufferOverflowException
 import java.nio.file.Files
+import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicInteger
 
+import akka.annotation.InternalApi
 import akka.NotUsed
-import akka.dispatch.ExecutionContexts
 import akka.stream.ActorAttributes
 import akka.stream.Attributes
 import akka.stream.FlowShape
@@ -22,9 +23,8 @@ import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
 import akka.util.ByteString
-import java.nio.file.Path
 
-import akka.annotation.InternalApi
+import scala.concurrent.ExecutionContext
 
 /**
  * Internal Api
@@ -92,7 +92,7 @@ import akka.annotation.InternalApi
             f.onComplete { _ =>
               path.delete()
 
-            }(ExecutionContexts.parasitic)
+            }(ExecutionContext.parasitic)
           NotUsed
         }
         emit(out, DiskChunk(src, length), () => completeStage())

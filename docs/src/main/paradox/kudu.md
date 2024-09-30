@@ -1,5 +1,11 @@
 # Apache Kudu
 
+@@@warning { title="End of life" }
+
+The Kudu connector has not been updated for too long and is now considered End of Life. It will be removed with the next release of Alpakka.
+
+@@@
+
 The Alpakka Kudu connector supports writing to [Apache Kudu](https://kudu.apache.org) tables.
 
 Apache Kudu is a free and open source column-oriented data store in the Apache Hadoop ecosystem.

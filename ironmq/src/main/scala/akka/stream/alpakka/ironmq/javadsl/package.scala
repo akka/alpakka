@@ -12,7 +12,7 @@ import akka.stream.alpakka.ironmq.scaladsl.{
   CommittableMessage => ScalaCommittableMessage
 }
 
-import scala.compat.java8.FutureConverters
+import scala.jdk.FutureConverters
 import scala.concurrent.Future
 
 /**
@@ -25,26 +25,26 @@ package object javadsl {
   private[javadsl] implicit class RichScalaCommittableMessage(cm: ScalaCommittableMessage) {
     def asJava: CommittableMessage = new CommittableMessage {
       override def message: Message = cm.message
-      override def commit(): CompletionStage[Done] = cm.commit().toJava
+      override def commit(): CompletionStage[Done] = cm.commit().asJava
     }
   }
 
   private[javadsl] implicit class RichScalaCommittable(cm: ScalaCommittable) {
     def asJava: Committable = new Committable {
-      override def commit(): CompletionStage[Done] = cm.commit().toJava
+      override def commit(): CompletionStage[Done] = cm.commit().asJava
     }
   }
 
   private[javadsl] implicit class RichCommittableMessage(cm: CommittableMessage) {
     def asScala: ScalaCommittableMessage = new ScalaCommittableMessage {
       override def message: Message = cm.message
-      override def commit(): Future[Done] = cm.commit().toScala
+      override def commit(): Future[Done] = cm.commit().asScala
     }
   }
 
   private[javadsl] implicit class RichCommittable(cm: Committable) {
     def asScala: ScalaCommittable = new ScalaCommittable {
-      override def commit(): Future[Done] = cm.commit().toScala
+      override def commit(): Future[Done] = cm.commit().asScala
     }
   }
 

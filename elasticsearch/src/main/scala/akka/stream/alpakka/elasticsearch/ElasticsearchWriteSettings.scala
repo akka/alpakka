@@ -4,9 +4,8 @@
 
 package akka.stream.alpakka.elasticsearch
 
-import akka.util.JavaDurationConverters._
-
 import scala.concurrent.duration._
+import scala.jdk.DurationConverters._
 
 trait RetryLogic {
   def maxRetries: Int
@@ -33,7 +32,7 @@ object RetryAtFixedRate {
     new RetryAtFixedRate(maxRetries, retryInterval)
 
   def create(maxRetries: Int, retryInterval: java.time.Duration): RetryAtFixedRate =
-    new RetryAtFixedRate(maxRetries, retryInterval.asScala)
+    new RetryAtFixedRate(maxRetries, retryInterval.toScala)
 }
 
 final class RetryWithBackoff(_maxRetries: Int,
@@ -53,7 +52,7 @@ object RetryWithBackoff {
     new RetryWithBackoff(maxRetries, minBackoff, maxBackoff)
 
   def create(maxRetries: Int, minBackoff: java.time.Duration, maxBackoff: java.time.Duration): RetryWithBackoff =
-    new RetryWithBackoff(maxRetries, minBackoff.asScala, maxBackoff.asScala)
+    new RetryWithBackoff(maxRetries, minBackoff.toScala, maxBackoff.toScala)
 }
 
 /**

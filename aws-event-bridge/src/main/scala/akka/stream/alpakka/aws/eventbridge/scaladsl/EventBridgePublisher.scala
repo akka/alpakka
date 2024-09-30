@@ -11,7 +11,7 @@ import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient
 import software.amazon.awssdk.services.eventbridge.model._
 
 import scala.concurrent.Future
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
 
 /**
  * Scala API
@@ -55,7 +55,7 @@ object EventBridgePublisher {
       settings: EventBridgePublishSettings
   )(implicit eventBridgeClient: EventBridgeAsyncClient): Flow[PutEventsRequest, PutEventsResponse, NotUsed] =
     Flow[PutEventsRequest]
-      .mapAsync(settings.concurrency)(eventBridgeClient.putEvents(_).toScala)
+      .mapAsync(settings.concurrency)(eventBridgeClient.putEvents(_).asScala)
 
   /**
    * Creates a [[akka.stream.scaladsl.Flow Flow]] to publish messages to an EventBridge.

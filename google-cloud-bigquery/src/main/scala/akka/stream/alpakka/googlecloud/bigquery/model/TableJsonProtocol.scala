@@ -13,9 +13,8 @@ import java.util
 
 import scala.annotation.nowarn
 import scala.annotation.varargs
-import scala.collection.immutable.Seq
-import scala.compat.java8.OptionConverters._
-import scala.collection.JavaConverters._
+import scala.jdk.OptionConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * Table resource model
@@ -34,10 +33,10 @@ final case class Table private (tableReference: TableReference,
                                 location: Option[String]) {
 
   def getTableReference = tableReference
-  def getLabels = labels.map(_.asJava).asJava
-  def getSchema = schema.asJava
-  def getNumRows = numRows.asPrimitive
-  def getLocation = location.asJava
+  def getLabels = labels.map(_.asJava).toJava
+  def getSchema = schema.toJava
+  def getNumRows = numRows.toJavaPrimitive
+  def getLocation = location.toJava
 
   def withTableReference(tableReference: TableReference) =
     copy(tableReference = tableReference)
@@ -45,22 +44,22 @@ final case class Table private (tableReference: TableReference,
   def withLabels(labels: Option[Map[String, String]]) =
     copy(labels = labels)
   def withLabels(labels: util.Optional[util.Map[String, String]]) =
-    copy(labels = labels.asScala.map(_.asScala.toMap))
+    copy(labels = labels.toScala.map(_.asScala.toMap))
 
   def withSchema(schema: Option[TableSchema]) =
     copy(schema = schema)
   def withSchema(schema: util.Optional[TableSchema]) =
-    copy(schema = schema.asScala)
+    copy(schema = schema.toScala)
 
   def withNumRows(numRows: Option[Long]) =
     copy(numRows = numRows)
   def withNumRows(numRows: util.OptionalLong) =
-    copy(numRows = numRows.asScala)
+    copy(numRows = numRows.toScala)
 
   def withLocation(location: Option[String]) =
     copy(location = location)
   def withLocation(location: util.Optional[String]) =
-    copy(location = location.asScala)
+    copy(location = location.toScala)
 }
 
 object Table {
@@ -83,10 +82,10 @@ object Table {
              location: util.Optional[String]) =
     Table(
       tableReference,
-      labels.asScala.map(_.asScala.toMap),
-      schema.asScala,
-      numRows.asScala,
-      location.asScala
+      labels.toScala.map(_.asScala.toMap),
+      schema.toScala,
+      numRows.toScala,
+      location.toScala
     )
 
   implicit val format: RootJsonFormat[Table] = jsonFormat5(apply)
@@ -102,14 +101,14 @@ object Table {
  */
 final case class TableReference private (projectId: Option[String], datasetId: String, tableId: Option[String]) {
 
-  def getProjectId = projectId.asJava
+  def getProjectId = projectId.toJava
   def getDatasetId = datasetId
   def getTableId = tableId
 
   def withProjectId(projectId: Option[String]) =
     copy(projectId = projectId)
   def withProjectId(projectId: util.Optional[String]) =
-    copy(projectId = projectId.asScala)
+    copy(projectId = projectId.toScala)
 
   def withDatasetId(datasetId: String) =
     copy(datasetId = datasetId)
@@ -117,7 +116,7 @@ final case class TableReference private (projectId: Option[String], datasetId: S
   def withTableId(tableId: Option[String]) =
     copy(tableId = tableId)
   def withTableId(tableId: util.Optional[String]) =
-    copy(tableId = tableId.asScala)
+    copy(tableId = tableId.toScala)
 }
 
 object TableReference {
@@ -132,7 +131,7 @@ object TableReference {
    * @return a [[TableReference]]
    */
   def create(projectId: util.Optional[String], datasetId: String, tableId: util.Optional[String]) =
-    TableReference(projectId.asScala, datasetId, tableId.asScala)
+    TableReference(projectId.toScala, datasetId, tableId.toScala)
 
   implicit val referenceFormat: JsonFormat[TableReference] = jsonFormat3(apply)
 }
@@ -211,8 +210,8 @@ final case class TableFieldSchema private (name: String,
 
   def getName = name
   def getType = `type`
-  def getMode = mode.asJava
-  def getFields = fields.map(_.asJava).asJava
+  def getMode = mode.toJava
+  def getFields = fields.map(_.asJava).toJava
 
   def withName(name: String) =
     copy(name = name)
@@ -223,12 +222,12 @@ final case class TableFieldSchema private (name: String,
   def withMode(mode: Option[TableFieldSchemaMode]) =
     copy(mode = mode)
   def withMode(mode: util.Optional[TableFieldSchemaMode]) =
-    copy(mode = mode.asScala)
+    copy(mode = mode.toScala)
 
   def withFields(fields: Option[Seq[TableFieldSchema]]) =
     copy(fields = fields)
   def withFields(fields: util.Optional[util.List[TableFieldSchema]]) =
-    copy(fields = fields.asScala.map(_.asScala.toList))
+    copy(fields = fields.toScala.map(_.asScala.toList))
 }
 
 object TableFieldSchema {
@@ -247,7 +246,7 @@ object TableFieldSchema {
              `type`: TableFieldSchemaType,
              mode: util.Optional[TableFieldSchemaMode],
              fields: util.Optional[util.List[TableFieldSchema]]) =
-    TableFieldSchema(name, `type`, mode.asScala, fields.asScala.map(_.asScala.toList))
+    TableFieldSchema(name, `type`, mode.toScala, fields.toScala.map(_.asScala.toList))
 
   /**
    * A field in TableSchema
@@ -264,7 +263,7 @@ object TableFieldSchema {
              `type`: TableFieldSchemaType,
              mode: util.Optional[TableFieldSchemaMode],
              fields: TableFieldSchema*) =
-    TableFieldSchema(name, `type`, mode.asScala, if (fields.nonEmpty) Some(fields.toList) else None)
+    TableFieldSchema(name, `type`, mode.toScala, if (fields.nonEmpty) Some(fields.toList) else None)
 
   implicit val format: JsonFormat[TableFieldSchema] = lazyFormat(
     jsonFormat(apply, "name", "type", "mode", "fields")
@@ -353,16 +352,16 @@ final case class TableListResponse private (nextPageToken: Option[String],
                                             tables: Option[Seq[Table]],
                                             totalItems: Option[Int]) {
 
-  def getNextPageToken = nextPageToken.asJava
-  def getTables = tables.map(_.asJava).asJava
-  def getTotalItems = totalItems.asPrimitive
+  def getNextPageToken = nextPageToken.toJava
+  def getTables = tables.map(_.asJava).toJava
+  def getTotalItems = totalItems.toJavaPrimitive
 
   def withNextPageToken(nextPageToken: util.Optional[String]) =
-    copy(nextPageToken = nextPageToken.asScala)
+    copy(nextPageToken = nextPageToken.toScala)
   def withTables(tables: util.Optional[util.List[Table]]) =
-    copy(tables = tables.asScala.map(_.asScala.toList))
+    copy(tables = tables.toScala.map(_.asScala.toList))
   def withTotalItems(totalItems: util.OptionalInt) =
-    copy(totalItems = totalItems.asScala)
+    copy(totalItems = totalItems.toScala)
 }
 
 object TableListResponse {
@@ -379,7 +378,7 @@ object TableListResponse {
   def createTableListResponse(nextPageToken: util.Optional[String],
                               tables: util.Optional[util.List[Table]],
                               totalItems: util.OptionalInt) =
-    TableListResponse(nextPageToken.asScala, tables.asScala.map(_.asScala.toList), totalItems.asScala)
+    TableListResponse(nextPageToken.toScala, tables.toScala.map(_.asScala.toList), totalItems.toScala)
 
   implicit val format: RootJsonFormat[TableListResponse] = jsonFormat3(apply)
   implicit val paginated: Paginated[TableListResponse] = _.nextPageToken

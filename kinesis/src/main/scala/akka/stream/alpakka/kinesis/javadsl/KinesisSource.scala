@@ -10,7 +10,7 @@ import akka.stream.javadsl.Source
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
 import software.amazon.awssdk.services.kinesis.model.Record
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object KinesisSource {
 

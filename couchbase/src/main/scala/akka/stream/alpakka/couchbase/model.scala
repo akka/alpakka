@@ -13,10 +13,10 @@ import com.couchbase.client.java.env.CouchbaseEnvironment
 import com.couchbase.client.java.{PersistTo, ReplicateTo}
 import com.typesafe.config.Config
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.immutable
 import scala.concurrent.Future
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
 import scala.concurrent.duration._
 
 /**
@@ -205,7 +205,7 @@ final class CouchbaseSessionSettings private (
   def withEnrichAsyncCs(
       value: java.util.function.Function[CouchbaseSessionSettings, CompletionStage[CouchbaseSessionSettings]]
   ): CouchbaseSessionSettings =
-    copy(enrichAsync = (s: CouchbaseSessionSettings) => value.apply(s).toScala)
+    copy(enrichAsync = (s: CouchbaseSessionSettings) => value.apply(s).asScala)
 
   def withEnvironment(environment: CouchbaseEnvironment): CouchbaseSessionSettings =
     copy(environment = Some(environment))

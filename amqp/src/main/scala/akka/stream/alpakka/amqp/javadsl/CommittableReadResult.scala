@@ -10,15 +10,15 @@ import akka.Done
 import akka.stream.alpakka.amqp.ReadResult
 import akka.stream.alpakka.amqp.scaladsl
 
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
 
 final class CommittableReadResult(cm: scaladsl.CommittableReadResult) {
   val message: ReadResult = cm.message
 
   def ack(): CompletionStage[Done] = ack(false)
-  def ack(multiple: Boolean): CompletionStage[Done] = cm.ack(multiple).toJava
+  def ack(multiple: Boolean): CompletionStage[Done] = cm.ack(multiple).asJava
 
   def nack(): CompletionStage[Done] = nack(false, true)
   def nack(multiple: Boolean, requeue: Boolean): CompletionStage[Done] =
-    cm.nack(multiple, requeue).toJava
+    cm.nack(multiple, requeue).asJava
 }

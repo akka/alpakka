@@ -9,8 +9,8 @@ import javax.jms
 import akka.NotUsed
 import akka.stream.alpakka.jms.impl.JmsMessageReader._
 import akka.util.ByteString
-import scala.collection.JavaConverters._
-import scala.compat.java8.OptionConverters._
+import scala.jdk.CollectionConverters._
+import scala.jdk.OptionConverters._
 
 /**
  * Base interface for messages handled by JmsProducers. Sub-classes support pass-through or use [[akka.NotUsed]] as type for pass-through.
@@ -37,7 +37,7 @@ sealed trait JmsEnvelope[+PassThrough] {
   /**
    * Java API.
    */
-  def getDestination: java.util.Optional[Destination] = destination.asJava
+  def getDestination: java.util.Optional[Destination] = destination.toJava
 
   def passThrough: PassThrough
 

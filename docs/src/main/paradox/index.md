@@ -44,7 +44,6 @@ The [Alpakka project](https://doc.akka.io/docs/alpakka/current/) is an initiativ
 * [Huawei Push Kit](huawei-push-kit.md)
 * [HTTP](external/http.md)
 * [IBM Bluemix Cloud Object storage](bluemix-cos.md)
-* [IBM DB2 Event Store](external/db2-event-store.md)
 * [InfluxDB](influxdb.md)
 * [IronMQ](ironmq.md)
 * [Jakarta Messaging](jakarta-jms/index.md)

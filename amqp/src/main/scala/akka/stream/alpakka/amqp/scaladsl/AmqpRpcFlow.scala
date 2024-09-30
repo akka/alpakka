@@ -4,11 +4,11 @@
 
 package akka.stream.alpakka.amqp.scaladsl
 
-import akka.dispatch.ExecutionContexts
 import akka.stream.alpakka.amqp._
 import akka.stream.scaladsl.{Flow, Keep}
 import akka.util.ByteString
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
 object AmqpRpcFlow {
@@ -39,7 +39,7 @@ object AmqpRpcFlow {
                      repliesPerMessage: Int = 1): Flow[WriteMessage, ReadResult, Future[String]] =
     committableFlow(settings, bufferSize, repliesPerMessage)
       .mapAsync(1) { cm =>
-        cm.ack().map(_ => cm.message)(ExecutionContexts.parasitic)
+        cm.ack().map(_ => cm.message)(ExecutionContext.parasitic)
       }
 
   /**

@@ -9,7 +9,6 @@ import java.util.Optional
 import java.util.concurrent.{CompletionStage, Executor}
 
 import akka.annotation.DoNotInherit
-import akka.dispatch.ExecutionContexts
 import akka.stream.alpakka.couchbase.impl.CouchbaseSessionJavaAdapter
 import akka.stream.alpakka.couchbase.scaladsl.{CouchbaseSession => ScalaDslCouchbaseSession}
 import akka.stream.alpakka.couchbase.{CouchbaseSessionSettings, CouchbaseWriteSettings}
@@ -21,7 +20,7 @@ import com.couchbase.client.java.query.util.IndexInfo
 import com.couchbase.client.java.query.{N1qlQuery, Statement}
 import com.couchbase.client.java.{AsyncBucket, AsyncCluster, Bucket}
 
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
 import scala.concurrent.ExecutionContext
 
 /**
@@ -41,9 +40,9 @@ object CouchbaseSession {
     ScalaDslCouchbaseSession
       .apply(settings, bucketName)(executionContext(executor))
       .map(new CouchbaseSessionJavaAdapter(_): CouchbaseSession)(
-        ExecutionContexts.parasitic
+        ExecutionContext.parasitic
       )
-      .toJava
+      .asJava
 
   /**
    * Create a given bucket using a pre-existing cluster client, allowing for it to be shared among
@@ -52,9 +51,9 @@ object CouchbaseSession {
   def create(client: AsyncCluster, bucketName: String, executor: Executor): CompletionStage[CouchbaseSession] =
     ScalaDslCouchbaseSession(client, bucketName)(executionContext(executor))
       .map(new CouchbaseSessionJavaAdapter(_): CouchbaseSession)(
-        ExecutionContexts.parasitic
+        ExecutionContext.parasitic
       )
-      .toJava
+      .asJava
 
   /**
    * Connects to a Couchbase cluster by creating an `AsyncCluster`.
@@ -63,7 +62,7 @@ object CouchbaseSession {
   def createClient(settings: CouchbaseSessionSettings, executor: Executor): CompletionStage[AsyncCluster] =
     ScalaDslCouchbaseSession
       .createClusterClient(settings)(executionContext(executor))
-      .toJava
+      .asJava
 
   private def executionContext(executor: Executor): ExecutionContext =
     executor match {

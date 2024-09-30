@@ -4,12 +4,6 @@ We follow the standard GitHub [fork & pull](https://help.github.com/articles/usi
 
 You're always welcome to submit your PR straight away and start the discussion (without reading the rest of this wonderful doc, or the README.md). The goal of these notes is to make your experience contributing to Alpakka as smooth and pleasant as possible. We're happy to guide you through the process once you've submitted your PR.
 
-# The Akka Community
-
-In case of questions about the contribution process or for discussion of specific issues please visit the [akka/dev gitter chat](https://gitter.im/akka/dev).
-
-You may also check out these [other resources](https://akka.io/get-involved/).
-
 # Contributing to Alpakka
 
 ## Development Setup
@@ -43,8 +37,6 @@ This is the process for committing code into main.
 1. After the review you should fix the issues (review comments, CI failures, compiler warnings) by pushing a new commit for new review, iterating until the reviewers give their thumbs up and CI tests pass.
 
 1. If the branch merge conflicts with its target, rebase your branch onto the target branch.
-
-In case of questions about the contribution process or for discussion of specific issues please visit the [akka/dev gitter chat](https://gitter.im/akka/dev).
 
 
 ## Alpakka specific advice

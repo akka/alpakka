@@ -7,8 +7,14 @@ package akka.stream.alpakka.hbase.impl
 import java.io.Closeable
 
 import akka.stream.stage.StageLogging
-import org.apache.hadoop.hbase.{HColumnDescriptor, HTableDescriptor, TableName}
-import org.apache.hadoop.hbase.client.{Connection, ConnectionFactory, Table}
+import org.apache.hadoop.hbase.TableName
+import org.apache.hadoop.hbase.client.{
+  ColumnFamilyDescriptorBuilder,
+  Connection,
+  ConnectionFactory,
+  Table,
+  TableDescriptorBuilder
+}
 import org.apache.hadoop.conf.Configuration
 
 import scala.concurrent.duration.DurationInt
@@ -18,6 +24,8 @@ import scala.util.{Failure, Success, Try}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 import scala.language.postfixOps
+
+import org.apache.hadoop.hbase.util.Bytes
 
 private[impl] trait HBaseCapabilities { this: StageLogging =>
 
@@ -53,11 +61,11 @@ private[impl] trait HBaseCapabilities { this: StageLogging =>
       if (admin.isTableAvailable(tableName))
         connection.getTable(tableName)
       else {
-        val tableDescriptor: HTableDescriptor = new HTableDescriptor(tableName)
+        val tableDescriptor = TableDescriptorBuilder.newBuilder(tableName)
         columnFamilies.foreach { cf =>
-          tableDescriptor.addFamily(new HColumnDescriptor(cf))
+          tableDescriptor.setColumnFamily(ColumnFamilyDescriptorBuilder.newBuilder(Bytes.toBytes(cf)).build())
         }
-        admin.createTable(tableDescriptor)
+        admin.createTable(tableDescriptor.build())
         log.info(s"Table $tableName created with cfs: $columnFamilies.")
         connection.getTable(tableName)
       }

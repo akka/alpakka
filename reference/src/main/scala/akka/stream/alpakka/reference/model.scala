@@ -10,8 +10,8 @@ import akka.annotation.InternalApi
 import akka.util.ByteString
 
 import scala.collection.immutable
-import scala.collection.JavaConverters._
-import scala.compat.java8.OptionConverters._
+import scala.jdk.CollectionConverters._
+import scala.jdk.OptionConverters._
 import scala.util.{Success, Try}
 
 /**
@@ -44,7 +44,7 @@ final class ReferenceReadResult @InternalApi private[reference] (
    * otherwise return empty Optional.
    */
   def getBytesRead(): OptionalInt =
-    bytesRead.toOption.asPrimitive
+    bytesRead.toOption.toJavaPrimitive
 
   /**
    * Java API
@@ -53,7 +53,7 @@ final class ReferenceReadResult @InternalApi private[reference] (
    * otherwise return empty Optional.
    */
   def getBytesReadFailure(): Optional[Throwable] =
-    bytesRead.failed.toOption.asJava
+    bytesRead.failed.toOption.toJava
 
   override def toString: String =
     s"ReferenceReadMessage(data=$data, bytesRead=$bytesRead)"

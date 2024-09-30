@@ -5,12 +5,11 @@
 package akka.stream.alpakka.cassandra.scaladsl
 
 import akka.NotUsed
-import akka.dispatch.ExecutionContexts
 import akka.stream.alpakka.cassandra.CassandraWriteSettings
 import akka.stream.scaladsl.{Flow, FlowWithContext}
 import com.datastax.oss.driver.api.core.cql.{BatchStatement, BoundStatement, PreparedStatement}
-
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
 /**
@@ -40,7 +39,7 @@ object CassandraFlow {
           Flow[T].mapAsync(writeSettings.parallelism) { element =>
             session
               .executeWrite(statementBinder(element, preparedStatement))
-              .map(_ => element)(ExecutionContexts.parasitic)
+              .map(_ => element)(ExecutionContext.parasitic)
           }
         }(session.ec)
       }
@@ -72,7 +71,7 @@ object CassandraFlow {
               case tuple @ (element, _) =>
                 session
                   .executeWrite(statementBinder(element, preparedStatement))
-                  .map(_ => tuple)(ExecutionContexts.parasitic)
+                  .map(_ => tuple)(ExecutionContext.parasitic)
             }
           }(session.ec)
         }
@@ -116,7 +115,7 @@ object CassandraFlow {
             .mapAsyncUnordered(writeSettings.parallelism) { list =>
               val boundStatements = list.map(t => statementBinder(t, preparedStatement))
               val batchStatement = BatchStatement.newInstance(writeSettings.batchType).addAll(boundStatements.asJava)
-              session.executeWriteBatch(batchStatement).map(_ => list)(ExecutionContexts.parasitic)
+              session.executeWriteBatch(batchStatement).map(_ => list)(ExecutionContext.parasitic)
             }
             .mapConcat(_.toList)
         }(session.ec)

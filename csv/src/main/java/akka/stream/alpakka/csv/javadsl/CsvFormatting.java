@@ -10,7 +10,7 @@ import akka.stream.javadsl.Flow;
 import akka.util.ByteString;
 import scala.Option;
 import scala.Some;
-import scala.collection.JavaConverters;
+import scala.jdk.javaapi.CollectionConverters;
 import scala.collection.immutable.List;
 
 import java.nio.charset.Charset;
@@ -77,7 +77,7 @@ public class CsvFormatting {
         akka.stream.alpakka.csv.scaladsl.CsvFormatting.format(
             delimiter, quoteChar, escapeChar, endOfLine, qs, charset, byteOrderMarkScala);
     return Flow.<T>create()
-        .map(c -> JavaConverters.collectionAsScalaIterableConverter(c).asScala().toList())
+        .map(c -> CollectionConverters.asScala(c).toList())
         .via(formattingFlow);
   }
 }

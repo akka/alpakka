@@ -5,7 +5,6 @@
 package akka.stream.alpakka.amqp.scaladsl
 
 import akka.NotUsed
-import akka.dispatch.ExecutionContexts
 import akka.stream.alpakka.amqp.impl
 import akka.stream.alpakka.amqp.{AmqpSourceSettings, ReadResult}
 import akka.stream.scaladsl.Source
@@ -13,7 +12,7 @@ import akka.stream.scaladsl.Source
 import scala.concurrent.ExecutionContext
 
 object AmqpSource {
-  private implicit val executionContext: ExecutionContext = ExecutionContexts.parasitic
+  private implicit val executionContext: ExecutionContext = ExecutionContext.parasitic
 
   /**
    * Scala API: Convenience for "at-most once delivery" semantics. Each message is acked to RabbitMQ

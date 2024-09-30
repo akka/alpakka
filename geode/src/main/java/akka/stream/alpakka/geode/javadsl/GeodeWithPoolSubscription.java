@@ -14,7 +14,7 @@ import org.apache.geode.cache.query.CqException;
 import org.apache.geode.cache.query.CqQuery;
 import org.apache.geode.cache.query.QueryService;
 
-import scala.compat.java8.FutureConverters;
+import scala.jdk.javaapi.FutureConverters;
 
 import java.util.concurrent.CompletionStage;
 
@@ -38,7 +38,7 @@ public class GeodeWithPoolSubscription extends Geode {
       String queryName, String query, AkkaPdxSerializer<V> serializer) {
     registerPDXSerializer(serializer, serializer.clazz());
     return Source.fromGraph(new GeodeContinuousSourceStage<V>(cache(), queryName, query))
-        .mapMaterializedValue(FutureConverters::<Done>toJava);
+        .mapMaterializedValue(FutureConverters::asJava);
   }
 
   public boolean closeContinuousQuery(String name) throws CqException {
