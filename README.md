@@ -45,7 +45,7 @@ If you find an issue that you'd like to see fixed, the quickest way to make that
 
 Refer to the [CONTRIBUTING.md](CONTRIBUTING.md) file for more details about the workflow, and general hints on how to prepare your pull request. If you're planning to implement a new module within Alpakka, look at our [contributor advice](contributor-advice.md).
 
-You can also ask for clarifications or guidance in GitHub issues directly, or in the [akka/dev](https://gitter.im/akka/dev) chat if a more real time communication would be of benefit.
+You can also ask for clarifications or guidance in GitHub issues directly.
 
 Caveat Emptor
 -------------

@@ -187,8 +187,3 @@ Or a Flow
 
 Scala
 :   @@snip[snip](/pravega/src/test/scala/akka/stream/alpakka/pravega/PravegaStreamAndTableSpec.scala) { #table-reading-flow }
-
-
-## Support
-
-In addition to our regular Alpakka community support on [![gitter: akka/akka](https://img.shields.io/badge/gitter%3A-akka%2Fakka-blue.svg?style=flat-square)](https://gitter.im/akka/akka) and Lightbend's [discuss.lightbend.com](https://discuss.lightbend.com/c/akka/streams-and-alpakka).

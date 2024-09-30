@@ -417,7 +417,7 @@ lazy val docs = project
         "extref.geode.base_url" -> s"https://geode.apache.org/docs/guide/${Dependencies.GeodeVersionForDocs}/%s",
         "extref.javaee-api.base_url" -> "https://docs.oracle.com/javaee/7/api/index.html?%s.html",
         "extref.paho-api.base_url" -> "https://www.eclipse.org/paho/files/javadoc/index.html?%s.html",
-        "extref.pravega.base_url" -> s"https://cncf.pravega.io/docs/${Dependencies.PravegaVersionForDocs}/%s",
+        "extref.pravega.base_url" -> s"https://cncf.pravega.io/docs/latest/%s",
         "extref.slick.base_url" -> s"https://scala-slick.org/doc/${Dependencies.SlickVersion}/%s",
         // Cassandra
         "extref.cassandra.base_url" -> s"https://cassandra.apache.org/doc/${Dependencies.CassandraVersionInDocs}/%s",
@@ -434,7 +434,6 @@ lazy val docs = project
         "javadoc.jakarta.jms.base_url" -> "https://jakarta.ee/specifications/messaging/3.1/apidocs/jakarta.messaging/",
         "javadoc.jakarta.jms.link_style" -> "direct",
         "javadoc.com.couchbase.base_url" -> s"https://docs.couchbase.com/sdk-api/couchbase-java-client-${Dependencies.CouchbaseVersion}/",
-        "javadoc.io.pravega.base_url" -> s"http://pravega.io/docs/${Dependencies.PravegaVersionForDocs}/javadoc/clients/",
         "javadoc.org.apache.kudu.base_url" -> s"https://kudu.apache.org/releases/${Dependencies.KuduVersion}/apidocs/",
         "javadoc.org.apache.hadoop.base_url" -> s"https://hadoop.apache.org/docs/r${Dependencies.HadoopVersion}/api/",
         "javadoc.software.amazon.awssdk.base_url" -> "https://sdk.amazonaws.com/java/api/latest/",
