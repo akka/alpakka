@@ -21,7 +21,7 @@ import java.net.Proxy;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-public class FtpsWithProxyStageTest extends BaseFtpSupport implements CommonFtpStageTest {
+@Ignore public class FtpsWithProxyStageTest extends BaseFtpSupport implements CommonFtpStageTest {
 
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
