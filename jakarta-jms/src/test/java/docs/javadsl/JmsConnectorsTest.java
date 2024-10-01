@@ -162,7 +162,7 @@ public class JmsConnectorsTest {
           // #object-source
           ActiveMQConnectionFactory connectionFactory =
               (ActiveMQConnectionFactory) server.createConnectionFactory();
-          connectionFactory.setDeserializationWhiteList(
+          connectionFactory.setDeserializationAllowList(
               DummyJavaTests.class.getPackage().getName());
 
           // #object-source

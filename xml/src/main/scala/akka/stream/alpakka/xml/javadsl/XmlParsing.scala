@@ -13,7 +13,7 @@ import org.w3c.dom.Element
 
 import java.util.function.Consumer
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object XmlParsing {
 

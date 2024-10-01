@@ -13,7 +13,7 @@ import akka.stream.alpakka.s3.headers.{CannedAcl, ServerSideEncryption, StorageC
 import akka.stream.alpakka.s3.impl.S3Request
 
 import scala.collection.immutable.Seq
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 final class MetaHeaders private (val metaHeaders: Map[String, String]) {
 

@@ -11,7 +11,7 @@ import akka.stream.stage.{AsyncCallback, GraphStage, GraphStageLogic, InHandler,
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 
 import scala.util.control.NonFatal
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import akka.stream.alpakka.pravega.TableWriterSettings
 
@@ -83,7 +83,7 @@ import io.pravega.client.tables.TableKey
     }
 
   def handleSentEvent(completableFuture: CompletableFuture[Version], msg: KVPair): Unit =
-    completableFuture.toScala.onComplete { t =>
+    completableFuture.asScala.onComplete { t =>
       asyncPushback.invokeWithFeedback((t, msg))
     }
 

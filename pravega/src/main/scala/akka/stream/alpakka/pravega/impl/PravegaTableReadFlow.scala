@@ -12,7 +12,7 @@ import akka.stream.stage.{AsyncCallback, GraphStage, GraphStageLogic, InHandler,
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 
 import scala.util.control.NonFatal
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import akka.stream.alpakka.pravega.TableSettings
 
@@ -83,7 +83,7 @@ import scala.util.Success
     }
 
   def handleSentEvent(completableFuture: CompletableFuture[TableEntry]): Unit =
-    completableFuture.toScala.onComplete { t =>
+    completableFuture.asScala.onComplete { t =>
       asyncMessageSendCallback.invokeWithFeedback((t))
     }
 

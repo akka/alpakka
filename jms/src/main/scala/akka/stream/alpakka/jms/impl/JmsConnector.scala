@@ -9,7 +9,6 @@ import java.util.concurrent.atomic.AtomicReference
 import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
 import akka.pattern.after
 import akka.stream.alpakka.jms._
 import akka.stream.alpakka.jms.impl.InternalConnectionState._
@@ -246,7 +245,7 @@ private[jms] trait JmsConnector[S <: JmsSession] extends TimerGraphStageLogic wi
 
   protected def initSessionAsync(attempt: Int = 0, backoffMaxed: Boolean = false): Unit = {
     val allSessions = openSessions(attempt, backoffMaxed)
-    allSessions.failed.foreach(connectionFailedCB.invoke)(ExecutionContexts.parasitic)
+    allSessions.failed.foreach(connectionFailedCB.invoke)(ExecutionContext.parasitic)
     // wait for all sessions to successfully initialize before invoking the onSession callback.
     // reduces flakiness (start, consume, then crash) at the cost of increased latency of startup.
     allSessions.foreach(_.foreach(onSession.invoke))
@@ -329,7 +328,7 @@ private[jms] trait JmsConnector[S <: JmsSession] extends TimerGraphStageLogic wi
         for (_ <- 0 until jmsSettings.sessionCount)
           yield Future(createSession(connection, destination.create))
       Future.sequence(sessionFutures)
-    }(ExecutionContexts.parasitic)
+    }(ExecutionContext.parasitic)
   }
 
   private def openConnection(attempt: Int, backoffMaxed: Boolean): Future[jms.Connection] = {
@@ -392,7 +391,7 @@ private[jms] trait JmsConnector[S <: JmsSession] extends TimerGraphStageLogic wi
         }
     }
 
-    Future.firstCompletedOf(Iterator(connectionFuture, timeoutFuture))(ExecutionContexts.parasitic)
+    Future.firstCompletedOf(Iterator(connectionFuture, timeoutFuture))(ExecutionContext.parasitic)
   }
 }
 

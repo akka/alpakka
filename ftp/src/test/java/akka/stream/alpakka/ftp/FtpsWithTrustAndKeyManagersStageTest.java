@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.ftp;
 
-import nl.altindag.ssl.util.PemUtils;
+import nl.altindag.ssl.pem.util.PemUtils;
 import akka.NotUsed;
 import akka.stream.IOResult;
 import akka.stream.alpakka.ftp.javadsl.Ftps;

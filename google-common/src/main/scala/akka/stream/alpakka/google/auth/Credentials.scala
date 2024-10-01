@@ -9,13 +9,14 @@ import akka.annotation.DoNotInherit
 import akka.event.Logging
 import akka.http.scaladsl.model.headers.HttpCredentials
 import akka.stream.alpakka.google.RequestSettings
-import akka.util.JavaDurationConverters._
 import com.google.auth.{Credentials => GoogleCredentials}
 import com.typesafe.config.Config
 
 import java.util.concurrent.Executor
+
 import scala.collection.immutable.ListMap
 import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.jdk.DurationConverters._
 import scala.util.control.NonFatal
 
 object Credentials {
@@ -63,7 +64,7 @@ object Credentials {
     ServiceAccountCredentials(c.getConfig("service-account"))
 
   private def parseComputeEngine(c: Config)(implicit system: ClassicActorSystemProvider) =
-    Await.result(ComputeEngineCredentials(), c.getDuration("compute-engine.timeout").asScala)
+    Await.result(ComputeEngineCredentials(), c.getDuration("compute-engine.timeout").toScala)
 
   private def parseUserAccess(c: Config)(implicit system: ClassicActorSystemProvider) =
     UserAccessCredentials(c.getConfig("user-access"))

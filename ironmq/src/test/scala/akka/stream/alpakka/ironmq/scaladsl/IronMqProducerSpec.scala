@@ -4,7 +4,6 @@
 
 package akka.stream.alpakka.ironmq.scaladsl
 
-import akka.dispatch.ExecutionContexts
 import akka.stream.alpakka.ironmq.{IronMqSettings, IronMqSpec, PushMessage}
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.{Done, NotUsed}
@@ -18,7 +17,7 @@ class IronMqProducerSpec extends IronMqSpec {
 
   val messages: Source[PushMessage, NotUsed] =
     Source.fromIterator(() => Iterator.from(0)).map(i => PushMessage(s"test-$i"))
-  implicit val ec: ExecutionContext = ExecutionContexts.global()
+  implicit val ec: ExecutionContext = ExecutionContext.global
 
   "producerSink" should {
     "publish messages on IronMq" in assertAllStagesStopped {

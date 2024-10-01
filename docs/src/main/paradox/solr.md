@@ -1,5 +1,11 @@
 # Apache Solr
 
+@@@ warning { title="End of life" }
+
+The Apache Solr connector has not been updated for too long and is now considered End of Life. It will be removed with the next release of Alpakka.
+
+@@@
+
 @@@ note { title="Apache Solr" }
 
 Solr (pronounced "solar") is an open source enterprise search platform, written in Java, from the Apache Lucene project. Its major features include full-text search, hit highlighting, faceted search, real-time indexing, dynamic clustering, database integration, NoSQL features and rich document (e.g., Word, PDF) handling. Providing distributed search and index replication, Solr is designed for scalability and fault tolerance. Solr is widely used for enterprise search and analytics use cases and has an active development community and regular releases.

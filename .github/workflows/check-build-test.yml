@@ -37,12 +37,12 @@ jobs:
         # v6.4.5
         uses: coursier/cache-action@1ff273bff02a8787bc9f1877d347948af647956d
 
-      - name: Set up JDK 11
+      - name: Set up JDK 21
         # https://github.com/coursier/setup-action/releases
         # v1.3.5
         uses: coursier/setup-action@7bde40eee928896f074dbb76d22dd772eed5c65f
         with:
-          jvm: temurin:1.11
+          jvm: temurin:1.21
 
       - name: "Code style, compile tests, MiMa. Run locally with: sbt \"verifyCodeStyle; +Test/compile; mimaReportBinaryIssues\""
         run: sbt "verifyCodeStyle; +Test/compile; mimaReportBinaryIssues"
@@ -87,50 +87,49 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { connector: amqp,                         pre_cmd: 'docker-compose up -d amqp' }
+          - { connector: amqp,                         pre_cmd: 'docker compose up -d amqp' }
           - { connector: avroparquet-tests }
           - { connector: awslambda }
-          - { connector: aws-event-bridge,             pre_cmd: 'docker-compose up -d amazoneventbridge' }
+          - { connector: aws-event-bridge,             pre_cmd: 'docker compose up -d amazoneventbridge' }
           - { connector: azure-storage-queue }
-          - { connector: cassandra,                    pre_cmd: 'docker-compose up -d cassandra' }
-          - { connector: couchbase,                    pre_cmd: 'docker-compose up -d couchbase_prep' }
+          - { connector: cassandra,                    pre_cmd: 'docker compose up -d cassandra' }
+          - { connector: couchbase,                    pre_cmd: 'docker compose up -d couchbase_prep' }
           - { connector: csv }
-          - { connector: dynamodb,                     pre_cmd: 'docker-compose up -d dynamodb' }
-          - { connector: elasticsearch,                pre_cmd: 'docker-compose up -d elasticsearch6 elasticsearch7 opensearch1' }
+          - { connector: dynamodb,                     pre_cmd: 'docker compose up -d dynamodb' }
+          - { connector: elasticsearch,                pre_cmd: 'docker compose up -d elasticsearch6 elasticsearch7 opensearch1' }
           - { connector: file }
           - { connector: ftp,                          pre_cmd: './scripts/ftp-servers.sh' }
-          - { connector: geode,                        pre_cmd: 'docker-compose up -d geode' }
+          - { connector: geode,                        pre_cmd: 'docker compose up -d geode' }
           - { connector: google-cloud-bigquery }
           - { connector: google-cloud-bigquery-storage }
-          - { connector: google-cloud-pub-sub,         pre_cmd: 'docker-compose up -d gcloud-pubsub-emulator_prep' }
-          - { connector: google-cloud-pub-sub-grpc,    pre_cmd: 'docker-compose up -d gcloud-pubsub-emulator_prep' }
+          - { connector: google-cloud-pub-sub,         pre_cmd: 'docker compose up -d gcloud-pubsub-emulator_prep' }
+          - { connector: google-cloud-pub-sub-grpc,    pre_cmd: 'docker compose up -d gcloud-pubsub-emulator_prep' }
           - { connector: google-cloud-storage }
           - { connector: google-common }
           - { connector: google-fcm }
           # hbase disabled until we resolve why new docker image fails our build: https://github.com/akka/alpakka/issues/2185
-          # - { connector: hbase,                        pre_cmd: 'docker-compose up -d hbase' }
+          # - { connector: hbase,                        pre_cmd: 'docker compose up -d hbase' }
           - { connector: hdfs,                         pre_cmd: 'file ${HOME}/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_2.13/2.0.0/cats-kernel_2.13-2.0.0.jar' }
           - { connector:  huawei-push-kit }
-          - { connector: influxdb,                     pre_cmd: 'docker-compose up -d influxdb' }
-          - { connector: ironmq,                       pre_cmd: 'docker-compose up -d ironauth ironmq' }
+          - { connector: influxdb,                     pre_cmd: 'docker compose up -d influxdb' }
+#          - { connector: ironmq,                       pre_cmd: 'docker compose up -d ironauth ironmq' }
           - { connector: jakarta-jms }
-          - { connector: jms,                          pre_cmd: 'docker-compose up -d ibmmq' }
+          - { connector: jms,                          pre_cmd: 'docker compose up -d ibmmq' }
           - { connector: json-streaming }
           - { connector: kinesis }
-          - { connector: kudu,                         pre_cmd: 'docker-compose up -d kudu-master-data kudu-tserver-data kudu-master kudu-tserver' }
-          - { connector: mongodb,                      pre_cmd: 'docker-compose up -d mongo' }
-          - { connector: mqtt,                         pre_cmd: 'docker-compose up -d mqtt' }
-          - { connector: mqtt-streaming,               pre_cmd: 'docker-compose up -d mqtt' }
-          - { connector: orientdb,                     pre_cmd: 'docker-compose up -d orientdb' }
-          - { connector: pravega,                      pre_cmd: 'docker-compose up -d pravega'}
+          - { connector: kudu,                         pre_cmd: 'docker compose up -d kudu-master-data kudu-tserver-data kudu-master kudu-tserver' }
+          - { connector: mongodb,                      pre_cmd: 'docker compose up -d mongo' }
+          - { connector: mqtt,                         pre_cmd: 'docker compose up -d mqtt' }
+          - { connector: mqtt-streaming,               pre_cmd: 'docker compose up -d mqtt' }
+          - { connector: pravega,                      pre_cmd: 'docker compose up -d pravega'}
           - { connector: reference }
           - { connector: s3 }
           - { connector: spring-web }
           - { connector: simple-codecs }
           - { connector: slick }
-          - { connector: sns,                          pre_cmd: 'docker-compose up -d amazonsns' }
+          - { connector: sns,                          pre_cmd: 'docker compose up -d amazonsns' }
           - { connector: solr }
-          - { connector: sqs,                          pre_cmd: 'docker-compose up -d elasticmq' }
+          - { connector: sqs,                          pre_cmd: 'docker compose up -d elasticmq' }
           - { connector: sse }
           - { connector: text }
           - { connector: udp }

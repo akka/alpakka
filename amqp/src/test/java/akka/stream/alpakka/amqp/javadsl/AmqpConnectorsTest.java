@@ -24,8 +24,8 @@ import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import com.rabbitmq.client.AuthenticationFailureException;
 import org.junit.*;
-import scala.collection.JavaConverters;
 import scala.concurrent.duration.Duration;
+import scala.jdk.javaapi.CollectionConverters;
 
 import java.net.ConnectException;
 import java.util.Arrays;
@@ -161,10 +161,7 @@ public class AmqpConnectorsTest {
             .to(amqpSink)
             .run(system);
 
-    List<ReadResult> probeResult =
-        JavaConverters.seqAsJavaListConverter(
-                result.second().toStrict(Duration.create(3, TimeUnit.SECONDS)))
-            .asJava();
+    java.util.Collection<ReadResult> probeResult = CollectionConverters.asJavaCollection(result.second().toStrict(Duration.create(3, TimeUnit.SECONDS)));
     assertEquals(
         probeResult.stream().map(s -> s.bytes().utf8String()).collect(Collectors.toList()), input);
     sourceToSink.shutdown();

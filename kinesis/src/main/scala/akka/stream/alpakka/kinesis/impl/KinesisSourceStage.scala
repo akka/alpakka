@@ -6,7 +6,6 @@ package akka.stream.alpakka.kinesis.impl
 
 import akka.actor.ActorRef
 import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts.parasitic
 import akka.stream.alpakka.kinesis.{ShardSettings, KinesisErrors => Errors}
 import akka.stream.stage.GraphStageLogic.StageActor
 import akka.stream.stage._
@@ -15,10 +14,10 @@ import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
 import software.amazon.awssdk.services.kinesis.model._
 
 import scala.collection.mutable
-import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContext
+import scala.jdk.CollectionConverters._
+import scala.jdk.FutureConverters._
 import scala.util.{Failure, Success, Try}
-
-import scala.compat.java8.FutureConverters._
 
 /**
  * Internal API
@@ -145,8 +144,8 @@ private[kinesis] class KinesisSourceStage(shardSettings: ShardSettings, amazonKi
           .getRecords(
             GetRecordsRequest.builder().limit(limit).shardIterator(currentShardIterator).build()
           )
-          .toScala
-          .onComplete(handleGetRecords)(parasitic)
+          .asScala
+          .onComplete(handleGetRecords)(ExecutionContext.parasitic)
 
       private[this] def requestShardIterator(): Unit = {
         val request = Function
@@ -171,8 +170,8 @@ private[kinesis] class KinesisSourceStage(shardSettings: ShardSettings, amazonKi
 
         amazonKinesisAsync
           .getShardIterator(request)
-          .toScala
-          .onComplete(handleGetShardIterator)(parasitic)
+          .asScala
+          .onComplete(handleGetShardIterator)(ExecutionContext.parasitic)
       }
 
     }

@@ -5,12 +5,12 @@
 package akka.stream.alpakka.jms.impl
 
 import java.util.concurrent.ArrayBlockingQueue
-
 import akka.annotation.InternalApi
 import akka.stream.alpakka.jms.{Destination, DurableTopic}
 import akka.util.OptionVal
-import javax.jms
 
+import javax.jms
+import javax.jms.JMSException
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -99,6 +99,8 @@ private[jms] final class JmsAckSession(override val connection: jms.Connection,
     try {
       if (session.getAcknowledgeMode() == jms.Session.CLIENT_ACKNOWLEDGE)
         drainAcks()
+    } catch {
+      case ex: JMSException if ex.getMessage != null && ex.getMessage.contains("JMSCC0033") => // Swallow as ack isn't necessary if this is being thrown
     } finally {
       ackQueue.put(Left(SessionClosed))
       session.close()

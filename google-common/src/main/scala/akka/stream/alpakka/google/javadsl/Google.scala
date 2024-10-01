@@ -15,7 +15,7 @@ import akka.stream.javadsl.{Sink, Source}
 import akka.util.ByteString
 
 import java.util.concurrent.CompletionStage
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
 import scala.language.implicitConversions
 
 /**
@@ -37,7 +37,7 @@ private[alpakka] trait Google {
                              unmarshaller: Unmarshaller[HttpResponse, T],
                              settings: GoogleSettings,
                              system: ClassicActorSystemProvider): CompletionStage[T] =
-    ScalaGoogle.singleRequest[T](request)(unmarshaller.asScala, system, settings).toJava
+    ScalaGoogle.singleRequest[T](request)(unmarshaller.asScala, system, settings).asJava
 
   /**
    * Makes a series of requests to page through a resource. Authentication is handled automatically.
@@ -66,7 +66,7 @@ private[alpakka] trait Google {
       request: HttpRequest,
       unmarshaller: Unmarshaller[HttpResponse, Out]
   ): Sink[ByteString, CompletionStage[Out]] =
-    ScalaGoogle.resumableUpload(request)(unmarshaller.asScala).mapMaterializedValue(_.toJava).asJava
+    ScalaGoogle.resumableUpload(request)(unmarshaller.asScala).mapMaterializedValue(_.asJava).asJava
 
   private implicit def requestAsScala(request: HttpRequest): sm.HttpRequest = request.asInstanceOf[sm.HttpRequest]
 }

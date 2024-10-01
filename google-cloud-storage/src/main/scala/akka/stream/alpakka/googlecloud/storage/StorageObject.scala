@@ -8,8 +8,8 @@ import java.time.OffsetDateTime
 import java.util.Optional
 
 import akka.http.scaladsl.model.ContentType
-import scala.compat.java8.OptionConverters._
-import scala.collection.JavaConverters._
+import scala.jdk.OptionConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * Represents an object within Google Cloud Storage.
@@ -89,24 +89,24 @@ final class StorageObject private (
 
   /** Java API */
   def getContentType: akka.http.javadsl.model.ContentType = contentType.asInstanceOf[ContentType]
-  def getTimeDeleted: Optional[OffsetDateTime] = timeDeleted.asJava
-  def getContentDisposition: Optional[String] = contentDisposition.asJava
-  def getContentEncoding: Optional[String] = contentEncoding.asJava
-  def getContentLanguage: Optional[String] = contentLanguage.asJava
-  def getTemporaryHold: Optional[Boolean] = temporaryHold.asJava
-  def getEventBasedHold: Optional[Boolean] = eventBasedHold.asJava
-  def getRetentionExpirationTime: Optional[OffsetDateTime] = retentionExpirationTime.asJava
-  def getCacheControl: Optional[String] = cacheControl.asJava
-  def getMetadata: Optional[java.util.Map[String, String]] = metadata.map(_.asJava).asJava
-  def getComponentCount: Optional[Integer] = componentCount.map(Int.box).asJava
-  def getKmsKeyName: Optional[String] = kmsKeyName.asJava
-  def getCustomerEncryption: Optional[CustomerEncryption] = customerEncryption.asJava
-  def getOwner: Optional[Owner] = owner.asJava
-  def getAcl: Optional[java.util.List[ObjectAccessControls]] = acl.map(_.asJava).asJava
-  def getCustomTime: Optional[OffsetDateTime] = customTime.asJava
-  def getMaybeMd5Hash: Optional[String] = maybeMd5Hash.asJava
-  def getMaybeCrc32c: Optional[String] = maybeCrc32c.asJava
-  def getMaybeStorageClass: Optional[String] = maybeStorageClass.asJava
+  def getTimeDeleted: Optional[OffsetDateTime] = timeDeleted.toJava
+  def getContentDisposition: Optional[String] = contentDisposition.toJava
+  def getContentEncoding: Optional[String] = contentEncoding.toJava
+  def getContentLanguage: Optional[String] = contentLanguage.toJava
+  def getTemporaryHold: Optional[Boolean] = temporaryHold.toJava
+  def getEventBasedHold: Optional[Boolean] = eventBasedHold.toJava
+  def getRetentionExpirationTime: Optional[OffsetDateTime] = retentionExpirationTime.toJava
+  def getCacheControl: Optional[String] = cacheControl.toJava
+  def getMetadata: Optional[java.util.Map[String, String]] = metadata.map(_.asJava).toJava
+  def getComponentCount: Optional[Integer] = componentCount.map(Int.box).toJava
+  def getKmsKeyName: Optional[String] = kmsKeyName.toJava
+  def getCustomerEncryption: Optional[CustomerEncryption] = customerEncryption.toJava
+  def getOwner: Optional[Owner] = owner.toJava
+  def getAcl: Optional[java.util.List[ObjectAccessControls]] = acl.map(_.asJava).toJava
+  def getCustomTime: Optional[OffsetDateTime] = customTime.toJava
+  def getMaybeMd5Hash: Optional[String] = maybeMd5Hash.toJava
+  def getMaybeCrc32c: Optional[String] = maybeCrc32c.toJava
+  def getMaybeStorageClass: Optional[String] = maybeStorageClass.toJava
 
   def withKind(value: String): StorageObject = copy(kind = value)
   def withId(value: String): StorageObject = copy(id = value)
@@ -463,24 +463,24 @@ object StorageObject {
     selfLink,
     updated,
     timeCreated,
-    timeDeleted.asScala,
+    timeDeleted.toScala,
     storageClass,
     Option(storageClass),
-    contentDisposition.asScala,
-    contentEncoding.asScala,
-    contentLanguage.asScala,
+    contentDisposition.toScala,
+    contentEncoding.toScala,
+    contentLanguage.toScala,
     metageneration,
-    temporaryHold.asScala,
-    eventBasedHold.asScala,
-    retentionExpirationTime.asScala,
+    temporaryHold.toScala,
+    eventBasedHold.toScala,
+    retentionExpirationTime.toScala,
     timeStorageClassUpdated,
-    cacheControl.asScala,
-    customTime.asScala,
-    metadata.asScala,
-    componentCount.asScala,
-    kmsKeyName.asScala,
-    customerEncryption.asScala,
-    owner.asScala,
-    acl.asScala
+    cacheControl.toScala,
+    customTime.toScala,
+    metadata.toScala,
+    componentCount.toScala,
+    kmsKeyName.toScala,
+    customerEncryption.toScala,
+    owner.toScala,
+    acl.toScala
   )
 }

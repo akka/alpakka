@@ -742,9 +742,9 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
   }
 
   override def afterAll(): Unit = {
-    solrClient.close()
-    cluster.shutdown()
-    zkTestServer.shutdown()
+    if (solrClient != null) solrClient.close()
+    if (cluster != null) cluster.shutdown()
+    if (zkTestServer != null) zkTestServer.shutdown()
     TestKit.shutdownActorSystem(system)
   }
 

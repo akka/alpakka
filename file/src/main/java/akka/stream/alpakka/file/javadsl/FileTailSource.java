@@ -10,8 +10,8 @@ import akka.japi.pf.PFBuilder;
 import akka.stream.javadsl.Framing;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
-import akka.util.JavaDurationConverters;
-import scala.concurrent.duration.FiniteDuration;
+
+import scala.jdk.javaapi.DurationConverters;
 
 import java.io.FileNotFoundException;
 import java.nio.charset.Charset;
@@ -55,7 +55,8 @@ public final class FileTailSource {
             path,
             maxChunkSize,
             startingPosition,
-            JavaDurationConverters.asFiniteDuration(pollingInterval)));
+            DurationConverters.toScala(pollingInterval))
+        );
   }
 
   /**

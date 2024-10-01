@@ -8,7 +8,7 @@ import java.util.UUID
 import jakarta.jms.{ConnectionFactory, Message, MessageListener, TextMessage, TopicConnectionFactory}
 import scala.util.Try
 import scala.collection.mutable.ListBuffer
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * This testkit was copied from https://github.com/sullis/jms-testkit with modifications

@@ -5,7 +5,7 @@
 package akka.stream.alpakka.jakartajms
 
 import akka.actor.{ActorSystem, ClassicActorSystemProvider}
-import akka.util.JavaDurationConverters._
+import scala.jdk.DurationConverters._
 import com.typesafe.config.Config
 
 import scala.concurrent.duration._
@@ -28,14 +28,14 @@ final class ConnectionRetrySettings private (
     copy(connectTimeout = value)
 
   /** Java API: Time allowed to establish and start a connection. */
-  def withConnectTimeout(value: java.time.Duration): ConnectionRetrySettings = copy(connectTimeout = value.asScala)
+  def withConnectTimeout(value: java.time.Duration): ConnectionRetrySettings = copy(connectTimeout = value.toScala)
 
   /** Wait time before retrying the first time. */
   def withInitialRetry(value: scala.concurrent.duration.FiniteDuration): ConnectionRetrySettings =
     copy(initialRetry = value)
 
   /** Java API: Wait time before retrying the first time. */
-  def withInitialRetry(value: java.time.Duration): ConnectionRetrySettings = copy(initialRetry = value.asScala)
+  def withInitialRetry(value: java.time.Duration): ConnectionRetrySettings = copy(initialRetry = value.toScala)
 
   /** Back-off factor for subsequent retries. */
   def withBackoffFactor(value: Double): ConnectionRetrySettings = copy(backoffFactor = value)
@@ -45,7 +45,7 @@ final class ConnectionRetrySettings private (
     copy(maxBackoff = value)
 
   /** Java API: Maximum back-off time allowed, after which all retries will happen after this delay. */
-  def withMaxBackoff(value: java.time.Duration): ConnectionRetrySettings = copy(maxBackoff = value.asScala)
+  def withMaxBackoff(value: java.time.Duration): ConnectionRetrySettings = copy(maxBackoff = value.toScala)
 
   /** Maximum number of retries allowed. */
   def withMaxRetries(value: Int): ConnectionRetrySettings = copy(maxRetries = value)
@@ -90,10 +90,10 @@ object ConnectionRetrySettings {
    * Reads from the given config.
    */
   def apply(c: Config): ConnectionRetrySettings = {
-    val connectTimeout = c.getDuration("connect-timeout").asScala
-    val initialRetry = c.getDuration("initial-retry").asScala
+    val connectTimeout = c.getDuration("connect-timeout").toScala
+    val initialRetry = c.getDuration("initial-retry").toScala
     val backoffFactor = c.getDouble("backoff-factor")
-    val maxBackoff = c.getDuration("max-backoff").asScala
+    val maxBackoff = c.getDuration("max-backoff").toScala
     val maxRetries = if (c.getString("max-retries") == "infinite") infiniteRetries else c.getInt("max-retries")
     new ConnectionRetrySettings(
       connectTimeout,

@@ -12,12 +12,12 @@ import com.datastax.oss.driver.api.core.cql._
 import org.scalatest._
 import org.scalatest.concurrent.{PatienceConfiguration, ScalaFutures}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.control.NonFatal
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
 
 trait CassandraLifecycleBase {
   def lifecycleSession: CassandraSession
@@ -59,7 +59,7 @@ trait CassandraLifecycleBase {
   def executeCql(statements: immutable.Seq[String]): Future[Done] = executeCql(lifecycleSession, statements)
 
   def executeCqlList(statements: java.util.List[String]): CompletionStage[Done] =
-    executeCql(lifecycleSession, statements.asScala.toList).toJava
+    executeCql(lifecycleSession, statements.asScala.toList).asJava
 
   def withSchemaMetadataDisabled(block: => Future[Done]): Future[Done] = {
     implicit val ec: ExecutionContext = lifecycleSession.ec

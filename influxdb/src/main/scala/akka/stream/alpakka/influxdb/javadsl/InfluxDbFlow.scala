@@ -12,7 +12,7 @@ import akka.stream.javadsl.Flow
 import akka.stream.alpakka.influxdb.scaladsl
 import org.influxdb.dto.Point
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * API may change.

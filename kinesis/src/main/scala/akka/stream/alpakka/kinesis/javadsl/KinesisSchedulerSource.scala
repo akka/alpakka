@@ -13,7 +13,7 @@ import software.amazon.kinesis.coordinator.Scheduler
 import software.amazon.kinesis.processor.ShardRecordProcessorFactory
 import software.amazon.kinesis.retrieval.KinesisClientRecord
 
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
 import scala.concurrent.Future
 
 object KinesisSchedulerSource {
@@ -28,7 +28,7 @@ object KinesisSchedulerSource {
   ): Source[CommittableRecord, CompletionStage[Scheduler]] =
     scaladsl.KinesisSchedulerSource
       .apply(schedulerBuilder.build, settings)
-      .mapMaterializedValue(_.toJava)
+      .mapMaterializedValue(_.asJava)
       .asJava
 
   def createSharded(

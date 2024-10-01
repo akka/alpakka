@@ -5,11 +5,11 @@
 package akka.stream.alpakka.amqp
 
 import akka.annotation.InternalApi
-import akka.util.JavaDurationConverters._
 
-import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.duration._
+import scala.jdk.CollectionConverters._
+import scala.jdk.DurationConverters._
 
 /**
  * Internal API
@@ -221,8 +221,9 @@ final class AmqpWriteSettings private (
   /**
    * Java API
    */
-  def withConfirmationTimeout(confirmationTimeout: java.time.Duration): AmqpWriteSettings =
-    copy(confirmationTimeout = confirmationTimeout.asScala)
+  def withConfirmationTimeout(confirmationTimeout: java.time.Duration): AmqpWriteSettings = {
+    copy(confirmationTimeout = confirmationTimeout.toScala)
+  }
 
   private def copy(connectionProvider: AmqpConnectionProvider = connectionProvider,
                    exchange: Option[String] = exchange,

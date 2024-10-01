@@ -11,9 +11,9 @@ import akka.stream.javadsl.{Flow, FlowWithContext, Sink, Source}
 import akka.{Done, NotUsed}
 
 import java.util.concurrent.CompletionStage
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
 import scala.concurrent.Future
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * Java DSL for Google Pub/Sub
@@ -104,6 +104,6 @@ object GooglePubSub {
   def acknowledge(subscription: String, config: PubSubConfig): Sink[AcknowledgeRequest, CompletionStage[Done]] =
     GPubSub
       .acknowledge(subscription, config)
-      .mapMaterializedValue(_.toJava)
+      .mapMaterializedValue(_.asJava)
       .asJava
 }

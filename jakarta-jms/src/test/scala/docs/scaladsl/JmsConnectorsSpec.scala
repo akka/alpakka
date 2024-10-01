@@ -82,7 +82,7 @@ class JmsConnectorsSpec extends JmsSpec {
       //#object-sink
       //#object-source
       val connectionFactory = connFactory.asInstanceOf[ActiveMQConnectionFactory]
-      connectionFactory.setDeserializationWhiteList(classOf[DummyObject].getPackage.getName)
+      connectionFactory.setDeserializationAllowList(classOf[DummyObject].getPackage.getName)
       //#object-sink
       //#object-source
 

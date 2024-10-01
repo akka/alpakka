@@ -1,6 +1,6 @@
-# For detailed information about docker-compose visit https://docs.docker.com/compose/
+# For detailed information about docker compose visit https://docs.docker.com/compose/
 # To start all docker containers required to execute the tests locally run:
-# docker-compose up
+# docker compose up
 
 version: '3.7'
 services:
@@ -22,7 +22,7 @@ services:
     ports:
       - "5672:5672"
   cassandra:
-    image: cassandra:4.0
+    image: cassandra:4.1
     ports:
       - "9042:9042"
   couchbase:
@@ -42,31 +42,14 @@ services:
             printf '.'
             sleep 2
         done
-        couchbase-cli cluster-init -c couchbase \
-          --cluster-username Administrator --cluster-password password \
-          --cluster-ramsize 300 \
-          --cluster-index-ramsize 256 \
-          --services data,index,query,fts
-        couchbase-cli bucket-create -c couchbase \
-          -u Administrator -p password \
-          --bucket akka \
-          --bucket-type couchbase \
-          --bucket-ramsize 100 \
-          --bucket-replica 1 \
-          --wait
-        couchbase-cli bucket-create -c couchbase \
-          -u Administrator -p password \
-          --bucket akkaquery \
-          --bucket-type couchbase \
-          --bucket-ramsize 100 \
-          --bucket-replica 1 \
-          --wait
+        couchbase-cli cluster-init -c couchbase --cluster-username Administrator --cluster-password password --cluster-ramsize 300 --cluster-index-ramsize 256 --services data,index,query,fts
+        couchbase-cli bucket-create -c couchbase -u Administrator -p password --bucket akka --bucket-type couchbase --bucket-ramsize 100 --bucket-replica 1 --wait
+        couchbase-cli bucket-create -c couchbase -u Administrator -p password --bucket akkaquery --bucket-type couchbase --bucket-ramsize 100 --bucket-replica 1 --wait
         sleep 2 # just wait a tiny bit more after creating the bucket
-        echo 'CREATE PRIMARY INDEX ON akkaquery USING GSI;' | \
-          cbq -c Administrator:password -e http://couchbase:8093
+        echo 'CREATE PRIMARY INDEX ON akkaquery USING GSI;' | cbq -c Administrator:password -e http://couchbase:8093
       "
   elasticmq:
-    image: softwaremill/elasticmq-native:1.3.4
+    image: softwaremill/elasticmq-native:1.5.8
     ports:
       - "9324:9324"
   dynamodb:
@@ -111,7 +94,7 @@ services:
       ADDED_FLAGS: "--tls=1"
   geode:
     container_name: geode
-    image: apachegeode/geode:1.15.0
+    image: apachegeode/geode:1.15.1
     hostname: geode
     mem_limit: 2g
     expose:
@@ -167,18 +150,18 @@ services:
     ports:
       - "1414:1414"
       - "9443:9443"
-  ironauth:
-    image: iron/auth
-    ports:
-      - "8090:8090"
-  ironmq:
-    image: iron/mq
-    links:
-      - "ironauth:ironauth"
-    environment:
-      - "AUTH_HOST=http://ironauth:8090"
-    ports:
-      - "8080:8080"
+#  ironauth:
+#    image: iron/auth
+#    ports:
+#      - "8090:8090"
+#  ironmq:
+#    image: iron/mq
+#    links:
+#      - "ironauth:ironauth"
+#    environment:
+#      - "AUTH_HOST=http://ironauth:8090"
+#    ports:
+#      - "8080:8080"
   kudu-master-data:
     image: kunickiaj/kudu
     volumes:
@@ -222,13 +205,6 @@ services:
       - ./mqtt/src/test/mosquitto:/mosquitto:rw
     networks:
       - default
-  orientdb:
-    image: orientdb:3.1.9
-    ports:
-      - "2424:2424"
-    environment:
-      - "ORIENTDB_ROOT_PASSWORD=root"
-    command: /orientdb/bin/server.sh -Dmemory.chunk.size=268435456
   sftp:
     image: atmoz/sftp
     volumes:

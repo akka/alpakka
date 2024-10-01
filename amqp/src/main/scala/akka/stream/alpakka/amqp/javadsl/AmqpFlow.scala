@@ -11,7 +11,7 @@ import akka.japi.Pair
 import akka.stream.alpakka.amqp._
 import akka.stream.scaladsl.Keep
 
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
 
 object AmqpFlow {
 
@@ -29,7 +29,7 @@ object AmqpFlow {
   def create(
       settings: AmqpWriteSettings
   ): akka.stream.javadsl.Flow[WriteMessage, WriteResult, CompletionStage[Done]] =
-    akka.stream.alpakka.amqp.scaladsl.AmqpFlow(settings).mapMaterializedValue(f => f.toJava).asJava
+    akka.stream.alpakka.amqp.scaladsl.AmqpFlow(settings).mapMaterializedValue(f => f.asJava).asJava
 
   /**
    * Creates an `AmqpFlow` that accepts `WriteMessage` elements and emits `WriteResult`.
@@ -54,7 +54,7 @@ object AmqpFlow {
   ): akka.stream.javadsl.Flow[WriteMessage, WriteResult, CompletionStage[Done]] =
     akka.stream.alpakka.amqp.scaladsl.AmqpFlow
       .withConfirm(settings = settings)
-      .mapMaterializedValue(_.toJava)
+      .mapMaterializedValue(_.asJava)
       .asJava
 
   /**
@@ -80,7 +80,7 @@ object AmqpFlow {
   ): akka.stream.javadsl.Flow[WriteMessage, WriteResult, CompletionStage[Done]] =
     akka.stream.alpakka.amqp.scaladsl.AmqpFlow
       .withConfirmUnordered(settings)
-      .mapMaterializedValue(_.toJava)
+      .mapMaterializedValue(_.asJava)
       .asJava
 
   /**
@@ -103,6 +103,6 @@ object AmqpFlow {
           .withConfirmAndPassThroughUnordered[T](settings = settings)
       )(Keep.right)
       .map { case (writeResult, passThrough) => Pair(writeResult, passThrough) }
-      .mapMaterializedValue(_.toJava)
+      .mapMaterializedValue(_.asJava)
       .asJava
 }

@@ -30,7 +30,8 @@ import akka.stream.javadsl.Source;
 import akka.stream.testkit.TestSubscriber;
 import akka.stream.testkit.javadsl.TestSink;
 import akka.util.ByteString;
-import scala.collection.JavaConverters;
+
+import scala.jdk.javaapi.CollectionConverters;
 
 /** Needs a local running AMQP server on the default port with no password. */
 public class AmqpFlowTest {
@@ -86,7 +87,7 @@ public class AmqpFlowTest {
 
     result
         .request(input.size())
-        .expectNextN(JavaConverters.asScalaBufferConverter(expectedOutput).asScala().toList());
+        .expectNextN(CollectionConverters.asScala(expectedOutput).toList());
   }
 
   @Test
@@ -120,7 +121,7 @@ public class AmqpFlowTest {
 
     result
         .request(input.size())
-        .expectNextN(JavaConverters.asScalaBufferConverter(expectedOutput).asScala().toList());
+        .expectNextN(CollectionConverters.asScala(expectedOutput).toList());
   }
 
   @Test
@@ -143,6 +144,6 @@ public class AmqpFlowTest {
 
     result
         .request(input.size())
-        .expectNextN(JavaConverters.asScalaBufferConverter(expectedOutput).asScala().toList());
+        .expectNextN(CollectionConverters.asScala(expectedOutput).toList());
   }
 }

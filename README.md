@@ -1,10 +1,5 @@
-Alpakka [![scaladex-badge][]][scaladex] [![maven-central-badge][]][maven-central] [![CI on GitHub actions](https://github.com/akka/alpakka/actions/workflows/check-build-test.yml/badge.svg)](https://github.com/akka/alpakka/actions/workflows/check-build-test.yml)
+Alpakka
 =======
-
-[scaladex]:              https://index.scala-lang.org/akka/alpakka
-[scaladex-badge]:        https://index.scala-lang.org/akka/alpakka/latest.svg
-[maven-central]:         https://search.maven.org/#search%7Cga%7C1%7Cakka-stream-alpakka
-[maven-central-badge]:   https://maven-badges.herokuapp.com/maven-central/com.lightbend.akka/akka-stream-alpakka-file_2.13/badge.svg
 
 Systems don't come alone. In the modern world of microservices and cloud deployment, new components must interact with legacy systems, making integration an important key to success. Reactive Streams give us a technology-independent tool to let these heterogeneous systems communicate without overwhelming each other.
 
@@ -28,7 +23,7 @@ Community
 You can join these forums and chats to discuss and ask Akka and Alpakka related questions:
 
 - Forums: [discuss.lightbend.com](https://discuss.lightbend.com/c/akka/streams-and-alpakka)
-- Issue tracker: [![github: akka/alpakka](https://img.shields.io/badge/github%3A-issues-blue.svg?style=flat-square)](https://github.com/akka/alpakka/issues)
+- Issue tracker: [github.com/akka/alpakka/issues](https://github.com/akka/alpakka/issues)
 
 In addition to that, you may enjoy the following:
 
@@ -50,7 +45,7 @@ If you find an issue that you'd like to see fixed, the quickest way to make that
 
 Refer to the [CONTRIBUTING.md](CONTRIBUTING.md) file for more details about the workflow, and general hints on how to prepare your pull request. If you're planning to implement a new module within Alpakka, look at our [contributor advice](contributor-advice.md).
 
-You can also ask for clarifications or guidance in GitHub issues directly, or in the [akka/dev](https://gitter.im/akka/dev) chat if a more real time communication would be of benefit.
+You can also ask for clarifications or guidance in GitHub issues directly.
 
 Caveat Emptor
 -------------
@@ -62,3 +57,5 @@ Our goal is to improve the stability and test coverage for Alpakka APIs over tim
 License
 -------
 Alpakka is licensed under the [Business Source License (BSL) 1.1](https://github.com/akka/alpakka/blob/main/LICENSE), please see the [Akka License FAQ](https://www.lightbend.com/akka/license-faq).
+
+Tests and documentation are under a separate license, see the LICENSE file in each documentation and test root directory for details.

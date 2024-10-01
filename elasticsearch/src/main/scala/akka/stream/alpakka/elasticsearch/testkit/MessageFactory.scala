@@ -6,7 +6,7 @@ package akka.stream.alpakka.elasticsearch.testkit
 import akka.annotation.ApiMayChange
 import akka.stream.alpakka.elasticsearch.{ReadResult, WriteMessage, WriteResult}
 
-import scala.compat.java8.OptionConverters._
+import scala.jdk.OptionConverters._
 
 object MessageFactory {
 
@@ -37,7 +37,7 @@ object MessageFactory {
   ): ReadResult[T] = new ReadResult(
     id,
     source,
-    version.asScala
+    version.toScala
   )
   @ApiMayChange
   def createWriteResult[T, PT](
@@ -57,7 +57,7 @@ object MessageFactory {
       error: java.util.Optional[String]
   ): WriteResult[T, PT] = new WriteResult(
     message,
-    error.asScala
+    error.toScala
   )
 
 }

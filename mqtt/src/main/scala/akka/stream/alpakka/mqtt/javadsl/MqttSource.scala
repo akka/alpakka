@@ -10,7 +10,7 @@ import akka.Done
 import akka.stream.alpakka.mqtt._
 import akka.stream.javadsl.Source
 
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
 
 /**
  * Java API
@@ -31,7 +31,7 @@ object MqttSource {
                  bufferSize: Int): Source[MqttMessage, CompletionStage[Done]] =
     scaladsl.MqttSource
       .atMostOnce(settings, subscriptions, bufferSize)
-      .mapMaterializedValue(_.toJava)
+      .mapMaterializedValue(_.asJava)
       .asJava
 
   /**
@@ -47,6 +47,6 @@ object MqttSource {
     scaladsl.MqttSource
       .atLeastOnce(settings, subscriptions, bufferSize)
       .map(MqttMessageWithAck.toJava)
-      .mapMaterializedValue(_.toJava)
+      .mapMaterializedValue(_.asJava)
       .asJava
 }
