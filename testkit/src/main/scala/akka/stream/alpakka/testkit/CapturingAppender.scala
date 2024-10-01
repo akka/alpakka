@@ -10,7 +10,7 @@ import ch.qos.logback.core.AppenderBase
 import org.slf4j.LoggerFactory
 
 /**
- * See https://doc.akka.io/docs/akka/current/typed/testing-async.html#silence-logging-output-from-tests
+ * See https://doc.akka.io/libraries/akka-core/current/typed/testing-async.html#silence-logging-output-from-tests
  *
  * INTERNAL API
  */
@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory
 }
 
 /**
- * See https://doc.akka.io/docs/akka/current/typed/testing-async.html#silence-logging-output-from-tests
+ * See https://doc.akka.io/libraries/akka-core/current/typed/testing-async.html#silence-logging-output-from-tests
  *
  * INTERNAL API
  *

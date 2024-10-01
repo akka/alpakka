@@ -6,8 +6,8 @@ This connector provides an implementation of a Unix Domain Socket with interface
 
 The binding and connecting APIs are extremely similar to the `Tcp` Akka Streams class. `UnixDomainSocket` is generally substitutable for `Tcp` except that the `SocketAddress` is different (Unix Domain Sockets requires a `java.io.File` as opposed to a host and port). Please read the following for details:
 
-* [Scala user reference for `Tcp`](https://doc.akka.io/docs/akka/current/stream/stream-io.html?language=scala)
-* [Java user reference for `Tcp`](https://doc.akka.io/docs/akka/current/stream/stream-io.html?language=java)
+* [Scala user reference for `Tcp`](https://doc.akka.io/libraries/akka-core/current/stream/stream-io.html?language=scala)
+* [Java user reference for `Tcp`](https://doc.akka.io/libraries/akka-core/current/stream/stream-io.html?language=java)
 
 
 > Note that Unix Domain Sockets, as the name implies, do not apply to Windows.

@@ -51,7 +51,7 @@ public class ExampleTest {
     final ActorSystem system = ActorSystem.create();
 
     // Don't encode credentials in your source code!
-    // see https://doc.akka.io/docs/alpakka/current/aws-shared-configuration.html
+    // see https://doc.akka.io/libraries/alpakka/current/aws-shared-configuration.html
     StaticCredentialsProvider credentialsProvider =
         StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x"));
     final DynamoDbAsyncClient client =
@@ -60,7 +60,7 @@ public class ExampleTest {
             .region(Region.AWS_GLOBAL)
             .httpClient(AkkaHttpClient.builder().withActorSystem(system).build())
             // Possibility to configure the retry policy
-            // see https://doc.akka.io/docs/alpakka/current/aws-shared-configuration.html
+            // see https://doc.akka.io/libraries/alpakka/current/aws-shared-configuration.html
             // .overrideConfiguration(...)
             // #init-client
             .endpointOverride(new URI("http://localhost:8001/"))

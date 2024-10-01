@@ -48,7 +48,7 @@ Please have a look at our [contributor advice](contributor-advice.md).
 ## Binary compatibility (MiMa)
 
 Binary compatibility rules and guarantees are described in depth in the [Binary Compatibility Rules
-](https://doc.akka.io/docs/akka/snapshot/common/binary-compatibility-rules.html) section of the Akka documentation.
+](https://doc.akka.io/libraries/akka-core/snapshot/common/binary-compatibility-rules.html) section of the Akka documentation.
 
 Akka projects use [MiMa](https://github.com/lightbend/mima) to validate binary compatibility of incoming pull requests. If your PR fails due to binary compatibility issues, you may see an error like this:
 

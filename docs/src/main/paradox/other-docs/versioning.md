@@ -30,7 +30,7 @@ Read about the details in the @extref:[Akka documentation](akka:common/binary-co
 
 With Akka though, it is important to be strictly using one version (never blend eg. `akka-actor 2.5.21` and `akka-stream 2.5.12`), and do not use an Akka version lower than the one the Alpakka dependency requires (sometimes Alpakka modules depend on features of the latest Akka release).
 
-Alpakka’s Akka and Akka HTTP dependencies are upgraded only if that version brings features leveraged by Alpakka or important fixes. As Akka itself is binary-compatible, the Akka version may be upgraded with an Alpakka patch release. See Akka's [Downstream upgrade strategy](https://doc.akka.io/docs/akka/current/project/downstream-upgrade-strategy.html) <!-- current, page not available in Akka 2.5 -->.
+Alpakka’s Akka and Akka HTTP dependencies are upgraded only if that version brings features leveraged by Alpakka or important fixes. As Akka itself is binary-compatible, the Akka version may be upgraded with an Alpakka patch release. See Akka's [Downstream upgrade strategy](https://doc.akka.io/libraries/akka-core/current/project/downstream-upgrade-strategy.html) <!-- current, page not available in Akka 2.5 -->.
 
 @@@ note 
 

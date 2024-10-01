@@ -6,4 +6,4 @@ Akka Streams provides a way of handling **TCP connections** with streams. While 
 ## Akka TCP
 
 Akka comes with its Reactive Streams-compliant TCP server and client.
-Learn more about it in the [Akka Streaming TCP documentation](https://doc.akka.io/docs/akka/current/stream/stream-io.html#streaming-tcp).           
+Learn more about it in the [Akka Streaming TCP documentation](https://doc.akka.io/libraries/akka-core/current/stream/stream-io.html#streaming-tcp).           

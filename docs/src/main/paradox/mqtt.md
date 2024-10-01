@@ -63,7 +63,7 @@ Java
 Most settings are passed on to Paho's `MqttConnectOptions` (@javadoc[API](org.eclipse.paho.client.mqttv3.MqttConnectOptions)) and documented there. 
 
 @@@ warning { title='Use delayed stream restarts' }
-Note that the following examples do not provide any connection management and are designed to get you going quickly. Consider empty client IDs to auto-generate unique identifiers and the use of [delayed stream restarts](https://doc.akka.io/docs/akka/current/stream/stream-error.html?language=scala#delayed-restarts-with-a-backoff-stage). The underlying Paho library's auto-reconnect feature [does not handle initial connections by design](https://github.com/eclipse/paho.mqtt.golang/issues/77).
+Note that the following examples do not provide any connection management and are designed to get you going quickly. Consider empty client IDs to auto-generate unique identifiers and the use of [delayed stream restarts](https://doc.akka.io/libraries/akka-core/current/stream/stream-error.html?language=scala#delayed-restarts-with-a-backoff-stage). The underlying Paho library's auto-reconnect feature [does not handle initial connections by design](https://github.com/eclipse/paho.mqtt.golang/issues/77).
 @@@
 
 

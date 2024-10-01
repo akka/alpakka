@@ -3,6 +3,10 @@ import Keys._
 
 object Dependencies {
 
+  // Java Platform version for JavaDoc creation
+  // sync with Java version in .github/workflows/publish.yml#documentation
+  lazy val JavaDocLinkVersion = 17
+
   val CronBuild = sys.env.get("GITHUB_EVENT_NAME").contains("schedule")
 
   val Scala213 = "2.13.12" // update even in link-validator.conf
@@ -31,7 +35,9 @@ object Dependencies {
   val hoverflyVersion = "0.14.1"
 
   val CouchbaseVersion = "2.7.23"
-  val CouchbaseVersionForDocs = "2.7"
+  val CouchbaseVersionForDocs = VersionNumber(CouchbaseVersion).numbers match {
+    case Seq(major, minor, _*) => s"$major.$minor"
+  }
 
   // https://github.com/jwt-scala/jwt-scala/releases
   val JwtScalaVersion = "9.4.6"

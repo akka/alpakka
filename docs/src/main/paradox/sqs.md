@@ -79,7 +79,7 @@ Scala
 Java
 : @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsSourceTest.java) { #run }
 
-In this example we use the `closeOnEmptyReceive` to let the stream complete when there are no more messages on the queue. In realistic scenarios, you should add a `KillSwitch` to the stream, see ["Controlling stream completion with KillSwitch" in the Akka documentation](https://doc.akka.io/docs/akka/current/stream/stream-dynamic.html#controlling-stream-completion-with-killswitch).
+In this example we use the `closeOnEmptyReceive` to let the stream complete when there are no more messages on the queue. In realistic scenarios, you should add a `KillSwitch` to the stream, see ["Controlling stream completion with KillSwitch" in the Akka documentation](https://doc.akka.io/libraries/akka-core/current/stream/stream-dynamic.html#controlling-stream-completion-with-killswitch).
 
 
 ### Source configuration

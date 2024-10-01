@@ -105,7 +105,7 @@ All Akka APIs aim to evolve in a binary compatible way within minor versions.
 
 1. To generate a case class replacement, consider using [Kaze Class](https://github.com/ktoso/kaze-class)
 
-See [Binary Compatibilty Rules](https://doc.akka.io/docs/akka/current/common/binary-compatibility-rules.html) in the Akka documentation.
+See [Binary Compatibilty Rules](https://doc.akka.io/libraries/akka-core/current/common/binary-compatibility-rules.html) in the Akka documentation.
 
 See [Binary Compatibility for library authors](https://docs.scala-lang.org/overviews/core/binary-compatibility-for-library-authors.html)
 
