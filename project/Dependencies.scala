@@ -49,7 +49,7 @@ object Dependencies {
 
   // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L26
   val LogbackWithSlf4jV1 = "1.5.7"
-  val wiremock = ("com.github.tomakehurst" % "wiremock" % "3.0.1" % Test).exclude("org.slf4j", "slf4j-api")
+  val wiremock = ("com.github.tomakehurst" % "wiremock" % "3.0.1" % Test)
 
   val Common = Seq(
     // These libraries are added to all modules via the `Common` AutoPlugin
@@ -206,7 +206,7 @@ object Dependencies {
         "commons-net" % "commons-net" % "3.11.1",
         // Versions after sshj 0.35.0 depend on SLF4J 2.x
         "com.hierynomus" % "sshj" % "0.39.0",
-        ("io.github.hakky54" % "sslcontext-kickstart-for-pem" % "8.3.5" % Test).exclude("org.slf4j", "slf4j-api")
+        ("io.github.hakky54" % "sslcontext-kickstart-for-pem" % "8.3.5" % Test)
       )
   )
 
@@ -305,10 +305,10 @@ object Dependencies {
     val hadoopVersion = "3.4.0"
     Seq(
       libraryDependencies ++= Seq(
-          "org.apache.hbase" % "hbase-shaded-client" % hbaseVersion exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2,
-          "org.apache.hbase" % "hbase-common" % hbaseVersion exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2,
-          "org.apache.hadoop" % "hadoop-common" % hadoopVersion exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2,
-          "org.apache.hadoop" % "hadoop-mapreduce-client-core" % hadoopVersion exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2,
+          "org.apache.hbase" % "hbase-shaded-client" % hbaseVersion exclude ("log4j", "log4j"), // ApacheV2,
+          "org.apache.hbase" % "hbase-common" % hbaseVersion exclude ("log4j", "log4j"), // ApacheV2,
+          "org.apache.hadoop" % "hadoop-common" % hadoopVersion exclude ("log4j", "log4j"), // ApacheV2,
+          "org.apache.hadoop" % "hadoop-mapreduce-client-core" % hadoopVersion, // ApacheV2,
           "org.slf4j" % "log4j-over-slf4j" % log4jOverSlf4jVersion % Test // MIT like: http://www.slf4j.org/license.html
         )
     )
@@ -317,11 +317,11 @@ object Dependencies {
   val HadoopVersion = "3.4.0"
   val Hdfs = Seq(
     libraryDependencies ++= Seq(
-        "org.apache.hadoop" % "hadoop-client" % HadoopVersion exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2
+        "org.apache.hadoop" % "hadoop-client" % HadoopVersion exclude ("log4j", "log4j"), // ApacheV2
         "org.typelevel" %% "cats-core" % "2.12.0", // MIT,
-        "org.apache.hadoop" % "hadoop-hdfs" % HadoopVersion % Test exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2
-        "org.apache.hadoop" % "hadoop-common" % HadoopVersion % Test exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2
-        "org.apache.hadoop" % "hadoop-minicluster" % HadoopVersion % Test exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2
+        "org.apache.hadoop" % "hadoop-hdfs" % HadoopVersion % Test, // ApacheV2
+        "org.apache.hadoop" % "hadoop-common" % HadoopVersion % Test, // ApacheV2
+        "org.apache.hadoop" % "hadoop-minicluster" % HadoopVersion % Test, // ApacheV2
         "org.slf4j" % "log4j-over-slf4j" % log4jOverSlf4jVersion % Test // MIT like: http://www.slf4j.org/license.html
       ) ++ Mockito
   )
@@ -350,8 +350,8 @@ object Dependencies {
   val JakartaJms = Seq(
     libraryDependencies ++= Seq(
         "jakarta.jms" % "jakarta.jms-api" % "3.1.0", // Eclipse Public License 2.0 + + GPLv2
-        ("org.apache.activemq" % "artemis-jakarta-server" % "2.33.0" % Test).exclude("org.slf4j", "slf4j-api"),
-        ("org.apache.activemq" % "artemis-jakarta-client" % "2.33.0" % Test).exclude("org.slf4j", "slf4j-api")
+        ("org.apache.activemq" % "artemis-jakarta-server" % "2.33.0" % Test),
+        ("org.apache.activemq" % "artemis-jakarta-client" % "2.33.0" % Test)
       ) ++ Mockito
   )
 
