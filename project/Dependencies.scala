@@ -115,6 +115,16 @@ object Dependencies {
       )
   )
 
+  val AzureStorage = Seq(
+    libraryDependencies ++= Seq(
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
+        "com.typesafe.akka" %% "akka-http-xml" % AkkaHttpVersion,
+        // for testing authorization signature
+        "com.azure" % "azure-storage-common" % "12.26.1" % Test,
+        wiremock
+      )
+  )
+
   val CassandraVersionInDocs = "4.0"
   val CassandraDriverVersion = "4.17.0"
   val CassandraDriverVersionInDocs = "4.17"

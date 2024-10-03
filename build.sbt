@@ -10,6 +10,7 @@ lazy val alpakka = project
     avroparquetTests,
     awslambda,
     azureStorageQueue,
+    azureStorage,
     cassandra,
     couchbase,
     csv,
@@ -137,6 +138,19 @@ lazy val azureStorageQueue = alpakkaProject(
   Dependencies.AzureStorageQueue,
   Scala3.settings
 )
+
+lazy val azureStorage = alpakkaProject(
+  "azure-storage",
+  "azure.storage",
+  Dependencies.AzureStorage,
+  Scala3.settings,
+  Test / fork := true,
+  Test / envVars := Map(
+      "AZURE_STORAGE_AUTHORIZATION_TYPE" -> "SharedKey",
+      "AZURE_STORAGE_ACCOUNT_NAME" -> "<populate_azure_storage_account_name>",
+      "AZURE_STORAGE_ACCOUNT_KEY" -> "<populate_azure_storage_account_key>"
+    )
+).settings(mimaPreviousArtifacts := Set.empty) // FIXME remove after first release
 
 lazy val cassandra =
   alpakkaProject("cassandra", "cassandra", Dependencies.Cassandra)
