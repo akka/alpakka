@@ -22,7 +22,7 @@ Community
 
 You can join these forums and chats to discuss and ask Akka and Alpakka related questions:
 
-- Forums: [discuss.lightbend.com](https://discuss.lightbend.com/c/akka/streams-and-alpakka)
+- Forums: [discuss.akka.io.](https://discuss.akka.io/c/akka/streams-and-alpakka)
 - Issue tracker: [github.com/akka/alpakka/issues](https://github.com/akka/alpakka/issues)
 
 In addition to that, you may enjoy the following:
