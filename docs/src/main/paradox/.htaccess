@@ -1,7 +1,7 @@
 # This file can be used for redirects like:
 RedirectMatch 301 ^/docs/alpakka/([^/]+)/data-transformations/recordio.html https://doc.akka.io/libraries/alpakka/$1/data-transformations/simple-codecs.html
 # Move CSV example to alpakka-samples
-RedirectMatch 301 ^/docs/alpakka/([^/]+)/examples/csv-samples.html https://akka.io/alpakka-samples/
+RedirectMatch 301 ^/docs/alpakka/([^/]+)/examples/csv-samples.html https://github.com/akka/alpakka-samples/
 # Drop pre-1.0 release notes
 RedirectMatch 301 ^/docs/alpakka/([^/]+)/release-notes/1.0-RC1.html https://doc.akka.io/libraries/alpakka/$1/release-notes/1.0.x.html
 RedirectMatch 301 ^/docs/alpakka/([^/]+)/release-notes/1.0-M3.html https://doc.akka.io/libraries/alpakka/$1/release-notes/1.0.x.html

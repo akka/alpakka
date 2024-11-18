@@ -1,3 +1,3 @@
 # JMS
 
-JMS examples are shown in the [Alpakka Samples](https://akka.io/alpakka-samples/jms/) project.
+JMS examples are shown in the [Alpakka Samples](https://github.com/akka/alpakka-samples/tree/main/alpakka-sample-jms) project.
