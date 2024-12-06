@@ -15,6 +15,6 @@ addSbtPlugin("com.github.sbt" % "sbt-unidoc" % "0.5.0")
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "3.0.2")
 addSbtPlugin("com.github.sbt" % "sbt-site-paradox" % "1.5.0")
 // Akka gRPC -- sync with version in Dependencies.scala:22
-addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "2.5.0-M1")
+addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "2.5.0")
 // templating
 addSbtPlugin("com.github.sbt" % "sbt-boilerplate" % "0.7.0")
