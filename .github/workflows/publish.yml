@@ -10,6 +10,11 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  # Only run once for latest commit per ref and cancel other (previous) runs.
+  group: publish-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   release:
     # runs on main repo only
