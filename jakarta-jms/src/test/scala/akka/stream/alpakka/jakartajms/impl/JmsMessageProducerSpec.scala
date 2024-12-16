@@ -111,7 +111,7 @@ class JmsMessageProducerSpec extends JmsSpec {
       val jmsProducer = JmsMessageProducer(jmsSession, settings, 0)
       jmsProducer.createMessage(
         JmsMapMessage(
-          Map(
+          Map[String, Any](
             "string" -> "string",
             "int" -> 1,
             "boolean" -> true,
