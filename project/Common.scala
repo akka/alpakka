@@ -60,8 +60,9 @@ object Common extends AutoPlugin {
           "-deprecation",
           "-Xlint",
           "-Ywarn-dead-code",
+          "-Wconf:cat=lint-deprecation:s",
           "-release",
-          "8"
+          "11"
         ),
       scalacOptions ++= (scalaVersion.value match {
           case Dependencies.Scala213
