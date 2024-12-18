@@ -1228,7 +1228,7 @@ class JmsConnectorsSpec extends JmsSpec {
     val respondStreamControl: JmsConsumerControl =
       JmsConsumer(JmsConsumerSettings(system, connectionFactory).withQueue("test"))
         .collect {
-          case message: TextMessage => JmsTextMessage(message)
+          case textMessage: TextMessage => JmsTextMessage(textMessage)
         }
         .map { textMessage =>
           textMessage.headers.foldLeft(JmsTextMessage(textMessage.body.reverse)) {
