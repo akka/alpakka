@@ -25,7 +25,7 @@ object `X-Upload-Content-Type` extends ModeledCustomHeaderCompanion[`X-Upload-Co
       )
 }
 
-final case class `X-Upload-Content-Type` private (contentType: ContentType)
+final case class `X-Upload-Content-Type` private[akka] (contentType: ContentType)
     extends ModeledCustomHeader[`X-Upload-Content-Type`]
     with XUploadContentType {
   override def value(): String = contentType.toString()

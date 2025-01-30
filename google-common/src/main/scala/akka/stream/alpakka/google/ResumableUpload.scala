@@ -91,7 +91,7 @@ private[alpakka] object ResumableUpload {
     import implicits._
 
     implicit val um: FromResponseUnmarshaller[Uri] = Unmarshaller.withMaterializer {
-      implicit ec => implicit mat => response: HttpResponse =>
+      implicit ec => implicit mat => (response: HttpResponse) =>
         response.discardEntityBytes().future.map { _ =>
           response.header[Location].fold(throw InvalidResponseException(ErrorInfo("No Location header")))(_.uri)
         }
@@ -107,7 +107,7 @@ private[alpakka] object ResumableUpload {
   )(implicit mat: Materializer): Flow[Either[T, MaybeLast[Chunk]], Try[Option[T]], NotUsed] = {
     implicit val system: ActorSystem = mat.system
 
-    val um = Unmarshaller.withMaterializer { implicit ec => implicit mat => response: HttpResponse =>
+    val um = Unmarshaller.withMaterializer { implicit ec => implicit mat => (response: HttpResponse) =>
       response.status match {
         case PermanentRedirect =>
           response.discardEntityBytes().future.map(_ => None)
@@ -145,7 +145,7 @@ private[alpakka] object ResumableUpload {
     import implicits._
 
     implicit val um: FromResponseUnmarshaller[Either[T, Long]] = Unmarshaller.withMaterializer {
-      implicit ec => implicit mat => response: HttpResponse =>
+      implicit ec => implicit mat => (response: HttpResponse) =>
         response.status match {
           case OK | Created => Unmarshal(response).to[T].map(Left(_))
           case PermanentRedirect =>

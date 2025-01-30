@@ -11,20 +11,21 @@ import akka.stream.alpakka.googlecloud.storage._
 import spray.json.{DefaultJsonProtocol, JsObject, JsValue, RootJsonFormat, RootJsonReader}
 
 import scala.util.Try
+import spray.json.enrichAny
 
 @akka.annotation.InternalApi
 object Formats extends DefaultJsonProtocol {
 
   private final case class CustomerEncryption(encryptionAlgorithm: String, keySha256: String)
   private implicit val customerEncryptionJsonFormat: RootJsonFormat[CustomerEncryption] = jsonFormat2(
-    CustomerEncryption
+    CustomerEncryption.apply
   )
 
   private final case class Owner(entity: String, entityId: Option[String])
-  private implicit val OwnerJsonFormat: RootJsonFormat[Owner] = jsonFormat2(Owner)
+  private implicit val OwnerJsonFormat: RootJsonFormat[Owner] = jsonFormat2(Owner.apply)
 
   private final case class ProjectTeam(projectNumber: String, team: String)
-  private implicit val ProjectTeamJsonFormat: RootJsonFormat[ProjectTeam] = jsonFormat2(ProjectTeam)
+  private implicit val ProjectTeamJsonFormat: RootJsonFormat[ProjectTeam] = jsonFormat2(ProjectTeam.apply)
 
   private final case class ObjectAccessControls(kind: String,
                                                 id: String,
@@ -40,7 +41,7 @@ object Formats extends DefaultJsonProtocol {
                                                 projectTeam: ProjectTeam,
                                                 etag: String)
   private implicit val ObjectAccessControlsJsonFormat: RootJsonFormat[ObjectAccessControls] = jsonFormat13(
-    ObjectAccessControls
+    ObjectAccessControls.apply
   )
 
   /**
@@ -73,7 +74,7 @@ object Formats extends DefaultJsonProtocol {
   )
 
   private implicit val storageObjectReadOnlyJson: RootJsonFormat[StorageObjectReadOnlyJson] = jsonFormat18(
-    StorageObjectReadOnlyJson
+    StorageObjectReadOnlyJson.apply
   )
 
   // private sub class of StorageObjectJson used to workaround 22 field jsonFormat issue
@@ -95,7 +96,7 @@ object Formats extends DefaultJsonProtocol {
   )
 
   private implicit val storageObjectWritableJson: RootJsonFormat[StorageObjectWriteableJson] = jsonFormat14(
-    StorageObjectWriteableJson
+    StorageObjectWriteableJson.apply
   )
 
   private implicit object StorageObjectJsonFormat extends RootJsonFormat[StorageObjectJson] {
@@ -130,7 +131,7 @@ object Formats extends DefaultJsonProtocol {
       items: Option[List[StorageObjectJson]]
   )
 
-  private implicit val bucketInfoJsonFormat: RootJsonFormat[BucketInfoJson] = jsonFormat6(BucketInfoJson)
+  private implicit val bucketInfoJsonFormat: RootJsonFormat[BucketInfoJson] = jsonFormat6(BucketInfoJson.apply)
 
   /**
    * Google API rewrite response object
@@ -146,7 +147,7 @@ object Formats extends DefaultJsonProtocol {
       resource: Option[StorageObjectJson]
   )
 
-  private implicit val rewriteResponseFormat: RootJsonFormat[RewriteResponseJson] = jsonFormat6(RewriteResponseJson)
+  private implicit val rewriteResponseFormat: RootJsonFormat[RewriteResponseJson] = jsonFormat6(RewriteResponseJson.apply)
 
   /**
    * Google API bucket response object
@@ -162,7 +163,7 @@ object Formats extends DefaultJsonProtocol {
       etag: String
   )
 
-  implicit val bucketInfoFormat: RootJsonFormat[BucketInfo] = jsonFormat2(BucketInfo)
+  implicit val bucketInfoFormat: RootJsonFormat[BucketInfo] = jsonFormat2(BucketInfo.apply)
 
   implicit object BucketListResultReads extends RootJsonReader[BucketListResult] {
     override def read(json: JsValue): BucketListResult = {
@@ -177,7 +178,7 @@ object Formats extends DefaultJsonProtocol {
   }
 
   private implicit val bucketListResultJsonReads: RootJsonFormat[BucketListResultJson] = jsonFormat4(
-    BucketListResultJson
+    BucketListResultJson.apply
   )
 
   implicit object RewriteResponseReads extends RootJsonReader[RewriteResponse] {

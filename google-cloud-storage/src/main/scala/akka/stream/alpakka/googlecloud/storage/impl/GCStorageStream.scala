@@ -131,7 +131,7 @@ import scala.concurrent.Future
                       metadata: Option[Map[String, String]] = None): Sink[ByteString, Future[StorageObject]] =
     Sink
       .fromMaterializer { (mat, attr) =>
-        implicit val settings = {
+        implicit val settings: GoogleSettings = {
           val s = resolveSettings(mat, attr)
           s.copy(requestSettings = s.requestSettings.copy(uploadChunkSize = chunkSize))
         }
@@ -158,7 +158,7 @@ import scala.concurrent.Future
             }: PartialFunction[HttpResponse, Future[StorageObject]]
         }.withDefaultRetry
 
-        ResumableUpload[StorageObject](request).addAttributes(GoogleAttributes.settings(settings))
+        ResumableUpload[StorageObject](request)(um).addAttributes(GoogleAttributes.settings(settings))
       }
       .mapMaterializedValue(_.flatten)
 
@@ -236,7 +236,7 @@ import scala.concurrent.Future
     getBucketPath(bucket) / "o" / objectName
 
   implicit def unmarshaller[T: FromEntityUnmarshaller]: Unmarshaller[HttpResponse, T] =
-    Unmarshaller.withMaterializer { implicit ec => implicit mat => response: HttpResponse =>
+    Unmarshaller.withMaterializer { implicit ec => implicit mat => (response: HttpResponse) =>
       response match {
         case HttpResponse(status, _, entity, _) if status.isSuccess() && !status.isRedirection() =>
           Unmarshal(entity).to[T]
@@ -248,7 +248,7 @@ import scala.concurrent.Future
     }.withDefaultRetry
 
   implicit def optionUnmarshaller[T: FromEntityUnmarshaller]: Unmarshaller[HttpResponse, Option[T]] =
-    Unmarshaller.withMaterializer { implicit ec => implicit mat => response: HttpResponse =>
+    Unmarshaller.withMaterializer { implicit ec => implicit mat => (response: HttpResponse) =>
       response match {
         case HttpResponse(status, _, entity, _) if status.isSuccess() && !status.isRedirection() =>
           Unmarshal(entity).to[T].map(Some(_))
@@ -324,7 +324,7 @@ import scala.concurrent.Future
         )
       }
 
-      GoogleSettings(
+      GoogleSettings.apply(
         legacySettings.projectId,
         credentials,
         settings.requestSettings
