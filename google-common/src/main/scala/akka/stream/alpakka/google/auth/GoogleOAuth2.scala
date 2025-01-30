@@ -65,5 +65,5 @@ private[auth] object GoogleOAuth2 {
   }
 
   final case class JwtClaimContent(scope: String)
-  implicit val jwtClaimContentFormat: JsonFormat[JwtClaimContent] = jsonFormat1(JwtClaimContent)
+  implicit val jwtClaimContentFormat: JsonFormat[JwtClaimContent] = jsonFormat1(JwtClaimContent.apply)
 }
