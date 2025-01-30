@@ -147,7 +147,9 @@ object Formats extends DefaultJsonProtocol {
       resource: Option[StorageObjectJson]
   )
 
-  private implicit val rewriteResponseFormat: RootJsonFormat[RewriteResponseJson] = jsonFormat6(RewriteResponseJson.apply)
+  private implicit val rewriteResponseFormat: RootJsonFormat[RewriteResponseJson] = jsonFormat6(
+    RewriteResponseJson.apply
+  )
 
   /**
    * Google API bucket response object

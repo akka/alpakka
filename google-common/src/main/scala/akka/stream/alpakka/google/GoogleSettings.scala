@@ -81,8 +81,8 @@ object GoogleSettings {
 }
 
 final case class GoogleSettings @InternalApi private[akka] (projectId: String,
-                                                      credentials: Credentials,
-                                                      requestSettings: RequestSettings) {
+                                                            credentials: Credentials,
+                                                            requestSettings: RequestSettings) {
   def getProjectId = projectId
   def getCredentials = credentials
   def getRequestSettings = requestSettings
