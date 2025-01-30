@@ -60,11 +60,15 @@ object PubSubConfig {
       pullReturnImmediately = true,
       pullMaxMessagesPerInternalBatch = 1000,
       Some(
-        GoogleSettings().copy(
-          projectId = projectId,
-          credentials =
-            ServiceAccountCredentials(projectId, clientEmail, privateKey, Seq("https://www.googleapis.com/auth/pubsub"))
-        )
+        GoogleSettings
+          .apply()
+          .copy(
+            projectId = projectId,
+            credentials = ServiceAccountCredentials(projectId,
+                                                    clientEmail,
+                                                    privateKey,
+                                                    Seq("https://www.googleapis.com/auth/pubsub"))
+          )
       )
     )
 
@@ -85,11 +89,15 @@ object PubSubConfig {
       pullReturnImmediately = pullReturnImmediately,
       pullMaxMessagesPerInternalBatch = pullMaxMessagesPerInternalBatch,
       Some(
-        GoogleSettings().copy(
-          projectId = projectId,
-          credentials =
-            ServiceAccountCredentials(projectId, clientEmail, privateKey, Seq("https://www.googleapis.com/auth/pubsub"))
-        )
+        GoogleSettings
+          .apply()
+          .copy(
+            projectId = projectId,
+            credentials = ServiceAccountCredentials(projectId,
+                                                    clientEmail,
+                                                    privateKey,
+                                                    Seq("https://www.googleapis.com/auth/pubsub"))
+          )
       )
     )
 

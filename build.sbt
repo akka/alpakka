@@ -209,7 +209,11 @@ lazy val googleCommon = alpakkaProject(
   "google.common",
   Dependencies.GoogleCommon,
   Test / fork := true,
-  headerSources / excludeFilter := HiddenFileFilter || "JwtSprayJsonParser.scala"
+  headerSources / excludeFilter := HiddenFileFilter || "JwtSprayJsonParser.scala",
+  Scala3.settings,
+  mimaPreviousArtifacts :=
+    (if (scalaBinaryVersion.value == "3") Set.empty // No previous Scala 3 artifacts, drop once there are
+     else mimaPreviousArtifacts.value)
 )
 
 lazy val googleCloudBigQuery = alpakkaProject(
@@ -246,7 +250,11 @@ lazy val googleCloudPubSub = alpakkaProject(
   Dependencies.GooglePubSub,
   Test / fork := true,
   // See docker-compose.yml gcloud-pubsub-emulator_prep
-  Test / envVars := Map("PUBSUB_EMULATOR_HOST" -> "localhost", "PUBSUB_EMULATOR_PORT" -> "8538")
+  Test / envVars := Map("PUBSUB_EMULATOR_HOST" -> "localhost", "PUBSUB_EMULATOR_PORT" -> "8538"),
+  Scala3.settings,
+  mimaPreviousArtifacts :=
+    (if (scalaBinaryVersion.value == "3") Set.empty // No previous Scala 3 artifacts, drop once there are
+     else mimaPreviousArtifacts.value)
 ).dependsOn(googleCommon)
 
 lazy val googleCloudPubSubGrpc = alpakkaProject(
@@ -262,14 +270,22 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
       "-Wconf:src=.+/akka-grpc/main/.+:s",
       "-Wconf:src=.+/akka-grpc/test/.+:s"
     ),
-  compile / javacOptions := (compile / javacOptions).value.filterNot(_ == "-Xlint:deprecation")
+  compile / javacOptions := (compile / javacOptions).value.filterNot(_ == "-Xlint:deprecation"),
+  Scala3.settings,
+  mimaPreviousArtifacts :=
+    (if (scalaBinaryVersion.value == "3") Set.empty // No previous Scala 3 artifacts, drop once there are
+     else mimaPreviousArtifacts.value)
 ).enablePlugins(AkkaGrpcPlugin).dependsOn(googleCommon)
 
 lazy val googleCloudStorage = alpakkaProject(
   "google-cloud-storage",
   "google.cloud.storage",
   Test / fork := true,
-  Dependencies.GoogleStorage
+  Dependencies.GoogleStorage,
+  Scala3.settings,
+  mimaPreviousArtifacts :=
+    (if (scalaBinaryVersion.value == "3") Set.empty // No previous Scala 3 artifacts, drop once there are
+     else mimaPreviousArtifacts.value)
 ).dependsOn(googleCommon)
 
 lazy val googleFcm = alpakkaProject("google-fcm", "google.firebase.fcm", Dependencies.GoogleFcm, Test / fork := true)

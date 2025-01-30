@@ -37,7 +37,7 @@ class OAuth2CredentialsSpec
   implicit val settings: RequestSettings = GoogleSettings().requestSettings
   implicit val clock: Clock = Clock.systemUTC()
 
-  final object AccessTokenProvider {
+  object AccessTokenProvider {
     @volatile var accessTokenPromise: Promise[AccessToken] = Promise.failed(new RuntimeException)
   }
 

@@ -27,7 +27,7 @@ object Credentials {
    */
   def apply(c: Config)(implicit system: ClassicActorSystemProvider): Credentials = c.getString("provider") match {
     case "application-default" =>
-      val log = Logging(system.classicSystem, getClass)
+      val log = Logging(system.classicSystem, classOf[Credentials])
       try {
         val creds = parseServiceAccount(c)
         log.info("Using service account credentials")

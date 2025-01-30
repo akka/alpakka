@@ -169,7 +169,7 @@ private[pubsub] trait PubSubApi {
       .mapMaterializedValue(_ => NotUsed)
 
   private implicit val pullResponseUnmarshaller: FromResponseUnmarshaller[PullResponse] =
-    Unmarshaller.withMaterializer { implicit ec => implicit mat => response: HttpResponse =>
+    Unmarshaller.withMaterializer { implicit ec => implicit mat => (response: HttpResponse) =>
       response.status match {
         case StatusCodes.Success(_) if response.entity.contentType == ContentTypes.`application/json` =>
           Unmarshal(response.entity).to[PullResponse]
@@ -208,7 +208,7 @@ private[pubsub] trait PubSubApi {
       .mapMaterializedValue(_ => NotUsed)
 
   private implicit val acknowledgeResponseUnmarshaller: FromResponseUnmarshaller[Done] =
-    Unmarshaller.withMaterializer { implicit ec => implicit mat => response: HttpResponse =>
+    Unmarshaller.withMaterializer { implicit ec => implicit mat => (response: HttpResponse) =>
       response.status match {
         case StatusCodes.Success(_) =>
           response.discardEntityBytes().future
@@ -261,7 +261,7 @@ private[pubsub] trait PubSubApi {
     publish(topic, parallelism, None)
 
   private implicit val publishResponseUnmarshaller: FromResponseUnmarshaller[PublishResponse] =
-    Unmarshaller.withMaterializer { implicit ec => implicit mat => response: HttpResponse =>
+    Unmarshaller.withMaterializer { implicit ec => implicit mat => (response: HttpResponse) =>
       response.status match {
         case StatusCodes.Success(_) if response.entity.contentType == ContentTypes.`application/json` =>
           Unmarshal(response.entity).to[PublishResponse]

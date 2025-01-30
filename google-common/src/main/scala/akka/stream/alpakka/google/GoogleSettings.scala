@@ -80,9 +80,9 @@ object GoogleSettings {
 
 }
 
-final case class GoogleSettings @InternalApi private (projectId: String,
-                                                      credentials: Credentials,
-                                                      requestSettings: RequestSettings) {
+final case class GoogleSettings @InternalApi private[akka] (projectId: String,
+                                                            credentials: Credentials,
+                                                            requestSettings: RequestSettings) {
   def getProjectId = projectId
   def getCredentials = credentials
   def getRequestSettings = requestSettings
@@ -125,7 +125,7 @@ object RequestSettings {
     apply(userIp.toScala, quotaUser.toScala, prettyPrint, chunkSize, retrySettings, forwardProxy.toScala)
 }
 
-final case class RequestSettings @InternalApi private (
+final case class RequestSettings @InternalApi private[akka] (
     userIp: Option[String],
     quotaUser: Option[String],
     prettyPrint: Boolean,
@@ -247,7 +247,7 @@ object ForwardProxy {
             credentials: Option[BasicHttpCredentials],
             trustPem: Option[String])(implicit system: ClassicActorSystemProvider): ForwardProxy = {
     ForwardProxy(
-      trustPem.fold(Http(system).defaultClientHttpsContext)(ForwardProxyHttpsContext(_)),
+      trustPem.fold(Http(system.classicSystem).defaultClientHttpsContext)(ForwardProxyHttpsContext(_)),
       ForwardProxyPoolSettings(scheme, host, port, credentials)(system.classicSystem)
     )
   }
