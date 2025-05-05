@@ -1,0 +1,7 @@
+# Akka gRPC generating new constructors
+ProblemFilters.exclude[DirectMissingMethodProblem]("io.grpc.alts.internal.handshaker.HandshakerServiceClient#DefaultHandshakerServiceClient.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("io.grpc.channelz.v1.channelz.ChannelzClient#DefaultChannelzClient.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("io.grpc.health.v1.health.HealthClient#DefaultHealthClient.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("io.grpc.lb.v1.load_balancer.LoadBalancerClient#DefaultLoadBalancerClient.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("io.grpc.reflection.v1.reflection.ServerReflectionClient#DefaultServerReflectionClient.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("io.grpc.reflection.v1alpha.reflection.ServerReflectionClient#DefaultServerReflectionClient.this")
