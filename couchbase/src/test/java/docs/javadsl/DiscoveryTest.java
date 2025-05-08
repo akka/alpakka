@@ -61,7 +61,7 @@ public class DiscoveryTest {
     } catch (java.util.concurrent.ExecutionException e) {
       assertThat(
           e.getCause(),
-          is(instanceOf(com.couchbase.client.core.config.ConfigurationException.class)));
+          is(instanceOf(RuntimeException.class)));
     }
   }
 }

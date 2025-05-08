@@ -7,42 +7,19 @@ package akka.stream.alpakka.couchbase.scaladsl
 import akka.NotUsed
 import akka.stream.alpakka.couchbase.{CouchbaseSessionRegistry, CouchbaseSessionSettings}
 import akka.stream.scaladsl.Source
-import com.couchbase.client.java.document.json.JsonObject
-import com.couchbase.client.java.query.{N1qlQuery, Statement}
+import com.couchbase.client.java.json.JsonObject
+import com.couchbase.client.java.query.QueryOptions
 
 /**
  * Scala API: Factory methods for Couchbase sources.
  */
 object CouchbaseSource {
-
-  /**
-   * Create a source query Couchbase by statement, emitted as [[com.couchbase.client.java.document.JsonDocument JsonDocument]]s.
-   */
-  def fromStatement(sessionSettings: CouchbaseSessionSettings,
-                    statement: Statement,
-                    bucketName: String): Source[JsonObject, NotUsed] =
-    Source
-      .fromMaterializer { (materializer, _) =>
-        val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
-        Source
-          .future(session.map(_.streamedQuery(statement))(materializer.system.dispatcher))
-          .flatMapConcat(identity)
-      }
+  def fromQuery(sessionSettings: CouchbaseSessionSettings, bucketName: String, query: String, queryOptions: QueryOptions = QueryOptions.queryOptions()) : Source[JsonObject, NotUsed] =
+    Source.fromMaterializer { (materializer, _) =>
+      Source.future(
+      CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
+        .map(_.streamedQuery(query, queryOptions))(materializer.system.dispatcher))
+        .flatMapConcat(identity)
+    }
       .mapMaterializedValue(_ => NotUsed)
-
-  /**
-   * Create a source query Couchbase by statement, emitted as [[com.couchbase.client.java.document.JsonDocument JsonDocument]]s.
-   */
-  def fromN1qlQuery(sessionSettings: CouchbaseSessionSettings,
-                    query: N1qlQuery,
-                    bucketName: String): Source[JsonObject, NotUsed] =
-    Source
-      .fromMaterializer { (materializer, _) =>
-        val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
-        Source
-          .future(session.map(_.streamedQuery(query))(materializer.system.dispatcher))
-          .flatMapConcat(identity)
-      }
-      .mapMaterializedValue(_ => NotUsed)
-
 }

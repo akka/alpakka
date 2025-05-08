@@ -7,14 +7,16 @@ package docs.scaladsl
 import akka.stream.alpakka.couchbase.scaladsl.CouchbaseSession
 import akka.stream.alpakka.couchbase.testing.CouchbaseSupport
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
-import com.couchbase.client.java.document.JsonDocument
-import org.scalatest.concurrent.ScalaFutures
+import com.couchbase.client.core.error.DocumentNotFoundException
+import com.couchbase.client.java.env.ClusterEnvironment
+import com.couchbase.client.java.{Cluster, ClusterOptions}
 import org.scalatest.BeforeAndAfterAll
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
 class CouchbaseSessionExamplesSpec
     extends AnyWordSpec
@@ -32,16 +34,14 @@ class CouchbaseSessionExamplesSpec
   "a Couchbasesession" should {
     "be managed by the registry" in {
       // #registry
-      import akka.stream.alpakka.couchbase.CouchbaseSessionRegistry
-      import akka.stream.alpakka.couchbase.CouchbaseSessionSettings
       import akka.stream.alpakka.couchbase.scaladsl.CouchbaseSession
-      import com.couchbase.client.java.env.{CouchbaseEnvironment, DefaultCouchbaseEnvironment}
+      import akka.stream.alpakka.couchbase.{CouchbaseSessionRegistry, CouchbaseSessionSettings}
 
       // Akka extension (singleton per actor system)
       val registry = CouchbaseSessionRegistry(actorSystem)
 
       // If connecting to more than one Couchbase cluster, the environment should be shared
-      val environment: CouchbaseEnvironment = DefaultCouchbaseEnvironment.create()
+      val environment: ClusterEnvironment = ClusterEnvironment.create()
       actorSystem.registerOnTermination {
         environment.shutdown()
       }
@@ -65,41 +65,25 @@ class CouchbaseSessionExamplesSpec
 
       val documentFuture = sessionFuture.flatMap { session =>
         val id = "myId"
-        val documentFuture: Future[Option[JsonDocument]] = session.get(id)
-        documentFuture.flatMap {
-          case Some(jsonDocument) =>
-            Future.successful(jsonDocument)
-          case None =>
-            Future.failed(new RuntimeException(s"document $id wasn't found"))
-        }
+        session.collection(scopeName, collectionName).getBytes(id)
       }
       // #create
-      documentFuture.failed.futureValue shouldBe a[RuntimeException]
+      documentFuture.failed.futureValue.getCause shouldBe a[DocumentNotFoundException]
     }
 
-    "be created from a bucket" in {
-      implicit val ec: ExecutionContext = actorSystem.dispatcher
-      // #fromBucket
-      import com.couchbase.client.java.auth.PasswordAuthenticator
-      import com.couchbase.client.java.{Bucket, CouchbaseCluster}
-
-      val cluster: CouchbaseCluster = CouchbaseCluster.create("localhost")
-      cluster.authenticate(new PasswordAuthenticator("Administrator", "password"))
-      val bucket: Bucket = cluster.openBucket("akka")
-      val session: CouchbaseSession = CouchbaseSession(bucket)
+    "be created from an AsyncCluster" in {
+      val cluster: Cluster = Cluster.connect("localhost", ClusterOptions.clusterOptions(
+        "Administrator", "password"
+      ))
+      val session: CouchbaseSession = CouchbaseSession(cluster.async(), "akka").futureValue
       actorSystem.registerOnTermination {
         session.close()
       }
 
       val id = "myId"
-      val documentFuture = session.get(id).flatMap {
-        case Some(jsonDocument) =>
-          Future.successful(jsonDocument)
-        case None =>
-          Future.failed(new RuntimeException(s"document $id wasn't found"))
-      }
+      val documentFuture = session.collection(scopeName, collectionName).getBytes(id)
       // #fromBucket
-      documentFuture.failed.futureValue shouldBe a[RuntimeException]
+      documentFuture.failed.futureValue.getCause shouldBe a[DocumentNotFoundException]
     }
   }
 }

@@ -4,102 +4,18 @@
 
 package akka.stream.alpakka.couchbase
 
-import java.util.concurrent.{CompletionStage, TimeUnit}
-
 import akka.actor.{ActorSystem, ClassicActorSystemProvider}
 import akka.annotation.InternalApi
-import com.couchbase.client.java.document.Document
-import com.couchbase.client.java.env.CouchbaseEnvironment
-import com.couchbase.client.java.{PersistTo, ReplicateTo}
+import com.couchbase.client.java.env.ClusterEnvironment
 import com.typesafe.config.Config
 
-import scala.jdk.CollectionConverters._
+import java.util.concurrent.CompletionStage
 import scala.collection.immutable
 import scala.concurrent.Future
+import scala.jdk.CollectionConverters._
 import scala.jdk.FutureConverters._
-import scala.concurrent.duration._
 
-/**
- * Configure Couchbase writes.
- */
-object CouchbaseWriteSettings {
 
-  /**
-   * Simple settings not requiring replication nor persistence.
-   */
-  val inMemory = CouchbaseWriteSettings(1, ReplicateTo.NONE, PersistTo.NONE, 2.seconds)
-
-  def apply(): CouchbaseWriteSettings = inMemory
-
-  def apply(parallelism: Int,
-            replicateTo: ReplicateTo,
-            persistTo: PersistTo,
-            timeout: FiniteDuration): CouchbaseWriteSettings =
-    new CouchbaseWriteSettings(parallelism, replicateTo, persistTo, timeout)
-
-  def create(): CouchbaseWriteSettings = inMemory
-
-  def create(parallelism: Int,
-             replicateTo: ReplicateTo,
-             persistTo: PersistTo,
-             timeout: java.time.Duration): CouchbaseWriteSettings =
-    new CouchbaseWriteSettings(parallelism,
-                               replicateTo,
-                               persistTo,
-                               FiniteDuration(timeout.toMillis, TimeUnit.MILLISECONDS))
-
-}
-
-/**
- * Configure Couchbase writes.
- */
-final class CouchbaseWriteSettings private (val parallelism: Int,
-                                            val replicateTo: ReplicateTo,
-                                            val persistTo: PersistTo,
-                                            val timeout: FiniteDuration) {
-
-  def withParallelism(parallelism: Int): CouchbaseWriteSettings = copy(parallelism = parallelism)
-
-  def withReplicateTo(replicateTo: ReplicateTo): CouchbaseWriteSettings = copy(replicateTo = replicateTo)
-
-  def withPersistTo(persistTo: PersistTo): CouchbaseWriteSettings = copy(persistTo = persistTo)
-
-  /**
-   * Java API:
-   */
-  def withTimeout(timeout: java.time.Duration): CouchbaseWriteSettings =
-    copy(timeout = FiniteDuration(timeout.toMillis, TimeUnit.MILLISECONDS))
-
-  /**
-   * Scala API:
-   */
-  def withTimeout(timeout: FiniteDuration): CouchbaseWriteSettings = copy(timeout = timeout)
-
-  private[this] def copy(parallelism: Int = parallelism,
-                         replicateTo: ReplicateTo = replicateTo,
-                         persistTo: PersistTo = persistTo,
-                         timeout: FiniteDuration = timeout) =
-    new CouchbaseWriteSettings(parallelism, replicateTo, persistTo, timeout)
-
-  override def equals(other: Any): Boolean = other match {
-    case that: CouchbaseWriteSettings =>
-      this.parallelism == that.parallelism &&
-      this.replicateTo == that.replicateTo &&
-      this.persistTo == that.persistTo &&
-      this.timeout == that.timeout
-    case _ => false
-  }
-
-  override def hashCode(): Int = java.util.Objects.hash(int2Integer(parallelism), replicateTo, persistTo, timeout)
-
-  override def toString: String =
-    "CouchbaseWriteSettings(" +
-    s"parallelism=$parallelism," +
-    s"replicateTo=$replicateTo," +
-    s"persistTo=$persistTo," +
-    s"timeout=${timeout.toCoarsest}" +
-    ")"
-}
 
 object CouchbaseSessionSettings {
 
@@ -170,11 +86,11 @@ object CouchbaseSessionSettings {
 }
 
 final class CouchbaseSessionSettings private (
-    val username: String,
-    val password: String,
-    val nodes: immutable.Seq[String],
-    val environment: Option[CouchbaseEnvironment],
-    val enrichAsync: CouchbaseSessionSettings => Future[CouchbaseSessionSettings]
+                                               val username: String,
+                                               val password: String,
+                                               val nodes: immutable.Seq[String],
+                                               val environment: Option[ClusterEnvironment],
+                                               val enrichAsync: CouchbaseSessionSettings => Future[CouchbaseSessionSettings]
 ) {
 
   def withUsername(username: String): CouchbaseSessionSettings =
@@ -207,7 +123,7 @@ final class CouchbaseSessionSettings private (
   ): CouchbaseSessionSettings =
     copy(enrichAsync = (s: CouchbaseSessionSettings) => value.apply(s).asScala)
 
-  def withEnvironment(environment: CouchbaseEnvironment): CouchbaseSessionSettings =
+  def withEnvironment(environment: ClusterEnvironment): CouchbaseSessionSettings =
     copy(environment = Some(environment))
 
   /**
@@ -221,7 +137,7 @@ final class CouchbaseSessionSettings private (
       username: String = username,
       password: String = password,
       nodes: immutable.Seq[String] = nodes,
-      environment: Option[CouchbaseEnvironment] = environment,
+      environment: Option[ClusterEnvironment] = environment,
       enrichAsync: CouchbaseSessionSettings => Future[CouchbaseSessionSettings] = enrichAsync
   ): CouchbaseSessionSettings =
     new CouchbaseSessionSettings(username, password, nodes, environment, enrichAsync)
@@ -250,16 +166,16 @@ final class CouchbaseSessionSettings private (
 /**
  * Wrapper to for handling Couchbase write failures in-stream instead of failing the stream.
  */
-sealed trait CouchbaseWriteResult[T <: Document[_]] {
+sealed trait CouchbaseWriteResult[T] {
   def isSuccess: Boolean
   def isFailure: Boolean
-  def doc: T
+  def doc: (String, T)
 }
 
 /**
  * Emitted for a successful Couchbase write operation.
  */
-final case class CouchbaseWriteSuccess[T <: Document[_]] private (override val doc: T) extends CouchbaseWriteResult[T] {
+final case class CouchbaseWriteSuccess[T] private (override val doc: (String, T)) extends CouchbaseWriteResult[T] {
   val isSuccess: Boolean = true
   val isFailure: Boolean = false
 }
@@ -267,7 +183,7 @@ final case class CouchbaseWriteSuccess[T <: Document[_]] private (override val d
 /**
  * Emitted for a failed Couchbase write operation.
  */
-final case class CouchbaseWriteFailure[T <: Document[_]] private (override val doc: T, failure: Throwable)
+final case class CouchbaseWriteFailure[T] private (override val doc: (String, T), failure: Throwable)
     extends CouchbaseWriteResult[T] {
   val isSuccess: Boolean = false
   val isFailure: Boolean = true
