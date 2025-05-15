@@ -28,7 +28,7 @@ object Dependencies {
   val AkkaHttpBinaryVersion = VersionNumber(AkkaHttpVersion).numbers match {
     case Seq(major, minor, _*) => s"$major.$minor"
   }
-  val AlpakkaKafkaVersion = "7.0.2"
+  val AlpakkaKafkaVersion = "7.0.3"
   val ScalaTestVersion = "3.2.19"
   val TestContainersScalaTestVersion = "0.40.3" // pulls Testcontainers 1.16.2
   val mockitoVersion = "5.13.0" // check even https://github.com/scalatest/scalatestplus-mockito/releases
