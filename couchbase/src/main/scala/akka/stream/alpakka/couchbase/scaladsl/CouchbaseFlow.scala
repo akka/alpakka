@@ -32,7 +32,7 @@ object CouchbaseFlow {
         implicit val ec = materializer.system.dispatcher
         val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
         Flow[String]
-          .mapAsync(1)(id => session
+          .mapAsync(sessionSettings.parallelism)(id => session
             .map(_.collection(scopeName, collectionName))
             .flatMap(_.getBytes(id))
           )
@@ -50,7 +50,7 @@ object CouchbaseFlow {
         implicit val ec = materializer.system.dispatcher
         val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
         Flow[String]
-          .mapAsync(1)(id => session
+          .mapAsync(sessionSettings.parallelism)(id => session
             .map(_.collection(scopeName, collectionName))
             .flatMap(_.getDocument(id))
           )
@@ -68,7 +68,7 @@ object CouchbaseFlow {
         implicit val ec = materializer.system.dispatcher
         val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
         Flow[String]
-          .mapAsync(1)(id => session
+          .mapAsync(sessionSettings.parallelism)(id => session
             .map(_.collection(scopeName, collectionName))
             .flatMap(_.get(id /* timeout? */, target)))
       }
@@ -84,7 +84,7 @@ object CouchbaseFlow {
         implicit val ec = materializer.system.dispatcher
         val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
         Flow[(String, T)]
-          .mapAsync(1)(
+          .mapAsync(sessionSettings.parallelism)(
             doc => session
               .map(_.collection(scopeName, collectionName))
               .flatMap(collection => {
@@ -111,7 +111,7 @@ object CouchbaseFlow {
         implicit val ec = materializer.system.dispatcher
         val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
         Flow[(String, T)]
-          .mapAsync(1)(
+          .mapAsync(sessionSettings.parallelism)(
             doc => session
               .map(_.collection(scopeName, collectionName))
               .flatMap(_.upsert(doc, upsertOptions))
@@ -129,7 +129,7 @@ object CouchbaseFlow {
       .fromMaterializer { (materializer, _) =>
         val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
         Flow[(String, T)]
-          .mapAsync(1)(
+          .mapAsync(sessionSettings.parallelism)(
             doc => {
               implicit val executor = materializer.system.dispatcher
               session
@@ -153,7 +153,7 @@ object CouchbaseFlow {
       .fromMaterializer { (materializer, _) =>
         val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
         Flow[(String, T)]
-          .mapAsync(1)(
+          .mapAsync(sessionSettings.parallelism)(
             doc => {
               implicit val executor = materializer.system.dispatcher
               session
@@ -176,7 +176,7 @@ object CouchbaseFlow {
         val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
         implicit val executor = materializer.system.dispatcher
         Flow[(String, T)]
-          .mapAsync(1)(
+          .mapAsync(sessionSettings.parallelism)(
             doc => session
               .map(_.collection(scopeName, collectionName))
               .flatMap(_.replace(doc))
@@ -197,7 +197,7 @@ object CouchbaseFlow {
         val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
         implicit val executor = materializer.system.dispatcher
         Flow[(String, T)]
-          .mapAsync(1)(
+          .mapAsync(sessionSettings.parallelism)(
             doc => session
               .map(_.collection(scopeName, collectionName))
               .flatMap(_.replace(doc, replaceOptions))
@@ -217,7 +217,7 @@ object CouchbaseFlow {
         val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
         implicit val executor = materializer.system.dispatcher
         Flow[(String, T)]
-          .mapAsync(1)(
+          .mapAsync(sessionSettings.parallelism)(
             doc => {
               val op = session
                 .map(_.collection(scopeName, collectionName))
@@ -244,7 +244,7 @@ object CouchbaseFlow {
         val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
         implicit val executor = materializer.system.dispatcher
         Flow[(String, T)]
-          .mapAsync(1)(
+          .mapAsync(sessionSettings.parallelism)(
             doc => session
               .map(_.collection(scopeName, collectionName))
               .flatMap(_.replace(doc, replaceOptions))
@@ -261,7 +261,7 @@ object CouchbaseFlow {
       .fromMaterializer { (materializer, _) =>
         val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
         Flow[String]
-          .mapAsync(1)(
+          .mapAsync(sessionSettings.parallelism)(
             id => {
               implicit val executor = materializer.system.dispatcher
               session
@@ -283,7 +283,7 @@ object CouchbaseFlow {
       .fromMaterializer { (materializer, _) =>
         val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
         Flow[String]
-          .mapAsync(1)(
+          .mapAsync(sessionSettings.parallelism)(
             id => {
               implicit val executor = materializer.system.dispatcher
               session
@@ -304,7 +304,7 @@ object CouchbaseFlow {
       .fromMaterializer { (materializer, _) =>
         val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
         Flow[String]
-          .mapAsync(1)(
+          .mapAsync(sessionSettings.parallelism)(
             id => {
               implicit val executor = materializer.system.dispatcher
               session
@@ -327,7 +327,7 @@ object CouchbaseFlow {
       .fromMaterializer { (materializer, _) =>
         val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
         Flow[String]
-          .mapAsync(1)(
+          .mapAsync(sessionSettings.parallelism)(
             id => {
               implicit val executor = materializer.system.dispatcher
               session

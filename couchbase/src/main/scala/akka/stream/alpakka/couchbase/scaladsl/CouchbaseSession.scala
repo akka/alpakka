@@ -34,7 +34,7 @@ object CouchbaseSession {
       .flatMap(c => apply(c, bucketName))
 
   /**
-   * Create a given bucket using a pre-existing cluster client, allowing for it to be shared among
+   * Create a given bucket session using a pre-existing cluster client, allowing for it to be shared among
    * multiple `CouchbaseSession`s. The cluster client's life-cycle is the user's responsibility.
    */
   def apply(cluster: AsyncCluster, bucketName: String): Future[CouchbaseSession] =

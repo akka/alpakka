@@ -85,6 +85,10 @@ class CouchbaseCollectionSessionImpl(bucketSession: CouchbaseSession, scopeName:
       underlying.upsert(document._1, document._2, UpsertOptions.upsertOptions().transcoder(RawBinaryTranscoder.INSTANCE))
         .thenApply(_ => document)
         .asScala
+    } else if (document._2.isInstanceOf[String]) {
+      underlying.upsert(document._1, document._2, UpsertOptions.upsertOptions().transcoder(RawStringTranscoder.INSTANCE))
+        .thenApply(_ => document)
+        .asScala
     } else {
       underlying.upsert(document._1, document._2)
         .thenApply(_ => document)
