@@ -24,13 +24,14 @@ object CouchbaseSessionSettings {
   /**
    * Scala API:
    * Load the session from the given config object, expects the config object to have the fields `username`,
-   * `password` and `nodes`. Using it means first looking your config namespace up yourself using `config.getConfig("some.path")`.
+   * `password`, `nodes` and optional field `parallelism` (1 by default). Using it means first looking your config namespace up yourself using `config.getConfig("some.path")`.
    */
   def apply(config: Config): CouchbaseSessionSettings = {
     val username = config.getString("username")
     val password = config.getString("password")
     val nodes = config.getStringList("nodes").asScala.toList
-    new CouchbaseSessionSettings(username, password, nodes, environment = None, enrichAsync = Future.successful)
+    val parallelism = if (config.hasPath("parallelism")) config.getInt("parallelism") else 1
+    new CouchbaseSessionSettings(username, password, nodes, parallelism, environment = None, enrichAsync = Future.successful)
   }
 
   /**
@@ -53,7 +54,7 @@ object CouchbaseSessionSettings {
    * Scala API:
    */
   def apply(username: String, password: String): CouchbaseSessionSettings =
-    new CouchbaseSessionSettings(username, password, Nil, environment = None, enrichAsync = Future.successful)
+    new CouchbaseSessionSettings(username, password, Nil, 1, environment = None, enrichAsync = Future.successful)
 
   /**
    * Java API:
@@ -89,6 +90,7 @@ final class CouchbaseSessionSettings private (
                                                val username: String,
                                                val password: String,
                                                val nodes: immutable.Seq[String],
+                                               val parallelism: Integer,
                                                val environment: Option[ClusterEnvironment],
                                                val enrichAsync: CouchbaseSessionSettings => Future[CouchbaseSessionSettings]
 ) {
@@ -137,10 +139,11 @@ final class CouchbaseSessionSettings private (
       username: String = username,
       password: String = password,
       nodes: immutable.Seq[String] = nodes,
+      parallelism: Integer = parallelism,
       environment: Option[ClusterEnvironment] = environment,
       enrichAsync: CouchbaseSessionSettings => Future[CouchbaseSessionSettings] = enrichAsync
   ): CouchbaseSessionSettings =
-    new CouchbaseSessionSettings(username, password, nodes, environment, enrichAsync)
+    new CouchbaseSessionSettings(username, password, nodes, parallelism, environment, enrichAsync)
 
   override def equals(other: Any): Boolean = other match {
     case that: CouchbaseSessionSettings =>
@@ -158,6 +161,7 @@ final class CouchbaseSessionSettings private (
     "CouchbaseSessionSettings(" +
     s"username=$username," +
     s"password=*****," +
+    s"parallelism=$parallelism," +
     s"nodes=${nodes.mkString("[", ", ", "]")}," +
     s"environment=$environment" +
     ")"
