@@ -9,7 +9,7 @@ import akka.stream.alpakka.couchbase.javadsl.CouchbaseCollectionSession
 import akka.stream.alpakka.couchbase.{javadsl, scaladsl}
 import akka.stream.javadsl.Source
 import akka.{Done, NotUsed}
-import com.couchbase.client.java.AsyncBucket
+import com.couchbase.client.java.{AsyncBucket, AsyncCluster}
 import com.couchbase.client.java.json.JsonObject
 import com.couchbase.client.java.query.QueryOptions
 
@@ -46,4 +46,6 @@ private[couchbase] final class CouchbaseSessionJavaAdapter(delegate: scaladsl.Co
 
   override def collection(scopeName: String, collectionName: String): CouchbaseCollectionSession =
     delegate.collection(scopeName, collectionName).asJava
+
+  override def cluster(): AsyncCluster = delegate.cluster()
 }

@@ -65,4 +65,6 @@ final private[couchbase] class CouchbaseSessionImpl(cluster: AsyncCluster, bucke
   override def singleResponseQuery(query: String, queryOptions: QueryOptions): Future[Option[JsonObject]] =
     cluster.query(query, queryOptions)
       .thenApply(getSingleResult(_)).asScala
+
+  override def cluster(): AsyncCluster = cluster
 }
