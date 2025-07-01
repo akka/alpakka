@@ -4,7 +4,7 @@ import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.stream.alpakka.couchbase.scaladsl.{CouchbaseCollectionSession, CouchbaseSession}
 import akka.stream.scaladsl.Source
-import com.couchbase.client.java.codec.{RawBinaryTranscoder, RawStringTranscoder}
+import com.couchbase.client.java.codec.{JsonTranscoder, RawBinaryTranscoder, RawStringTranscoder, Transcoder}
 import com.couchbase.client.java.json.JsonValue
 import com.couchbase.client.java.kv._
 import com.couchbase.client.java.manager.query.{CreateQueryIndexOptions, QueryIndex}
@@ -13,7 +13,7 @@ import rx.{Observable, RxReactiveStreams}
 
 import java.util
 import java.util.concurrent.TimeUnit
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.FutureConverters.CompletionStageOps
 
@@ -28,31 +28,27 @@ class CouchbaseCollectionSessionImpl(bucketSession: CouchbaseSession, scopeName:
   override def asJava = new CouchbaseCollectionSessionJavaAdapter(this)
 
   override def insert[T] (document: (String, T)): Future[(String, T)] = {
-    if (document._2.isInstanceOf[Array[Byte]]) {
-      underlying.insert(document._1, document._2, InsertOptions.insertOptions().transcoder(RawBinaryTranscoder.INSTANCE))
-        .thenApply(_ => document).asScala
-    } else {
-      underlying.insert(document._1, document._2)
-        .thenApply(r => document).asScala
-    }
+    underlying
+      .insert(document._1, document._2,
+        InsertOptions.insertOptions()
+          .transcoder(chooseTranscoder(document._2.getClass))
+      )
+      .asScala.map(_ => document)(ExecutionContext.parasitic)
   }
 
   override def insert[T] (document: (String, T), insertOptions: InsertOptions): Future[(String, T)] = {
     underlying.insert(document._1, document._2, insertOptions)
-      .thenApply(r => document).asScala
+      .asScala
+      .map(r => document)(ExecutionContext.parasitic)
   }
 
   override def get[T](id: String, target: Class[T]): Future[(String, T)] = {
-    val opts = GetOptions.getOptions
-    if (target.isAssignableFrom(classOf[Array[Byte]])) {
-      opts.transcoder(RawBinaryTranscoder.INSTANCE)
-    } else if (target.isAssignableFrom(classOf[String])) {
-      opts.transcoder(RawStringTranscoder.INSTANCE)
-    }
-
-    underlying.get(id, opts).thenApply(gr => {
+    underlying.get(id, GetOptions.getOptions.transcoder(chooseTranscoder(target)))
+      .thenApply(gr => {
         (id, gr.contentAs(target))
-      }).asScala
+      })
+      .asScala
+
   }
 
   override def getDocument(id: String): Future[(String, JsonValue)] =
@@ -81,19 +77,11 @@ class CouchbaseCollectionSessionImpl(bucketSession: CouchbaseSession, scopeName:
       .asScala
 
   override def upsert[T](document: (String, T)): Future[(String, T)] = {
-    if (document._2.isInstanceOf[Array[Byte]]) {
-      underlying.upsert(document._1, document._2, UpsertOptions.upsertOptions().transcoder(RawBinaryTranscoder.INSTANCE))
-        .thenApply(_ => document)
-        .asScala
-    } else if (document._2.isInstanceOf[String]) {
-      underlying.upsert(document._1, document._2, UpsertOptions.upsertOptions().transcoder(RawStringTranscoder.INSTANCE))
-        .thenApply(_ => document)
-        .asScala
-    } else {
-      underlying.upsert(document._1, document._2)
-        .thenApply(_ => document)
-        .asScala
-    }
+    underlying.upsert(document._1, document._2,
+      UpsertOptions.upsertOptions()
+        .transcoder(chooseTranscoder(document._2.getClass))
+    )
+    .asScala.map(_ => document)(ExecutionContext.parasitic)
   }
 
   override def upsert[T](document: (String, T), upsertOptions: UpsertOptions): Future[(String, T)] =
@@ -153,4 +141,11 @@ class CouchbaseCollectionSessionImpl(bucketSession: CouchbaseSession, scopeName:
           .flatMap(indexes => Observable.from(indexes))
       )
     )
+
+  private def chooseTranscoder[T](target: Class[T]): Transcoder =
+    target match {
+      case _: Class[Array[Byte]] => RawBinaryTranscoder.INSTANCE
+      case _: Class[String] => RawStringTranscoder.INSTANCE
+      case _ => bucketSession.cluster().environment().transcoder()
+    }
 }

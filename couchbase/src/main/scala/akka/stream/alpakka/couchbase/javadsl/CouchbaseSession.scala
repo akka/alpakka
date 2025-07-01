@@ -86,6 +86,7 @@ abstract class CouchbaseSession {
   def singleResponseQuery(query: String, queryOptions: QueryOptions): CompletionStage[Optional[JsonObject]]
 
   def collection(scopeName: String, collectionName: String): CouchbaseCollectionSession
+  def cluster(): AsyncCluster
 
   /**
    * Close the session and release all resources it holds. Subsequent calls to other methods will likely fail.

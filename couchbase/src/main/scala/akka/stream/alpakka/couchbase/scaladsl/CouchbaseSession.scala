@@ -90,11 +90,11 @@ trait CouchbaseSession {
   def streamedQuery(query: String, queryOptions: QueryOptions): Source[JsonObject, NotUsed]
   def singleResponseQuery(query: String): Future[Option[JsonObject]]
   def singleResponseQuery(query: String, queryOptions: QueryOptions): Future[Option[JsonObject]]
+  def cluster(): AsyncCluster
 
-  def collection(scopeName: String, collectionName: String): CouchbaseCollectionSession = {
-    collectionSessions.get.get((scopeName, collectionName)) match {
+  def collection(scopeName: String, collectionName: String): CouchbaseCollectionSession = collectionSessions.get.get((scopeName, collectionName)) match {
       case Some(session) => session
-      case _ => {
+      case _ =>
         val oldSessions = collectionSessions.get()
         val newSession = new CouchbaseCollectionSessionImpl(this, scopeName, collectionName)
         val newSessions = oldSessions.clone().addOne(((scopeName, collectionName), newSession))
@@ -103,9 +103,7 @@ trait CouchbaseSession {
         } else {
           collection(scopeName, collectionName)
         }
-      }
     }
-  }
 
   /**
    * Close the session and release all resources it holds. Subsequent calls to other methods will likely fail.
