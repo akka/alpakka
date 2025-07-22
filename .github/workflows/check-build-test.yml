@@ -19,7 +19,7 @@ concurrency:
 jobs:
   style-compile-mima:
     name: Compile, Code Style, Binary Compatibility
-    runs-on: ubuntu-22.04
+    runs-on: Akka-Default
     env:
       JAVA_OPTS: -Xms2G -Xmx2G -Xss2M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8
 
@@ -48,7 +48,7 @@ jobs:
         run: sbt "verifyCodeStyle; +Test/compile; mimaReportBinaryIssues"
 
   connectors:
-    runs-on: ubuntu-22.04
+    runs-on: Akka-Default
 
     strategy:
       fail-fast: false
