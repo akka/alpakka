@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   validate-links:
-    runs-on: ubuntu-22.04
+    runs-on: Akka-Default
     steps:
       - name: Checkout
         # https://github.com/actions/checkout/releases

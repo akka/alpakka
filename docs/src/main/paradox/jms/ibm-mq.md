@@ -11,13 +11,9 @@ MQ settings for this image are shown here: https://github.com/ibm-messaging/mq-d
 
 ## Artifacts
 
-The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
-
-@@repository [sbt,Maven,Gradle] {
-id="akka-repository"
-name="Akka library repository"
-url="https://repo.akka.io/maven"
-}
+@@@note
+The Akka dependencies are available from Akka’s secure library repository. To access them you need to use a secure, tokenized URL as specified at https://account.akka.io/token.
+@@@
 
 Additionally, add the dependencies as below.
 
