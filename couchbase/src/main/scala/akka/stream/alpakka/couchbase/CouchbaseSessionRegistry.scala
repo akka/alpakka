@@ -47,14 +47,12 @@ final class CouchbaseSessionRegistry(system: ExtendedActorSystem) extends Extens
 
   import CouchbaseSessionRegistry._
 
-  private val blockingDispatcher = system.dispatchers.lookup("akka.actor.default-blocking-io-dispatcher")
-
   private val clusterRegistry = new CouchbaseClusterRegistry(system)
 
   private val sessions = new AtomicReference(Map.empty[SessionKey, Future[CouchbaseSession]])
 
   /**
-   * Scala API: Get an existing session or start a new one with the given settings and bucket name,
+   * Scala API: Get an existing session or start a new one with the given settings and bucket, scope and collection names,
    * makes it possible to share one session across plugins.
    *
    * Note that the session must not be stopped manually, it is shut down when the actor system is shutdown,
@@ -90,7 +88,7 @@ final class CouchbaseSessionRegistry(system: ExtendedActorSystem) extends Extens
       // we won cas, initialize session
       val session = clusterRegistry
         .clusterFor(key.settings)
-        .flatMap(cluster => CouchbaseSession(cluster, key.bucketName)(blockingDispatcher))(
+        .flatMap(cluster => CouchbaseSession(cluster, key.bucketName))(
           ExecutionContext.parasitic
         )
       promise.completeWith(session)

@@ -4,22 +4,19 @@
 
 package docs.scaladsl
 
-import akka.stream.alpakka.couchbase.scaladsl.{CouchbaseSession, CouchbaseSource}
+import akka.stream.alpakka.couchbase.scaladsl.CouchbaseSource
 import akka.stream.alpakka.couchbase.testing.CouchbaseSupport
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Sink
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import com.couchbase.client.java.auth.PasswordAuthenticator
-import com.couchbase.client.java.{Bucket, CouchbaseCluster}
-import com.couchbase.client.java.document.json.JsonObject
-import org.scalatest.concurrent.ScalaFutures
+import com.couchbase.client.java.json.JsonValue
 import org.scalatest.BeforeAndAfterAll
-
-import scala.collection.immutable.Seq
-import scala.concurrent.duration._
-import scala.concurrent.Future
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import scala.concurrent.Future
+import scala.concurrent.duration._
 
 class CouchbaseSourceSpec
     extends AnyWordSpec
@@ -33,67 +30,27 @@ class CouchbaseSourceSpec
 
   "CouchbaseSource" should {
 
-    "run simple Statement Query" in assertAllStagesStopped {
+    "run simple Query" in assertAllStagesStopped {
       // #statement
-      import com.couchbase.client.java.query.Select.select
-      import com.couchbase.client.java.query.dsl.Expression._
 
-      val resultAsFuture: Future[Seq[JsonObject]] =
+      val resultAsFuture: Future[Seq[JsonValue]] =
         CouchbaseSource
-          .fromStatement(sessionSettings, select("*").from(i(queryBucketName)).limit(10), bucketName)
+          .fromQuery(sessionSettings, bucketName, "SELECT * FROM `" + bucketName + "`.`" + scopeName + "`.`" +collectionName + "` LIMIT 10")
           .runWith(Sink.seq)
       // #statement
 
       resultAsFuture.futureValue.length shouldEqual 4
-    }
-
-    // TODO implement overload in CouchbaseSource?
-    "allow explicit bucket creation" in assertAllStagesStopped {
-      import com.couchbase.client.java.query.Select.select
-      import com.couchbase.client.java.query.dsl.Expression._
-
-      val cluster: CouchbaseCluster = CouchbaseCluster.create("localhost")
-      cluster.authenticate(new PasswordAuthenticator("Administrator", "password"))
-      val bucket: Bucket = cluster.openBucket("akka")
-      val session: CouchbaseSession = CouchbaseSession(bucket)
-      actorSystem.registerOnTermination {
-        cluster.disconnect()
-      }
-
-      val resultAsFuture: Future[Seq[JsonObject]] =
-        session
-          .streamedQuery(select("*").from(i(queryBucketName)).limit(10))
-          .runWith(Sink.seq)
-
-      resultAsFuture.futureValue.length shouldEqual 4
-    }
-
-    "run simple N1QL query" in assertAllStagesStopped {
-
-      //#n1ql
-      import com.couchbase.client.java.query.{N1qlParams, N1qlQuery}
-
-      val params = N1qlParams.build.adhoc(false)
-      val query = N1qlQuery.simple(s"select count(*) from $queryBucketName", params)
-
-      val resultAsFuture: Future[Seq[JsonObject]] =
-        CouchbaseSource
-          .fromN1qlQuery(sessionSettings, query, bucketName)
-          .runWith(Sink.seq)
-      //#n1ql
-
-      resultAsFuture.futureValue.head.get("$1") shouldEqual 4
     }
 
   }
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    upsertSampleData(queryBucketName)
+    upsertSampleData(bucketName, scopeName, collectionName)
   }
 
   override def afterAll(): Unit = {
-    cleanAllInBucket(queryBucketName)
+    cleanAllInCollection(bucketName, scopeName, collectionName)
     super.afterAll()
   }
 
