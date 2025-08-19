@@ -5,6 +5,7 @@
 package docs.javadsl;
 
 import akka.actor.ActorSystem;
+import akka.http.scaladsl.server.util.Tuple;
 import akka.stream.Materializer;
 // #deleteWithResult
 import akka.stream.alpakka.couchbase.CouchbaseDeleteResult;
@@ -13,7 +14,6 @@ import akka.stream.alpakka.couchbase.CouchbaseDeleteResult;
 import akka.stream.alpakka.couchbase.CouchbaseWriteFailure;
 import akka.stream.alpakka.couchbase.CouchbaseWriteResult;
 // #upsertDocWithResult
-import akka.stream.alpakka.couchbase.CouchbaseWriteSettings;
 import akka.stream.alpakka.couchbase.javadsl.CouchbaseFlow;
 import akka.stream.alpakka.couchbase.javadsl.CouchbaseSource;
 import akka.stream.alpakka.couchbase.testing.CouchbaseSupportClass;
@@ -22,24 +22,12 @@ import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.javadsl.StreamTestKit;
-import com.couchbase.client.java.PersistTo;
-import com.couchbase.client.java.ReplicateTo;
-import com.couchbase.client.java.document.JsonDocument;
-import com.couchbase.client.java.document.StringDocument;
-import com.couchbase.client.java.document.json.JsonObject;
-// #registry
-import com.couchbase.client.java.env.CouchbaseEnvironment;
-import com.couchbase.client.java.env.DefaultCouchbaseEnvironment;
-// #registry
-// #replace
-import com.couchbase.client.java.error.DocumentDoesNotExistException;
-// #replace
-// #n1ql
-import com.couchbase.client.java.query.N1qlParams;
-import com.couchbase.client.java.query.N1qlQuery;
-// #n1ql
-import com.couchbase.client.java.query.SimpleN1qlQuery;
+import com.couchbase.client.core.error.DocumentNotFoundException;
+import com.couchbase.client.java.Cluster;
+import com.couchbase.client.java.env.ClusterEnvironment;
 
+import com.couchbase.client.java.json.JsonObject;
+import com.couchbase.client.java.json.JsonValue;
 import org.junit.*;
 
 import java.time.Duration;
@@ -58,14 +46,9 @@ import akka.stream.alpakka.couchbase.javadsl.CouchbaseSession;
 import java.util.stream.Collectors;
 // #sessionFromBucket
 import com.couchbase.client.java.Bucket;
-import com.couchbase.client.java.CouchbaseCluster;
-import com.couchbase.client.java.auth.PasswordAuthenticator;
 // #sessionFromBucket
-// #statement
-import static com.couchbase.client.java.query.Select.select;
-import static com.couchbase.client.java.query.dsl.Expression.*;
-// #statement
 
+import scala.Tuple2;
 import scala.concurrent.duration.FiniteDuration;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -82,10 +65,10 @@ public class CouchbaseExamplesTest {
   private static final CouchbaseSupportClass support = new CouchbaseSupportClass();
   private static final CouchbaseSessionSettings sessionSettings = support.sessionSettings();
   private static final String bucketName = support.bucketName();
-  private static final String queryBucketName = support.queryBucketName();
+  private static final String queryBucketName = support.bucketName();
   private static ActorSystem actorSystem;
-  private static TestObject sampleData;
-  private static List<TestObject> sampleSequence;
+  private static Tuple2<String, String> sampleData;
+  private static List<Tuple2<String, String>> sampleSequence;
 
   @BeforeClass
   public static void beforeAll() {
@@ -112,7 +95,7 @@ public class CouchbaseExamplesTest {
     CouchbaseSessionRegistry registry = CouchbaseSessionRegistry.get(actorSystem);
 
     // If connecting to more than one Couchbase cluster, the environment should be shared
-    CouchbaseEnvironment environment = DefaultCouchbaseEnvironment.create();
+    ClusterEnvironment environment = ClusterEnvironment.create();
     actorSystem.registerOnTermination(() -> environment.shutdown());
 
     CouchbaseSessionSettings sessionSettings =
@@ -139,15 +122,15 @@ public class CouchbaseExamplesTest {
     sessionCompletionStage.thenAccept(
         session -> {
           String id = "myId";
-          CompletionStage<Optional<JsonDocument>> documentCompletionStage = session.get(id);
-          documentCompletionStage.thenAccept(
-              opt -> {
-                if (opt.isPresent()) {
-                  System.out.println(opt.get());
-                } else {
-                  System.out.println("Document " + id + " wasn't found");
-                }
-              });
+          CompletionStage<Tuple2<String, byte[]>> documentCompletionStage = session.collection(support.scopeName(), support.collectionName()).getBytes(id);
+          documentCompletionStage.exceptionally(ex -> {
+            ex.printStackTrace();
+            return null;
+          }).thenAccept(doc -> {
+            if (doc != null) {
+              System.out.println(doc);
+            }
+          });
         });
     // #session
   }
@@ -156,37 +139,37 @@ public class CouchbaseExamplesTest {
   public void sessionFromBucket() {
     // #sessionFromBucket
 
-    CouchbaseCluster cluster = CouchbaseCluster.create("localhost");
-    cluster.authenticate(new PasswordAuthenticator("Administrator", "password"));
-    Bucket bucket = cluster.openBucket("akka");
-    CouchbaseSession session = CouchbaseSession.create(bucket);
-    actorSystem.registerOnTermination(
-        () -> {
-          session.close();
-          bucket.close();
-        });
+    Cluster cluster = Cluster.connect("localhost", "Administrator", "password");
+    CouchbaseSession.create(cluster.async(), bucketName).thenAccept(session -> {
+      actorSystem.registerOnTermination(
+              () -> {
+                session.close();
+                cluster.close();
+              });
 
-    String id = "First";
-    CompletionStage<Optional<JsonDocument>> documentCompletionStage = session.get(id);
-    documentCompletionStage.thenAccept(
-        opt -> {
-          if (opt.isPresent()) {
-            System.out.println(opt.get());
-          } else {
-            System.out.println("Document " + id + " wasn't found");
-          }
-        });
-    // #sessionFromBucket
+      String id = "First";
+      CompletionStage<Tuple2<String, byte[]>> documentCompletionStage = session.collection(support.scopeName(), support.collectionName()).getBytes(id);
+      documentCompletionStage.thenAccept(
+              opt -> {
+                if (opt != null) {
+                  System.out.println(opt._2());
+                } else {
+                  System.out.println("Document " + id + " wasn't found");
+                }
+              });
+      // #sessionFromBucket
+    });
+
   }
 
   @Test
-  public void statement() throws Exception {
-    support.upsertSampleData(queryBucketName);
+  public void query() throws Exception {
+    support.upsertSampleData(queryBucketName, support.scopeName(), support.collectionName());
     // #statement
 
     CompletionStage<List<JsonObject>> resultCompletionStage =
-        CouchbaseSource.fromStatement(
-                sessionSettings, select("*").from(i(queryBucketName)).limit(10), bucketName)
+        CouchbaseSource.fromQuery(
+                sessionSettings, bucketName, "SELECT * FROM `" + support.bucketName() + "`.`" + support.scopeName() + "`.`" + support.collectionName() + "` LIMIT 10")
             .runWith(Sink.seq(), actorSystem);
     // #statement
     List<JsonObject> jsonObjects =
@@ -195,106 +178,54 @@ public class CouchbaseExamplesTest {
   }
 
   @Test
-  public void n1ql() throws Exception {
-    support.upsertSampleData(queryBucketName);
-    // #n1ql
-
-    N1qlParams params = N1qlParams.build().adhoc(false);
-    SimpleN1qlQuery query = N1qlQuery.simple("select count(*) from " + queryBucketName, params);
-
-    CompletionStage<JsonObject> resultCompletionStage =
-        CouchbaseSource.fromN1qlQuery(sessionSettings, query, bucketName)
-            .runWith(Sink.head(), actorSystem);
-    // #n1ql
-    JsonObject jsonObjects = resultCompletionStage.toCompletableFuture().get(3, TimeUnit.SECONDS);
-    assertEquals(4, jsonObjects.getInt("$1").intValue());
-  }
-
-  @Test
-  public void settings() {
-    // #write-settings
-    CouchbaseWriteSettings writeSettings =
-        CouchbaseWriteSettings.create()
-            .withParallelism(3)
-            .withPersistTo(PersistTo.FOUR)
-            .withReplicateTo(ReplicateTo.THREE)
-            .withTimeout(Duration.ofSeconds(5));
-    // #write-settings
-
-    assertEquals(writeSettings.timeout(), FiniteDuration.apply(5, TimeUnit.SECONDS));
-  }
-
-  @Test
   public void fromId() throws Exception {
-    support.upsertSampleData(queryBucketName);
+    support.upsertSampleData(queryBucketName, support.scopeName(), support.collectionName());
     // #fromId
     List<String> ids = Arrays.asList("First", "Second", "Third", "Fourth");
 
-    CompletionStage<List<JsonDocument>> result =
+    CompletionStage<List<Tuple2<String, byte[]>>> result =
         Source.from(ids)
-            .via(CouchbaseFlow.fromId(sessionSettings, queryBucketName))
+            .via(CouchbaseFlow.bytesFromId(sessionSettings, queryBucketName, support.scopeName(), support.collectionName()))
             .runWith(Sink.seq(), actorSystem);
     // #fromId
 
-    List<JsonDocument> jsonObjects = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
-    assertEquals(4, jsonObjects.size());
+    List<Tuple2<String, byte[]>> docs = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    assertEquals(4, docs.size());
   }
 
   @Test
   public void upsert() throws Exception {
 
-    TestObject obj = new TestObject("First", "First");
-
-    CouchbaseWriteSettings writeSettings = CouchbaseWriteSettings.create();
+    Tuple2<String, String> obj = new Tuple2<>("First", "First");
 
     // #upsert
-    CompletionStage<JsonDocument> jsonDocumentUpsert =
+    CompletionStage<Tuple2<String, String>> jsonDocumentUpsert =
         Source.single(obj)
-            .map(support::toJsonDocument)
-            .via(CouchbaseFlow.upsert(sessionSettings, writeSettings, bucketName))
+            .via(CouchbaseFlow.upsert(sessionSettings, bucketName, support.scopeName(), support.collectionName()))
             .runWith(Sink.head(), actorSystem);
     // #upsert
 
-    JsonDocument document = jsonDocumentUpsert.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    Tuple2<String, String> document = jsonDocumentUpsert.toCompletableFuture().get(3, TimeUnit.SECONDS);
 
-    assert (document.content().get("value") == "First");
+    assert (document._2().equals("First"));
   }
 
   @Test
-  public void upsertDoc() throws Exception {
-    CouchbaseWriteSettings writeSettings = CouchbaseWriteSettings.create();
-
-    // #upsertDoc
-    CompletionStage<StringDocument> stringDocumentUpsert =
-        Source.single(sampleData)
-            .map(support::toStringDocument)
-            .via(CouchbaseFlow.upsertDoc(sessionSettings, writeSettings, bucketName))
-            .runWith(Sink.head(), actorSystem);
-    // #upsertDoc
-
-    StringDocument document = stringDocumentUpsert.toCompletableFuture().get(3, TimeUnit.SECONDS);
-
-    assert (document.content().equals("{\"id\":\"First\",\"value\":\"First\"}"));
-  }
-
-  @Test
-  public void upsertDocWithResult() throws Exception {
-    CouchbaseWriteSettings writeSettings = CouchbaseWriteSettings.create();
+  public void upsertWithResult() throws Exception {
 
     // #upsertDocWithResult
-    CompletionStage<List<CouchbaseWriteResult<StringDocument>>> upsertResults =
+    CompletionStage<List<CouchbaseWriteResult<String>>> upsertResults =
         Source.from(sampleSequence)
-            .map(support::toStringDocument)
-            .via(CouchbaseFlow.upsertDocWithResult(sessionSettings, writeSettings, bucketName))
+            .via(CouchbaseFlow.upsertWithResult(sessionSettings, bucketName, support.scopeName(), support.collectionName()))
             .runWith(Sink.seq(), actorSystem);
 
-    List<CouchbaseWriteResult<StringDocument>> writeResults =
+    List<CouchbaseWriteResult<String>> writeResults =
         upsertResults.toCompletableFuture().get(3, TimeUnit.SECONDS);
-    List<CouchbaseWriteFailure<StringDocument>> failedDocs =
+    List<CouchbaseWriteFailure<String>> failedDocs =
         writeResults.stream()
             .filter(CouchbaseWriteResult::isFailure)
-            .map(res -> (CouchbaseWriteFailure<StringDocument>) res)
-            .collect(Collectors.toList());
+            .map(res -> (CouchbaseWriteFailure<String>) res)
+            .toList();
     // #upsertDocWithResult
 
     assertThat(writeResults.size(), is(sampleSequence.size()));
@@ -304,39 +235,34 @@ public class CouchbaseExamplesTest {
   @Test
   public void replace() throws Exception {
 
-    support.upsertSampleData(bucketName);
+    support.upsertSampleData(bucketName, support.scopeName(), support.collectionName());
 
-    TestObject obj = new TestObject("First", "FirstReplace");
-
-    CouchbaseWriteSettings writeSettings = CouchbaseWriteSettings.create();
+    Tuple2<String, String> obj = new Tuple2<>("First", "FirstReplace");
 
     // #replace
-    CompletionStage<JsonDocument> jsonDocumentReplace =
+    CompletionStage<Tuple2<String, String>> jsonDocumentReplace =
         Source.single(obj)
-            .map(support::toJsonDocument)
-            .via(CouchbaseFlow.replace(sessionSettings, writeSettings, bucketName))
+            .via(CouchbaseFlow.replace(sessionSettings, bucketName, support.scopeName(), support.collectionName()))
             .runWith(Sink.head(), actorSystem);
     // #replace
 
-    JsonDocument document = jsonDocumentReplace.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    Tuple2<String, String> document = jsonDocumentReplace.toCompletableFuture().get(3, TimeUnit.SECONDS);
 
-    assert (document.content().get("value") == "FirstReplace");
+    assert (document._2().equals("FirstReplace"));
   }
 
-  @Test(expected = DocumentDoesNotExistException.class)
+  @Test(expected = DocumentNotFoundException.class)
   public void replaceFailsWhenDocumentDoesntExists() throws Throwable {
 
-    support.cleanAllInBucket(bucketName);
+    support.cleanAllInCollection(bucketName, support.scopeName(), support.collectionName());
 
-    TestObject obj = new TestObject("First", "FirstReplace");
+    Tuple2<String, String> obj = new Tuple2<>("First", "FirstReplace");
 
-    CouchbaseWriteSettings writeSettings = CouchbaseWriteSettings.create();
 
     // #replace
-    CompletionStage<JsonDocument> jsonDocumentReplace =
+    CompletionStage<Tuple2<String, String>> jsonDocumentReplace =
         Source.single(obj)
-            .map(support::toJsonDocument)
-            .via(CouchbaseFlow.replace(sessionSettings, writeSettings, bucketName))
+            .via(CouchbaseFlow.replace(sessionSettings, bucketName, support.scopeName(), support.collectionName()))
             .runWith(Sink.head(), actorSystem);
     // #replace
 
@@ -348,55 +274,30 @@ public class CouchbaseExamplesTest {
   }
 
   @Test
-  public void replaceDoc() throws Exception {
+  public void replaceWithResult() throws Exception {
 
-    support.upsertSampleData(bucketName);
+    support.upsertSampleData(bucketName, support.scopeName(), support.collectionName());
 
-    CouchbaseWriteSettings writeSettings = CouchbaseWriteSettings.create();
-
-    TestObject obj = new TestObject("First", "FirstReplace");
-
-    // #replaceDoc
-    CompletionStage<StringDocument> stringDocumentReplace =
-        Source.single(obj)
-            .map(support::toStringDocument)
-            .via(CouchbaseFlow.replaceDoc(sessionSettings, writeSettings, bucketName))
-            .runWith(Sink.head(), actorSystem);
-    // #replaceDoc
-
-    StringDocument document = stringDocumentReplace.toCompletableFuture().get(3, TimeUnit.SECONDS);
-
-    assert (document.content().equals("{\"id\":\"First\",\"value\":\"FirstReplace\"}"));
-  }
-
-  @Test
-  public void replaceDocWithResult() throws Exception {
-
-    support.upsertSampleData(bucketName);
-
-    CouchbaseWriteSettings writeSettings = CouchbaseWriteSettings.create();
-
-    List<TestObject> list = new ArrayList<TestObject>();
-    list.add(new TestObject("First", "FirstReplace"));
-    list.add(new TestObject("Second", "SecondReplace"));
-    list.add(new TestObject("Third", "ThirdReplace"));
-    list.add(new TestObject("NotExisting", "Nothing")); // should fail
-    list.add(new TestObject("Fourth", "FourthReplace"));
+    List<Tuple2<String, String>> list = new ArrayList<>();
+    list.add(new Tuple2<>("First", "FirstReplace"));
+    list.add(new Tuple2<>("Second", "SecondReplace"));
+    list.add(new Tuple2<>("Third", "ThirdReplace"));
+    list.add(new Tuple2<>("NotExisting", "Nothing")); // should fail
+    list.add(new Tuple2<>("Fourth", "FourthReplace"));
 
     // #replaceDocWithResult
-    CompletionStage<List<CouchbaseWriteResult<StringDocument>>> replaceResults =
+    CompletionStage<List<CouchbaseWriteResult<String>>> replaceResults =
         Source.from(list)
-            .map(support::toStringDocument)
-            .via(CouchbaseFlow.replaceDocWithResult(sessionSettings, writeSettings, bucketName))
+            .via(CouchbaseFlow.replaceWithResult(sessionSettings, bucketName, support.scopeName(), support.collectionName()))
             .runWith(Sink.seq(), actorSystem);
 
-    List<CouchbaseWriteResult<StringDocument>> writeResults =
+    List<CouchbaseWriteResult<String>> writeResults =
         replaceResults.toCompletableFuture().get(3, TimeUnit.SECONDS);
-    List<CouchbaseWriteFailure<StringDocument>> failedDocs =
+    List<CouchbaseWriteFailure<String>> failedDocs =
         writeResults.stream()
             .filter(CouchbaseWriteResult::isFailure)
-            .map(res -> (CouchbaseWriteFailure<StringDocument>) res)
-            .collect(Collectors.toList());
+            .map(res -> (CouchbaseWriteFailure<String>) res)
+            .toList();
     // #replaceDocWithResult
 
     assertThat(writeResults.size(), is(list.size()));
@@ -405,26 +306,24 @@ public class CouchbaseExamplesTest {
 
   @Test
   public void delete() throws Exception {
-    CouchbaseWriteSettings writeSettings = CouchbaseWriteSettings.create();
     // #delete
     CompletionStage<String> result =
-        Source.single(sampleData.id())
-            .via(CouchbaseFlow.delete(sessionSettings, writeSettings, bucketName))
+        Source.single(sampleData._1())
+            .via(CouchbaseFlow.delete(sessionSettings, bucketName, support.scopeName(), support.collectionName()))
             .runWith(Sink.head(), actorSystem);
     // #delete
 
     String id = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
 
-    assertSame(sampleData.id(), id);
+    assertSame(sampleData._1(), id);
   }
 
   @Test
   public void deleteWithResult() throws Exception {
-    CouchbaseWriteSettings writeSettings = CouchbaseWriteSettings.create();
     // #deleteWithResult
     CompletionStage<CouchbaseDeleteResult> result =
         Source.single("non-existent")
-            .via(CouchbaseFlow.deleteWithResult(sessionSettings, writeSettings, bucketName))
+            .via(CouchbaseFlow.deleteWithResult(sessionSettings, bucketName, support.scopeName(), support.collectionName()))
             .runWith(Sink.head(), actorSystem);
     // #deleteWithResult
     CouchbaseDeleteResult deleteResult = result.toCompletableFuture().get(3, TimeUnit.SECONDS);

@@ -34,7 +34,7 @@ object Dependencies {
   val mockitoVersion = "5.13.0" // check even https://github.com/scalatest/scalatestplus-mockito/releases
   val hoverflyVersion = "0.14.1"
 
-  val CouchbaseVersion = "2.7.23"
+  val CouchbaseVersion = "3.8.0"
   val CouchbaseVersionForDocs = VersionNumber(CouchbaseVersion).numbers match {
     case Seq(major, minor, _*) => s"$major.$minor"
   }
