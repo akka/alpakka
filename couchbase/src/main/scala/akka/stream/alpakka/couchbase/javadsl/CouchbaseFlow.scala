@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.couchbase.javadsl
 
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.stream.alpakka.couchbase._
 import akka.stream.javadsl.Flow
 import com.couchbase.client.java.json.JsonValue
@@ -18,7 +18,7 @@ object CouchbaseFlow {
   /**
    * Create a flow to query Couchbase for by `id` and emit [[com.couchbase.client.java.document.JsonDocument JsonDocument]]s.
    */
-  def fromId(sessionSettings: CouchbaseSessionSettings, bucketName: String, scopeName: String, collectionName: String): Flow[String, (String, JsonValue), NotUsed] =
+  def fromId(sessionSettings: CouchbaseSessionSettings, bucketName: String, scopeName: String, collectionName: String): Flow[String, CouchbaseDocument[JsonValue], NotUsed] =
     scaladsl.CouchbaseFlow.fromId(sessionSettings, bucketName, scopeName, collectionName).asJava
 
   /**
@@ -26,51 +26,55 @@ object CouchbaseFlow {
    */
   def fromId[T](sessionSettings: CouchbaseSessionSettings,
                                bucketName: String, scopeName: String, collectionName: String,
-                               target: Class[T]): Flow[String, (String, T), NotUsed] =
+                               target: Class[T]): Flow[String, CouchbaseDocument[T], NotUsed] =
     scaladsl.CouchbaseFlow.fromId(sessionSettings, bucketName, scopeName, collectionName, target).asJava
 
   /**
    * Create a flow to query Couchbase for by `id` and emit [[com.couchbase.client.java.document.JsonDocument JsonDocument]]s.
    */
-  def bytesFromId(sessionSettings: CouchbaseSessionSettings, bucketName: String, scopeName: String, collectionName: String): Flow[String, (String, Array[Byte]), NotUsed] =
+  def bytesFromId(sessionSettings: CouchbaseSessionSettings, bucketName: String, scopeName: String, collectionName: String): Flow[String, CouchbaseDocument[Array[Byte]], NotUsed] =
     scaladsl.CouchbaseFlow.bytesFromId(sessionSettings, bucketName, scopeName, collectionName).asJava
 
   /**
-   * Create a flow to update or insert a Couchbase [[com.couchbase.client.java.document.JsonDocument JsonDocument]].
+   * Create a flow to update or insert a Couchbase document.
    */
   def upsert[T](sessionSettings: CouchbaseSessionSettings,
-             bucketName: String, scopeName: String, collectionName: String): Flow[(String, T), (String, T), NotUsed] =
-    scaladsl.CouchbaseFlow.upsert(sessionSettings, bucketName, scopeName, collectionName).asJava
+             bucketName: String, scopeName: String, collectionName: String): Flow[CouchbaseDocument[T], Done, NotUsed] =
+    scaladsl.CouchbaseFlow
+      .upsert[T](sessionSettings, bucketName, scopeName, collectionName)
+      .asJava
 
   /**
-   * Create a flow to update or insert a Couchbase [[com.couchbase.client.java.document.JsonDocument JsonDocument]].
+   * Create a flow to update or insert a Couchbase document.
    */
   def upsert[T](sessionSettings: CouchbaseSessionSettings,
              upsertOptions: UpsertOptions,
-             bucketName: String, scopeName: String, collectionName: String): Flow[(String, T), (String, T), NotUsed] =
-    scaladsl.CouchbaseFlow.upsert(sessionSettings, upsertOptions, bucketName, scopeName, collectionName).asJava
+             bucketName: String, scopeName: String, collectionName: String): Flow[CouchbaseDocument[T], Done, NotUsed] =
+    scaladsl.CouchbaseFlow
+      .upsert[T](sessionSettings, upsertOptions, bucketName, scopeName, collectionName)
+      .asJava
 
   /**
    * Create a flow to update or insert a Couchbase document of the given class and emit a result so that write failures
    * can be handled in-stream.
    */
   def upsertWithResult[T](sessionSettings: CouchbaseSessionSettings,
-                          bucketName: String, scopeName: String, collectionName: String): Flow[(String, T), CouchbaseWriteResult[T], NotUsed] =
-    scaladsl.CouchbaseFlow.upsertWithResult[T](sessionSettings, bucketName, scopeName, collectionName).asJava[(String, T)]
+                          bucketName: String, scopeName: String, collectionName: String): Flow[CouchbaseDocument[T], CouchbaseWriteResult, NotUsed] =
+    scaladsl.CouchbaseFlow.upsertWithResult[T](sessionSettings, bucketName, scopeName, collectionName).asJava[CouchbaseDocument[T]]
   /**
    * Create a flow to update or insert a Couchbase document of the given class and emit a result so that write failures
    * can be handled in-stream.
    */
   def upsertWithResult[T](sessionSettings: CouchbaseSessionSettings,
                              upsertOptions: UpsertOptions,
-                             bucketName: String, scopeName: String, collectionName: String): Flow[(String, T), CouchbaseWriteResult[T], NotUsed] =
-    scaladsl.CouchbaseFlow.upsertWithResult[T](sessionSettings, upsertOptions, bucketName, scopeName, collectionName).asJava[(String, T)]
+                             bucketName: String, scopeName: String, collectionName: String): Flow[CouchbaseDocument[T], CouchbaseWriteResult, NotUsed] =
+    scaladsl.CouchbaseFlow.upsertWithResult[T](sessionSettings, upsertOptions, bucketName, scopeName, collectionName).asJava
 
   /**
    * Create a flow to replace a Couchbase [[com.couchbase.client.java.document.JsonDocument JsonDocument]].
    */
   def replaceWithResult[T](sessionSettings: CouchbaseSessionSettings,
-                 bucketName: String, scopeName: String, collectionName: String): Flow[(String, T), CouchbaseWriteResult[T], NotUsed] =
+                 bucketName: String, scopeName: String, collectionName: String): Flow[CouchbaseDocument[T], CouchbaseWriteResult, NotUsed] =
     scaladsl.CouchbaseFlow.replaceWithResult[T](sessionSettings, bucketName, scopeName, collectionName).asJava
 
   /**
@@ -78,23 +82,27 @@ object CouchbaseFlow {
    */
   def replaceWithResult[T](sessionSettings: CouchbaseSessionSettings,
                  replaceOptions: ReplaceOptions,
-                 bucketName: String, scopeName: String, collectionName: String): Flow[(String, T), CouchbaseWriteResult[T], NotUsed] =
+                 bucketName: String, scopeName: String, collectionName: String): Flow[CouchbaseDocument[T], CouchbaseWriteResult, NotUsed] =
     scaladsl.CouchbaseFlow.replaceWithResult[T](sessionSettings, replaceOptions, bucketName, scopeName, collectionName).asJava
 
   /**
    * Create a flow to replace a Couchbase [[com.couchbase.client.java.document.JsonDocument JsonDocument]].
    */
   def replace[T](sessionSettings: CouchbaseSessionSettings,
-                 bucketName: String, scopeName: String, collectionName: String): Flow[(String, T), (String, T), NotUsed] =
-    scaladsl.CouchbaseFlow.replace(sessionSettings, bucketName, scopeName, collectionName).asJava
+                 bucketName: String, scopeName: String, collectionName: String): Flow[CouchbaseDocument[T], Done, NotUsed] =
+    scaladsl.CouchbaseFlow
+      .replace[T](sessionSettings, bucketName, scopeName, collectionName)
+      .asJava
 
   /**
    * Create a flow to replace a Couchbase [[com.couchbase.client.java.document.JsonDocument JsonDocument]].
    */
   def replace[T](sessionSettings: CouchbaseSessionSettings,
               replaceOptions: ReplaceOptions,
-              bucketName: String, scopeName: String, collectionName: String): Flow[(String, T), (String, T), NotUsed] =
-    scaladsl.CouchbaseFlow.replace(sessionSettings, replaceOptions, bucketName, scopeName, collectionName).asJava
+              bucketName: String, scopeName: String, collectionName: String): Flow[(String, T), Done, NotUsed] =
+    scaladsl.CouchbaseFlow
+      .replace[T](sessionSettings, replaceOptions, bucketName, scopeName, collectionName)
+      .asJava
 
   /**
    * Create a flow to delete documents from Couchbase by `id`. Emits the same `id`.

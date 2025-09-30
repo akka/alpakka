@@ -4,8 +4,9 @@
 
 package akka.stream.alpakka.couchbase.javadsl
 
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.annotation.DoNotInherit
+import akka.stream.alpakka.couchbase.CouchbaseDocument
 import akka.stream.javadsl.Source
 import com.couchbase.client.java.json.{JsonArray, JsonObject, JsonValue}
 import com.couchbase.client.java.kv.{InsertOptions, RemoveOptions, ReplaceOptions, UpsertOptions}
@@ -47,39 +48,39 @@ abstract class CouchbaseCollectionSession {
    * @param document A tuple where first element is id of the document and second is its value
    * @return A Future that completes with the id of the written document when the write is done
    */
-  def insert[T](document: (String, T)): CompletionStage[(String, T)]
-  def insert[T](document: (String, T), insertOptions: InsertOptions): CompletionStage[(String, T)]
+  def insert[T](id: String, document: T): CompletionStage[Done]
+  def insert[T](id: String, document: T, insertOptions: InsertOptions): CompletionStage[Done]
 
-  def getJsonObject(id: String): CompletionStage[(String, JsonObject)]
-  def getJsonArray(id: String): CompletionStage[(String, JsonArray)]
-  def get[T](id: String, target: Class[T]): CompletionStage[(String, T)]
+  def getJsonObject(id: String): CompletionStage[CouchbaseDocument[JsonObject]]
+  def getJsonArray(id: String): CompletionStage[CouchbaseDocument[JsonArray]]
+  def get[T](id: String, target: Class[T]): CompletionStage[CouchbaseDocument[T]]
   /**
    * @return A document if found or none if there is no document for the id
    */
-  def getDocument(id: String): CompletionStage[(String, JsonValue)]
+  def getDocument(id: String): CompletionStage[CouchbaseDocument[JsonValue]]
 
   /**
    * @param id Identifier of the document to fetch
    * @return Raw data for the document or none
    */
-  def getBytes(id: String): CompletionStage[(String, Array[Byte])]
+  def getBytes(id: String): CompletionStage[CouchbaseDocument[Array[Byte]]]
 
   /**
    * @param timeout fail the returned future with a TimeoutException if it takes longer than this
    * @return A document if found or none if there is no document for the id
    */
-  def getDocument(id: String, timeout: Duration): CompletionStage[(String, JsonValue)]
+  def getDocument(id: String, timeout: Duration): CompletionStage[CouchbaseDocument[JsonValue]]
 
   /**
    * @return A raw document data if found or none if there is no document for the id
    */
-  def getBytes(id: String, timeout: Duration): CompletionStage[(String, Array[Byte])]
+  def getBytes(id: String, timeout: Duration): CompletionStage[CouchbaseDocument[Array[Byte]]]
 
   /**
    * Upsert using the default write settings.
    * @return a future that completes when the upsert is done
    */
-  def upsert[T](document: (String, T)): CompletionStage[(String, T)]
+  def upsert[T](id: String, document: T): CompletionStage[Done]
 
   /**
    * Upsert using the given write settings
@@ -88,16 +89,17 @@ abstract class CouchbaseCollectionSession {
    *
    * @return a future that completes when the upsert is done
    */
-  def upsert[T](document: (String, T), upsertOptions: UpsertOptions): CompletionStage[(String, T)]
+  def upsert[T](id: String, document: T, upsertOptions: UpsertOptions): CompletionStage[Done]
 
   /**
    * Upsert using given write settings and timeout
-   * @param document document id and value to upsert
+   * @param id document id
+   * @param document document value to upsert
    * @param upsertOptions Couchbase UpsertOptions
    * @param timeout timeout for the operation
    * @return the document id and value
    */
-  def upsert[T](document: (String, T), upsertOptions: UpsertOptions, timeout: Duration): CompletionStage[(String, T)]
+  def upsert[T](id: String, document: T, upsertOptions: UpsertOptions, timeout: Duration): CompletionStage[Done]
 
   /**
    * Replace using the default write settings.
@@ -106,7 +108,7 @@ abstract class CouchbaseCollectionSession {
    *
    * @return a future that completes when the replace is done
    */
-  def replace[T](document: (String, T)): CompletionStage[(String, T)]
+  def replace[T](id: String, document: T): CompletionStage[Done]
 
   /**
    * Replace using the given replace options
@@ -115,16 +117,17 @@ abstract class CouchbaseCollectionSession {
    *
    * @return a future that completes when the replace is done
    */
-  def replace[T](document: (String, T), replaceOptions: ReplaceOptions): CompletionStage[(String, T)]
+  def replace[T](id: String, document: T, replaceOptions: ReplaceOptions): CompletionStage[Done]
 
   /**
    * Replace using write settings and timeout
-   * @param document document id and value to replace
+   * @param id document id
+   * @param document document value to replace
    * @param replaceOptions Couchbase replace options
    * @param timeout timeout for the operation
    * @return the document id and value
    */
-  def replace[T](document: (String, T), replaceOptions: ReplaceOptions, timeout: Duration): CompletionStage[(String, T)]
+  def replace[T](id: String, document: T, replaceOptions: ReplaceOptions, timeout: Duration): CompletionStage[Done]
 
   /**
    * Remove a document by id using the default write settings.
@@ -132,7 +135,7 @@ abstract class CouchbaseCollectionSession {
    * @return Future that completes when the document has been removed, if there is no such document
    *         the future is failed with a `DocumentDoesNotExistException`
    */
-  def remove(id: String): CompletionStage[String]
+  def remove(id: String): CompletionStage[Done]
 
   /**
    * Remove a document by id using the default write settings.
@@ -140,7 +143,7 @@ abstract class CouchbaseCollectionSession {
    * @return Future that completes when the document has been removed, if there is no such document
    *         the future is failed with a `DocumentDoesNotExistException`
    */
-  def remove(id: String, removeOptions: RemoveOptions): CompletionStage[String]
+  def remove(id: String, removeOptions: RemoveOptions): CompletionStage[Done]
 
   /**
    * Removes document with given id, remove options and timeout
@@ -149,7 +152,7 @@ abstract class CouchbaseCollectionSession {
    * @param timeout timeout
    * @return the id
    */
-  def remove(id: String, removeOptions: RemoveOptions, timeout: Duration): CompletionStage[String]
+  def remove(id: String, removeOptions: RemoveOptions, timeout: Duration): CompletionStage[Done]
 
   /**
    * Create a secondary index for the current collection.
@@ -157,11 +160,11 @@ abstract class CouchbaseCollectionSession {
    * @param indexName the name of the index.
    * @param createQueryIndexOptions Couchbase index options
    * @param fields the JSON fields to index
-   * @return a [[scala.concurrent.Future]] of `true` if the index was/will be effectively created, `false`
+   * @return a [[CompletionStage]] of `true` if the index was/will be effectively created, `false`
    *      if the index existed and `ignoreIfExist` is `true`. Completion of the future does not guarantee the index is online
    *      and ready to be used.
    */
-  def createIndex(indexName: String, createQueryIndexOptions: CreateQueryIndexOptions, fields: String*): CompletionStage[Void]
+  def createIndex(indexName: String, createQueryIndexOptions: CreateQueryIndexOptions, fields: String*): CompletionStage[Done]
 
   /**
    * List the existing secondary indexes for the collection

@@ -6,7 +6,7 @@ package akka.stream.alpakka.couchbase.testing
 
 import akka.Done
 import akka.actor.ActorSystem
-import akka.stream.alpakka.couchbase.CouchbaseSessionSettings
+import akka.stream.alpakka.couchbase.{CouchbaseDocument, CouchbaseSessionSettings}
 import akka.stream.alpakka.couchbase.scaladsl._
 import akka.stream.scaladsl.{Sink, Source}
 import org.slf4j.LoggerFactory
@@ -26,13 +26,13 @@ trait CouchbaseSupport {
   implicit val actorSystem: ActorSystem = ActorSystem()
   //#init-actor-system
 
-  val sampleData = ("First", "First")
+  val sampleData = new CouchbaseDocument("First", "First")
 
-  val sampleSequence: Seq[(String, String)] = sampleData +: Seq[(String, String)](("Second", "Second"),
-                                                                      ("Third", "Third"),
-                                                                      ("Fourth", "Fourth"))
+  val sampleSequence: Seq[CouchbaseDocument[String]] = sampleData +: Seq[CouchbaseDocument[String]](new CouchbaseDocument("Second", "Second"),
+                                                                      new CouchbaseDocument("Third", "Third"),
+                                                                      new CouchbaseDocument("Fourth", "Fourth"))
 
-  val sampleJavaList: java.util.List[(String, String)] = sampleSequence.asJava
+  val sampleJavaList: java.util.List[CouchbaseDocument[String]] = sampleSequence.asJava
 
   val sessionSettings = CouchbaseSessionSettings(actorSystem)
   val bucketName = "akka"
@@ -56,7 +56,7 @@ trait CouchbaseSupport {
   }
 
   def cleanAllInCollection(bucketName: String, scopeName: String, collectionName: String): Unit =
-    cleanAllInCollection(sampleSequence.map(_._1), bucketName, scopeName, collectionName)
+    cleanAllInCollection(sampleSequence.map(_.getId), bucketName, scopeName, collectionName)
 
   def cleanAllInCollection(ids: Seq[String], bucketName: String, scopeName: String, collectionName: String): Unit = {
     val result: Future[Done] =
