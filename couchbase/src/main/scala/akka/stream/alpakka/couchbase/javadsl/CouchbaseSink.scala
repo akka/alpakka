@@ -21,26 +21,26 @@ object CouchbaseSink {
    * Create a sink to update or insert a Couchbase [[com.couchbase.client.java.document.JsonDocument JsonDocument]].
    */
   def upsert(sessionSettings: CouchbaseSessionSettings,
-             bucketName: String, scopeName: String, collectionName: String): Sink[(String, JsonValue), CompletionStage[Done]] =
+             bucketName: String, scopeName: String, collectionName: String): Sink[CouchbaseDocument[JsonValue], CompletionStage[Done]] =
     CouchbaseFlow
       .upsert(sessionSettings, bucketName, scopeName, collectionName)
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
-   * Create a sink to update or insert a Couchbase [[com.couchbase.client.java.document.JsonDocument JsonDocument]].
+   * Create a sink to update or insert a Couchbase document.
    */
   def upsert(sessionSettings: CouchbaseSessionSettings,
              upsertOptions: UpsertOptions,
-             bucketName: String, scopeName: String, collectionName: String): Sink[(String, JsonValue), CompletionStage[Done]] =
+             bucketName: String, scopeName: String, collectionName: String): Sink[CouchbaseDocument[JsonValue], CompletionStage[Done]] =
     CouchbaseFlow
       .upsert(sessionSettings, upsertOptions, bucketName, scopeName, collectionName)
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
-   * Create a sink to replace a Couchbase [[com.couchbase.client.java.document.JsonDocument JsonDocument]].
+   * Create a sink to replace a Couchbase document.
    */
   def replace(sessionSettings: CouchbaseSessionSettings,
-              bucketName: String, scopeName: String, collectionName: String): Sink[(String, Any), CompletionStage[Done]] =
+              bucketName: String, scopeName: String, collectionName: String): Sink[CouchbaseDocument[Any], CompletionStage[Done]] =
     CouchbaseFlow
       .replace(sessionSettings, bucketName, scopeName, collectionName)
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])

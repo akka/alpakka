@@ -21,7 +21,7 @@ object CouchbaseSink {
    */
   def upsert[T](sessionSettings: CouchbaseSessionSettings,
                 upsertOptions: UpsertOptions,
-             bucketName: String, scopeName: String, collectionName: String): Sink[(String, T), Future[Done]] =
+             bucketName: String, scopeName: String, collectionName: String): Sink[CouchbaseDocument[T], Future[Done]] =
     CouchbaseFlow.upsert[T](sessionSettings, upsertOptions, bucketName, scopeName, collectionName).toMat(Sink.ignore)(Keep.right)
 
   /**

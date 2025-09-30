@@ -4,10 +4,10 @@
 
 package akka.stream.alpakka.couchbase.impl
 
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.annotation.InternalApi
 import akka.stream.alpakka.couchbase.javadsl.CouchbaseSession
-import akka.stream.alpakka.couchbase.{javadsl, scaladsl}
+import akka.stream.alpakka.couchbase.{CouchbaseDocument, javadsl, scaladsl}
 import akka.stream.javadsl.Source
 import com.couchbase.client.java.json.{JsonArray, JsonObject, JsonValue}
 import com.couchbase.client.java.kv.{InsertOptions, RemoveOptions, ReplaceOptions, UpsertOptions}
@@ -16,6 +16,7 @@ import com.couchbase.client.java.{AsyncCollection, AsyncScope}
 
 import java.time.Duration
 import java.util.concurrent.{CompletionStage, TimeUnit}
+import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.FutureConverters._
 
@@ -40,44 +41,44 @@ private[couchbase] final class CouchbaseCollectionSessionJavaAdapter(delegate: s
    * @param document A tuple where first element is id of the document and second is its value
    * @return A Future that completes with the id of the written document when the write is done
    */
-  override def insert[T](document: (String, T)): CompletionStage[(String, T)] =
-    delegate.insert(document).asJava
+  override def insert[T](id: String, document: T): CompletionStage[Done] =
+    delegate.insert(id, document).asJava
 
-  override def insert[T](document: (String, T), insertOptions: InsertOptions): CompletionStage[(String, T)] =
-    delegate.insert(document, insertOptions).asJava
+  override def insert[T](id: String, document: T, insertOptions: InsertOptions): CompletionStage[Done] =
+    delegate.insert(id, document, insertOptions).asJava
 
-  override def getJsonObject(id: String): CompletionStage[(String, JsonObject)] =
+  override def getJsonObject(id: String): CompletionStage[CouchbaseDocument[JsonObject]] =
     delegate.getJsonObject(id).asJava
 
-  override def getJsonArray(id: String): CompletionStage[(String, JsonArray)] =
+  override def getJsonArray(id: String): CompletionStage[CouchbaseDocument[JsonArray]] =
     delegate.getJsonArray(id).asJava
 
-  override def get[T](id: String, target: Class[T]): CompletionStage[(String, T)] =
+  override def get[T](id: String, target: Class[T]): CompletionStage[CouchbaseDocument[T]] =
     delegate.get(id, target).asJava
   /**
    * @return A document if found or none if there is no document for the id
    */
-  override def getDocument(id: String): CompletionStage[(String, JsonValue)] =
+  override def getDocument(id: String): CompletionStage[CouchbaseDocument[JsonValue]] =
     delegate.getDocument(id).asJava
 
   /**
    * @param id Identifier of the document to fetch
    * @return Raw data for the document or none
    */
-  override def getBytes(id: String): CompletionStage[(String, Array[Byte])] =
+  override def getBytes(id: String): CompletionStage[CouchbaseDocument[Array[Byte]]] =
     delegate.getBytes(id).asJava
 
   /**
    * @param timeout fail the returned future with a TimeoutException if it takes longer than this
    * @return A document if found or none if there is no document for the id
    */
-  override def getDocument(id: String, timeout: Duration): CompletionStage[(String, JsonValue)] =
+  override def getDocument(id: String, timeout: Duration): CompletionStage[CouchbaseDocument[JsonValue]] =
     delegate.getDocument(id, FiniteDuration.apply(timeout.toNanos, TimeUnit.NANOSECONDS)).asJava
 
   /**
    * @return A raw document data if found or none if there is no document for the id
    */
-  override def getBytes(id: String, timeout: Duration): CompletionStage[(String, Array[Byte])] =
+  override def getBytes(id: String, timeout: Duration): CompletionStage[CouchbaseDocument[Array[Byte]]] =
     delegate.getBytes(id, FiniteDuration.apply(timeout.toNanos, TimeUnit.NANOSECONDS)).asJava
 
   /**
@@ -85,8 +86,8 @@ private[couchbase] final class CouchbaseCollectionSessionJavaAdapter(delegate: s
    *
    * @return a future that completes when the upsert is done
    */
-  override def upsert[T](document: (String, T)): CompletionStage[(String, T)] =
-    delegate.upsert(document).asJava
+  override def upsert[T](id: String, document: T): CompletionStage[Done] =
+    delegate.upsert(id, document).asJava
 
   /**
    * Upsert using the given write settings
@@ -95,19 +96,20 @@ private[couchbase] final class CouchbaseCollectionSessionJavaAdapter(delegate: s
    *
    * @return a future that completes when the upsert is done
    */
-  override def upsert[T](document: (String, T), upsertOptions: UpsertOptions): CompletionStage[(String, T)] =
-    delegate.upsert(document, upsertOptions).asJava
+  override def upsert[T](id: String, document: T, upsertOptions: UpsertOptions): CompletionStage[Done] =
+    delegate.upsert(id, document, upsertOptions).asJava
 
   /**
    * Upsert using given write settings and timeout
    *
-   * @param document      document id and value to upsert
+   * @param id document id
+   * @param document      document value to upsert
    * @param upsertOptions Couchbase UpsertOptions
    * @param timeout       timeout for the operation
-   * @return the document id and value
+   * @return a future that completes after the operation is done
    */
-  override def upsert[T](document: (String, T), upsertOptions: UpsertOptions, timeout: Duration): CompletionStage[(String, T)] =
-    delegate.upsert(document, upsertOptions, FiniteDuration.apply(timeout.toNanos, TimeUnit.NANOSECONDS)).asJava
+  override def upsert[T](id: String, document: T, upsertOptions: UpsertOptions, timeout: Duration): CompletionStage[Done] =
+    delegate.upsert(id, document, upsertOptions, FiniteDuration.apply(timeout.toNanos, TimeUnit.NANOSECONDS)).asJava
 
   /**
    * Replace using the default write settings.
@@ -116,8 +118,8 @@ private[couchbase] final class CouchbaseCollectionSessionJavaAdapter(delegate: s
    *
    * @return a future that completes when the replace is done
    */
-  override def replace[T](document: (String, T)): CompletionStage[(String, T)] =
-    delegate.replace(document).asJava
+  override def replace[T](id: String, document: T): CompletionStage[Done] =
+    delegate.replace(id, document).asJava
 
   /**
    * Replace using the given replace options
@@ -126,19 +128,20 @@ private[couchbase] final class CouchbaseCollectionSessionJavaAdapter(delegate: s
    *
    * @return a future that completes when the replace is done
    */
-  override def replace[T](document: (String, T), replaceOptions: ReplaceOptions): CompletionStage[(String, T)] =
-    delegate.replace(document, replaceOptions).asJava
+  override def replace[T](id: String, document: T, replaceOptions: ReplaceOptions): CompletionStage[Done] =
+    delegate.replace(id, document, replaceOptions).asJava
 
   /**
    * Replace using write settings and timeout
    *
-   * @param document       document id and value to replace
+   * @param id id of the document to replace
+   * @param document       document value to replace
    * @param replaceOptions Couchbase replace options
    * @param timeout        timeout for the operation
-   * @return the document id and value
+   * @return a future that completes after the operation is done
    */
-  override def replace[T](document: (String, T), replaceOptions: ReplaceOptions, timeout: Duration): CompletionStage[(String, T)] =
-    delegate.replace(document, replaceOptions, FiniteDuration.apply(timeout.toNanos, TimeUnit.NANOSECONDS)).asJava
+  override def replace[T](id: String, document: T, replaceOptions: ReplaceOptions, timeout: Duration): CompletionStage[Done] =
+    delegate.replace(id, document, replaceOptions, FiniteDuration.apply(timeout.toNanos, TimeUnit.NANOSECONDS)).asJava
 
   /**
    * Remove a document by id using the default write settings.
@@ -146,7 +149,7 @@ private[couchbase] final class CouchbaseCollectionSessionJavaAdapter(delegate: s
    * @return Future that completes when the document has been removed, if there is no such document
    *         the future is failed with a `DocumentDoesNotExistException`
    */
-  override def remove(id: String): CompletionStage[String] =
+  override def remove(id: String): CompletionStage[Done] =
     delegate.remove(id).asJava
 
   /**
@@ -155,7 +158,7 @@ private[couchbase] final class CouchbaseCollectionSessionJavaAdapter(delegate: s
    * @return Future that completes when the document has been removed, if there is no such document
    *         the future is failed with a `DocumentDoesNotExistException`
    */
-  override def remove(id: String, removeOptions: RemoveOptions): CompletionStage[String] =
+  override def remove(id: String, removeOptions: RemoveOptions): CompletionStage[Done] =
     delegate.remove(id, removeOptions).asJava
 
   /**
@@ -179,7 +182,7 @@ private[couchbase] final class CouchbaseCollectionSessionJavaAdapter(delegate: s
    *         if the index existed and `ignoreIfExist` is `true`. Completion of the future does not guarantee the index is online
    *         and ready to be used.
    */
-  override def createIndex(indexName: String, createQueryIndexOptions: CreateQueryIndexOptions, fields: String*): CompletionStage[Void] =
+  override def createIndex(indexName: String, createQueryIndexOptions: CreateQueryIndexOptions, fields: String*): CompletionStage[Done] =
     delegate.createIndex(indexName, createQueryIndexOptions, fields: _*).asJava
 
   /**

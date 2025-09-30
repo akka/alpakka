@@ -170,16 +170,16 @@ final class CouchbaseSessionSettings private (
 /**
  * Wrapper to for handling Couchbase write failures in-stream instead of failing the stream.
  */
-sealed trait CouchbaseWriteResult[T] {
+sealed trait CouchbaseWriteResult {
   def isSuccess: Boolean
   def isFailure: Boolean
-  def doc: (String, T)
+  def id: String
 }
 
 /**
  * Emitted for a successful Couchbase write operation.
  */
-final case class CouchbaseWriteSuccess[T] private (override val doc: (String, T)) extends CouchbaseWriteResult[T] {
+final case class CouchbaseWriteSuccess private (override val id: String) extends CouchbaseWriteResult {
   val isSuccess: Boolean = true
   val isFailure: Boolean = false
 }
@@ -187,8 +187,8 @@ final case class CouchbaseWriteSuccess[T] private (override val doc: (String, T)
 /**
  * Emitted for a failed Couchbase write operation.
  */
-final case class CouchbaseWriteFailure[T] private (override val doc: (String, T), failure: Throwable)
-    extends CouchbaseWriteResult[T] {
+final case class CouchbaseWriteFailure private (override val id: String, failure: Throwable)
+    extends CouchbaseWriteResult {
   val isSuccess: Boolean = false
   val isFailure: Boolean = true
 }
