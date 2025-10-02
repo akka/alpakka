@@ -35,7 +35,9 @@ class CouchbaseSourceSpec
 
       val resultAsFuture: Future[Seq[JsonValue]] =
         CouchbaseSource
-          .fromQuery(sessionSettings, bucketName, "SELECT * FROM `" + bucketName + "`.`" + scopeName + "`.`" +collectionName + "` LIMIT 10")
+          .fromQuery(sessionSettings,
+                     bucketName,
+                     "SELECT * FROM `" + bucketName + "`.`" + scopeName + "`.`" + collectionName + "` LIMIT 10")
           .runWith(Sink.seq)
       // #statement
 

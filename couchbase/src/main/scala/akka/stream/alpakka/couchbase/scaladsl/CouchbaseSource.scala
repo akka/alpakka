@@ -14,12 +14,19 @@ import com.couchbase.client.java.query.QueryOptions
  * Scala API: Factory methods for Couchbase sources.
  */
 object CouchbaseSource {
-  def fromQuery(sessionSettings: CouchbaseSessionSettings, bucketName: String, query: String, queryOptions: QueryOptions = QueryOptions.queryOptions()) : Source[JsonObject, NotUsed] =
-    Source.fromMaterializer { (materializer, _) =>
-      Source.future(
-      CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
-        .map(_.streamedQuery(query, queryOptions))(materializer.system.dispatcher))
-        .flatMapConcat(identity)
-    }
+  def fromQuery(sessionSettings: CouchbaseSessionSettings,
+                bucketName: String,
+                query: String,
+                queryOptions: QueryOptions = QueryOptions.queryOptions()): Source[JsonObject, NotUsed] =
+    Source
+      .fromMaterializer { (materializer, _) =>
+        Source
+          .future(
+            CouchbaseSessionRegistry(materializer.system)
+              .sessionFor(sessionSettings, bucketName)
+              .map(_.streamedQuery(query, queryOptions))(materializer.system.dispatcher)
+          )
+          .flatMapConcat(identity)
+      }
       .mapMaterializedValue(_ => NotUsed)
 }

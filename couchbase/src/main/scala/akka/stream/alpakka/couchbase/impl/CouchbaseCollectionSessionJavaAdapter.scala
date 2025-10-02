@@ -7,7 +7,7 @@ package akka.stream.alpakka.couchbase.impl
 import akka.{Done, NotUsed}
 import akka.annotation.InternalApi
 import akka.stream.alpakka.couchbase.javadsl.CouchbaseSession
-import akka.stream.alpakka.couchbase.{CouchbaseDocument, javadsl, scaladsl}
+import akka.stream.alpakka.couchbase.{javadsl, scaladsl, CouchbaseDocument}
 import akka.stream.javadsl.Source
 import com.couchbase.client.java.json.{JsonArray, JsonObject, JsonValue}
 import com.couchbase.client.java.kv.{InsertOptions, RemoveOptions, ReplaceOptions, UpsertOptions}
@@ -54,6 +54,7 @@ private[couchbase] final class CouchbaseCollectionSessionJavaAdapter(delegate: s
 
   override def get[T](id: String, target: Class[T]): CompletionStage[CouchbaseDocument[T]] =
     delegate.get(id, target).asJava
+
   /**
    * @return A document if found or none if there is no document for the id
    */
@@ -107,7 +108,10 @@ private[couchbase] final class CouchbaseCollectionSessionJavaAdapter(delegate: s
    * @param timeout       timeout for the operation
    * @return a future that completes after the operation is done
    */
-  override def upsert[T](id: String, document: T, upsertOptions: UpsertOptions, timeout: Duration): CompletionStage[Done] =
+  override def upsert[T](id: String,
+                         document: T,
+                         upsertOptions: UpsertOptions,
+                         timeout: Duration): CompletionStage[Done] =
     delegate.upsert(id, document, upsertOptions, FiniteDuration.apply(timeout.toNanos, TimeUnit.NANOSECONDS)).asJava
 
   /**
@@ -139,7 +143,10 @@ private[couchbase] final class CouchbaseCollectionSessionJavaAdapter(delegate: s
    * @param timeout        timeout for the operation
    * @return a future that completes after the operation is done
    */
-  override def replace[T](id: String, document: T, replaceOptions: ReplaceOptions, timeout: Duration): CompletionStage[Done] =
+  override def replace[T](id: String,
+                          document: T,
+                          replaceOptions: ReplaceOptions,
+                          timeout: Duration): CompletionStage[Done] =
     delegate.replace(id, document, replaceOptions, FiniteDuration.apply(timeout.toNanos, TimeUnit.NANOSECONDS)).asJava
 
   /**
@@ -181,7 +188,9 @@ private[couchbase] final class CouchbaseCollectionSessionJavaAdapter(delegate: s
    *         if the index existed and `ignoreIfExist` is `true`. Completion of the future does not guarantee the index is online
    *         and ready to be used.
    */
-  override def createIndex(indexName: String, createQueryIndexOptions: CreateQueryIndexOptions, fields: String*): CompletionStage[Done] =
+  override def createIndex(indexName: String,
+                           createQueryIndexOptions: CreateQueryIndexOptions,
+                           fields: String*): CompletionStage[Done] =
     delegate.createIndex(indexName, createQueryIndexOptions, fields: _*).asJava
 
   /**

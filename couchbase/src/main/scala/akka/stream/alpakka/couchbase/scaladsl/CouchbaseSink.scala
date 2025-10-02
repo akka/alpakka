@@ -21,15 +21,23 @@ object CouchbaseSink {
    */
   def upsert[T](sessionSettings: CouchbaseSessionSettings,
                 upsertOptions: UpsertOptions,
-             bucketName: String, scopeName: String, collectionName: String): Sink[CouchbaseDocument[T], Future[Done]] =
-    CouchbaseFlow.upsert[T](sessionSettings, upsertOptions, bucketName, scopeName, collectionName).toMat(Sink.ignore)(Keep.right)
+                bucketName: String,
+                scopeName: String,
+                collectionName: String): Sink[CouchbaseDocument[T], Future[Done]] =
+    CouchbaseFlow
+      .upsert[T](sessionSettings, upsertOptions, bucketName, scopeName, collectionName)
+      .toMat(Sink.ignore)(Keep.right)
 
   /**
    * Create a sink to delete documents from Couchbase by `id`.
    */
   def delete(sessionSettings: CouchbaseSessionSettings,
              removeOptions: RemoveOptions,
-             bucketName: String, scopeName: String, collectionName: String): Sink[String, Future[Done]] =
-    CouchbaseFlow.delete(sessionSettings, removeOptions, bucketName, scopeName, collectionName).toMat(Sink.ignore)(Keep.right)
+             bucketName: String,
+             scopeName: String,
+             collectionName: String): Sink[String, Future[Done]] =
+    CouchbaseFlow
+      .delete(sessionSettings, removeOptions, bucketName, scopeName, collectionName)
+      .toMat(Sink.ignore)(Keep.right)
 
 }

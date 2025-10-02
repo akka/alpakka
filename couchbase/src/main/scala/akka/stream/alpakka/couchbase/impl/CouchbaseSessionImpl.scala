@@ -24,23 +24,33 @@ import scala.jdk.FutureConverters.CompletionStageOps
  */
 @InternalApi
 final private[couchbase] class CouchbaseSessionImpl(cluster: AsyncCluster, bucketName: String)
-  extends CouchbaseSession {
+    extends CouchbaseSession {
 
   override def asJava: javadsl.CouchbaseSession = new CouchbaseSessionJavaAdapter(this)
 
   override def underlying: AsyncBucket = cluster.bucket(bucketName)
 
   override def streamedQuery(query: String): Source[JsonObject, NotUsed] = {
-    Source.fromIterator(() =>
-      cluster.query(query)
-        .get().rowsAsObject().iterator().asScala
+    Source.fromIterator(
+      () =>
+        cluster
+          .query(query)
+          .get()
+          .rowsAsObject()
+          .iterator()
+          .asScala
     )
   }
 
   override def streamedQuery(query: String, queryOptions: QueryOptions): Source[JsonObject, NotUsed] =
-    Source.fromIterator(() =>
-        cluster.query(query, queryOptions)
-          .get().rowsAsObject().iterator().asScala
+    Source.fromIterator(
+      () =>
+        cluster
+          .query(query, queryOptions)
+          .get()
+          .rowsAsObject()
+          .iterator()
+          .asScala
     )
 
   def close(): Future[Done] =
@@ -56,15 +66,17 @@ final private[couchbase] class CouchbaseSessionImpl(cluster: AsyncCluster, bucke
     Option.apply(rows.iterator.next)
   }
 
-
   override def singleResponseQuery(query: String): Future[Option[JsonObject]] =
-    cluster.query(query)
-      .thenApply(getSingleResult(_)).asScala
-
+    cluster
+      .query(query)
+      .thenApply(getSingleResult(_))
+      .asScala
 
   override def singleResponseQuery(query: String, queryOptions: QueryOptions): Future[Option[JsonObject]] =
-    cluster.query(query, queryOptions)
-      .thenApply(getSingleResult(_)).asScala
+    cluster
+      .query(query, queryOptions)
+      .thenApply(getSingleResult(_))
+      .asScala
 
   override def cluster(): AsyncCluster = cluster
 }

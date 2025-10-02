@@ -15,8 +15,6 @@ import scala.concurrent.Future
 import scala.jdk.CollectionConverters._
 import scala.jdk.FutureConverters._
 
-
-
 object CouchbaseSessionSettings {
 
   val configPath = "alpakka.couchbase.session"
@@ -31,7 +29,12 @@ object CouchbaseSessionSettings {
     val password = config.getString("password")
     val nodes = config.getStringList("nodes").asScala.toList
     val parallelism = if (config.hasPath("parallelism")) config.getInt("parallelism") else 1
-    new CouchbaseSessionSettings(username, password, nodes, parallelism, environment = None, enrichAsync = Future.successful)
+    new CouchbaseSessionSettings(username,
+                                 password,
+                                 nodes,
+                                 parallelism,
+                                 environment = None,
+                                 enrichAsync = Future.successful)
   }
 
   /**
@@ -87,12 +90,12 @@ object CouchbaseSessionSettings {
 }
 
 final class CouchbaseSessionSettings private (
-                                               val username: String,
-                                               val password: String,
-                                               val nodes: immutable.Seq[String],
-                                               val parallelism: Integer,
-                                               val environment: Option[ClusterEnvironment],
-                                               val enrichAsync: CouchbaseSessionSettings => Future[CouchbaseSessionSettings]
+    val username: String,
+    val password: String,
+    val nodes: immutable.Seq[String],
+    val parallelism: Integer,
+    val environment: Option[ClusterEnvironment],
+    val enrichAsync: CouchbaseSessionSettings => Future[CouchbaseSessionSettings]
 ) {
 
   def withUsername(username: String): CouchbaseSessionSettings =
