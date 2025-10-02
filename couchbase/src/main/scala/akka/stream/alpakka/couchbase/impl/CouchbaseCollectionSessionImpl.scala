@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.stream.alpakka.couchbase.impl
 
 import akka.{Done, NotUsed}
@@ -5,7 +9,7 @@ import akka.annotation.InternalApi
 import akka.stream.alpakka.couchbase.CouchbaseDocument
 import akka.stream.alpakka.couchbase.scaladsl.{CouchbaseCollectionSession, CouchbaseSession}
 import akka.stream.scaladsl.Source
-import com.couchbase.client.java.codec.{JsonTranscoder, RawBinaryTranscoder, RawStringTranscoder, Transcoder}
+import com.couchbase.client.java.codec.{RawBinaryTranscoder, RawStringTranscoder, Transcoder}
 import com.couchbase.client.java.json.JsonValue
 import com.couchbase.client.java.kv._
 import com.couchbase.client.java.manager.query.{CreateQueryIndexOptions, QueryIndex}
