@@ -72,9 +72,11 @@ class CouchbaseSessionExamplesSpec
     }
 
     "be created from an AsyncCluster" in {
-      val cluster: Cluster = Cluster.connect("localhost", ClusterOptions.clusterOptions(
-        "Administrator", "password"
-      ))
+      val cluster: Cluster = Cluster.connect("localhost",
+                                             ClusterOptions.clusterOptions(
+                                               "Administrator",
+                                               "password"
+                                             ))
       val session: CouchbaseSession = CouchbaseSession(cluster.async(), "akka").futureValue
       actorSystem.registerOnTermination {
         session.close()

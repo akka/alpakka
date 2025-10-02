@@ -28,9 +28,11 @@ trait CouchbaseSupport {
 
   val sampleData = new CouchbaseDocument("First", "First")
 
-  val sampleSequence: Seq[CouchbaseDocument[String]] = sampleData +: Seq[CouchbaseDocument[String]](new CouchbaseDocument("Second", "Second"),
-                                                                      new CouchbaseDocument("Third", "Third"),
-                                                                      new CouchbaseDocument("Fourth", "Fourth"))
+  val sampleSequence: Seq[CouchbaseDocument[String]] = sampleData +: Seq[CouchbaseDocument[String]](
+      new CouchbaseDocument("Second", "Second"),
+      new CouchbaseDocument("Third", "Third"),
+      new CouchbaseDocument("Fourth", "Fourth")
+    )
 
   val sampleJavaList: java.util.List[CouchbaseDocument[String]] = sampleSequence.asJava
 

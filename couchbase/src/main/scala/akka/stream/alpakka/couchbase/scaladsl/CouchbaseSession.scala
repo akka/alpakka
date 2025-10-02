@@ -29,7 +29,8 @@ object CouchbaseSession {
    * Create a session against the given bucket. The couchbase client used to connect will be created and then closed when
    * the session is closed.
    */
-  def apply(settings: CouchbaseSessionSettings, bucketName: String)(implicit ec: ExecutionContext): Future[CouchbaseSession] =
+  def apply(settings: CouchbaseSessionSettings,
+            bucketName: String)(implicit ec: ExecutionContext): Future[CouchbaseSession] =
     createClusterClient(settings)
       .flatMap(c => apply(c, bucketName))
 
@@ -39,7 +40,6 @@ object CouchbaseSession {
    */
   def apply(cluster: AsyncCluster, bucketName: String): Future[CouchbaseSession] =
     Future.successful(new CouchbaseSessionImpl(cluster, bucketName))
-
 
   /**
    * INTERNAL API.
@@ -54,7 +54,8 @@ object CouchbaseSession {
     settings.enriched
       .flatMap { enrichedSettings =>
         val clusterOptions = ClusterOptions.clusterOptions(
-          enrichedSettings.username, enrichedSettings.password
+          enrichedSettings.username,
+          enrichedSettings.password
         )
         Future(enrichedSettings.environment match {
           case Some(environment) =>
@@ -84,7 +85,9 @@ trait CouchbaseSession {
 
   def asJava: JavaDslCouchbaseSession
 
-  private val collectionSessions = new AtomicReference(mutable.WeakHashMap.empty[(String, String), CouchbaseCollectionSession])
+  private val collectionSessions = new AtomicReference(
+    mutable.WeakHashMap.empty[(String, String), CouchbaseCollectionSession]
+  )
 
   def streamedQuery(query: String): Source[JsonObject, NotUsed]
   def streamedQuery(query: String, queryOptions: QueryOptions): Source[JsonObject, NotUsed]
@@ -92,7 +95,8 @@ trait CouchbaseSession {
   def singleResponseQuery(query: String, queryOptions: QueryOptions): Future[Option[JsonObject]]
   def cluster(): AsyncCluster
 
-  def collection(scopeName: String, collectionName: String): CouchbaseCollectionSession = collectionSessions.get.get((scopeName, collectionName)) match {
+  def collection(scopeName: String, collectionName: String): CouchbaseCollectionSession =
+    collectionSessions.get.get((scopeName, collectionName)) match {
       case Some(session) => session
       case _ =>
         val oldSessions = collectionSessions.get()
@@ -110,4 +114,3 @@ trait CouchbaseSession {
    */
   def close(): Future[Done]
 }
-

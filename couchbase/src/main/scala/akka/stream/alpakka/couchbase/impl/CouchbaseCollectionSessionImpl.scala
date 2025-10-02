@@ -26,7 +26,10 @@ import scala.jdk.FutureConverters.CompletionStageOps
  * INTERNAL API
  */
 @InternalApi
-private[couchbase] class CouchbaseCollectionSessionImpl(bucketSession: CouchbaseSession, scopeName: String, collectionName: String) extends CouchbaseCollectionSession{
+private[couchbase] class CouchbaseCollectionSessionImpl(bucketSession: CouchbaseSession,
+                                                        scopeName: String,
+                                                        collectionName: String)
+    extends CouchbaseCollectionSession {
 
   override def bucket: CouchbaseSession = bucketSession
 
@@ -35,24 +38,27 @@ private[couchbase] class CouchbaseCollectionSessionImpl(bucketSession: Couchbase
 
   override def asJava = new CouchbaseCollectionSessionJavaAdapter(this)
 
-  override def insert[T] (id: String, document: T): Future[Done] = {
+  override def insert[T](id: String, document: T): Future[Done] = {
     underlying
-      .insert(id, document,
-        InsertOptions.insertOptions()
-          .transcoder(chooseTranscoder(document.getClass))
-      )
+      .insert(id,
+              document,
+              InsertOptions
+                .insertOptions()
+                .transcoder(chooseTranscoder(document.getClass)))
       .asScala
       .map(_ => Done)(ExecutionContext.parasitic)
   }
 
-  override def insert[T] (id: String, document: T, insertOptions: InsertOptions): Future[Done] = {
-    underlying.insert(id, document, insertOptions)
+  override def insert[T](id: String, document: T, insertOptions: InsertOptions): Future[Done] = {
+    underlying
+      .insert(id, document, insertOptions)
       .asScala
       .map(_ => Done)(ExecutionContext.parasitic)
   }
 
   override def get[T](id: String, target: Class[T]): Future[CouchbaseDocument[T]] = {
-    underlying.get(id, GetOptions.getOptions.transcoder(chooseTranscoder(target)))
+    underlying
+      .get(id, GetOptions.getOptions.transcoder(chooseTranscoder(target)))
       .thenApply(gr => new CouchbaseDocument[T](id, gr.contentAs(target)))
       .asScala
   }
@@ -71,80 +77,98 @@ private[couchbase] class CouchbaseCollectionSessionImpl(bucketSession: Couchbase
     underlying.get(id).thenApply(gr => new CouchbaseDocument[Array[Byte]](id, gr.contentAsBytes())).asScala
 
   override def getDocument(id: String, timeout: FiniteDuration): Future[CouchbaseDocument[JsonValue]] =
-    underlying.get(id)
+    underlying
+      .get(id)
       .orTimeout(timeout.toMillis, TimeUnit.MILLISECONDS)
       .thenApply(gr => new CouchbaseDocument[JsonValue](id, asJsonValue(gr)))
       .asScala
 
   override def getBytes(id: String, timeout: FiniteDuration): Future[CouchbaseDocument[Array[Byte]]] =
-    underlying.get(id)
+    underlying
+      .get(id)
       .orTimeout(timeout.toMillis, TimeUnit.MILLISECONDS)
       .thenApply(gr => new CouchbaseDocument[Array[Byte]](id, gr.contentAsBytes()))
       .asScala
 
   override def upsert[T](id: String, document: T): Future[Done] = {
-    underlying.upsert(id, document,
-      UpsertOptions.upsertOptions()
-        .transcoder(chooseTranscoder(document.getClass))
-    )
-    .asScala.map(_ => Done)(ExecutionContext.parasitic)
+    underlying
+      .upsert(id,
+              document,
+              UpsertOptions
+                .upsertOptions()
+                .transcoder(chooseTranscoder(document.getClass)))
+      .asScala
+      .map(_ => Done)(ExecutionContext.parasitic)
   }
 
   override def upsert[T](id: String, document: T, upsertOptions: UpsertOptions): Future[Done] =
-    underlying.upsert(id, document, upsertOptions)
+    underlying
+      .upsert(id, document, upsertOptions)
       .thenApply(_ => Done)
       .asScala
 
   override def upsert[T](id: String, document: T, upsertOptions: UpsertOptions, timeout: FiniteDuration): Future[Done] =
-    underlying.upsert(id, document, upsertOptions)
+    underlying
+      .upsert(id, document, upsertOptions)
       .orTimeout(timeout.toMillis, TimeUnit.MILLISECONDS)
       .thenApply(_ => Done)
       .asScala
 
-
   override def replace[T](id: String, document: T): Future[Done] =
-    underlying.replace(id, document)
+    underlying
+      .replace(id, document)
       .thenApply(_ => Done)
       .asScala
 
   override def replace[T](id: String, document: T, replaceOptions: ReplaceOptions): Future[Done] =
-    underlying.replace(id, document, replaceOptions)
+    underlying
+      .replace(id, document, replaceOptions)
       .thenApply(_ => Done)
       .asScala
 
-  override def replace[T](id: String, document: T, replaceOptions: ReplaceOptions, timeout: FiniteDuration): Future[Done] =
-    underlying.replace(id, document, replaceOptions)
+  override def replace[T](id: String,
+                          document: T,
+                          replaceOptions: ReplaceOptions,
+                          timeout: FiniteDuration): Future[Done] =
+    underlying
+      .replace(id, document, replaceOptions)
       .orTimeout(timeout.toMillis, TimeUnit.MILLISECONDS)
       .thenApply(_ => Done)
       .asScala
 
   override def remove(id: String): Future[Done] =
-    underlying.remove(id)
+    underlying
+      .remove(id)
       .thenApply(_ => Done)
       .asScala
 
   override def remove(id: String, removeOptions: RemoveOptions): Future[Done] =
-    underlying.remove(id, removeOptions)
+    underlying
+      .remove(id, removeOptions)
       .thenApply(_ => Done)
       .asScala
 
   override def remove(id: String, removeOptions: RemoveOptions, timeout: FiniteDuration): Future[Done] =
-    underlying.remove(id, removeOptions)
+    underlying
+      .remove(id, removeOptions)
       .orTimeout(timeout.toMillis, TimeUnit.MILLISECONDS)
       .thenApply(_ => Done)
       .asScala
 
-  override def createIndex(indexName: String, createQueryIndexOptions: CreateQueryIndexOptions, fields: String*): Future[Done] =
-      underlying
-        .queryIndexes()
-        .createIndex(indexName, util.Arrays.asList(fields: _*), createQueryIndexOptions)
-        .thenApply(_ => Done)
-        .asScala
+  override def createIndex(indexName: String,
+                           createQueryIndexOptions: CreateQueryIndexOptions,
+                           fields: String*): Future[Done] =
+    underlying
+      .queryIndexes()
+      .createIndex(indexName, util.Arrays.asList(fields: _*), createQueryIndexOptions)
+      .thenApply(_ => Done)
+      .asScala
 
   override def listIndexes(): Source[QueryIndex, NotUsed] =
     Source.fromPublisher(
       RxReactiveStreams.toPublisher(
-        Observable.from(underlying.queryIndexes().getAllIndexes())
+        Observable
+          .from(underlying.queryIndexes().getAllIndexes())
           .flatMap(indexes => Observable.from(indexes))
       )
     )

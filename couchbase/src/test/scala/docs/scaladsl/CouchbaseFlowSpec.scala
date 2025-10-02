@@ -62,7 +62,8 @@ class CouchbaseFlowSpec
           .runWith(Sink.ignore)
       result.futureValue
 
-      val msgFuture = session.collection(scopeName, collectionName).getBytes(sampleData.getId, FiniteDuration.apply(2, SECONDS))
+      val msgFuture =
+        session.collection(scopeName, collectionName).getBytes(sampleData.getId, FiniteDuration.apply(2, SECONDS))
 
       msgFuture.futureValue.getId shouldEqual sampleData.getId
       msgFuture.futureValue.getDocument shouldEqual sampleData.getDocument.getBytes()
@@ -224,7 +225,7 @@ class CouchbaseFlowSpec
         .runWith(Sink.ignore)
       bulkUpsertResult.futureValue
 
-      val resultsAsFuture  =
+      val resultsAsFuture =
         Source(sampleSequence.map(_.getId))
           .via(
             CouchbaseFlow.bytesFromId(
@@ -276,7 +277,7 @@ class CouchbaseFlowSpec
 
       Thread.sleep(1000)
 
-      val msgFuture  = session.collection(scopeName, collectionName).get(sampleData.getId, classOf[String])
+      val msgFuture = session.collection(scopeName, collectionName).get(sampleData.getId, classOf[String])
       msgFuture.failed.futureValue.getCause shouldBe a[DocumentNotFoundException]
 
       val getFuture =
@@ -287,7 +288,8 @@ class CouchbaseFlowSpec
               .fromId(
                 sessionSettings,
                 bucketName,
-                scopeName, collectionName
+                scopeName,
+                collectionName
               )
           )
           .runWith(Sink.head)
@@ -398,9 +400,11 @@ class CouchbaseFlowSpec
 
     "replace multiple RawJsonDocuments" in assertAllStagesStopped {
 
-      val replaceSequence = sampleData +: Seq[CouchbaseDocument[String]](new CouchbaseDocument("Second", "SecondReplace"),
-                                                                           new CouchbaseDocument("Third", "ThirdReplace"),
-                                                                            new CouchbaseDocument("Fourth", "FourthReplace"))
+      val replaceSequence = sampleData +: Seq[CouchbaseDocument[String]](
+          new CouchbaseDocument("Second", "SecondReplace"),
+          new CouchbaseDocument("Third", "ThirdReplace"),
+          new CouchbaseDocument("Fourth", "FourthReplace")
+        )
 
       upsertSampleData(bucketName, scopeName, collectionName)
 
@@ -424,9 +428,9 @@ class CouchbaseFlowSpec
           .runWith(Sink.seq)
 
       resultsAsFuture.futureValue.map(doc => new String(doc.getDocument)) should contain.inOrderOnly("First",
-                                                                                                    "SecondReplace",
-                                                                                                    "ThirdReplace",
-                                                                                                    "FourthReplace")
+                                                                                                     "SecondReplace",
+                                                                                                     "ThirdReplace",
+                                                                                                     "FourthReplace")
     }
 
     "replace RawJsonDocument" in assertAllStagesStopped {
@@ -442,7 +446,8 @@ class CouchbaseFlowSpec
           CouchbaseFlow.replace(
             sessionSettings,
             bucketName,
-            scopeName, collectionName
+            scopeName,
+            collectionName
           )
         )
         .runWith(Sink.ignore)
@@ -456,17 +461,47 @@ class CouchbaseFlowSpec
       msgFuture.futureValue.getDocument shouldEqual obj.getDocument
     }
 
-  "Couchbase upsert with result" should {
-    "write documents" in assertAllStagesStopped {
-      // #upsertDocWithResult
-      import akka.stream.alpakka.couchbase.{CouchbaseWriteFailure, CouchbaseWriteResult}
+    "Couchbase upsert with result" should {
+      "write documents" in assertAllStagesStopped {
+        // #upsertDocWithResult
+        import akka.stream.alpakka.couchbase.{CouchbaseWriteFailure, CouchbaseWriteResult}
 
-      val result: Future[immutable.Seq[CouchbaseWriteResult]] =
-        Source(sampleSequence)
+        val result: Future[immutable.Seq[CouchbaseWriteResult]] =
+          Source(sampleSequence)
+            .map(doc => new CouchbaseDocument(doc.getId, doc.getDocument.getBytes))
+            .via(
+              CouchbaseFlow.upsertWithResult(
+                sessionSettings,
+                bucketName,
+                scopeName,
+                collectionName
+              )
+            )
+            .runWith(Sink.seq)
+
+        val failedDocs: immutable.Seq[CouchbaseWriteFailure] = result.futureValue.collect {
+          case res: CouchbaseWriteFailure => res
+        }
+        // #upsertDocWithResult
+
+        result.futureValue should have size sampleSequence.size
+        failedDocs shouldBe empty
+        forAll(result.futureValue)(_ shouldBe Symbol("success"))
+      }
+
+      "expose failures in-stream" in assertAllStagesStopped {
+        import akka.stream.alpakka.couchbase.{CouchbaseWriteFailure, CouchbaseWriteResult}
+
+        val result: Future[immutable.Seq[CouchbaseWriteResult]] = Source(sampleSequence)
           .map(doc => new CouchbaseDocument(doc.getId, doc.getDocument.getBytes))
           .via(
             CouchbaseFlow.upsertWithResult(
               sessionSettings,
+              UpsertOptions
+                .upsertOptions()
+                .transcoder(RawBinaryTranscoder.INSTANCE)
+                .durability(DurabilityLevel.MAJORITY_AND_PERSIST_TO_ACTIVE)
+                .timeout(java.time.Duration.ofSeconds(1)),
               bucketName,
               scopeName,
               collectionName
@@ -474,81 +509,59 @@ class CouchbaseFlowSpec
           )
           .runWith(Sink.seq)
 
-      val failedDocs: immutable.Seq[CouchbaseWriteFailure] = result.futureValue.collect {
-        case res: CouchbaseWriteFailure => res
+        result.futureValue should have size sampleSequence.size
+        val failedDocs: immutable.Seq[CouchbaseWriteFailure] = result.futureValue.collect {
+          case res: CouchbaseWriteFailure => res
+        }
+        failedDocs.head.failure shouldBe a[DurabilityImpossibleException]
       }
-      // #upsertDocWithResult
 
-      result.futureValue should have size sampleSequence.size
-      failedDocs shouldBe empty
-      forAll(result.futureValue)(_ shouldBe Symbol("success"))
     }
 
-    "expose failures in-stream" in assertAllStagesStopped {
-      import akka.stream.alpakka.couchbase.{CouchbaseWriteFailure, CouchbaseWriteResult}
+    "delete with result" should {
+      "propagate an error in-stream" in assertAllStagesStopped {
+        val deleteFuture: Future[String] =
+          Source
+            .single("non-existent")
+            .via(
+              CouchbaseFlow.delete(
+                sessionSettings,
+                RemoveOptions
+                  .removeOptions()
+                  .durability(DurabilityLevel.MAJORITY_AND_PERSIST_TO_ACTIVE)
+                  .timeout(java.time.Duration.ofSeconds(1)),
+                bucketName,
+                scopeName,
+                collectionName
+              )
+            )
+            .runWith(Sink.head)
 
-      val result: Future[immutable.Seq[CouchbaseWriteResult]] = Source(sampleSequence)
-        .map(doc => new CouchbaseDocument(doc.getId, doc.getDocument.getBytes))
-        .via(
-          CouchbaseFlow.upsertWithResult(sessionSettings,
-            UpsertOptions.upsertOptions()
-              .transcoder(RawBinaryTranscoder.INSTANCE)
-              .durability(DurabilityLevel.MAJORITY_AND_PERSIST_TO_ACTIVE).timeout(java.time.Duration.ofSeconds(1)),
-            bucketName, scopeName, collectionName)
-        )
-        .runWith(Sink.seq)
+        // #deleteWithResult
+        val deleteResult: Future[CouchbaseDeleteResult] =
+          Source
+            .single("non-existent")
+            .via(
+              CouchbaseFlow.deleteWithResult(
+                sessionSettings,
+                RemoveOptions
+                  .removeOptions()
+                  .durability(DurabilityLevel.MAJORITY_AND_PERSIST_TO_ACTIVE)
+                  .timeout(java.time.Duration.ofSeconds(1)),
+                bucketName,
+                scopeName,
+                collectionName
+              )
+            )
+            .runWith(Sink.head)
+        // #deleteWithResult
+        deleteFuture.failed.futureValue.getCause shouldBe a[DocumentNotFoundException]
 
-      result.futureValue should have size sampleSequence.size
-      val failedDocs: immutable.Seq[CouchbaseWriteFailure] = result.futureValue.collect {
-        case res: CouchbaseWriteFailure => res
+        deleteResult.futureValue shouldBe a[CouchbaseDeleteFailure]
+        deleteResult.futureValue.id shouldBe "non-existent"
+        deleteResult.mapTo[CouchbaseDeleteFailure].futureValue.failure shouldBe a[DocumentNotFoundException]
       }
-      failedDocs.head.failure shouldBe a[DurabilityImpossibleException]
     }
-
-  }
-
-  "delete with result" should {
-    "propagate an error in-stream" in assertAllStagesStopped {
-      val deleteFuture: Future[String] =
-        Source
-          .single("non-existent")
-          .via(
-            CouchbaseFlow.delete(
-              sessionSettings,
-              RemoveOptions.removeOptions()
-                .durability(DurabilityLevel.MAJORITY_AND_PERSIST_TO_ACTIVE)
-                .timeout(java.time.Duration.ofSeconds(1)),
-              bucketName,
-              scopeName,
-              collectionName
-            )
-          )
-          .runWith(Sink.head)
-
-      // #deleteWithResult
-      val deleteResult: Future[CouchbaseDeleteResult] =
-        Source
-          .single("non-existent")
-          .via(
-            CouchbaseFlow.deleteWithResult(
-              sessionSettings,
-              RemoveOptions.removeOptions()
-                .durability(DurabilityLevel.MAJORITY_AND_PERSIST_TO_ACTIVE)
-                .timeout(java.time.Duration.ofSeconds(1)),
-              bucketName,
-              scopeName,
-              collectionName
-            )
-          )
-          .runWith(Sink.head)
-      // #deleteWithResult
-      deleteFuture.failed.futureValue.getCause shouldBe a[DocumentNotFoundException]
-
-      deleteResult.futureValue shouldBe a[CouchbaseDeleteFailure]
-      deleteResult.futureValue.id shouldBe "non-existent"
-      deleteResult.mapTo[CouchbaseDeleteFailure].futureValue.failure shouldBe a[DocumentNotFoundException]
-    }
-  }
 
     "replace documents" in assertAllStagesStopped {
 
@@ -587,11 +600,7 @@ class CouchbaseFlowSpec
 
       val result = Source(sampleSequence)
         .via(
-          CouchbaseFlow.replaceWithResult(sessionSettings,
-            bucketName,
-            scopeName,
-            collectionName
-          )
+          CouchbaseFlow.replaceWithResult(sessionSettings, bucketName, scopeName, collectionName)
         )
         .runWith(Sink.seq)
 

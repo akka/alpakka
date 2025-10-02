@@ -25,7 +25,9 @@ object CouchbaseCollectionSession {
    * Create a session against the given bucket. The couchbase client used to connect will be created and then closed when
    * the session is closed.
    */
-  def create(bucketSession: CouchbaseSession, scopeName: String, collectionName: String,
+  def create(bucketSession: CouchbaseSession,
+             scopeName: String,
+             collectionName: String,
              executor: Executor): CompletionStage[CouchbaseSession] = null
 
 }
@@ -54,6 +56,7 @@ abstract class CouchbaseCollectionSession {
   def getJsonObject(id: String): CompletionStage[CouchbaseDocument[JsonObject]]
   def getJsonArray(id: String): CompletionStage[CouchbaseDocument[JsonArray]]
   def get[T](id: String, target: Class[T]): CompletionStage[CouchbaseDocument[T]]
+
   /**
    * @return A document if found or none if there is no document for the id
    */
@@ -164,7 +167,9 @@ abstract class CouchbaseCollectionSession {
    *      if the index existed and `ignoreIfExist` is `true`. Completion of the future does not guarantee the index is online
    *      and ready to be used.
    */
-  def createIndex(indexName: String, createQueryIndexOptions: CreateQueryIndexOptions, fields: String*): CompletionStage[Done]
+  def createIndex(indexName: String,
+                  createQueryIndexOptions: CreateQueryIndexOptions,
+                  fields: String*): CompletionStage[Done]
 
   /**
    * List the existing secondary indexes for the collection
