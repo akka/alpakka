@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.stream.alpakka.couchbase.scaladsl
 
 import akka.{Done, NotUsed}
@@ -6,7 +10,7 @@ import akka.stream.alpakka.couchbase.CouchbaseDocument
 import akka.stream.alpakka.couchbase.impl.CouchbaseCollectionSessionImpl
 import akka.stream.scaladsl.Source
 import com.couchbase.client.java.json.{JsonArray, JsonObject, JsonValue}
-import com.couchbase.client.java.kv.{GetOptions, InsertOptions, RemoveOptions, ReplaceOptions, UpsertOptions}
+import com.couchbase.client.java.kv.{InsertOptions, RemoveOptions, ReplaceOptions, UpsertOptions}
 import com.couchbase.client.java.manager.query.{CreateQueryIndexOptions, QueryIndex}
 import com.couchbase.client.java.{AsyncCollection, AsyncScope}
 

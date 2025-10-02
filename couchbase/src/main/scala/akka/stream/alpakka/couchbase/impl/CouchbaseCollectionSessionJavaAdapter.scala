@@ -16,7 +16,6 @@ import com.couchbase.client.java.{AsyncCollection, AsyncScope}
 
 import java.time.Duration
 import java.util.concurrent.{CompletionStage, TimeUnit}
-import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.FutureConverters._
 

@@ -13,12 +13,11 @@ import akka.stream.scaladsl.{Sink, Source}
 import com.couchbase.client.core.error.{DocumentNotFoundException, DurabilityImpossibleException}
 import com.couchbase.client.core.msg.kv.DurabilityLevel
 import com.couchbase.client.java.json.JsonObject
-import com.couchbase.client.java.kv.{PersistTo, RemoveOptions, ReplaceOptions, ReplicateTo, UpsertOptions}
+import com.couchbase.client.java.kv.{RemoveOptions, UpsertOptions}
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import com.couchbase.client.java.codec.RawBinaryTranscoder
-import org.testcontainers.dockerclient.DockerClientConfigUtils
 
 import scala.collection.immutable
 import scala.concurrent.Future
