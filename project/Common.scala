@@ -5,7 +5,7 @@ import org.scalafmt.sbt.ScalafmtPlugin.autoImport._
 import de.heikoseeberger.sbtheader._
 import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
 import com.lightbend.paradox.projectinfo.ParadoxProjectInfoPluginKeys._
-import com.lightbend.sbt.JavaFormatterPlugin.autoImport.javafmtOnCompile
+import com.github.sbt.JavaFormatterPlugin.autoImport.javafmtOnCompile
 import com.typesafe.tools.mima.plugin.MimaKeys._
 import sbtdynver.DynVerPlugin.autoImport.dynverSonatypeSnapshots
 
