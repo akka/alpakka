@@ -82,8 +82,8 @@ object Dependencies {
   // CVE issues https://github.com/FasterXML/jackson-databind/issues?utf8=%E2%9C%93&q=+label%3ACVE
   // This should align with the Jackson minor version used in Akka
   // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L29
-  val JacksonVersion = "2.18.4.1"
-  val JacksonDatabindVersion = JacksonVersion
+  val JacksonVersion = "2.18.4.1" // 2.18 is LTS
+  val JacksonDatabindVersion = "2.18.4"
   val JacksonDatabindDependencies = Seq(
     "com.fasterxml.jackson.core" % "jackson-core" % JacksonVersion,
     "com.fasterxml.jackson.core" % "jackson-databind" % JacksonDatabindVersion
