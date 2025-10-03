@@ -50,7 +50,7 @@ object Dependencies {
   val jclOverSlf4jVersion = slf4jVersion
 
   // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L26
-  val LogbackWithSlf4jV1 = "1.5.7"
+  val LogbackVersion = "1.5.18"
   val wiremock = ("com.github.tomakehurst" % "wiremock" % "3.0.1" % Test)
 
   val Common = Seq(
@@ -66,7 +66,7 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
         "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion,
         "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
-        "ch.qos.logback" % "logback-classic" % LogbackWithSlf4jV1,
+        "ch.qos.logback" % "logback-classic" % LogbackVersion,
         "org.scalatest" %% "scalatest" % ScalaTestVersion,
         "com.dimafeng" %% "testcontainers-scala-scalatest" % TestContainersScalaTestVersion,
         "com.novocode" % "junit-interface" % "0.11", // BSD-style
