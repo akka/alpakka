@@ -405,14 +405,6 @@ object Dependencies {
       ) ++ Mockito
   )
 
-  val KuduVersion = "1.7.1"
-  val Kudu = Seq(
-    libraryDependencies ++= Seq(
-        "org.apache.kudu" % "kudu-client-tools" % KuduVersion, // ApacheV2
-        "org.apache.kudu" % "kudu-client" % KuduVersion % Test // ApacheV2
-      )
-  )
-
   val MongoDb = Seq(
     libraryDependencies ++= Seq(
         // https://github.com/mongodb/mongo-java-driver/releases
