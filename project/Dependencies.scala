@@ -62,7 +62,6 @@ object Dependencies {
 
   val testkit = Seq(
     libraryDependencies := Seq(
-        "org.scala-lang.modules" %% "scala-collection-compat" % "2.7.0",
         "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
         "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion,
         "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
@@ -168,7 +167,6 @@ object Dependencies {
         (
           ExclusionRule(organization = "com.typesafe.akka")
         ),
-        "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2",
         "software.amazon.awssdk" % "dynamodb" % AwsSdk2Version excludeAll // ApacheV2
         (
           ExclusionRule("software.amazon.awssdk", "apache-client"),
@@ -499,8 +497,7 @@ object Dependencies {
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         ),
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
-        "com.typesafe.akka" %% "akka-pki" % AkkaVersion,
-        "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"
+        "com.typesafe.akka" %% "akka-pki" % AkkaVersion
       ) ++ Mockito
   )
 
@@ -510,7 +507,6 @@ object Dependencies {
         (
           ExclusionRule(organization = "com.typesafe.akka")
         ),
-        "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2",
         "software.amazon.awssdk" % "sns" % AwsSdk2Version excludeAll // ApacheV2
         (
           ExclusionRule("software.amazon.awssdk", "apache-client"),
@@ -538,7 +534,6 @@ object Dependencies {
         (
           ExclusionRule(organization = "com.typesafe.akka")
         ),
-        "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2",
         "software.amazon.awssdk" % "sqs" % AwsSdk2Version excludeAll // ApacheV2
         (
           ExclusionRule("software.amazon.awssdk", "apache-client"),
