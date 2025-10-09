@@ -13,6 +13,7 @@ import akka.{Done, NotUsed}
 import com.couchbase.client.java._
 import com.couchbase.client.java.json.JsonObject
 import com.couchbase.client.java.query._
+import org.slf4j.LoggerFactory
 
 import java.util.concurrent.atomic.AtomicReference
 import scala.collection.mutable
@@ -24,6 +25,7 @@ import scala.concurrent.{ExecutionContext, Future}
  * @see [[akka.stream.alpakka.couchbase.CouchbaseSessionRegistry]]
  */
 object CouchbaseSession {
+  private val log = LoggerFactory.getLogger(classOf[CouchbaseSession])
 
   /**
    * Create a session against the given bucket. The couchbase client used to connect will be created and then closed when
@@ -68,7 +70,12 @@ object CouchbaseSession {
               enrichedSettings.nodes.mkString(","),
               clusterOptions
             )
-        })
+        }).andThen(c => {
+            log.debug("created couchbase cluster client for " + enrichedSettings.username)
+          }).recover(err => {
+            log.error("failed to create couchbase cluster", err)
+            throw err
+          })
       }
 
 }
