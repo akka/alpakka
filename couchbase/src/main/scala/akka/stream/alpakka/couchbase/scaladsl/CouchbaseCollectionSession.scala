@@ -4,11 +4,11 @@
 
 package akka.stream.alpakka.couchbase.scaladsl
 
-import akka.{Done, NotUsed}
 import akka.annotation.DoNotInherit
 import akka.stream.alpakka.couchbase.CouchbaseDocument
 import akka.stream.alpakka.couchbase.impl.CouchbaseCollectionSessionImpl
 import akka.stream.scaladsl.Source
+import akka.{Done, NotUsed}
 import com.couchbase.client.java.json.{JsonArray, JsonObject, JsonValue}
 import com.couchbase.client.java.kv.{InsertOptions, RemoveOptions, ReplaceOptions, UpsertOptions}
 import com.couchbase.client.java.manager.query.{CreateQueryIndexOptions, QueryIndex}

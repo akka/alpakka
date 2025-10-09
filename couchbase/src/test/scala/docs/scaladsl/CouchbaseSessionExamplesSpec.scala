@@ -28,9 +28,15 @@ class CouchbaseSessionExamplesSpec
 
   override implicit def patienceConfig: PatienceConfig = PatienceConfig(10.seconds, 250.millis)
 
-  override def beforeAll(): Unit = super.beforeAll()
-  override def afterAll(): Unit = super.afterAll()
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    upsertSampleData(bucketName, scopeName, collectionName)
+  }
 
+  override def afterAll(): Unit = {
+    cleanAllInCollection(bucketName, scopeName, collectionName)
+    super.afterAll()
+  }
   "a Couchbasesession" should {
     "be managed by the registry" in {
       // #registry
@@ -77,6 +83,7 @@ class CouchbaseSessionExamplesSpec
                                                "Administrator",
                                                "password"
                                              ))
+      // #fromCluster
       val session: CouchbaseSession = CouchbaseSession(cluster.async(), "akka").futureValue
       actorSystem.registerOnTermination {
         session.close()
@@ -84,7 +91,7 @@ class CouchbaseSessionExamplesSpec
 
       val id = "myId"
       val documentFuture = session.collection(scopeName, collectionName).getBytes(id)
-      // #fromBucket
+      // #fromCluster
       documentFuture.failed.futureValue.getCause shouldBe a[DocumentNotFoundException]
     }
   }

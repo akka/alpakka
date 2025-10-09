@@ -39,7 +39,7 @@ trait CouchbaseSupport {
   val sessionSettings = CouchbaseSessionSettings(actorSystem)
   val bucketName = "akka"
   val scopeName = "alpakka"
-  val collectionName = "karakalpaka"
+  val collectionName = "alpakka-collection"
 
   var session: CouchbaseSession = _
 

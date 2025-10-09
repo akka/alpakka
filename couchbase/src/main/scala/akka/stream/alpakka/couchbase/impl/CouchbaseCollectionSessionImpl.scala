@@ -4,11 +4,11 @@
 
 package akka.stream.alpakka.couchbase.impl
 
-import akka.{Done, NotUsed}
 import akka.annotation.InternalApi
 import akka.stream.alpakka.couchbase.CouchbaseDocument
 import akka.stream.alpakka.couchbase.scaladsl.{CouchbaseCollectionSession, CouchbaseSession}
 import akka.stream.scaladsl.Source
+import akka.{Done, NotUsed}
 import com.couchbase.client.java.codec.{RawBinaryTranscoder, RawStringTranscoder, Transcoder}
 import com.couchbase.client.java.json.JsonValue
 import com.couchbase.client.java.kv._
@@ -18,8 +18,8 @@ import rx.{Observable, RxReactiveStreams}
 
 import java.util
 import java.util.concurrent.TimeUnit
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.FutureConverters.CompletionStageOps
 
 /**
@@ -50,6 +50,9 @@ private[couchbase] class CouchbaseCollectionSessionImpl(bucketSession: Couchbase
   }
 
   override def insert[T](id: String, document: T, insertOptions: InsertOptions): Future[Done] = {
+    if (insertOptions.build.transcoder() == null) {
+      insertOptions.transcoder(chooseTranscoder(document.getClass))
+    }
     underlying
       .insert(id, document, insertOptions)
       .asScala
@@ -101,18 +104,26 @@ private[couchbase] class CouchbaseCollectionSessionImpl(bucketSession: Couchbase
       .map(_ => Done)(ExecutionContext.parasitic)
   }
 
-  override def upsert[T](id: String, document: T, upsertOptions: UpsertOptions): Future[Done] =
+  override def upsert[T](id: String, document: T, upsertOptions: UpsertOptions): Future[Done] = {
+    if (upsertOptions.build().transcoder() == null) {
+      upsertOptions.transcoder(chooseTranscoder(document.getClass))
+    }
     underlying
-      .upsert(id, document, upsertOptions)
-      .thenApply(_ => Done)
-      .asScala
+        .upsert(id, document, upsertOptions)
+        .thenApply(_ => Done)
+        .asScala
+  }
 
-  override def upsert[T](id: String, document: T, upsertOptions: UpsertOptions, timeout: FiniteDuration): Future[Done] =
+  override def upsert[T](id: String, document: T, upsertOptions: UpsertOptions, timeout: FiniteDuration): Future[Done] = {
+    if (upsertOptions.build().transcoder() == null) {
+      upsertOptions.transcoder(chooseTranscoder(document.getClass))
+    }
     underlying
       .upsert(id, document, upsertOptions)
       .orTimeout(timeout.toMillis, TimeUnit.MILLISECONDS)
       .thenApply(_ => Done)
       .asScala
+  }
 
   override def replace[T](id: String, document: T): Future[Done] =
     underlying
@@ -120,21 +131,29 @@ private[couchbase] class CouchbaseCollectionSessionImpl(bucketSession: Couchbase
       .thenApply(_ => Done)
       .asScala
 
-  override def replace[T](id: String, document: T, replaceOptions: ReplaceOptions): Future[Done] =
+  override def replace[T](id: String, document: T, replaceOptions: ReplaceOptions): Future[Done] = {
+    if (replaceOptions.build.transcoder() == null) {
+      replaceOptions.transcoder(chooseTranscoder(document.getClass))
+    }
     underlying
       .replace(id, document, replaceOptions)
       .thenApply(_ => Done)
       .asScala
+  }
 
   override def replace[T](id: String,
                           document: T,
                           replaceOptions: ReplaceOptions,
-                          timeout: FiniteDuration): Future[Done] =
+                          timeout: FiniteDuration): Future[Done] = {
+    if (replaceOptions.build.transcoder() == null) {
+      replaceOptions.transcoder(chooseTranscoder(document.getClass))
+    }
     underlying
       .replace(id, document, replaceOptions)
       .orTimeout(timeout.toMillis, TimeUnit.MILLISECONDS)
       .thenApply(_ => Done)
       .asScala
+  }
 
   override def remove(id: String): Future[Done] =
     underlying

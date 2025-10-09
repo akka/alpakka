@@ -6,17 +6,15 @@ package docs.javadsl;
 
 import akka.Done;
 import akka.actor.ActorSystem;
-import akka.http.scaladsl.server.util.Tuple;
 import akka.stream.Materializer;
 // #deleteWithResult
 import akka.stream.alpakka.couchbase.*;
 // #deleteWithResult
-// #upsertDocWithResult
-// #upsertDocWithResult
+// #upsertWithResult
+// #upsertWithResult
 import akka.stream.alpakka.couchbase.javadsl.CouchbaseFlow;
 import akka.stream.alpakka.couchbase.javadsl.CouchbaseSource;
 import akka.stream.alpakka.couchbase.testing.CouchbaseSupportClass;
-import akka.stream.alpakka.couchbase.testing.TestObject;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -29,24 +27,18 @@ import com.couchbase.client.java.json.JsonObject;
 import com.couchbase.client.java.json.JsonValue;
 import org.junit.*;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 // #registry
 // #session
 import akka.stream.alpakka.couchbase.javadsl.CouchbaseSession;
 // #session
 // #registry
-import java.util.stream.Collectors;
 // #sessionFromBucket
-import com.couchbase.client.java.Bucket;
 // #sessionFromBucket
-
-import scala.Tuple2;
-import scala.concurrent.duration.FiniteDuration;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -134,7 +126,7 @@ public class CouchbaseExamplesTest {
 
   @Test
   public void sessionFromBucket() {
-    // #sessionFromBucket
+    // #fromCluster
 
     Cluster cluster = Cluster.connect("localhost", "Administrator", "password");
     CouchbaseSession.create(cluster.async(), bucketName).thenAccept(session -> {
@@ -154,7 +146,7 @@ public class CouchbaseExamplesTest {
                   System.out.println("Document " + id + " wasn't found");
                 }
               });
-      // #sessionFromBucket
+      // #fromCluster
     });
 
   }
@@ -184,10 +176,21 @@ public class CouchbaseExamplesTest {
         Source.from(ids)
             .via(CouchbaseFlow.bytesFromId(sessionSettings, queryBucketName, support.scopeName(), support.collectionName()))
             .runWith(Sink.seq(), actorSystem);
+
     // #fromId
 
     List<CouchbaseDocument<byte[]>> docs = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(4, docs.size());
+
+    // #fromId
+    CompletionStage<List<CouchbaseDocument<JsonValue>>> jsonResult =
+              Source.from(ids)
+                      .via(CouchbaseFlow.fromId(sessionSettings, queryBucketName, support.scopeName(), support.collectionName()))
+                      .runWith(Sink.seq(), actorSystem);
+      // #fromId
+
+      List<CouchbaseDocument<JsonValue>> jsonDocs = jsonResult.toCompletableFuture().get(3, TimeUnit.SECONDS);
+      assertEquals(4, jsonDocs.size());
   }
 
   @Test
@@ -210,7 +213,7 @@ public class CouchbaseExamplesTest {
   @Test
   public void upsertWithResult() throws Exception {
 
-    // #upsertDocWithResult
+    // #upsertWithResult
     CompletionStage<List<CouchbaseWriteResult>> upsertResults =
         Source.from(sampleSequence)
             .via(CouchbaseFlow.upsertWithResult(sessionSettings, bucketName, support.scopeName(), support.collectionName()))
@@ -221,9 +224,9 @@ public class CouchbaseExamplesTest {
     List<CouchbaseWriteFailure> failedDocs =
         writeResults.stream()
             .filter(CouchbaseWriteResult::isFailure)
-            .map(res -> (CouchbaseWriteFailure) res)
-            .toList();
-    // #upsertDocWithResult
+            .map(CouchbaseWriteFailure.class::cast)
+            .collect(Collectors.toUnmodifiableList());
+    // #upsertWithResult
 
     assertThat(writeResults.size(), is(sampleSequence.size()));
     assertTrue("unexpected failed writes", failedDocs.isEmpty());
@@ -282,7 +285,7 @@ public class CouchbaseExamplesTest {
     list.add(new CouchbaseDocument<>("NotExisting", "Nothing")); // should fail
     list.add(new CouchbaseDocument<>("Fourth", "FourthReplace"));
 
-    // #replaceDocWithResult
+    // #replaceWithResult
     CompletionStage<List<CouchbaseWriteResult>> replaceResults =
         Source.from(list)
             .via(CouchbaseFlow.replaceWithResult(sessionSettings, bucketName, support.scopeName(), support.collectionName()))
@@ -294,8 +297,8 @@ public class CouchbaseExamplesTest {
         writeResults.stream()
             .filter(CouchbaseWriteResult::isFailure)
             .map(CouchbaseWriteFailure.class::cast)
-            .toList();
-    // #replaceDocWithResult
+            .collect(Collectors.toUnmodifiableList());
+    // #replaceWithResult
 
     assertThat(writeResults.size(), is(list.size()));
     assertThat(failedDocs.size(), is(1));

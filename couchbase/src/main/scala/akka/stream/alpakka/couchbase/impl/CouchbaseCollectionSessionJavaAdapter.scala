@@ -4,11 +4,11 @@
 
 package akka.stream.alpakka.couchbase.impl
 
-import akka.{Done, NotUsed}
 import akka.annotation.InternalApi
 import akka.stream.alpakka.couchbase.javadsl.CouchbaseSession
 import akka.stream.alpakka.couchbase.{javadsl, scaladsl, CouchbaseDocument}
 import akka.stream.javadsl.Source
+import akka.{Done, NotUsed}
 import com.couchbase.client.java.json.{JsonArray, JsonObject, JsonValue}
 import com.couchbase.client.java.kv.{InsertOptions, RemoveOptions, ReplaceOptions, UpsertOptions}
 import com.couchbase.client.java.manager.query.{CreateQueryIndexOptions, QueryIndex}
