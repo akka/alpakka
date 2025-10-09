@@ -26,12 +26,12 @@ services:
     ports:
       - "9042:9042"
   couchbase:
-    image: couchbase:community-5.1.1
+    image: couchbase:community-7.6.2
     ports:
       - "8091-8094:8091-8094"
       - "11210:11210"
   couchbase_prep:
-    image: couchbase:community-5.1.1
+    image: couchbase:community-7.6.2
     links:
       - "couchbase"
     entrypoint: ""
@@ -46,6 +46,9 @@ services:
         couchbase-cli bucket-create -c couchbase -u Administrator -p password --bucket akka --bucket-type couchbase --bucket-ramsize 100 --bucket-replica 1 --wait
         couchbase-cli bucket-create -c couchbase -u Administrator -p password --bucket akkaquery --bucket-type couchbase --bucket-ramsize 100 --bucket-replica 1 --wait
         sleep 2 # just wait a tiny bit more after creating the bucket
+        couchbase-cli collection-manage -c couchbase -u Administrator -p password --bucket akka --create-scope alpakka
+        couchbase-cli collection-manage -c couchbase -u Administrator -p password --bucket akka --create-collection alpakka.alpakka-collection
+        sleep 2 # just wait a tiny bit more after creating the collection
         echo 'CREATE PRIMARY INDEX ON akkaquery USING GSI;' | cbq -c Administrator:password -e http://couchbase:8093
       "
   elasticmq:
