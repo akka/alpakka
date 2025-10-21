@@ -168,29 +168,35 @@ public class CouchbaseExamplesTest {
 
   @Test
   public void fromId() throws Exception {
-    support.upsertSampleData(queryBucketName, support.scopeName(), support.collectionName());
-    // #fromId
-    List<String> ids = Arrays.asList("First", "Second", "Third", "Fourth");
+      support.upsertSampleData(queryBucketName, support.scopeName(), support.collectionName());
+      // #fromId
+      List<String> ids = Arrays.asList("First", "Second", "Third", "Fourth");
+      List<String> idsJson = Arrays.asList("FirstJson", "SecondJson", "ThirdJson", "FourthJson");
 
-    CompletionStage<List<CouchbaseDocument<byte[]>>> result =
-        Source.from(ids)
-            .via(CouchbaseFlow.bytesFromId(sessionSettings, queryBucketName, support.scopeName(), support.collectionName()))
-            .runWith(Sink.seq(), actorSystem);
-
-    // #fromId
-
-    List<CouchbaseDocument<byte[]>> docs = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
-    assertEquals(4, docs.size());
-
-    // #fromId
-    CompletionStage<List<CouchbaseDocument<JsonValue>>> jsonResult =
+      CompletionStage<List<CouchbaseDocument<byte[]>>> result =
               Source.from(ids)
-                      .via(CouchbaseFlow.fromId(sessionSettings, queryBucketName, support.scopeName(), support.collectionName()))
+                      .via(CouchbaseFlow.bytesFromId(sessionSettings, queryBucketName, support.scopeName(), support.collectionName()))
                       .runWith(Sink.seq(), actorSystem);
+
       // #fromId
 
-      List<CouchbaseDocument<JsonValue>> jsonDocs = jsonResult.toCompletableFuture().get(3, TimeUnit.SECONDS);
-      assertEquals(4, jsonDocs.size());
+      List<CouchbaseDocument<byte[]>> docs = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
+      assertEquals(4, docs.size());
+  }
+
+  public void fromIdJson() throws Exception {
+    support.upsertSampleData(queryBucketName, support.scopeName(), support.collectionName());
+    // #fromId
+    List<String> idsJson = Arrays.asList("FirstJson", "SecondJson", "ThirdJson", "FourthJson");
+    // #fromId
+    CompletionStage<List<CouchbaseDocument<JsonValue>>> jsonResult =
+              Source.from(idsJson)
+                      .via(CouchbaseFlow.fromId(sessionSettings, queryBucketName, support.scopeName(), support.collectionName()))
+                      .runWith(Sink.seq(), actorSystem);
+    // #fromId
+
+    List<CouchbaseDocument<JsonValue>> jsonDocs = jsonResult.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    assertEquals(4, jsonDocs.size());
   }
 
   @Test

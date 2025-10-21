@@ -48,6 +48,7 @@ class CouchbaseSourceSpec
 
   override def beforeAll(): Unit = {
     super.beforeAll()
+    cleanAllInCollection(bucketName, scopeName, collectionName)
     upsertSampleData(bucketName, scopeName, collectionName)
   }
 

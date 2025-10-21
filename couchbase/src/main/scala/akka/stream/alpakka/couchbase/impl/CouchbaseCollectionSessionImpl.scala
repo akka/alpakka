@@ -109,12 +109,15 @@ private[couchbase] class CouchbaseCollectionSessionImpl(bucketSession: Couchbase
       upsertOptions.transcoder(chooseTranscoder(document.getClass))
     }
     underlying
-        .upsert(id, document, upsertOptions)
-        .thenApply(_ => Done)
-        .asScala
+      .upsert(id, document, upsertOptions)
+      .thenApply(_ => Done)
+      .asScala
   }
 
-  override def upsert[T](id: String, document: T, upsertOptions: UpsertOptions, timeout: FiniteDuration): Future[Done] = {
+  override def upsert[T](id: String,
+                         document: T,
+                         upsertOptions: UpsertOptions,
+                         timeout: FiniteDuration): Future[Done] = {
     if (upsertOptions.build().transcoder() == null) {
       upsertOptions.transcoder(chooseTranscoder(document.getClass))
     }
