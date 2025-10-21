@@ -34,6 +34,13 @@ trait CouchbaseSupport {
       new CouchbaseDocument("Fourth", "Fourth")
     )
 
+  val sampleJsonSequence: Seq[CouchbaseDocument[String]] = Seq[CouchbaseDocument[String]](
+    new CouchbaseDocument("FirstJson", "\"First\""),
+    new CouchbaseDocument("SecondJson", "\"Second\""),
+    new CouchbaseDocument("ThirdJson", "\"Third\""),
+    new CouchbaseDocument("FourthJson", "\"ForthIsAwesome\"")
+  )
+
   val sampleJavaList: java.util.List[CouchbaseDocument[String]] = sampleSequence.asJava
 
   val sessionSettings = CouchbaseSessionSettings(actorSystem)
@@ -57,8 +64,19 @@ trait CouchbaseSupport {
     Thread.sleep(5000)
   }
 
-  def cleanAllInCollection(bucketName: String, scopeName: String, collectionName: String): Unit =
+  def upsertSampleJson(bucketName: String, scopeName: String, collectionName: String): Unit = {
+    val bulkUpsertResult: Future[Done] = Source(sampleJsonSequence)
+      .via(CouchbaseFlow.upsert(sessionSettings, bucketName, scopeName, collectionName))
+      .runWith(Sink.ignore)
+    Await.result(bulkUpsertResult, 10.seconds)
+    //all queries are Eventual Consistent, se we need to wait for index refresh!!
+    Thread.sleep(5000)
+  }
+
+  def cleanAllInCollection(bucketName: String, scopeName: String, collectionName: String): Unit = {
     cleanAllInCollection(sampleSequence.map(_.getId), bucketName, scopeName, collectionName)
+    cleanAllInCollection(sampleJsonSequence.map(_.getId), bucketName, scopeName, collectionName)
+  }
 
   def cleanAllInCollection(ids: Seq[String], bucketName: String, scopeName: String, collectionName: String): Unit = {
     val result: Future[Done] =

@@ -72,7 +72,8 @@ object CouchbaseSession {
             )
         }).andThen(c => {
             log.debug("created couchbase cluster client for " + enrichedSettings.username)
-          }).recover(err => {
+          })
+          .recover(err => {
             log.error("failed to create couchbase cluster", err)
             throw err
           })
