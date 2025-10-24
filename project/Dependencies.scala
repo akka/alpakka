@@ -127,11 +127,11 @@ object Dependencies {
 
   val CassandraVersionInDocs = "4.0"
   val CassandraDriverVersion = "4.19.1"
-  val CassandraDriverVersionInDocs = "4.19"
+  val CassandraDriverVersionInDocs = CassandraDriverVersion
 
   val Cassandra = Seq(
     libraryDependencies ++= Seq(
-        ("com.datastax.oss" % "java-driver-core" % CassandraDriverVersion)
+        ("org.apache.cassandra" % "java-driver-core" % CassandraDriverVersion)
           .exclude("com.github.spotbugs", "spotbugs-annotations")
           .exclude("org.apache.tinkerpop", "*") //https://github.com/akka/alpakka/issues/2200
           .exclude("com.esri.geometry", "esri-geometry-api"), //https://github.com/akka/alpakka/issues/2225
