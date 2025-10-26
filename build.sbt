@@ -377,8 +377,6 @@ lazy val unixdomainsocket =
 
 lazy val xml = alpakkaProject("xml", "xml", Dependencies.Xml, Scala3.settings)
 
-// Java Platform version for JavaDoc creation
-
 lazy val docs = project
   .enablePlugins(AkkaParadoxPlugin, ParadoxSitePlugin, SitePreviewPlugin, PreprocessPlugin, PublishRsyncPlugin)
   .disablePlugins(MimaPlugin)
