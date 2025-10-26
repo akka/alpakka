@@ -378,7 +378,7 @@ lazy val unixdomainsocket =
 lazy val xml = alpakkaProject("xml", "xml", Dependencies.Xml, Scala3.settings)
 
 // Java Platform version for JavaDoc creation
-val JavaDocLinkVersion = "11"
+val JavaDocLinkVersion = "17"
 
 lazy val docs = project
   .enablePlugins(AkkaParadoxPlugin, ParadoxSitePlugin, SitePreviewPlugin, PreprocessPlugin, PublishRsyncPlugin)
@@ -391,20 +391,20 @@ lazy val docs = project
     Preprocess / siteSubdirName := s"api/alpakka/${projectInfoVersion.value}",
     Preprocess / sourceDirectory := (LocalRootProject / ScalaUnidoc / unidoc / target).value,
     Preprocess / preprocessRules := Seq(
-        // Java Platform Module System splits
-        // java.*
-        ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java/sql/").r,
-         _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.sql/java/sql/"),
-        ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java/").r,
-         _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.base/java/"),
-        // javax.*
-        ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/javax/net/").r,
-         _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.base/javax/net/"),
-        ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/javax/xml/").r,
-         _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.xml/javax/xml/"),
-        // org.w3c.*
-        ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/org/w3c/").r,
-         _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.xml/org/w3c/"),
+//        // Java Platform Module System splits
+//        // java.*
+//        ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java/sql/").r,
+//         _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.sql/java/sql/"),
+//        ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java/").r,
+//         _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.base/java/"),
+//        // javax.*
+//        ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/javax/net/").r,
+//         _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.base/javax/net/"),
+//        ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/javax/xml/").r,
+//         _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.xml/javax/xml/"),
+//        // org.w3c.*
+//        ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/org/w3c/").r,
+//         _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.xml/org/w3c/"),
         // package duplication errors
         ((s"https://doc\\.akka\\.io/api/akka-grpc/${akka.grpc.gen.BuildInfo.version}/akka/grpc/akka/grpc").r,
          _ => s"https://doc\\.akka\\.io/api/akka-grpc/${akka.grpc.gen.BuildInfo.version}/akka/grpc/"),
@@ -416,10 +416,10 @@ lazy val docs = project
       ),
     Paradox / siteSubdirName := s"libraries/alpakka/${projectInfoVersion.value}",
     // make use of https://github.com/scala/scala/pull/8663
-    Compile / doc / scalacOptions ++= Seq(
-        "-jdk-api-doc-base",
-        s"https://docs.oracle.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java.base/"
-      ),
+//    Compile / doc / scalacOptions ++= Seq(
+//        "-jdk-api-doc-base",
+//        s"https://docs.oracle.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java.base/"
+//      ),
     paradoxProperties ++= Map(
         "akka.version" -> Dependencies.AkkaVersion,
         "akka-http.version" -> Dependencies.AkkaHttpVersion,
