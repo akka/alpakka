@@ -378,7 +378,6 @@ lazy val unixdomainsocket =
 lazy val xml = alpakkaProject("xml", "xml", Dependencies.Xml, Scala3.settings)
 
 // Java Platform version for JavaDoc creation
-val JavaDocLinkVersion = "17"
 
 lazy val docs = project
   .enablePlugins(AkkaParadoxPlugin, ParadoxSitePlugin, SitePreviewPlugin, PreprocessPlugin, PublishRsyncPlugin)
@@ -391,20 +390,10 @@ lazy val docs = project
     Preprocess / siteSubdirName := s"api/alpakka/${projectInfoVersion.value}",
     Preprocess / sourceDirectory := (LocalRootProject / ScalaUnidoc / unidoc / target).value,
     Preprocess / preprocessRules := Seq(
-//        // Java Platform Module System splits
-//        // java.*
-//        ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java/sql/").r,
-//         _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.sql/java/sql/"),
-//        ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java/").r,
-//         _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.base/java/"),
-//        // javax.*
-//        ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/javax/net/").r,
-//         _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.base/javax/net/"),
-//        ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/javax/xml/").r,
-//         _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.xml/javax/xml/"),
-//        // org.w3c.*
-//        ((s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/org/w3c/").r,
-//         _ => s"https://docs\\.oracle\\.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java\\.xml/org/w3c/"),
+        // Java Platform Module duplication
+        ((s"/java\\.base//java\\.base/").r, _ => "/java\\.base/"),
+        ((s"/java\\.base//java\\.sql/").r, _ => "/java\\.sql/"),
+        ((s"/java\\.base//java\\.xml/").r, _ => "/java\\.xml/"),
         // package duplication errors
         ((s"https://doc\\.akka\\.io/api/akka-grpc/${akka.grpc.gen.BuildInfo.version}/akka/grpc/akka/grpc").r,
          _ => s"https://doc\\.akka\\.io/api/akka-grpc/${akka.grpc.gen.BuildInfo.version}/akka/grpc/"),
@@ -416,10 +405,10 @@ lazy val docs = project
       ),
     Paradox / siteSubdirName := s"libraries/alpakka/${projectInfoVersion.value}",
     // make use of https://github.com/scala/scala/pull/8663
-//    Compile / doc / scalacOptions ++= Seq(
-//        "-jdk-api-doc-base",
-//        s"https://docs.oracle.com/en/java/javase/${JavaDocLinkVersion}/docs/api/java.base/"
-//      ),
+    Compile / doc / scalacOptions ++= Seq(
+        "-jdk-api-doc-base",
+        s"https://docs.oracle.com/en/java/javase/${Dependencies.JavaDocLinkVersion}/docs/api"
+      ),
     paradoxProperties ++= Map(
         "akka.version" -> Dependencies.AkkaVersion,
         "akka-http.version" -> Dependencies.AkkaHttpVersion,
@@ -440,9 +429,7 @@ lazy val docs = project
         "couchbase.version" -> Dependencies.CouchbaseVersion,
         "extref.couchbase.base_url" -> s"https://docs.couchbase.com/java-sdk/${Dependencies.CouchbaseVersionForDocs}/%s",
         // Java
-//        "extref.java-api.base_url" -> "https://docs.oracle.com/javase/8/docs/api/index.html?%s.html",
         "extref.geode.base_url" -> s"https://geode.apache.org/docs/guide/${Dependencies.GeodeVersionForDocs}/%s",
-//        "extref.javaee-api.base_url" -> "https://docs.oracle.com/javaee/7/api/index.html?%s.html",
         "extref.paho-api.base_url" -> "https://www.eclipse.org/paho/files/javadoc/index.html?%s.html",
         "extref.pravega.base_url" -> s"https://cncf.pravega.io/docs/latest/%s",
         "extref.slick.base_url" -> s"https://scala-slick.org/doc/${Dependencies.SlickVersion}/%s",
@@ -454,10 +441,10 @@ lazy val docs = project
         "extref.solr.base_url" -> s"https://solr.apache.org/guide/${Dependencies.SolrVersionForDocs}/%s",
         "javadoc.org.apache.solr.base_url" -> s"https://solr.apache.org/docs/${Dependencies.SolrVersionForDocs}_0/solr-solrj/",
         // Java
-//        "javadoc.base_url" -> "https://docs.oracle.com/en/java/javase/11/docs/api/java.base/",
-//        "javadoc.java.base_url" -> "https://docs.oracle.com/en/java/javase/11/docs/api/java.base/",
-//        "javadoc.java.link_style" -> "direct",
-//        "javadoc.javax.jms.base_url" -> "https://docs.oracle.com/javaee/7/api/",
+        "javadoc.base_url" -> s"https://docs.oracle.com/en/java/javase/${Dependencies.JavaDocLinkVersion}/docs/api",
+        "javadoc.java.base_url" -> s"https://docs.oracle.com/en/java/javase/${Dependencies.JavaDocLinkVersion}/docs/api",
+        "javadoc.java.link_style" -> "direct",
+        "javadoc.javax.jms.base_url" -> "https://docs.oracle.com/javaee/7/api/",
         "javadoc.jakarta.jms.base_url" -> "https://jakarta.ee/specifications/messaging/3.1/apidocs/jakarta.messaging/",
         "javadoc.jakarta.jms.link_style" -> "direct",
         "javadoc.com.couchbase.base_url" -> s"https://docs.couchbase.com/sdk-api/couchbase-java-client-${Dependencies.CouchbaseVersion}/",
