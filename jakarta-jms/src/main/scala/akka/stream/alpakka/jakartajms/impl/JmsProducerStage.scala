@@ -65,7 +65,7 @@ private[jakartajms] final class JmsProducerStage[E <: JmsEnvelope[PassThrough], 
     (logic, logic.status)
   }
 
-  private def producerLogic(inheritedAttributes: Attributes) =
+  private def producerLogic(inheritedAttributes: Attributes): TimerGraphStageLogic with JmsProducerConnector =
     new TimerGraphStageLogic(shape) with JmsProducerConnector with StageLogging {
 
       /*
