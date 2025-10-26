@@ -4,7 +4,6 @@ import Keys._
 object Dependencies {
 
   // Java Platform version for JavaDoc creation
-  // sync with Java version in .github/workflows/link-validator.yml
   lazy val JavaDocLinkVersion = scala.util.Properties.javaSpecVersion
 
   val CronBuild = sys.env.get("GITHUB_EVENT_NAME").contains("schedule")

@@ -388,10 +388,6 @@ lazy val docs = project
     Preprocess / siteSubdirName := s"api/alpakka/${projectInfoVersion.value}",
     Preprocess / sourceDirectory := (LocalRootProject / ScalaUnidoc / unidoc / target).value,
     Preprocess / preprocessRules := Seq(
-        // Java Platform Module duplication
-        ((s"/java\\.base//java\\.base/").r, _ => "/java\\.base/"),
-        ((s"/java\\.base//java\\.sql/").r, _ => "/java\\.sql/"),
-        ((s"/java\\.base//java\\.xml/").r, _ => "/java\\.xml/"),
         // package duplication errors
         ((s"https://doc\\.akka\\.io/api/akka-grpc/${akka.grpc.gen.BuildInfo.version}/akka/grpc/akka/grpc").r,
          _ => s"https://doc\\.akka\\.io/api/akka-grpc/${akka.grpc.gen.BuildInfo.version}/akka/grpc/"),
@@ -402,11 +398,6 @@ lazy val docs = project
         ("https://javadoc\\.io/page/".r, _ => "https://javadoc\\.io/static/")
       ),
     Paradox / siteSubdirName := s"libraries/alpakka/${projectInfoVersion.value}",
-    // make use of https://github.com/scala/scala/pull/8663
-    Compile / doc / scalacOptions ++= Seq(
-        "-jdk-api-doc-base",
-        s"https://docs.oracle.com/en/java/javase/${Dependencies.JavaDocLinkVersion}/docs/api"
-      ),
     paradoxProperties ++= Map(
         "akka.version" -> Dependencies.AkkaVersion,
         "akka-http.version" -> Dependencies.AkkaHttpVersion,

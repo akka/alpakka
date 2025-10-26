@@ -94,12 +94,12 @@ object Common extends AutoPlugin {
             "com.google.longrunning:com.google.protobuf:com.google.rpc:com.google.type"
           if (scalaBinaryVersion.value.startsWith("3")) {
             Seq(
-              s"-external-mappings:https://docs.oracle.com/en/java/javase/${Dependencies.JavaDocLinkVersion}/docs/api/java.base/",
+              s"-external-mappings:https://docs.oracle.com/en/java/javase/${Dependencies.JavaDocLinkVersion}/docs/api",
               s"-skip-packages:$skip"
             )
           } else {
             Seq("-jdk-api-doc-base",
-                s"https://docs.oracle.com/en/java/javase/${Dependencies.JavaDocLinkVersion}/docs/api/java.base/",
+                s"https://docs.oracle.com/en/java/javase/${Dependencies.JavaDocLinkVersion}/docs/api",
                 "-skip-packages",
                 skip)
           }
