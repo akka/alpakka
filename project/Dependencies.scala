@@ -7,7 +7,6 @@ object Dependencies {
   // sync with Java version in .github/workflows/link-validator.yml
   lazy val JavaDocLinkVersion = scala.util.Properties.javaSpecVersion
 
-
   val CronBuild = sys.env.get("GITHUB_EVENT_NAME").contains("schedule")
 
   val Scala213 = "2.13.17" // update even in link-validator.conf
