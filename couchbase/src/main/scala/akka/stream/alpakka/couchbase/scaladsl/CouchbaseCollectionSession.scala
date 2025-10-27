@@ -16,6 +16,7 @@ import com.couchbase.client.java.{AsyncCollection, AsyncScope}
 
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
+import scala.reflect.ClassTag
 
 object CouchbaseCollectionSession {
   protected def apply(bucket: CouchbaseSession, scope: String, collection: String) =
@@ -38,7 +39,7 @@ trait CouchbaseCollectionSession {
    * @tparam T type of the document
    * @return a future that completes when the document was written
    */
-  def insert[T](id: String, document: T): Future[Done]
+  def insert[T: ClassTag](id: String, document: T): Future[Done]
 
   /**
    * Insert a document using provided InsertOptions.
@@ -48,7 +49,7 @@ trait CouchbaseCollectionSession {
    * @tparam T type of the document
    * @return a future that completes when the document was written or errors if the operation failed
    */
-  def insert[T](id: String, document: T, insertOptions: InsertOptions): Future[Done]
+  def insert[T: ClassTag](id: String, document: T, insertOptions: InsertOptions): Future[Done]
 
   /**
    * Reads a document with given id as JsonObject
@@ -56,7 +57,7 @@ trait CouchbaseCollectionSession {
    * @return a future that completes with the requested document or errors if the operation failed
    */
   def getJsonObject(id: String): Future[CouchbaseDocument[JsonObject]] =
-    get(id, classOf[JsonObject])
+    get[JsonObject](id)
 
   /**
    * Reads a document with given id as JsonArray
@@ -64,7 +65,7 @@ trait CouchbaseCollectionSession {
    * @return a future that completes with the requested document or errors if the operation failed
    */
   def getJsonArray(id: String): Future[CouchbaseDocument[JsonArray]] = {
-    get(id, classOf[JsonArray])
+    get[JsonArray](id)
   }
 
   /**
@@ -77,7 +78,7 @@ trait CouchbaseCollectionSession {
    * @tparam T type of the object to return
    * @return a future that completes with created object or errors if the operation failed
    */
-  def get[T](id: String, target: Class[T]): Future[CouchbaseDocument[T]]
+  def get[T: ClassTag](id: String): Future[CouchbaseDocument[T]]
 
   /**
    * Reads a json document as JsonValue (either array or object)
@@ -116,7 +117,7 @@ trait CouchbaseCollectionSession {
    * @tparam T type of the document
    * @return a future that completes when the upsert is done
    */
-  def upsert[T](id: String, document: T): Future[Done]
+  def upsert[T: ClassTag](id: String, document: T): Future[Done]
 
   /**
    * Upsert a document using provided write settings.
@@ -126,7 +127,7 @@ trait CouchbaseCollectionSession {
    * @tparam T type of the document
    * @return a future that completes when the upsert is done
    */
-  def upsert[T](id: String, document: T, upsertOptions: UpsertOptions): Future[Done]
+  def upsert[T: ClassTag](id: String, document: T, upsertOptions: UpsertOptions): Future[Done]
 
   /**
    * Upsert a document using given write settings and timeout
@@ -136,7 +137,7 @@ trait CouchbaseCollectionSession {
    * @param timeout timeout for the operation
    * @return a future that completes after operation is done
    */
-  def upsert[T](id: String, document: T, upsertOptions: UpsertOptions, timeout: FiniteDuration): Future[Done]
+  def upsert[T: ClassTag](id: String, document: T, upsertOptions: UpsertOptions, timeout: FiniteDuration): Future[Done]
 
   /**
    * Replace a document using the default write settings.
@@ -145,7 +146,7 @@ trait CouchbaseCollectionSession {
    *
    * @return a future that completes when the replace is done
    */
-  def replace[T](id: String, document: T): Future[Done]
+  def replace[T: ClassTag](id: String, document: T): Future[Done]
 
   /**
    * Replace using the given replace options
@@ -154,7 +155,7 @@ trait CouchbaseCollectionSession {
    *
    * @return a future that completes when the replace is done
    */
-  def replace[T](id: String, document: T, replaceOptions: ReplaceOptions): Future[Done]
+  def replace[T: ClassTag](id: String, document: T, replaceOptions: ReplaceOptions): Future[Done]
 
   /**
    * Replace using write settings and timeout
@@ -164,7 +165,10 @@ trait CouchbaseCollectionSession {
    * @param timeout timeout for the operation
    * @return a future that completes after operation is done
    */
-  def replace[T](id: String, document: T, replaceOptions: ReplaceOptions, timeout: FiniteDuration): Future[Done]
+  def replace[T: ClassTag](id: String,
+                           document: T,
+                           replaceOptions: ReplaceOptions,
+                           timeout: FiniteDuration): Future[Done]
 
   /**
    * Remove a document by id using the default write settings.

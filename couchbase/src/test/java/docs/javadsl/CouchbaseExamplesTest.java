@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 // #registry
 // #session
 import akka.stream.alpakka.couchbase.javadsl.CouchbaseSession;
+import scala.reflect.ClassTag;
 // #session
 // #registry
 // #sessionFromBucket
@@ -202,12 +203,12 @@ public class CouchbaseExamplesTest {
   @Test
   public void upsert() throws Exception {
 
-    CouchbaseDocument<String> obj = new CouchbaseDocument<>("First", "First");
+    CouchbaseDocument<String> obj = new CouchbaseDocument("First", "First", ClassTag.apply(String.class));
 
     // #upsert
     CompletionStage<CouchbaseWriteResult> jsonDocumentUpsert =
         Source.single(obj)
-            .via(CouchbaseFlow.upsertWithResult(sessionSettings, bucketName, support.scopeName(), support.collectionName()))
+            .via(CouchbaseFlow.upsertWithResult(sessionSettings, bucketName, support.scopeName(), support.collectionName(), ClassTag.apply(String.class)))
             .runWith(Sink.head(), actorSystem);
     // #upsert
 
@@ -222,7 +223,7 @@ public class CouchbaseExamplesTest {
     // #upsertWithResult
     CompletionStage<List<CouchbaseWriteResult>> upsertResults =
         Source.from(sampleSequence)
-            .via(CouchbaseFlow.upsertWithResult(sessionSettings, bucketName, support.scopeName(), support.collectionName()))
+            .via(CouchbaseFlow.upsertWithResult(sessionSettings, bucketName, support.scopeName(), support.collectionName(), ClassTag.apply(String.class)))
             .runWith(Sink.seq(), actorSystem);
 
     List<CouchbaseWriteResult> writeResults =
@@ -243,12 +244,12 @@ public class CouchbaseExamplesTest {
 
     support.upsertSampleData(bucketName, support.scopeName(), support.collectionName());
 
-    CouchbaseDocument<String> obj = new CouchbaseDocument<>("First", "FirstReplace");
+    CouchbaseDocument<String> obj = new CouchbaseDocument<>("First", "FirstReplace", ClassTag.apply(String.class));
 
     // #replace
     CompletionStage<CouchbaseWriteResult> jsonDocumentReplace =
         Source.single(obj)
-            .via(CouchbaseFlow.replaceWithResult(sessionSettings, bucketName, support.scopeName(), support.collectionName()))
+            .via(CouchbaseFlow.replaceWithResult(sessionSettings, bucketName, support.scopeName(), support.collectionName(), ClassTag.apply(String.class)))
             .runWith(Sink.head(), actorSystem);
     // #replace
 
@@ -262,13 +263,13 @@ public class CouchbaseExamplesTest {
 
     support.cleanAllInCollection(bucketName, support.scopeName(), support.collectionName());
 
-    CouchbaseDocument<String> obj = new CouchbaseDocument<>("First", "FirstReplace");
+    CouchbaseDocument<String> obj = new CouchbaseDocument<>("First", "FirstReplace", ClassTag.apply(String.class));
 
 
     // #replace
     CompletionStage<Done> jsonDocumentReplace =
         Source.single(obj)
-            .via(CouchbaseFlow.replace(sessionSettings, bucketName, support.scopeName(), support.collectionName()))
+            .via(CouchbaseFlow.replace(sessionSettings, bucketName, support.scopeName(), support.collectionName(), ClassTag.apply(String.class)))
             .runWith(Sink.head(), actorSystem);
     // #replace
 
@@ -285,16 +286,16 @@ public class CouchbaseExamplesTest {
     support.upsertSampleData(bucketName, support.scopeName(), support.collectionName());
 
     List<CouchbaseDocument<String>> list = new ArrayList<>();
-    list.add(new CouchbaseDocument<>("First", "FirstReplace"));
-    list.add(new CouchbaseDocument<>("Second", "SecondReplace"));
-    list.add(new CouchbaseDocument<>("Third", "ThirdReplace"));
-    list.add(new CouchbaseDocument<>("NotExisting", "Nothing")); // should fail
-    list.add(new CouchbaseDocument<>("Fourth", "FourthReplace"));
+    list.add(new CouchbaseDocument<>("First", "FirstReplace", ClassTag.apply(String.class)));
+    list.add(new CouchbaseDocument<>("Second", "SecondReplace", ClassTag.apply(String.class)));
+    list.add(new CouchbaseDocument<>("Third", "ThirdReplace", ClassTag.apply(String.class)));
+    list.add(new CouchbaseDocument<>("NotExisting", "Nothing", ClassTag.apply(String.class))); // should fail
+    list.add(new CouchbaseDocument<>("Fourth", "FourthReplace", ClassTag.apply(String.class)));
 
     // #replaceWithResult
     CompletionStage<List<CouchbaseWriteResult>> replaceResults =
         Source.from(list)
-            .via(CouchbaseFlow.replaceWithResult(sessionSettings, bucketName, support.scopeName(), support.collectionName()))
+            .via(CouchbaseFlow.replaceWithResult(sessionSettings, bucketName, support.scopeName(), support.collectionName(), ClassTag.apply(String.class)))
             .runWith(Sink.seq(), actorSystem);
 
     List<CouchbaseWriteResult> writeResults =

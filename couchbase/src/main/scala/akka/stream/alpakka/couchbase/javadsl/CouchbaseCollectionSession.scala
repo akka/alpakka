@@ -15,6 +15,7 @@ import com.couchbase.client.java.{AsyncCollection, AsyncScope}
 
 import java.time.Duration
 import java.util.concurrent.{CompletionStage, Executor}
+import scala.reflect.ClassTag
 
 /**
  * Java API: Gives access to Couchbase Collection.
@@ -50,12 +51,12 @@ abstract class CouchbaseCollectionSession {
    * @param document A tuple where first element is id of the document and second is its value
    * @return A Future that completes with the id of the written document when the write is done
    */
-  def insert[T](id: String, document: T): CompletionStage[Done]
-  def insert[T](id: String, document: T, insertOptions: InsertOptions): CompletionStage[Done]
+  def insert[T: ClassTag](id: String, document: T): CompletionStage[Done]
+  def insert[T: ClassTag](id: String, document: T, insertOptions: InsertOptions): CompletionStage[Done]
 
   def getJsonObject(id: String): CompletionStage[CouchbaseDocument[JsonObject]]
   def getJsonArray(id: String): CompletionStage[CouchbaseDocument[JsonArray]]
-  def get[T](id: String, target: Class[T]): CompletionStage[CouchbaseDocument[T]]
+  def get[T: ClassTag](id: String, target: Class[T]): CompletionStage[CouchbaseDocument[T]]
 
   /**
    * @return A document if found or none if there is no document for the id
@@ -83,7 +84,7 @@ abstract class CouchbaseCollectionSession {
    * Upsert using the default write settings.
    * @return a future that completes when the upsert is done
    */
-  def upsert[T](id: String, document: T): CompletionStage[Done]
+  def upsert[T: ClassTag](id: String, document: T): CompletionStage[Done]
 
   /**
    * Upsert using the given write settings
@@ -92,7 +93,7 @@ abstract class CouchbaseCollectionSession {
    *
    * @return a future that completes when the upsert is done
    */
-  def upsert[T](id: String, document: T, upsertOptions: UpsertOptions): CompletionStage[Done]
+  def upsert[T: ClassTag](id: String, document: T, upsertOptions: UpsertOptions): CompletionStage[Done]
 
   /**
    * Upsert using given write settings and timeout
@@ -102,7 +103,10 @@ abstract class CouchbaseCollectionSession {
    * @param timeout timeout for the operation
    * @return the document id and value
    */
-  def upsert[T](id: String, document: T, upsertOptions: UpsertOptions, timeout: Duration): CompletionStage[Done]
+  def upsert[T: ClassTag](id: String,
+                          document: T,
+                          upsertOptions: UpsertOptions,
+                          timeout: Duration): CompletionStage[Done]
 
   /**
    * Replace using the default write settings.
@@ -111,7 +115,7 @@ abstract class CouchbaseCollectionSession {
    *
    * @return a future that completes when the replace is done
    */
-  def replace[T](id: String, document: T): CompletionStage[Done]
+  def replace[T: ClassTag](id: String, document: T): CompletionStage[Done]
 
   /**
    * Replace using the given replace options
@@ -120,7 +124,7 @@ abstract class CouchbaseCollectionSession {
    *
    * @return a future that completes when the replace is done
    */
-  def replace[T](id: String, document: T, replaceOptions: ReplaceOptions): CompletionStage[Done]
+  def replace[T: ClassTag](id: String, document: T, replaceOptions: ReplaceOptions): CompletionStage[Done]
 
   /**
    * Replace using write settings and timeout
@@ -130,7 +134,10 @@ abstract class CouchbaseCollectionSession {
    * @param timeout timeout for the operation
    * @return the document id and value
    */
-  def replace[T](id: String, document: T, replaceOptions: ReplaceOptions, timeout: Duration): CompletionStage[Done]
+  def replace[T: ClassTag](id: String,
+                           document: T,
+                           replaceOptions: ReplaceOptions,
+                           timeout: Duration): CompletionStage[Done]
 
   /**
    * Remove a document by id using the default write settings.

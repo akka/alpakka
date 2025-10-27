@@ -24,7 +24,7 @@ object CouchbaseSource {
           .future(
             CouchbaseSessionRegistry(materializer.system)
               .sessionFor(sessionSettings, bucketName)
-              .map(_.streamedQuery(query, queryOptions))(materializer.system.dispatcher)
+              .map(_.streamedQuery(query, queryOptions))(materializer.executionContext)
           )
           .flatMapConcat(identity)
       }
