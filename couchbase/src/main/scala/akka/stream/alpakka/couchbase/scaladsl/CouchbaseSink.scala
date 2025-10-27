@@ -10,6 +10,7 @@ import akka.stream.scaladsl.{Keep, Sink}
 import com.couchbase.client.java.kv.{RemoveOptions, UpsertOptions}
 
 import scala.concurrent.Future
+import scala.reflect.ClassTag
 
 /**
  * Scala API: Factory methods for Couchbase sinks.
@@ -19,11 +20,11 @@ object CouchbaseSink {
   /**
    * Create a sink to update or insert a Couchbase [[com.couchbase.client.java.document.JsonDocument JsonDocument]].
    */
-  def upsert[T](sessionSettings: CouchbaseSessionSettings,
-                upsertOptions: UpsertOptions,
-                bucketName: String,
-                scopeName: String,
-                collectionName: String): Sink[CouchbaseDocument[T], Future[Done]] =
+  def upsert[T: ClassTag](sessionSettings: CouchbaseSessionSettings,
+                          upsertOptions: UpsertOptions,
+                          bucketName: String,
+                          scopeName: String,
+                          collectionName: String): Sink[CouchbaseDocument[T], Future[Done]] =
     CouchbaseFlow
       .upsert[T](sessionSettings, upsertOptions, bucketName, scopeName, collectionName)
       .toMat(Sink.ignore)(Keep.right)

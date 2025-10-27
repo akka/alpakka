@@ -92,7 +92,7 @@ class CouchbaseFlowSpec
 
       // #upsert
 
-      val msgFuture = session.collection(scopeName, collectionName).get(sampleData.getId, classOf[JsonObject])
+      val msgFuture = session.collection(scopeName, collectionName).get[JsonObject](sampleData.getId)
       msgFuture.futureValue.getDocument.get("value") shouldEqual sampleData.getDocument
     }
 
@@ -115,7 +115,7 @@ class CouchbaseFlowSpec
 
       // #upsert
 
-      val msgFuture = session.collection(scopeName, collectionName).get(sampleData.getId, classOf[String])
+      val msgFuture = session.collection(scopeName, collectionName).get[String](sampleData.getId)
       msgFuture.futureValue.getId shouldEqual sampleData.getId
       msgFuture.futureValue.getDocument shouldEqual sampleData.getDocument
     }
@@ -157,7 +157,7 @@ class CouchbaseFlowSpec
 
       val resultsAsFuture =
         Source(sampleSequence.map(_.getId))
-          .via(CouchbaseFlow.fromId(sessionSettings, bucketName, scopeName, collectionName))
+          .via(CouchbaseFlow.fromId[String](sessionSettings, bucketName, scopeName, collectionName))
           .runWith(Sink.seq)
 
       resultsAsFuture.futureValue.map(_.getId) should contain.inOrderOnly("First", "Second", "Third", "Fourth")
@@ -182,12 +182,11 @@ class CouchbaseFlowSpec
       val futureResult =
         Source(ids)
           .via(
-            CouchbaseFlow.fromId(
+            CouchbaseFlow.fromId[JsonObject](
               sessionSettings,
               bucketName,
               scopeName,
-              collectionName,
-              classOf[JsonObject]
+              collectionName
             )
           )
           .runWith(Sink.seq)
@@ -213,12 +212,11 @@ class CouchbaseFlowSpec
       val resultsAsFuture =
         Source(sampleSequence.map(_.getId))
           .via(
-            CouchbaseFlow.fromId(
+            CouchbaseFlow.fromId[String](
               sessionSettings,
               bucketName,
               scopeName,
-              collectionName,
-              classOf[String]
+              collectionName
             )
           )
           .runWith(Sink.seq)
@@ -294,7 +292,7 @@ class CouchbaseFlowSpec
 
       Thread.sleep(1000)
 
-      val msgFuture = session.collection(scopeName, collectionName).get(sampleData.getId, classOf[String])
+      val msgFuture = session.collection(scopeName, collectionName).get[String](sampleData.getId)
       msgFuture.failed.futureValue.getCause shouldBe a[DocumentNotFoundException]
 
       val getFuture =
@@ -302,7 +300,7 @@ class CouchbaseFlowSpec
           .single(sampleData.getId)
           .via(
             CouchbaseFlow
-              .fromId(
+              .fromId[String](
                 sessionSettings,
                 bucketName,
                 scopeName,
@@ -331,7 +329,7 @@ class CouchbaseFlowSpec
       val getFuture =
         Source(sampleSequence.map(_.getId))
           .via(
-            CouchbaseFlow.fromId(sessionSettings, bucketName, scopeName, collectionName)
+            CouchbaseFlow.fromId[String](sessionSettings, bucketName, scopeName, collectionName)
           )
           .runWith(Sink.seq)
       getFuture.failed.futureValue.getCause shouldBe a[DocumentNotFoundException]
@@ -474,7 +472,7 @@ class CouchbaseFlowSpec
 
       Thread.sleep(1000)
 
-      val msgFuture = session.collection(scopeName, collectionName).get(obj.getId, classOf[String])
+      val msgFuture = session.collection(scopeName, collectionName).get[String](obj.getId)
       msgFuture.futureValue.getDocument shouldEqual obj.getDocument
     }
 

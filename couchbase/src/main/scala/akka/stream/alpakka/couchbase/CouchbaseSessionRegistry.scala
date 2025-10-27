@@ -45,6 +45,8 @@ object CouchbaseSessionRegistry extends ExtensionId[CouchbaseSessionRegistry] wi
 
 final class CouchbaseSessionRegistry(system: ExtendedActorSystem) extends Extension {
 
+  private val blockingDispatcher = system.dispatchers.lookup("akka.actor.default-blocking-io-dispatcher")
+
   import CouchbaseSessionRegistry._
 
   private val clusterRegistry = new CouchbaseClusterRegistry(system)
@@ -88,9 +90,7 @@ final class CouchbaseSessionRegistry(system: ExtendedActorSystem) extends Extens
       // we won cas, initialize session
       val session = clusterRegistry
         .clusterFor(key.settings)
-        .flatMap(cluster => CouchbaseSession(cluster, key.bucketName))(
-          ExecutionContext.parasitic
-        )
+        .flatMap(cluster => CouchbaseSession(cluster, key.bucketName))(blockingDispatcher)
       promise.completeWith(session)
       promise.future
     } else {

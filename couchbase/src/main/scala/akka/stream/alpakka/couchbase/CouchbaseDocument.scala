@@ -4,7 +4,10 @@
 
 package akka.stream.alpakka.couchbase
 
-class CouchbaseDocument[T](id: String, document: T) {
+import scala.reflect.ClassTag
+
+class CouchbaseDocument[T: ClassTag](val id: String, val document: T) {
   def getId: String = id;
   def getDocument: T = document;
+
 }
