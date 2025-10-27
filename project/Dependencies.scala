@@ -4,13 +4,12 @@ import Keys._
 object Dependencies {
 
   // Java Platform version for JavaDoc creation
-  // sync with Java version in .github/workflows/link-validator.yml
-  lazy val JavaDocLinkVersion = 17
+  lazy val JavaDocLinkVersion = scala.util.Properties.javaSpecVersion
 
   val CronBuild = sys.env.get("GITHUB_EVENT_NAME").contains("schedule")
 
-  val Scala213 = "2.13.15" // update even in link-validator.conf
-  val Scala3 = "3.3.4"
+  val Scala213 = "2.13.17" // update even in link-validator.conf
+  val Scala3 = "3.3.7"
   val Scala2Versions = Seq(Scala213)
   val ScalaVersions = Dependencies.Scala2Versions :+ Dependencies.Scala3
 

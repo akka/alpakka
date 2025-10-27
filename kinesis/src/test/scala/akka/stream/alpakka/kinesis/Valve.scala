@@ -88,7 +88,7 @@ final class Valve[A](mode: SwitchMode) extends GraphStageWithMaterializedValue[F
 
     val promise = Promise[ValveSwitch]()
 
-    private val switch = new ValveSwitch {
+    private val switch: ValveSwitch = new ValveSwitch {
 
       val flipCallback = getAsyncCallback[(SwitchMode, Promise[Boolean])] {
         case (flipToMode, promise) =>
