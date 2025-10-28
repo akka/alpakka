@@ -589,7 +589,7 @@ object S3Settings {
       if (c.hasPath(credProviderPath)) {
         c.getString(credProviderPath) match {
           case "default" =>
-            DefaultCredentialsProvider.create()
+            DefaultCredentialsProvider.builder().build()
 
           case "static" =>
             val aki = c.getString("aws.credentials.access-key-id")
@@ -606,10 +606,10 @@ object S3Settings {
             AnonymousCredentialsProvider.create()
 
           case _ =>
-            DefaultCredentialsProvider.create()
+            DefaultCredentialsProvider.builder().build()
         }
       } else {
-        DefaultCredentialsProvider.create()
+        DefaultCredentialsProvider.builder().build()
       }
     }
 
