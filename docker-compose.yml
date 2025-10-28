@@ -49,7 +49,7 @@ services:
         echo 'CREATE PRIMARY INDEX ON akkaquery USING GSI;' | cbq -c Administrator:password -e http://couchbase:8093
       "
   elasticmq:
-    image: softwaremill/elasticmq-native:1.5.8
+    image: softwaremill/elasticmq-native:1.6.15
     ports:
       - "9324:9324"
   dynamodb:

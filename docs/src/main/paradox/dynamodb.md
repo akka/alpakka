@@ -91,18 +91,6 @@ Java
 : @@snip [snip](/dynamodb/src/test/java/docs/javadsl/ExampleTest.java) { #paginated }
 
 
-## Error Retries and Exponential Backoff
-
-The AWS SDK 2 implements error retrying with exponential backoff which is configurable via the @javadoc[DynamoDbAsyncClient](software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient) configuration by using the @javadoc[RetryPolicy](software.amazon.awssdk.core.retry.RetryPolicy) in `overrideConfiguration`.
-
-See @ref[AWS Retry configuration](aws-shared-configuration.md) for more details.
-
-Scala
-: @@snip [snip](/dynamodb/src/test/scala/docs/scaladsl/RetrySpec.scala) { #clientRetryConfig }
-
-Java
-: @@snip [snip](/dynamodb/src/test/java/docs/javadsl/RetryTest.java) { #clientRetryConfig }
-
 @@@ index
 
 * [retry conf](aws-shared-configuration.md)
