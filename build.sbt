@@ -424,8 +424,8 @@ lazy val docs = project
         "extref.slick.base_url" -> s"https://scala-slick.org/doc/${Dependencies.SlickVersion}/%s",
         // Cassandra
         "extref.cassandra.base_url" -> s"https://cassandra.apache.org/doc/${Dependencies.CassandraVersionInDocs}/%s",
-        "extref.cassandra-driver.base_url" -> s"https://docs.datastax.com/en/developer/java-driver/${Dependencies.CassandraDriverVersionInDocs}/%s",
-        "javadoc.com.datastax.oss.base_url" -> s"https://docs.datastax.com/en/drivers/java/${Dependencies.CassandraDriverVersionInDocs}/",
+        "extref.cassandra-driver.base_url" -> s"https://apache.github.io/cassandra-java-driver/${Dependencies.CassandraDriverVersionInDocs}/%s",
+        "javadoc.com.datastax.oss.base_url" -> s"https://apache.github.io/cassandra-java-driver/${Dependencies.CassandraDriverVersionInDocs}/api/",
         // Solr
         "extref.solr.base_url" -> s"https://solr.apache.org/guide/${Dependencies.SolrVersionForDocs}/%s",
         "javadoc.org.apache.solr.base_url" -> s"https://solr.apache.org/docs/${Dependencies.SolrVersionForDocs}_0/solr-solrj/",
