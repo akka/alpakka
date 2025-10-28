@@ -328,7 +328,7 @@ object Dependencies {
   val Hdfs = Seq(
     libraryDependencies ++= Seq(
         "org.apache.hadoop" % "hadoop-client" % HadoopVersion exclude ("log4j", "log4j"), // ApacheV2
-        "org.typelevel" %% "cats-core" % "2.12.0", // MIT,
+        "org.typelevel" %% "cats-core" % "2.13.0", // MIT,
         "org.apache.hadoop" % "hadoop-hdfs" % HadoopVersion % Test, // ApacheV2
         "org.apache.hadoop" % "hadoop-common" % HadoopVersion % Test, // ApacheV2
         "org.apache.hadoop" % "hadoop-minicluster" % HadoopVersion % Test, // ApacheV2
