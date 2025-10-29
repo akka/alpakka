@@ -189,7 +189,6 @@ public class CouchbaseExamplesTest {
     support.upsertSampleData(queryBucketName, support.scopeName(), support.collectionName());
     // #fromId
     List<String> idsJson = Arrays.asList("FirstJson", "SecondJson", "ThirdJson", "FourthJson");
-    // #fromId
     CompletionStage<List<CouchbaseDocument<JsonValue>>> jsonResult =
               Source.from(idsJson)
                       .via(CouchbaseFlow.fromId(sessionSettings, queryBucketName, support.scopeName(), support.collectionName()))
@@ -203,7 +202,7 @@ public class CouchbaseExamplesTest {
   @Test
   public void upsert() throws Exception {
 
-    CouchbaseDocument<String> obj = new CouchbaseDocument("First", "First", ClassTag.apply(String.class));
+    CouchbaseDocument<String> obj = new CouchbaseDocument<>("First", "First", ClassTag.apply(String.class));
 
     // #upsert
     CompletionStage<CouchbaseWriteResult> jsonDocumentUpsert =
