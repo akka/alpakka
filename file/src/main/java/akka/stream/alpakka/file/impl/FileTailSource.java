@@ -4,29 +4,23 @@
 
 package akka.stream.alpakka.file.impl;
 
-import akka.NotUsed;
 import akka.annotation.InternalApi;
 import akka.stream.Attributes;
 import akka.stream.Outlet;
 import akka.stream.SourceShape;
-import akka.stream.javadsl.Framing;
-import akka.stream.javadsl.Source;
 import akka.stream.stage.*;
 import akka.util.ByteString;
-import scala.concurrent.duration.FiniteDuration;
-import scala.util.Failure;
-import scala.util.Success;
-import scala.util.Try;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import scala.concurrent.duration.FiniteDuration;
+import scala.util.Failure;
+import scala.util.Success;
+import scala.util.Try;
 
 /**
  * INTERNAL API

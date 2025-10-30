@@ -39,7 +39,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -51,6 +50,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
 // #imports
 
 public class BigQueryDoc {

@@ -8,7 +8,6 @@ import akka.stream.alpakka.csv.impl.CsvToMapAsStringsJavaStage;
 import akka.stream.alpakka.csv.impl.CsvToMapJavaStage;
 import akka.stream.javadsl.Flow;
 import akka.util.ByteString;
-
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;

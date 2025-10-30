@@ -4,6 +4,11 @@
 
 package docs.javadsl;
 
+import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.alpakka.awslambda.javadsl.AwsLambdaFlow;
@@ -13,20 +18,14 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
-import org.junit.*;
-import software.amazon.awssdk.services.lambda.LambdaAsyncClient;
-import software.amazon.awssdk.services.lambda.model.InvokeRequest;
-import software.amazon.awssdk.services.lambda.model.InvokeResponse;
-
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import org.junit.*;
+import software.amazon.awssdk.services.lambda.LambdaAsyncClient;
+import software.amazon.awssdk.services.lambda.model.InvokeRequest;
+import software.amazon.awssdk.services.lambda.model.InvokeResponse;
 
 public class AwsLambdaFlowTest {
 

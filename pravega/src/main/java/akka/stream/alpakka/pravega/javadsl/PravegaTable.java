@@ -9,26 +9,17 @@ import akka.NotUsed;
 import akka.annotation.ApiMayChange;
 import akka.japi.Pair;
 import akka.stream.alpakka.pravega.*;
+import akka.stream.alpakka.pravega.impl.PravegaTableReadFlow;
 import akka.stream.alpakka.pravega.impl.PravegaTableSource;
 import akka.stream.alpakka.pravega.impl.PravegaTableWriteFlow;
-import akka.stream.alpakka.pravega.impl.PravegaTableReadFlow;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
-import java.nio.ByteBuffer;
-
-import io.pravega.client.tables.TableKey;
-
 import scala.jdk.javaapi.FutureConverters;
-import scala.jdk.javaapi.FunctionConverters;
 import scala.jdk.javaapi.OptionConverters;
-
-import scala.Option;
 
 @ApiMayChange
 public class PravegaTable {

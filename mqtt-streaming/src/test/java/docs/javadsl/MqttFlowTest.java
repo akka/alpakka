@@ -4,6 +4,8 @@
 
 package docs.javadsl;
 
+import static org.junit.Assert.assertEquals;
+
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
@@ -20,21 +22,16 @@ import akka.stream.alpakka.mqtt.streaming.javadsl.Mqtt;
 import akka.stream.alpakka.mqtt.streaming.javadsl.MqttClientSession;
 import akka.stream.alpakka.mqtt.streaming.javadsl.MqttServerSession;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
+import akka.stream.javadsl.BroadcastHub;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.SourceQueueWithComplete;
 import akka.stream.javadsl.Tcp;
-import akka.stream.javadsl.BroadcastHub;
 import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
-import org.junit.*;
-
-import scala.Tuple2;
-import scala.jdk.javaapi.CollectionConverters;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -44,8 +41,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-
-import static org.junit.Assert.assertEquals;
+import org.junit.*;
+import scala.Tuple2;
+import scala.jdk.javaapi.CollectionConverters;
 
 public class MqttFlowTest {
 

@@ -20,18 +20,16 @@ import akka.stream.testkit.javadsl.TestSink;
 import akka.stream.testkit.javadsl.TestSource;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.net.*;
-import java.nio.channels.DatagramChannel;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class UdpTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();

@@ -4,6 +4,10 @@
 
 package docs.javadsl;
 
+import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+
 import akka.actor.ActorSystem;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.alpakka.xml.Characters;
@@ -18,12 +22,6 @@ import akka.stream.javadsl.*;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import com.fasterxml.aalto.AsyncXMLInputFactory;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.w3c.dom.Element;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -33,10 +31,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
-import static org.hamcrest.CoreMatchers.hasItems;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.w3c.dom.Element;
 
 public class XmlParsingTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();

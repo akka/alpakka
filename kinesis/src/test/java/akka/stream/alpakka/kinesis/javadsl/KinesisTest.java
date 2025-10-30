@@ -4,6 +4,9 @@
 
 package akka.stream.alpakka.kinesis.javadsl;
 
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.*;
+
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.alpakka.kinesis.ShardSettings;
@@ -11,6 +14,9 @@ import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -18,13 +24,6 @@ import org.junit.Test;
 import org.mockito.stubbing.Answer;
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClient;
 import software.amazon.awssdk.services.kinesis.model.*;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.*;
 
 public class KinesisTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();

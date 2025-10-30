@@ -11,7 +11,6 @@ import akka.stream.alpakka.ftp.SftpSettings;
 import akka.stream.alpakka.ftp.javadsl.Sftp;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
-
 import java.util.concurrent.CompletionStage;
 
 public class SftpRetrievingExample {

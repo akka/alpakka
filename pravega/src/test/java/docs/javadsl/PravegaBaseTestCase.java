@@ -4,18 +4,15 @@
 
 package docs.javadsl;
 
-import java.net.URI;
-import java.util.UUID;
-
 import akka.stream.alpakka.pravega.PravegaAkkaTestCaseSupport;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-
 import akka.testkit.javadsl.TestKit;
-
 import io.pravega.client.admin.StreamManager;
 import io.pravega.client.stream.ScalingPolicy;
 import io.pravega.client.stream.StreamConfiguration;
+import java.net.URI;
+import java.util.UUID;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 public abstract class PravegaBaseTestCase extends PravegaAkkaTestCaseSupport {
 

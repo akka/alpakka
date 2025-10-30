@@ -5,22 +5,13 @@
 package akka.stream.alpakka.file.javadsl;
 
 import akka.NotUsed;
-import akka.actor.Cancellable;
-import akka.japi.pf.PFBuilder;
 import akka.stream.javadsl.Framing;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
-
-import scala.jdk.javaapi.DurationConverters;
-
-import java.io.FileNotFoundException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import scala.jdk.javaapi.DurationConverters;
 
 /**
  * Java API
@@ -52,11 +43,7 @@ public final class FileTailSource {
       Path path, int maxChunkSize, long startingPosition, java.time.Duration pollingInterval) {
     return Source.fromGraph(
         new akka.stream.alpakka.file.impl.FileTailSource(
-            path,
-            maxChunkSize,
-            startingPosition,
-            DurationConverters.toScala(pollingInterval))
-        );
+            path, maxChunkSize, startingPosition, DurationConverters.toScala(pollingInterval)));
   }
 
   /**

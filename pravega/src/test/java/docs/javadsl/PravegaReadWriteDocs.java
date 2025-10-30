@@ -18,7 +18,6 @@ import io.pravega.client.stream.Serializer;
 import io.pravega.client.stream.impl.JavaSerializer;
 import io.pravega.client.stream.impl.UTF8StringSerializer;
 import io.pravega.client.tables.TableKey;
-
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;

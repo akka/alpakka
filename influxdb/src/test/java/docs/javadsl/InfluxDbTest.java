@@ -4,6 +4,28 @@
 
 package docs.javadsl;
 
+import static docs.javadsl.TestUtils.cleanDatabase;
+import static docs.javadsl.TestUtils.dropDatabase;
+import static docs.javadsl.TestUtils.populateDatabase;
+import static docs.javadsl.TestUtils.resultToPoint;
+import static docs.javadsl.TestUtils.setupConnection;
+import static org.junit.Assert.assertEquals;
+
+import akka.Done;
+import akka.NotUsed;
+import akka.actor.ActorSystem;
+import akka.stream.Materializer;
+import akka.stream.alpakka.influxdb.InfluxDbReadSettings;
+import akka.stream.alpakka.influxdb.InfluxDbWriteMessage;
+import akka.stream.alpakka.influxdb.InfluxDbWriteResult;
+import akka.stream.alpakka.influxdb.javadsl.InfluxDbFlow;
+import akka.stream.alpakka.influxdb.javadsl.InfluxDbSink;
+import akka.stream.alpakka.influxdb.javadsl.InfluxDbSource;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
+import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
+import akka.stream.testkit.javadsl.StreamTestKit;
+import akka.testkit.javadsl.TestKit;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -16,34 +38,11 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
-import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import org.influxdb.InfluxDB;
 import org.influxdb.dto.Point;
 import org.influxdb.dto.Query;
 import org.influxdb.dto.QueryResult;
 import org.junit.*;
-
-import akka.Done;
-import akka.NotUsed;
-import akka.actor.ActorSystem;
-import akka.stream.Materializer;
-import akka.stream.alpakka.influxdb.InfluxDbReadSettings;
-import akka.stream.alpakka.influxdb.InfluxDbWriteMessage;
-import akka.stream.alpakka.influxdb.InfluxDbWriteResult;
-import akka.stream.alpakka.influxdb.javadsl.InfluxDbFlow;
-import akka.stream.alpakka.influxdb.javadsl.InfluxDbSink;
-import akka.stream.alpakka.influxdb.javadsl.InfluxDbSource;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
-import akka.stream.testkit.javadsl.StreamTestKit;
-import akka.testkit.javadsl.TestKit;
-import static docs.javadsl.TestUtils.cleanDatabase;
-import static docs.javadsl.TestUtils.dropDatabase;
-import static docs.javadsl.TestUtils.populateDatabase;
-import static docs.javadsl.TestUtils.resultToPoint;
-import static docs.javadsl.TestUtils.setupConnection;
-import static org.junit.Assert.assertEquals;
 
 public class InfluxDbTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();

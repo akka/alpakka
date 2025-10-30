@@ -5,10 +5,9 @@
 package docs.javadsl;
 
 import akka.stream.alpakka.geode.AkkaPdxSerializer;
+import java.util.Date;
 import org.apache.geode.pdx.PdxReader;
 import org.apache.geode.pdx.PdxWriter;
-
-import java.util.Date;
 
 // #person-pdx-serializer
 public class PersonPdxSerializer implements AkkaPdxSerializer<Person> {

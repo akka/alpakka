@@ -6,12 +6,11 @@ package akka.stream.alpakka.ftp;
 
 import akka.actor.ActorSystem;
 import akka.stream.Materializer;
-import org.junit.After;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import org.junit.After;
 
 public abstract class BaseSupportImpl implements BaseSupport, AkkaSupport {
 

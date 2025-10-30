@@ -11,13 +11,12 @@ import akka.stream.alpakka.kinesis.KinesisSchedulerSourceSettings;
 import akka.stream.alpakka.kinesis.javadsl.KinesisSchedulerSource;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Source;
-import software.amazon.kinesis.coordinator.Scheduler;
-import software.amazon.kinesis.processor.ShardRecordProcessorFactory;
-import software.amazon.kinesis.retrieval.KinesisClientRecord;
-
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.CompletionStage;
+import software.amazon.kinesis.coordinator.Scheduler;
+import software.amazon.kinesis.processor.ShardRecordProcessorFactory;
+import software.amazon.kinesis.retrieval.KinesisClientRecord;
 
 public class KclSnippets {
 

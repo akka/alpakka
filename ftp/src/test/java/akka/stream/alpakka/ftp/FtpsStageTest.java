@@ -11,13 +11,11 @@ import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.net.InetAddress;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class FtpsStageTest extends BaseFtpSupport implements CommonFtpStageTest {
 

@@ -11,16 +11,15 @@ import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.testkit.javadsl.TestKit;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-
-import scala.jdk.javaapi.CollectionConverters;
-import scala.jdk.javaapi.FutureConverters;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import scala.jdk.javaapi.CollectionConverters;
+import scala.jdk.javaapi.FutureConverters;
 
 public abstract class UnitTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
@@ -94,9 +93,7 @@ public abstract class UnitTest {
     try {
       return FutureConverters.asJava(
               ironMqClient.pushMessages(
-                  queueName,
-                  CollectionConverters.asScala(messages).toSeq(),
-                  system.dispatcher()))
+                  queueName, CollectionConverters.asScala(messages).toSeq(), system.dispatcher()))
           .toCompletableFuture()
           .get();
     } catch (Exception e) {

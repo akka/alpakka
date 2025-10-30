@@ -19,14 +19,13 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
-import org.junit.*;
-
 import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.junit.*;
 
 /** Append "Test" to every Java test suite. */
 public class ReferenceTest {

@@ -16,13 +16,12 @@ import akka.stream.alpakka.elasticsearch.OpensearchApiVersion;
 import akka.stream.alpakka.elasticsearch.OpensearchParams;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.testkit.javadsl.TestKit;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
 
 public class ElasticsearchTestBase {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();

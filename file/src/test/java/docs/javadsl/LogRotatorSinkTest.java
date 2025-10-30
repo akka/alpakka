@@ -4,6 +4,8 @@
 
 package docs.javadsl;
 
+import static org.junit.Assert.assertEquals;
+
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
@@ -16,8 +18,6 @@ import akka.stream.javadsl.*;
 import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
-import org.junit.*;
-
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,8 +27,7 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assert.assertEquals;
+import org.junit.*;
 
 public class LogRotatorSinkTest {
 

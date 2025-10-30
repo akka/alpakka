@@ -7,9 +7,8 @@ package akka.stream.alpakka.csv.javadsl;
 import akka.NotUsed;
 import akka.stream.javadsl.Flow;
 import akka.util.ByteString;
-import scala.jdk.javaapi.CollectionConverters;
-
 import java.util.Collection;
+import scala.jdk.javaapi.CollectionConverters;
 
 public class CsvParsing {
 

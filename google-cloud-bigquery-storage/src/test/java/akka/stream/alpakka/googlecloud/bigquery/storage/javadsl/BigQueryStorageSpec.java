@@ -4,6 +4,8 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.storage.javadsl;
 
+import static org.junit.Assert.*;
+
 import akka.stream.Attributes;
 import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryRecord;
 import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryStorageSettings;
@@ -12,19 +14,14 @@ import akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl.BigQueryStorage
 import akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl.GrpcBigQueryStorageReader;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Sink;
-
 import com.google.cloud.bigquery.storage.v1.DataFormat;
 import com.google.cloud.bigquery.storage.v1.ReadSession;
-
-import org.junit.*;
-
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import static org.junit.Assert.*;
+import org.junit.*;
 
 public class BigQueryStorageSpec extends BigQueryStorageSpecBase {
 

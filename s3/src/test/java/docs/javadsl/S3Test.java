@@ -4,6 +4,9 @@
 
 package docs.javadsl;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
@@ -27,19 +30,15 @@ import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import com.github.tomakehurst.wiremock.WireMockServer;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class S3Test extends S3WireMockBase {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();

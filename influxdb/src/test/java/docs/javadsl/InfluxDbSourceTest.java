@@ -4,26 +4,25 @@
 
 package docs.javadsl;
 
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-
-import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
-import org.influxdb.InfluxDB;
-import org.influxdb.dto.Query;
-import org.influxdb.dto.QueryResult;
-import org.junit.*;
+import static docs.javadsl.TestUtils.cleanDatabase;
+import static docs.javadsl.TestUtils.dropDatabase;
+import static docs.javadsl.TestUtils.populateDatabase;
+import static docs.javadsl.TestUtils.setupConnection;
 
 import akka.actor.ActorSystem;
 import akka.stream.Materializer;
 import akka.stream.alpakka.influxdb.InfluxDbReadSettings;
 import akka.stream.alpakka.influxdb.javadsl.InfluxDbSource;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Sink;
 import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
-import static docs.javadsl.TestUtils.cleanDatabase;
-import static docs.javadsl.TestUtils.dropDatabase;
-import static docs.javadsl.TestUtils.populateDatabase;
-import static docs.javadsl.TestUtils.setupConnection;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+import org.influxdb.InfluxDB;
+import org.influxdb.dto.Query;
+import org.influxdb.dto.QueryResult;
+import org.junit.*;
 
 public class InfluxDbSourceTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();

@@ -4,12 +4,16 @@
 
 package docs.javadsl;
 
+import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
-import akka.stream.alpakka.jms.Destination;
 import akka.stream.alpakka.jms.*;
+import akka.stream.alpakka.jms.Destination;
 import akka.stream.alpakka.jms.javadsl.JmsConsumer;
 import akka.stream.alpakka.jms.javadsl.JmsConsumerControl;
 import akka.stream.alpakka.jms.javadsl.JmsProducer;
@@ -21,6 +25,17 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
 import com.typesafe.config.Config;
+import java.nio.charset.Charset;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import javax.jms.*;
 import jmstestkit.JmsBroker;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.activemq.ActiveMQSession;
@@ -33,22 +48,6 @@ import org.junit.Test;
 import scala.util.Failure;
 import scala.util.Success;
 import scala.util.Try;
-
-import javax.jms.*;
-import java.nio.charset.Charset;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-
-import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 final class DummyJavaTests implements java.io.Serializable {
 

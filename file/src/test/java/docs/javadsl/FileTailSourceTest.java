@@ -4,6 +4,11 @@
 
 package docs.javadsl;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.file.StandardOpenOption.APPEND;
+import static java.nio.file.StandardOpenOption.WRITE;
+import static org.junit.Assert.assertEquals;
+
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.pf.PFBuilder;
@@ -21,8 +26,6 @@ import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import org.junit.*;
-
 import java.io.FileNotFoundException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
@@ -32,11 +35,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.concurrent.TimeoutException;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.nio.file.StandardOpenOption.APPEND;
-import static java.nio.file.StandardOpenOption.WRITE;
-import static org.junit.Assert.assertEquals;
+import org.junit.*;
 
 public class FileTailSourceTest {
 

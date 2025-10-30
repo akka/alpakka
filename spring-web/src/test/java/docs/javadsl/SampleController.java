@@ -5,17 +5,16 @@
 package docs.javadsl;
 
 // #use
-import javax.annotation.PostConstruct;
-
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.event.LoggingAdapter;
 import akka.stream.javadsl.Source;
+import javax.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.util.Assert;
 
 @RestController
 public class SampleController {

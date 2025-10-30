@@ -4,6 +4,9 @@
 
 package docs.javadsl;
 
+import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.alpakka.recordio.javadsl.RecordIOFraming;
@@ -12,17 +15,14 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
-import org.junit.AfterClass;
-import org.junit.Rule;
-import org.junit.Test;
-import static org.hamcrest.CoreMatchers.*;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.junit.AfterClass;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class RecordIOFramingTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();

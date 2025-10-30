@@ -4,6 +4,9 @@
 
 package akka.stream.alpakka.amqp.javadsl;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
@@ -23,10 +26,6 @@ import akka.stream.testkit.javadsl.TestSink;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import com.rabbitmq.client.AuthenticationFailureException;
-import org.junit.*;
-import scala.concurrent.duration.Duration;
-import scala.jdk.javaapi.CollectionConverters;
-
 import java.net.ConnectException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -35,9 +34,9 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import org.junit.*;
+import scala.concurrent.duration.Duration;
+import scala.jdk.javaapi.CollectionConverters;
 
 /** Needs a local running AMQP server on the default port with no password. */
 public class AmqpConnectorsTest {
@@ -161,7 +160,9 @@ public class AmqpConnectorsTest {
             .to(amqpSink)
             .run(system);
 
-    java.util.Collection<ReadResult> probeResult = CollectionConverters.asJavaCollection(result.second().toStrict(Duration.create(3, TimeUnit.SECONDS)));
+    java.util.Collection<ReadResult> probeResult =
+        CollectionConverters.asJavaCollection(
+            result.second().toStrict(Duration.create(3, TimeUnit.SECONDS)));
     assertEquals(
         probeResult.stream().map(s -> s.bytes().utf8String()).collect(Collectors.toList()), input);
     sourceToSink.shutdown();

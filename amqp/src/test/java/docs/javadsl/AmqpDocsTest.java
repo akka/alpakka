@@ -4,6 +4,8 @@
 
 package docs.javadsl;
 
+import static org.junit.Assert.assertEquals;
+
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
@@ -27,17 +29,13 @@ import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.stream.testkit.javadsl.TestSink;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
-
-import org.junit.*;
-
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import static org.junit.Assert.assertEquals;
+import org.junit.*;
 
 /** Needs a local running AMQP server on the default port with no password. */
 public class AmqpDocsTest {

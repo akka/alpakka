@@ -4,6 +4,8 @@
 
 package docs.javadsl;
 
+import static org.junit.Assert.assertEquals;
+
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.stream.alpakka.jms.CustomDestination;
@@ -22,15 +24,6 @@ import com.ibm.mq.jms.MQQueueConnectionFactory;
 import com.ibm.mq.jms.MQQueueSession;
 import com.ibm.mq.jms.MQTopicConnectionFactory;
 import com.ibm.msg.client.wmq.common.CommonConstants;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-
-import javax.jms.Destination;
-import javax.jms.JMSException;
-import javax.jms.Session;
-import javax.jms.TextMessage;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -40,8 +33,14 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
-
-import static org.junit.Assert.assertEquals;
+import javax.jms.Destination;
+import javax.jms.JMSException;
+import javax.jms.Session;
+import javax.jms.TextMessage;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class JmsIbmmqConnectorsTest {
 

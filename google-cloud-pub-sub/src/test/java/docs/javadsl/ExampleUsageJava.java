@@ -14,7 +14,6 @@ import akka.stream.alpakka.googlecloud.pubsub.*;
 import akka.stream.alpakka.googlecloud.pubsub.javadsl.GooglePubSub;
 import akka.stream.javadsl.*;
 import com.google.common.collect.Lists;
-
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.time.Duration;

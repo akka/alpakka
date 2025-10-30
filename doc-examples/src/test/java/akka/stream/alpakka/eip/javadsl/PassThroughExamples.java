@@ -18,16 +18,15 @@ import akka.kafka.javadsl.Consumer;
 import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.testkit.javadsl.TestKit;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
 
 public class PassThroughExamples {
   private static ActorSystem system;

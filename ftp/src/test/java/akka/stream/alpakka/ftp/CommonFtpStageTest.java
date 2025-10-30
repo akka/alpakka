@@ -4,27 +4,26 @@
 
 package akka.stream.alpakka.ftp;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.IOResult;
-import akka.stream.Materializer;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.TestSubscriber;
 import akka.stream.testkit.javadsl.TestSink;
 import akka.util.ByteString;
-import org.junit.Assert;
-
 import java.time.Instant;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import org.junit.Assert;
 
 interface CommonFtpStageTest extends BaseSupport, AkkaSupport {
 
