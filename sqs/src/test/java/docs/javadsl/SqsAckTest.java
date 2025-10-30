@@ -4,18 +4,18 @@
 
 package docs.javadsl;
 
+import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import akka.Done;
 import akka.NotUsed;
 import akka.stream.alpakka.sqs.*;
 import akka.stream.alpakka.sqs.javadsl.BaseSqsTest;
 import akka.stream.alpakka.sqs.javadsl.SqsAckFlow;
 import akka.stream.alpakka.sqs.javadsl.SqsAckSink;
-import akka.stream.javadsl.Source;
 import akka.stream.javadsl.Sink;
-import org.junit.Test;
-import software.amazon.awssdk.services.sqs.SqsAsyncClient;
-import software.amazon.awssdk.services.sqs.model.*;
-
+import akka.stream.javadsl.Source;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,10 +24,9 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-import static org.junit.Assert.assertEquals;
+import org.junit.Test;
+import software.amazon.awssdk.services.sqs.SqsAsyncClient;
+import software.amazon.awssdk.services.sqs.model.*;
 
 public class SqsAckTest extends BaseSqsTest {
 

@@ -10,15 +10,14 @@ import akka.stream.alpakka.cassandra.javadsl.CassandraSession;
 import akka.stream.alpakka.cassandra.javadsl.CassandraSessionRegistry;
 import akka.stream.alpakka.cassandra.scaladsl.CassandraAccess;
 import akka.testkit.javadsl.TestKit;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.FiniteDuration;
-
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import scala.concurrent.Await;
+import scala.concurrent.Future;
+import scala.concurrent.duration.FiniteDuration;
 
 public class CassandraTestHelper {
   final ActorSystem system;

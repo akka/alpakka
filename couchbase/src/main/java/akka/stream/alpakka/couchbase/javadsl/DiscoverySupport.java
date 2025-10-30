@@ -8,7 +8,6 @@ import akka.actor.ActorSystem;
 import akka.actor.ClassicActorSystemProvider;
 import akka.stream.alpakka.couchbase.CouchbaseSessionSettings;
 import com.typesafe.config.Config;
-
 import java.util.concurrent.CompletionStage;
 
 /**

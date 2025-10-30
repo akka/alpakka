@@ -13,7 +13,7 @@ object Dependencies {
   val Scala2Versions = Seq(Scala213)
   val ScalaVersions = Dependencies.Scala2Versions :+ Dependencies.Scala3
 
-  val AkkaVersion = "2.10.5"
+  val AkkaVersion = "2.10.11"
   val AkkaBinaryVersion = VersionNumber(AkkaVersion).numbers match { case Seq(major, minor, _*) => s"$major.$minor" }
 
   val InfluxDBJavaVersion = "2.15"
@@ -24,11 +24,11 @@ object Dependencies {
   // Sync with plugins.sbt
   val AkkaGrpcBinaryVersion = "2.5"
   // sync ignore prefix in scripts/link-validator.conf#L30
-  val AkkaHttpVersion = "10.7.1"
+  val AkkaHttpVersion = "10.7.3"
   val AkkaHttpBinaryVersion = VersionNumber(AkkaHttpVersion).numbers match {
     case Seq(major, minor, _*) => s"$major.$minor"
   }
-  val AlpakkaKafkaVersion = "7.0.4"
+  val AlpakkaKafkaVersion = "8.0.0"
   val ScalaTestVersion = "3.2.19"
   val TestContainersScalaTestVersion = "0.40.3" // pulls Testcontainers 1.16.2
 
@@ -257,8 +257,7 @@ object Dependencies {
         "com.fasterxml.jackson.core" % "jackson-annotations" % JacksonVersion,
         "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % JacksonVersion % Test, // used from `hoverfly-java`
         "io.specto" % "hoverfly-java" % hoverflyVersion % Test //ApacheV2
-      ) ++ Mockito
-      ++ JacksonDatabindDependencies // pick possibly later version then `akka-http-jackson`
+      ) ++ Mockito ++ JacksonDatabindDependencies // pick possibly later version then `akka-http-jackson`
   )
 
   val GoogleBigQueryStorage = Seq(

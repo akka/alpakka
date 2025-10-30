@@ -9,7 +9,6 @@ import akka.actor.ActorSystem;
 import akka.stream.alpakka.slick.javadsl.Slick;
 import akka.stream.alpakka.slick.javadsl.SlickSession;
 import akka.stream.javadsl.Source;
-
 import java.sql.PreparedStatement;
 import java.util.List;
 import java.util.concurrent.CompletionStage;

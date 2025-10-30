@@ -4,6 +4,8 @@
 
 package docs.javadsl;
 
+import static org.junit.Assert.*;
+
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
@@ -20,17 +22,14 @@ import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assert.*;
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class GCStorageTest extends GCStorageWiremockBase {
 

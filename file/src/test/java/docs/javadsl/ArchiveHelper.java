@@ -5,7 +5,6 @@
 package docs.javadsl;
 
 import akka.util.ByteString;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.HashMap;

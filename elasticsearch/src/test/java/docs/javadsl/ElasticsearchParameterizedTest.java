@@ -4,6 +4,9 @@
 
 package docs.javadsl;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import akka.NotUsed;
 import akka.stream.alpakka.elasticsearch.*;
 import akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchFlow;
@@ -11,19 +14,15 @@ import akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchSource;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 @RunWith(value = Parameterized.class)
 public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {

@@ -4,6 +4,9 @@
 
 package docs.javadsl;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.actor.Cancellable;
@@ -18,6 +21,15 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -28,19 +40,6 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.compress.DefaultCodec;
 import org.junit.*;
 import scala.concurrent.duration.Duration;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
-import java.util.function.BiFunction;
-import java.util.stream.Collectors;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class HdfsWriterTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();

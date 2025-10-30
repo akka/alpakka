@@ -9,14 +9,12 @@ import akka.stream.alpakka.geode.AkkaPdxSerializer;
 import akka.stream.alpakka.geode.GeodeSettings;
 import akka.stream.alpakka.geode.impl.stage.GeodeContinuousSourceStage;
 import akka.stream.javadsl.Source;
+import java.util.concurrent.CompletionStage;
 import org.apache.geode.cache.client.ClientCacheFactory;
 import org.apache.geode.cache.query.CqException;
 import org.apache.geode.cache.query.CqQuery;
 import org.apache.geode.cache.query.QueryService;
-
 import scala.jdk.javaapi.FutureConverters;
-
-import java.util.concurrent.CompletionStage;
 
 /** Java API: Geode client with server event subscription. Can build continuous sources. */
 public class GeodeWithPoolSubscription extends Geode {

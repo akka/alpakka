@@ -8,15 +8,14 @@ import akka.NotUsed;
 import akka.stream.alpakka.csv.scaladsl.CsvQuotingStyle$;
 import akka.stream.javadsl.Flow;
 import akka.util.ByteString;
-import scala.Option;
-import scala.Some;
-import scala.jdk.javaapi.CollectionConverters;
-import scala.collection.immutable.List;
-
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Optional;
+import scala.Option;
+import scala.Some;
+import scala.collection.immutable.List;
+import scala.jdk.javaapi.CollectionConverters;
 
 /**
  * Provides CSV formatting flows that convert a sequence of String into their CSV representation in
@@ -76,8 +75,6 @@ public class CsvFormatting {
     akka.stream.scaladsl.Flow<List<String>, ByteString, NotUsed> formattingFlow =
         akka.stream.alpakka.csv.scaladsl.CsvFormatting.format(
             delimiter, quoteChar, escapeChar, endOfLine, qs, charset, byteOrderMarkScala);
-    return Flow.<T>create()
-        .map(c -> CollectionConverters.asScala(c).toList())
-        .via(formattingFlow);
+    return Flow.<T>create().map(c -> CollectionConverters.asScala(c).toList()).via(formattingFlow);
   }
 }

@@ -4,17 +4,6 @@
 
 package akka.stream.alpakka.amqp.javadsl;
 
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-import java.util.stream.Collectors;
-
-import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
@@ -23,6 +12,7 @@ import akka.stream.alpakka.amqp.AmqpWriteSettings;
 import akka.stream.alpakka.amqp.QueueDeclaration;
 import akka.stream.alpakka.amqp.WriteMessage;
 import akka.stream.alpakka.amqp.WriteResult;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.FlowWithContext;
 import akka.stream.javadsl.Keep;
@@ -30,7 +20,14 @@ import akka.stream.javadsl.Source;
 import akka.stream.testkit.TestSubscriber;
 import akka.stream.testkit.javadsl.TestSink;
 import akka.util.ByteString;
-
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
 import scala.jdk.javaapi.CollectionConverters;
 
 /** Needs a local running AMQP server on the default port with no password. */
@@ -85,9 +82,7 @@ public class AmqpFlowTest {
             .toMat(TestSink.create(system), Keep.right())
             .run(system);
 
-    result
-        .request(input.size())
-        .expectNextN(CollectionConverters.asScala(expectedOutput).toList());
+    result.request(input.size()).expectNextN(CollectionConverters.asScala(expectedOutput).toList());
   }
 
   @Test
@@ -119,9 +114,7 @@ public class AmqpFlowTest {
             .toMat(TestSink.create(system), Keep.right())
             .run(system);
 
-    result
-        .request(input.size())
-        .expectNextN(CollectionConverters.asScala(expectedOutput).toList());
+    result.request(input.size()).expectNextN(CollectionConverters.asScala(expectedOutput).toList());
   }
 
   @Test
@@ -142,8 +135,6 @@ public class AmqpFlowTest {
             .toMat(TestSink.create(system), Keep.right())
             .run(system);
 
-    result
-        .request(input.size())
-        .expectNextN(CollectionConverters.asScala(expectedOutput).toList());
+    result.request(input.size()).expectNextN(CollectionConverters.asScala(expectedOutput).toList());
   }
 }

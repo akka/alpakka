@@ -12,11 +12,10 @@ import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.RunnableGraph;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class GeodeSinkTestCase extends GeodeBaseTestCase {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();

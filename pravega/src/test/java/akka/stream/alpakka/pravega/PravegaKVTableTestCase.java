@@ -7,10 +7,9 @@ package akka.stream.alpakka.pravega;
 import akka.Done;
 import akka.NotUsed;
 import akka.japi.Pair;
-
 import akka.stream.alpakka.pravega.javadsl.PravegaTable;
-import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Flow;
+import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import docs.javadsl.PravegaBaseTestCase;
@@ -18,20 +17,17 @@ import io.pravega.client.ClientConfig;
 import io.pravega.client.admin.KeyValueTableManager;
 import io.pravega.client.stream.Serializer;
 import io.pravega.client.stream.impl.UTF8StringSerializer;
-
 import io.pravega.client.tables.KeyValueTableConfiguration;
 import io.pravega.client.tables.TableKey;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.*;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
-import java.util.concurrent.*;
 
 public class PravegaKVTableTestCase extends PravegaBaseTestCase {
 

@@ -4,13 +4,12 @@
 
 package docs.javadsl;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-
+import java.io.StringWriter;
 import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import java.io.StringWriter;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 
 public class XmlHelper {
 

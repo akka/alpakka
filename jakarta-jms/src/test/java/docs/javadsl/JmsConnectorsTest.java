@@ -4,12 +4,16 @@
 
 package docs.javadsl;
 
+import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
-import akka.stream.alpakka.jakartajms.Destination;
 import akka.stream.alpakka.jakartajms.*;
+import akka.stream.alpakka.jakartajms.Destination;
 import akka.stream.alpakka.jakartajms.javadsl.JmsConsumer;
 import akka.stream.alpakka.jakartajms.javadsl.JmsConsumerControl;
 import akka.stream.alpakka.jakartajms.javadsl.JmsProducer;
@@ -21,20 +25,8 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
 import com.typesafe.config.Config;
-import jakartajmstestkit.JmsBroker;
-import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
-import org.apache.activemq.artemis.jms.client.ActiveMQSession;
-import org.apache.activemq.artemis.jms.client.ActiveMQQueue;
-import org.apache.activemq.artemis.jms.client.ActiveMQTextMessage;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import scala.util.Failure;
-import scala.util.Success;
-import scala.util.Try;
-
 import jakarta.jms.*;
+import jakartajmstestkit.JmsBroker;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -45,10 +37,17 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
-import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+import org.apache.activemq.artemis.jms.client.ActiveMQQueue;
+import org.apache.activemq.artemis.jms.client.ActiveMQSession;
+import org.apache.activemq.artemis.jms.client.ActiveMQTextMessage;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import scala.util.Failure;
+import scala.util.Success;
+import scala.util.Try;
 
 final class DummyJavaTests implements java.io.Serializable {
 
@@ -658,7 +657,7 @@ public class JmsConnectorsTest {
               result.toCompletableFuture().get().stream()
                   .map(
                       message -> {
-                          return ((ActiveMQTextMessage) message).getText();
+                        return ((ActiveMQTextMessage) message).getText();
                       })
                   .collect(Collectors.toList());
 

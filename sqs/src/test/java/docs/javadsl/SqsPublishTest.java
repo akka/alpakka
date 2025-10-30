@@ -4,6 +4,8 @@
 
 package docs.javadsl;
 
+import static org.junit.Assert.assertEquals;
+
 import akka.Done;
 import akka.stream.alpakka.sqs.*;
 import akka.stream.alpakka.sqs.javadsl.BaseSqsTest;
@@ -11,9 +13,6 @@ import akka.stream.alpakka.sqs.javadsl.SqsPublishFlow;
 import akka.stream.alpakka.sqs.javadsl.SqsPublishSink;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import org.junit.Test;
-import software.amazon.awssdk.services.sqs.model.*;
-
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.time.Duration;
@@ -21,8 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assert.assertEquals;
+import org.junit.Test;
+import software.amazon.awssdk.services.sqs.model.*;
 
 public class SqsPublishTest extends BaseSqsTest {
 

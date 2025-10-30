@@ -4,6 +4,8 @@
 
 package docs.javadsl;
 
+import static org.junit.Assert.assertEquals;
+
 import akka.Done;
 import akka.stream.alpakka.sqs.MessageAttributeName;
 import akka.stream.alpakka.sqs.MessageSystemAttributeName;
@@ -15,6 +17,13 @@ import akka.stream.alpakka.sqs.javadsl.SqsSource;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.github.matsluni.akkahttpspi.AkkaHttpClient;
+import java.net.URI;
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 import org.junit.Test;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -23,16 +32,6 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sqs.SqsAsyncClient;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
-
-import java.net.URI;
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
-
-import static org.junit.Assert.assertEquals;
 
 public class SqsSourceTest extends BaseSqsTest {
 

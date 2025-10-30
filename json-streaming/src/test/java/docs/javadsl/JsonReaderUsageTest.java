@@ -4,25 +4,24 @@
 
 package docs.javadsl;
 
+import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.MatcherAssert.assertThat;
+
 import akka.actor.ActorSystem;
 import akka.stream.alpakka.json.javadsl.JsonReader;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.*;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import static org.hamcrest.CoreMatchers.hasItems;
-import static org.hamcrest.MatcherAssert.assertThat;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class JsonReaderUsageTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();

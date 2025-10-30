@@ -4,6 +4,8 @@
 
 package docs.javadsl;
 
+import static org.junit.Assert.assertEquals;
+
 import akka.Done;
 import akka.NotUsed;
 import akka.stream.alpakka.elasticsearch.*;
@@ -13,17 +15,14 @@ import akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchSource;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import static org.junit.Assert.assertEquals;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class OpensearchV1Test extends ElasticsearchTestBase {
   @BeforeClass

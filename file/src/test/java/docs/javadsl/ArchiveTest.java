@@ -4,6 +4,10 @@
 
 package docs.javadsl;
 
+import static akka.util.ByteString.emptyByteString;
+import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.MatcherAssert.*;
+
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
@@ -22,10 +26,6 @@ import akka.stream.javadsl.Source;
 import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
-import org.junit.*;
-
-import static akka.util.ByteString.emptyByteString;
-
 import java.io.File;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -37,9 +37,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-
-import static org.hamcrest.CoreMatchers.*;
-import static org.hamcrest.MatcherAssert.*;
+import org.junit.*;
 
 public class ArchiveTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();

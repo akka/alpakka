@@ -5,29 +5,22 @@
 package akka.stream.alpakka.pravega;
 
 import akka.Done;
-import akka.stream.alpakka.pravega.PravegaReaderGroupManager;
-import akka.stream.javadsl.Source;
-
-import com.typesafe.config.ConfigFactory;
-import docs.javadsl.PravegaBaseTestCase;
-
-import io.pravega.client.stream.ReaderGroup;
-import io.pravega.client.stream.impl.JavaSerializer;
-import org.junit.Assert;
-import org.junit.Test;
-
 import akka.japi.Pair;
-
-import akka.stream.UniqueKillSwitch;
 import akka.stream.KillSwitches;
+import akka.stream.UniqueKillSwitch;
+import akka.stream.alpakka.pravega.javadsl.Pravega;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
-import akka.stream.alpakka.pravega.javadsl.Pravega;
-
+import akka.stream.javadsl.Source;
+import com.typesafe.config.ConfigFactory;
+import docs.javadsl.PravegaBaseTestCase;
+import io.pravega.client.stream.ReaderGroup;
+import io.pravega.client.stream.impl.JavaSerializer;
 import java.util.Arrays;
-
 import java.util.List;
 import java.util.concurrent.*;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class PravegaGraphTestCase extends PravegaBaseTestCase {
 

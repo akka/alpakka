@@ -13,15 +13,13 @@ import akka.stream.alpakka.geode.javadsl.GeodeWithPoolSubscription;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
+import java.util.Arrays;
+import java.util.Date;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-
 import org.junit.Rule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Arrays;
-import java.util.Date;
 
 public class GeodeBaseTestCase {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();

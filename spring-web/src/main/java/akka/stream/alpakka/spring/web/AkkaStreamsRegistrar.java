@@ -4,14 +4,14 @@
 
 package akka.stream.alpakka.spring.web;
 
+import static org.springframework.core.ReactiveTypeDescriptor.multiValue;
+
 import akka.actor.ActorSystem;
 import akka.actor.ClassicActorSystemProvider;
 import akka.stream.Materializer;
 import akka.stream.javadsl.AsPublisher;
 import org.springframework.core.ReactiveAdapterRegistry;
 import org.springframework.util.Assert;
-
-import static org.springframework.core.ReactiveTypeDescriptor.multiValue;
 
 public class AkkaStreamsRegistrar {
 

@@ -19,65 +19,68 @@ import scala.Option;
 
 public class RequestBuilderTest {
 
-    @Rule
-    public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
-    @Test
-    public void createSimpleRequest() {
+  @Test
+  public void createSimpleRequest() {
 
-        //#simple-request-builder
-        final GetBlob requestBuilder = GetBlob.create();
-        //#simple-request-builder
+    // #simple-request-builder
+    final GetBlob requestBuilder = GetBlob.create();
+    // #simple-request-builder
 
-        Assert.assertEquals(Option.empty(), requestBuilder.versionId());
-        Assert.assertEquals(Option.empty(), requestBuilder.range());
-        Assert.assertEquals(Option.empty(), requestBuilder.leaseId());
-        Assert.assertEquals(Option.empty(), requestBuilder.sse());
-    }
+    Assert.assertEquals(Option.empty(), requestBuilder.versionId());
+    Assert.assertEquals(Option.empty(), requestBuilder.range());
+    Assert.assertEquals(Option.empty(), requestBuilder.leaseId());
+    Assert.assertEquals(Option.empty(), requestBuilder.sse());
+  }
 
-    @Test
-    public void populateRequestBuilder() {
+  @Test
+  public void populateRequestBuilder() {
 
-        //#populate-request-builder
-        final var requestBuilder = GetBlob.create().withLeaseId("my-lease-id").withRange(ByteRange.createSlice(0, 25));
-        //#populate-request-builder
+    // #populate-request-builder
+    final var requestBuilder =
+        GetBlob.create().withLeaseId("my-lease-id").withRange(ByteRange.createSlice(0, 25));
+    // #populate-request-builder
 
-        Assert.assertEquals(Option.apply("my-lease-id"), requestBuilder.leaseId());
-        Assert.assertEquals(Option.apply(ByteRange.createSlice(0, 25)), requestBuilder.range());
-        Assert.assertEquals(Option.empty(), requestBuilder.sse());
-    }
+    Assert.assertEquals(Option.apply("my-lease-id"), requestBuilder.leaseId());
+    Assert.assertEquals(Option.apply(ByteRange.createSlice(0, 25)), requestBuilder.range());
+    Assert.assertEquals(Option.empty(), requestBuilder.sse());
+  }
 
-    @Test
-    public void createRequestBuilderWithMandatoryParams() {
+  @Test
+  public void createRequestBuilderWithMandatoryParams() {
 
-        //#request-builder-with-initial-values
-        final var requestBuilder = CreateFile.create(256L, ContentTypes.TEXT_PLAIN_UTF8);
-        //#request-builder-with-initial-values
+    // #request-builder-with-initial-values
+    final var requestBuilder = CreateFile.create(256L, ContentTypes.TEXT_PLAIN_UTF8);
+    // #request-builder-with-initial-values
 
-        Assert.assertEquals(Option.empty(), requestBuilder.leaseId());
-        Assert.assertEquals(256L, requestBuilder.maxFileSize());
-        Assert.assertEquals(ContentTypes.TEXT_PLAIN_UTF8, requestBuilder.contentType());
-    }
+    Assert.assertEquals(Option.empty(), requestBuilder.leaseId());
+    Assert.assertEquals(256L, requestBuilder.maxFileSize());
+    Assert.assertEquals(ContentTypes.TEXT_PLAIN_UTF8, requestBuilder.contentType());
+  }
 
-    @Test
-    public void populateServerSideEncryption() {
+  @Test
+  public void populateServerSideEncryption() {
 
-        //#request-builder-with-sse
-        final var requestBuilder = PutBlockBlob.create(256L, ContentTypes.TEXT_PLAIN_UTF8)
-                .withServerSideEncryption(ServerSideEncryption.customerKey("SGVsbG9Xb3JsZA=="));
-        //#request-builder-with-sse
+    // #request-builder-with-sse
+    final var requestBuilder =
+        PutBlockBlob.create(256L, ContentTypes.TEXT_PLAIN_UTF8)
+            .withServerSideEncryption(ServerSideEncryption.customerKey("SGVsbG9Xb3JsZA=="));
+    // #request-builder-with-sse
 
-        Assert.assertEquals(ServerSideEncryption.customerKey("SGVsbG9Xb3JsZA=="), requestBuilder.sse().get());
-    }
+    Assert.assertEquals(
+        ServerSideEncryption.customerKey("SGVsbG9Xb3JsZA=="), requestBuilder.sse().get());
+  }
 
-    @Test
-    public void populateAdditionalHeaders() {
+  @Test
+  public void populateAdditionalHeaders() {
 
-        //#request-builder-with-additional-headers
-        final var requestBuilder = GetBlob.create().addHeader("If-Match", "foobar");
-        //#request-builder-with-additional-headers
+    // #request-builder-with-additional-headers
+    final var requestBuilder = GetBlob.create().addHeader("If-Match", "foobar");
+    // #request-builder-with-additional-headers
 
-        Assert.assertEquals(1, requestBuilder.additionalHeaders().size());
-        Assert.assertEquals(new RawHeader("If-Match", "foobar"), requestBuilder.additionalHeaders().head());
-    }
+    Assert.assertEquals(1, requestBuilder.additionalHeaders().size());
+    Assert.assertEquals(
+        new RawHeader("If-Match", "foobar"), requestBuilder.additionalHeaders().head());
+  }
 }

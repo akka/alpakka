@@ -4,6 +4,8 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.e2e.javadsl;
 
+import static org.junit.Assert.*;
+
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.marshallers.jackson.Jackson;
@@ -35,10 +37,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.specto.hoverfly.junit.core.Hoverfly;
 import io.specto.hoverfly.junit.core.HoverflyMode;
 import io.specto.hoverfly.junit.core.SimulationSource;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -49,8 +47,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
-
-import static org.junit.Assert.*;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class BigQueryEndToEndTest extends EndToEndHelper {
 

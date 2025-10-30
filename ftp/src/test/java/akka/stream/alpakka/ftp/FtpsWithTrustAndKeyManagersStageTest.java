@@ -4,7 +4,6 @@
 
 package akka.stream.alpakka.ftp;
 
-import nl.altindag.ssl.pem.util.PemUtils;
 import akka.NotUsed;
 import akka.stream.IOResult;
 import akka.stream.alpakka.ftp.javadsl.Ftps;
@@ -12,17 +11,16 @@ import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.TrustManager;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.TrustManager;
+import nl.altindag.ssl.pem.util.PemUtils;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class FtpsWithTrustAndKeyManagersStageTest extends BaseFtpSupport
     implements CommonFtpStageTest {

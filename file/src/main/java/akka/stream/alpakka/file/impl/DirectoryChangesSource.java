@@ -4,6 +4,8 @@
 
 package akka.stream.alpakka.file.impl;
 
+import static java.nio.file.StandardWatchEventKinds.*;
+
 import akka.NotUsed;
 import akka.annotation.InternalApi;
 import akka.japi.Pair;
@@ -17,15 +19,12 @@ import akka.stream.stage.GraphStage;
 import akka.stream.stage.GraphStageLogic;
 import akka.stream.stage.TimerGraphStageLogic;
 import com.sun.nio.file.SensitivityWatchEventModifier;
-import scala.concurrent.duration.FiniteDuration;
-
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.function.BiFunction;
-
-import static java.nio.file.StandardWatchEventKinds.*;
+import scala.concurrent.duration.FiniteDuration;
 
 /**
  * INTERNAL API

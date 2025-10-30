@@ -10,18 +10,15 @@ import akka.stream.alpakka.geode.AkkaPdxSerializer;
 import akka.stream.alpakka.geode.GeodeSettings;
 import akka.stream.alpakka.geode.RegionSettings;
 import akka.stream.alpakka.geode.impl.GeodeCache;
-
 import akka.stream.alpakka.geode.impl.stage.GeodeFiniteSourceStage;
 import akka.stream.alpakka.geode.impl.stage.GeodeFlowStage;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import org.apache.geode.cache.client.ClientCacheFactory;
-
-import scala.jdk.javaapi.FutureConverters;
-
 import java.util.concurrent.CompletionStage;
+import org.apache.geode.cache.client.ClientCacheFactory;
+import scala.jdk.javaapi.FutureConverters;
 
 /** Java API: Geode client without server event subscription. */
 public class Geode extends GeodeCache {

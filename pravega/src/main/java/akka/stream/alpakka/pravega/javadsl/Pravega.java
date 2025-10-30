@@ -7,24 +7,20 @@ package akka.stream.alpakka.pravega.javadsl;
 import akka.Done;
 import akka.NotUsed;
 import akka.annotation.ApiMayChange;
-import akka.stream.alpakka.pravega.PravegaEvent;
-
-import akka.stream.alpakka.pravega.WriterSettings;
-import akka.stream.alpakka.pravega.PravegaReaderGroupManager;
 import akka.stream.alpakka.pravega.*;
+import akka.stream.alpakka.pravega.PravegaEvent;
+import akka.stream.alpakka.pravega.PravegaReaderGroupManager;
+import akka.stream.alpakka.pravega.WriterSettings;
+import akka.stream.alpakka.pravega.impl.PravegaFlow;
+import akka.stream.alpakka.pravega.impl.PravegaSource;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-
 import io.pravega.client.ClientConfig;
 import io.pravega.client.stream.ReaderGroup;
 import java.util.concurrent.CompletionStage;
-
 import scala.jdk.javaapi.FutureConverters;
-
-import akka.stream.alpakka.pravega.impl.PravegaFlow;
-import akka.stream.alpakka.pravega.impl.PravegaSource;
 
 @ApiMayChange
 public class Pravega {

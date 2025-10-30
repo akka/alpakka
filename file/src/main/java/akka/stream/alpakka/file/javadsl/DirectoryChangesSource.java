@@ -8,10 +8,9 @@ import akka.NotUsed;
 import akka.japi.Pair;
 import akka.stream.alpakka.file.DirectoryChange;
 import akka.stream.javadsl.Source;
-
 import java.nio.file.Path;
-
 import scala.jdk.javaapi.DurationConverters;
+
 /**
  * Watches a file system directory and streams change events from it.
  *
@@ -30,9 +29,6 @@ public final class DirectoryChangesSource {
       Path directoryPath, java.time.Duration pollInterval, int maxBufferSize) {
     return Source.fromGraph(
         new akka.stream.alpakka.file.impl.DirectoryChangesSource<>(
-            directoryPath,
-            DurationConverters.toScala(pollInterval),
-            maxBufferSize,
-            Pair::apply));
+            directoryPath, DurationConverters.toScala(pollInterval), maxBufferSize, Pair::apply));
   }
 }

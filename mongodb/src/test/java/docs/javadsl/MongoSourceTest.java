@@ -4,30 +4,29 @@
 
 package docs.javadsl;
 
+import static org.junit.Assert.assertEquals;
+
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.Materializer;
 import akka.stream.alpakka.mongodb.javadsl.MongoSource;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
-import akka.stream.javadsl.Source;
 import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
 import akka.stream.testkit.javadsl.StreamTestKit;
 import com.mongodb.client.result.InsertManyResult;
 import com.mongodb.reactivestreams.client.*;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.bson.Document;
 import org.bson.codecs.ValueCodecProvider;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
 import org.junit.*;
-
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import static org.junit.Assert.assertEquals;
 
 public class MongoSourceTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();

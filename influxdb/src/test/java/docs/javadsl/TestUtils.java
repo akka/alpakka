@@ -4,21 +4,20 @@
 
 package docs.javadsl;
 
+import static docs.javadsl.TestConstants.INFLUXDB_URL;
+import static docs.javadsl.TestConstants.PASSWORD;
+import static docs.javadsl.TestConstants.USERNAME;
+
 import java.lang.reflect.Constructor;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
 import org.influxdb.InfluxDB;
 import org.influxdb.InfluxDBFactory;
 import org.influxdb.dto.Point;
 import org.influxdb.dto.Query;
 import org.influxdb.dto.QueryResult;
 import org.influxdb.impl.InfluxDBMapper;
-
-import static docs.javadsl.TestConstants.INFLUXDB_URL;
-import static docs.javadsl.TestConstants.PASSWORD;
-import static docs.javadsl.TestConstants.USERNAME;
 
 public class TestUtils {
 

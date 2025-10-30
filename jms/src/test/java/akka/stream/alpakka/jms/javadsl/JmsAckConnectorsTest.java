@@ -4,6 +4,8 @@
 
 package akka.stream.alpakka.jms.javadsl;
 
+import static org.junit.Assert.assertEquals;
+
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
@@ -13,25 +15,22 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
 import com.typesafe.config.Config;
-import org.apache.activemq.command.ActiveMQQueue;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import jmstestkit.JmsBroker;
-
-import javax.jms.ConnectionFactory;
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.TextMessage;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
-import static org.junit.Assert.assertEquals;
+import javax.jms.ConnectionFactory;
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.TextMessage;
+import jmstestkit.JmsBroker;
+import org.apache.activemq.command.ActiveMQQueue;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class JmsAckConnectorsTest {
 

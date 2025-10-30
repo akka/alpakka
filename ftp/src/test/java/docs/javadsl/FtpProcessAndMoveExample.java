@@ -12,7 +12,6 @@ import akka.stream.alpakka.ftp.FtpSettings;
 import akka.stream.alpakka.ftp.javadsl.Ftp;
 import akka.stream.javadsl.FileIO;
 import akka.stream.javadsl.RunnableGraph;
-
 import java.nio.file.Files;
 import java.util.function.Function;
 
