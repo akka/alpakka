@@ -1,5 +1,5 @@
 /*
- * Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) since 2016 Lightbend Inc. <https://akka.io>
  */
 
 package akka.stream.alpakka.google.firebase.fcm.v1.impl

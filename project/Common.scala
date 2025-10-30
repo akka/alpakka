@@ -23,7 +23,7 @@ object Common extends AutoPlugin {
   override def globalSettings = Seq(
     organization := "com.lightbend.akka",
     organizationName := "Lightbend Inc.",
-    organizationHomepage := Some(url("https://www.lightbend.com/")),
+    organizationHomepage := Some(url("https://akka.io")),
     homepage := Some(url("https://doc.akka.io/libraries/alpakka/current")),
     scmInfo := Some(ScmInfo(url("https://github.com/akka/alpakka"), "git@github.com:akka/alpakka.git")),
     developers += Developer("contributors",
@@ -146,7 +146,7 @@ object Common extends AutoPlugin {
       scalafmtOnCompile := false,
       javafmtOnCompile := false,
       headerLicense := Some(
-          HeaderLicense.Custom("Copyright (C) since 2016 Lightbend Inc. <https://www.lightbend.com>")
+          HeaderLicense.Custom("Copyright (C) since 2016 Lightbend Inc. <https://akka.io>")
         )
     )
 }
