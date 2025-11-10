@@ -58,7 +58,7 @@ object CouchbaseSink {
               replaceOptions: ReplaceOptions,
               bucketName: String,
               scopeName: String,
-              collectionName: String): Sink[(String, Any), CompletionStage[Done]] =
+              collectionName: String): Sink[CouchbaseDocument[Any], CompletionStage[Done]] =
     CouchbaseFlow
       .replace(sessionSettings, replaceOptions, bucketName, scopeName, collectionName)
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])

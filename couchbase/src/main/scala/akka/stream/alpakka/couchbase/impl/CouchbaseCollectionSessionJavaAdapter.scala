@@ -15,8 +15,8 @@ import com.couchbase.client.java.manager.query.{CreateQueryIndexOptions, QueryIn
 import com.couchbase.client.java.{AsyncCollection, AsyncScope}
 
 import java.time.Duration
-import java.util.concurrent.{CompletionStage, TimeUnit}
-import scala.concurrent.duration.FiniteDuration
+import java.util.concurrent.CompletionStage
+import scala.jdk.DurationConverters.JavaDurationOps
 import scala.jdk.FutureConverters._
 import scala.reflect.ClassTag
 
@@ -41,10 +41,10 @@ private[couchbase] final class CouchbaseCollectionSessionJavaAdapter(delegate: s
    * @param document A tuple where first element is id of the document and second is its value
    * @return A Future that completes with the id of the written document when the write is done
    */
-  override def insert[T: ClassTag](id: String, document: T): CompletionStage[Done] =
+  override def insert[T](id: String, document: T): CompletionStage[Done] =
     delegate.insert(id, document).asJava
 
-  override def insert[T: ClassTag](id: String, document: T, insertOptions: InsertOptions): CompletionStage[Done] =
+  override def insert[T](id: String, document: T, insertOptions: InsertOptions): CompletionStage[Done] =
     delegate.insert(id, document, insertOptions).asJava
 
   override def getJsonObject(id: String): CompletionStage[CouchbaseDocument[JsonObject]] =
@@ -53,8 +53,8 @@ private[couchbase] final class CouchbaseCollectionSessionJavaAdapter(delegate: s
   override def getJsonArray(id: String): CompletionStage[CouchbaseDocument[JsonArray]] =
     delegate.getJsonArray(id).asJava
 
-  override def get[T: ClassTag](id: String, target: Class[T]): CompletionStage[CouchbaseDocument[T]] =
-    delegate.get[T](id).asJava
+  override def get[T](id: String, target: Class[T]): CompletionStage[CouchbaseDocument[T]] =
+    delegate.get[T](id)(ClassTag.apply(target)).asJava
 
   /**
    * @return A document if found or none if there is no document for the id
@@ -74,20 +74,20 @@ private[couchbase] final class CouchbaseCollectionSessionJavaAdapter(delegate: s
    * @return A document if found or none if there is no document for the id
    */
   override def getDocument(id: String, timeout: Duration): CompletionStage[CouchbaseDocument[JsonValue]] =
-    delegate.getDocument(id, FiniteDuration.apply(timeout.toNanos, TimeUnit.NANOSECONDS)).asJava
+    delegate.getDocument(id, timeout.toScala).asJava
 
   /**
    * @return A raw document data if found or none if there is no document for the id
    */
   override def getBytes(id: String, timeout: Duration): CompletionStage[CouchbaseDocument[Array[Byte]]] =
-    delegate.getBytes(id, FiniteDuration.apply(timeout.toNanos, TimeUnit.NANOSECONDS)).asJava
+    delegate.getBytes(id, timeout.toScala).asJava
 
   /**
    * Upsert using the default write settings.
    *
    * @return a future that completes when the upsert is done
    */
-  override def upsert[T: ClassTag](id: String, document: T): CompletionStage[Done] =
+  override def upsert[T](id: String, document: T): CompletionStage[Done] =
     delegate.upsert(id, document).asJava
 
   /**
@@ -97,7 +97,7 @@ private[couchbase] final class CouchbaseCollectionSessionJavaAdapter(delegate: s
    *
    * @return a future that completes when the upsert is done
    */
-  override def upsert[T: ClassTag](id: String, document: T, upsertOptions: UpsertOptions): CompletionStage[Done] =
+  override def upsert[T](id: String, document: T, upsertOptions: UpsertOptions): CompletionStage[Done] =
     delegate.upsert(id, document, upsertOptions).asJava
 
   /**
@@ -109,11 +109,11 @@ private[couchbase] final class CouchbaseCollectionSessionJavaAdapter(delegate: s
    * @param timeout       timeout for the operation
    * @return a future that completes after the operation is done
    */
-  override def upsert[T: ClassTag](id: String,
-                                   document: T,
-                                   upsertOptions: UpsertOptions,
-                                   timeout: Duration): CompletionStage[Done] =
-    delegate.upsert(id, document, upsertOptions, FiniteDuration.apply(timeout.toNanos, TimeUnit.NANOSECONDS)).asJava
+  override def upsert[T](id: String,
+                         document: T,
+                         upsertOptions: UpsertOptions,
+                         timeout: Duration): CompletionStage[Done] =
+    delegate.upsert(id, document, upsertOptions, timeout.toScala).asJava
 
   /**
    * Replace using the default write settings.
@@ -122,7 +122,7 @@ private[couchbase] final class CouchbaseCollectionSessionJavaAdapter(delegate: s
    *
    * @return a future that completes when the replace is done
    */
-  override def replace[T: ClassTag](id: String, document: T): CompletionStage[Done] =
+  override def replace[T](id: String, document: T): CompletionStage[Done] =
     delegate.replace(id, document).asJava
 
   /**
@@ -132,7 +132,7 @@ private[couchbase] final class CouchbaseCollectionSessionJavaAdapter(delegate: s
    *
    * @return a future that completes when the replace is done
    */
-  override def replace[T: ClassTag](id: String, document: T, replaceOptions: ReplaceOptions): CompletionStage[Done] =
+  override def replace[T](id: String, document: T, replaceOptions: ReplaceOptions): CompletionStage[Done] =
     delegate.replace(id, document, replaceOptions).asJava
 
   /**
@@ -144,11 +144,11 @@ private[couchbase] final class CouchbaseCollectionSessionJavaAdapter(delegate: s
    * @param timeout        timeout for the operation
    * @return a future that completes after the operation is done
    */
-  override def replace[T: ClassTag](id: String,
-                                    document: T,
-                                    replaceOptions: ReplaceOptions,
-                                    timeout: Duration): CompletionStage[Done] =
-    delegate.replace(id, document, replaceOptions, FiniteDuration.apply(timeout.toNanos, TimeUnit.NANOSECONDS)).asJava
+  override def replace[T](id: String,
+                          document: T,
+                          replaceOptions: ReplaceOptions,
+                          timeout: Duration): CompletionStage[Done] =
+    delegate.replace(id, document, replaceOptions, timeout.toScala).asJava
 
   /**
    * Remove a document by id using the default write settings.
@@ -177,7 +177,7 @@ private[couchbase] final class CouchbaseCollectionSessionJavaAdapter(delegate: s
    * @return the id
    */
   override def remove(id: String, removeOptions: RemoveOptions, timeout: Duration) =
-    delegate.remove(id, removeOptions, FiniteDuration.apply(timeout.toNanos, TimeUnit.NANOSECONDS)).asJava
+    delegate.remove(id, removeOptions, timeout.toScala).asJava
 
   /**
    * Create a secondary index for the current collection.

@@ -136,10 +136,10 @@ object CouchbaseFlow {
    * Create a flow to update or insert a Couchbase document of the given class and emit a result so that write failures
    * can be handled in-stream.
    */
-  def upsertWithResult[T: ClassTag](sessionSettings: CouchbaseSessionSettings,
-                                    bucketName: String,
-                                    scopeName: String,
-                                    collectionName: String): Flow[CouchbaseDocument[T], CouchbaseWriteResult, NotUsed] =
+  def upsertWithResult[T](sessionSettings: CouchbaseSessionSettings,
+                          bucketName: String,
+                          scopeName: String,
+                          collectionName: String): Flow[CouchbaseDocument[T], CouchbaseWriteResult, NotUsed] =
     Flow
       .fromMaterializer { (materializer, _) =>
         val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
@@ -161,11 +161,11 @@ object CouchbaseFlow {
    * Create a flow to update or insert a Couchbase document of the given class and emit a result so that write failures
    * can be handled in-stream.
    */
-  def upsertWithResult[T: ClassTag](sessionSettings: CouchbaseSessionSettings,
-                                    upsertOptions: UpsertOptions,
-                                    bucketName: String,
-                                    scopeName: String,
-                                    collectionName: String): Flow[CouchbaseDocument[T], CouchbaseWriteResult, NotUsed] =
+  def upsertWithResult[T](sessionSettings: CouchbaseSessionSettings,
+                          upsertOptions: UpsertOptions,
+                          bucketName: String,
+                          scopeName: String,
+                          collectionName: String): Flow[CouchbaseDocument[T], CouchbaseWriteResult, NotUsed] =
     Flow
       .fromMaterializer { (materializer, _) =>
         val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
@@ -186,7 +186,7 @@ object CouchbaseFlow {
   /**
    * Create a flow to replace a Couchbase [[com.couchbase.client.java.document.JsonDocument JsonDocument]].
    */
-  def replaceWithResult[T: ClassTag](
+  def replaceWithResult[T](
       sessionSettings: CouchbaseSessionSettings,
       bucketName: String,
       scopeName: String,
@@ -211,7 +211,7 @@ object CouchbaseFlow {
   /**
    * Create a flow to replace a Couchbase [[com.couchbase.client.java.document.JsonDocument JsonDocument]].
    */
-  def replaceWithResult[T: ClassTag](
+  def replaceWithResult[T](
       sessionSettings: CouchbaseSessionSettings,
       replaceOptions: ReplaceOptions,
       bucketName: String,
@@ -237,10 +237,10 @@ object CouchbaseFlow {
   /**
    * Create a flow to replace a Couchbase [[com.couchbase.client.java.document.JsonDocument JsonDocument]].
    */
-  def replace[T: ClassTag](sessionSettings: CouchbaseSessionSettings,
-                           bucketName: String,
-                           scopeName: String,
-                           collectionName: String): Flow[CouchbaseDocument[T], Done, NotUsed] =
+  def replace[T](sessionSettings: CouchbaseSessionSettings,
+                 bucketName: String,
+                 scopeName: String,
+                 collectionName: String): Flow[CouchbaseDocument[T], Done, NotUsed] =
     Flow
       .fromMaterializer { (materializer, _) =>
         val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
@@ -264,7 +264,7 @@ object CouchbaseFlow {
                                ReplaceOptions.replaceOptions().transcoder(RawStringTranscoder.INSTANCE))
                 )
               else
-                op.flatMap(_.replace(doc.id, doc.document))
+                op.flatMap(_.replace[T](doc.id, doc.document))
             }
           )
       }
@@ -273,21 +273,21 @@ object CouchbaseFlow {
   /**
    * Create a flow to replace a Couchbase [[com.couchbase.client.java.document.JsonDocument JsonDocument]].
    */
-  def replace[T: ClassTag](sessionSettings: CouchbaseSessionSettings,
-                           replaceOptions: ReplaceOptions,
-                           bucketName: String,
-                           scopeName: String,
-                           collectionName: String): Flow[(String, T), Done, NotUsed] =
+  def replace[T](sessionSettings: CouchbaseSessionSettings,
+                 replaceOptions: ReplaceOptions,
+                 bucketName: String,
+                 scopeName: String,
+                 collectionName: String): Flow[CouchbaseDocument[T], Done, NotUsed] =
     Flow
       .fromMaterializer { (materializer, _) =>
         val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
         implicit val executor = materializer.executionContext
-        Flow[(String, T)]
+        Flow[CouchbaseDocument[T]]
           .mapAsync(sessionSettings.parallelism)(
             doc =>
               session
                 .map(_.collection(scopeName, collectionName))
-                .flatMap(_.replace[T](doc._1, doc._2, replaceOptions))
+                .flatMap(_.replace[T](doc.id, doc.document, replaceOptions))
           )
       }
       .mapMaterializedValue(_ => NotUsed)

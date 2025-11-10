@@ -39,37 +39,37 @@ private[couchbase] class CouchbaseCollectionSessionImpl(bucketSession: Couchbase
 
   override def asJava = new CouchbaseCollectionSessionJavaAdapter(this)
 
-  override def insert[T: ClassTag](id: String, document: T): Future[Done] = {
+  override def insert[T](id: String, document: T): Future[Done] = {
     underlying
       .insert(id,
               document,
               InsertOptions
                 .insertOptions()
-                .transcoder(chooseTranscoder[T]()))
+                .transcoder(chooseTranscoder(document.getClass)))
       .asScala
       .map(_ => Done)(ExecutionContext.parasitic)
   }
 
-  override def insert[T: ClassTag](id: String, document: T, insertOptions: InsertOptions): Future[Done] = {
-    if (insertOptions.build.transcoder() == null) {
-      insertOptions.transcoder(chooseTranscoder[T]())
-    }
+  override def insert[T](id: String, document: T, insertOptions: InsertOptions): Future[Done] = {
     underlying
       .insert(id, document, insertOptions)
       .asScala
       .map(_ => Done)(ExecutionContext.parasitic)
   }
 
-  override def get[T: ClassTag](id: String): Future[CouchbaseDocument[T]] = {
-    val target: Class[T] = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
+  override def get[T](id: String)(implicit ct: ClassTag[T]): Future[CouchbaseDocument[T]] = {
+    val target: Class[T] = ct.runtimeClass.asInstanceOf[Class[T]]
     underlying
-      .get(id, GetOptions.getOptions.transcoder(chooseTranscoder[T]()))
-      .thenApply(gr => new CouchbaseDocument[T](id, gr.contentAs(target)))
+      .get(id, GetOptions.getOptions.transcoder(chooseTranscoder(target)))
       .asScala
+      .map(gr => new CouchbaseDocument[T](id, gr.contentAs(target)))(ExecutionContext.parasitic)
   }
 
   override def getDocument(id: String): Future[CouchbaseDocument[JsonValue]] =
-    underlying.get(id).thenApply(gr => new CouchbaseDocument[JsonValue](id, asJsonValue(gr))).asScala
+    underlying
+      .get(id)
+      .asScala
+      .map(gr => new CouchbaseDocument[JsonValue](id, asJsonValue(gr)))(ExecutionContext.parasitic)
 
   private def asJsonValue(gr: GetResult) =
     try {
@@ -79,105 +79,99 @@ private[couchbase] class CouchbaseCollectionSessionImpl(bucketSession: Couchbase
     }
 
   override def getBytes(id: String): Future[CouchbaseDocument[Array[Byte]]] =
-    underlying.get(id).thenApply(gr => new CouchbaseDocument[Array[Byte]](id, gr.contentAsBytes())).asScala
+    underlying
+      .get(id)
+      .asScala
+      .map(gr => new CouchbaseDocument[Array[Byte]](id, gr.contentAsBytes()))(ExecutionContext.parasitic)
 
   override def getDocument(id: String, timeout: FiniteDuration): Future[CouchbaseDocument[JsonValue]] =
     underlying
       .get(id)
       .orTimeout(timeout.toMillis, TimeUnit.MILLISECONDS)
-      .thenApply(gr => new CouchbaseDocument[JsonValue](id, asJsonValue(gr)))
       .asScala
+      .map(gr => new CouchbaseDocument[JsonValue](id, asJsonValue(gr)))(ExecutionContext.parasitic)
 
   override def getBytes(id: String, timeout: FiniteDuration): Future[CouchbaseDocument[Array[Byte]]] =
     underlying
       .get(id)
       .orTimeout(timeout.toMillis, TimeUnit.MILLISECONDS)
-      .thenApply(gr => new CouchbaseDocument[Array[Byte]](id, gr.contentAsBytes()))
       .asScala
+      .map(gr => new CouchbaseDocument[Array[Byte]](id, gr.contentAsBytes()))(ExecutionContext.parasitic)
 
-  override def upsert[T: ClassTag](id: String, document: T): Future[Done] = {
+  override def upsert[T](id: String, document: T): Future[Done] = {
     underlying
       .upsert(id,
               document,
               UpsertOptions
                 .upsertOptions()
-                .transcoder(chooseTranscoder[T]()))
+                .transcoder(chooseTranscoder(document.getClass)))
       .asScala
       .map(_ => Done)(ExecutionContext.parasitic)
   }
 
-  override def upsert[T: ClassTag](id: String, document: T, upsertOptions: UpsertOptions): Future[Done] = {
-    if (upsertOptions.build().transcoder() == null) {
-      upsertOptions.transcoder(chooseTranscoder[T]())
-    }
+  override def upsert[T](id: String, document: T, upsertOptions: UpsertOptions): Future[Done] = {
     underlying
       .upsert(id, document, upsertOptions)
-      .thenApply(_ => Done)
       .asScala
+      .map(_ => Done)(ExecutionContext.parasitic)
   }
 
-  override def upsert[T: ClassTag](id: String,
-                                   document: T,
-                                   upsertOptions: UpsertOptions,
-                                   timeout: FiniteDuration): Future[Done] = {
-    if (upsertOptions.build().transcoder() == null) {
-      upsertOptions.transcoder(chooseTranscoder[T]())
-    }
+  override def upsert[T](id: String,
+                         document: T,
+                         upsertOptions: UpsertOptions,
+                         timeout: FiniteDuration): Future[Done] = {
     underlying
       .upsert(id, document, upsertOptions)
       .orTimeout(timeout.toMillis, TimeUnit.MILLISECONDS)
-      .thenApply(_ => Done)
       .asScala
+      .map(_ => Done)(ExecutionContext.parasitic)
   }
 
-  override def replace[T: ClassTag](id: String, document: T): Future[Done] =
-    underlying
-      .replace(id, document)
-      .thenApply(_ => Done)
-      .asScala
-
-  override def replace[T: ClassTag](id: String, document: T, replaceOptions: ReplaceOptions): Future[Done] = {
-    if (replaceOptions.build.transcoder() == null) {
-      replaceOptions.transcoder(chooseTranscoder[T]())
-    }
+  override def replace[T](id: String, document: T): Future[Done] = {
+    val replaceOptions = ReplaceOptions.replaceOptions()
+    replaceOptions.transcoder(chooseTranscoder(document.getClass))
     underlying
       .replace(id, document, replaceOptions)
-      .thenApply(_ => Done)
       .asScala
+      .map(_ => Done)(ExecutionContext.parasitic)
   }
 
-  override def replace[T: ClassTag](id: String,
-                                    document: T,
-                                    replaceOptions: ReplaceOptions,
-                                    timeout: FiniteDuration): Future[Done] = {
-    if (replaceOptions.build.transcoder() == null) {
-      replaceOptions.transcoder(chooseTranscoder[T]())
-    }
+  override def replace[T](id: String, document: T, replaceOptions: ReplaceOptions): Future[Done] = {
+    underlying
+      .replace(id, document, replaceOptions)
+      .asScala
+      .map(_ => Done)(ExecutionContext.parasitic)
+  }
+
+  override def replace[T](id: String,
+                          document: T,
+                          replaceOptions: ReplaceOptions,
+                          timeout: FiniteDuration): Future[Done] = {
     underlying
       .replace(id, document, replaceOptions)
       .orTimeout(timeout.toMillis, TimeUnit.MILLISECONDS)
-      .thenApply(_ => Done)
       .asScala
+      .map(_ => Done)(ExecutionContext.parasitic)
   }
 
   override def remove(id: String): Future[Done] =
     underlying
       .remove(id)
-      .thenApply(_ => Done)
       .asScala
+      .map(_ => Done)(ExecutionContext.parasitic)
 
   override def remove(id: String, removeOptions: RemoveOptions): Future[Done] =
     underlying
       .remove(id, removeOptions)
-      .thenApply(_ => Done)
       .asScala
+      .map(_ => Done)(ExecutionContext.parasitic)
 
   override def remove(id: String, removeOptions: RemoveOptions, timeout: FiniteDuration): Future[Done] =
     underlying
       .remove(id, removeOptions)
       .orTimeout(timeout.toMillis, TimeUnit.MILLISECONDS)
-      .thenApply(_ => Done)
       .asScala
+      .map(_ => Done)(ExecutionContext.parasitic)
 
   override def createIndex(indexName: String,
                            createQueryIndexOptions: CreateQueryIndexOptions,
@@ -185,8 +179,8 @@ private[couchbase] class CouchbaseCollectionSessionImpl(bucketSession: Couchbase
     underlying
       .queryIndexes()
       .createIndex(indexName, util.Arrays.asList(fields: _*), createQueryIndexOptions)
-      .thenApply(_ => Done)
       .asScala
+      .map(_ => Done)(ExecutionContext.parasitic)
 
   override def listIndexes(): Source[QueryIndex, NotUsed] =
     Source.fromPublisher(
@@ -197,8 +191,7 @@ private[couchbase] class CouchbaseCollectionSessionImpl(bucketSession: Couchbase
       )
     )
 
-  private def chooseTranscoder[T: ClassTag](): Transcoder = {
-    val target: Class[T] = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
+  private def chooseTranscoder[T](target: Class[T]): Transcoder = {
     if (target == classOf[Array[Byte]]) RawBinaryTranscoder.INSTANCE
     else if (target == classOf[String]) RawStringTranscoder.INSTANCE
     else bucketSession.cluster().environment().transcoder()

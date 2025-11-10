@@ -15,9 +15,8 @@ import com.couchbase.client.java.json.JsonObject
 import com.couchbase.client.java.query._
 import org.slf4j.LoggerFactory
 
-import java.util.concurrent.atomic.AtomicReference
-import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Success
 
 /**
  * Scala API: Gives access to Couchbase.
@@ -70,13 +69,9 @@ object CouchbaseSession {
               enrichedSettings.nodes.mkString(","),
               clusterOptions
             )
-        }).andThen(c => {
-            log.debug("created couchbase cluster client for " + enrichedSettings.username)
-          })
-          .recover(err => {
-            log.error("failed to create couchbase cluster", err)
-            throw err
-          })
+        }).andThen {
+          case Success(_) => log.debug("created couchbase cluster client for {}", enrichedSettings.username)
+        }
       }
 
 }
@@ -93,10 +88,6 @@ trait CouchbaseSession {
 
   def asJava: JavaDslCouchbaseSession
 
-  private val collectionSessions = new AtomicReference(
-    mutable.WeakHashMap.empty[(String, String), CouchbaseCollectionSession]
-  )
-
   def streamedQuery(query: String): Source[JsonObject, NotUsed]
   def streamedQuery(query: String, queryOptions: QueryOptions): Source[JsonObject, NotUsed]
   def singleResponseQuery(query: String): Future[Option[JsonObject]]
@@ -104,18 +95,7 @@ trait CouchbaseSession {
   def cluster(): AsyncCluster
 
   def collection(scopeName: String, collectionName: String): CouchbaseCollectionSession =
-    collectionSessions.get.get((scopeName, collectionName)) match {
-      case Some(session) => session
-      case _ =>
-        val oldSessions = collectionSessions.get()
-        val newSession = new CouchbaseCollectionSessionImpl(this, scopeName, collectionName)
-        val newSessions = oldSessions.clone().addOne(((scopeName, collectionName), newSession))
-        if (collectionSessions.compareAndSet(oldSessions, newSessions)) {
-          newSession
-        } else {
-          collection(scopeName, collectionName)
-        }
-    }
+    new CouchbaseCollectionSessionImpl(this, scopeName, collectionName)
 
   /**
    * Close the session and release all resources it holds. Subsequent calls to other methods will likely fail.

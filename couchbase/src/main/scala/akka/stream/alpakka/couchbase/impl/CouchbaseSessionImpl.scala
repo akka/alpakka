@@ -12,9 +12,9 @@ import akka.{Done, NotUsed}
 import com.couchbase.client.java.json.JsonObject
 import com.couchbase.client.java.query.{QueryOptions, QueryResult}
 import com.couchbase.client.java.{AsyncBucket, AsyncCluster}
+import rx.RxReactiveStreams
 
-import scala.concurrent.Future
-import scala.jdk.CollectionConverters.IteratorHasAsScala
+import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.FutureConverters.CompletionStageOps
 
 /**
@@ -31,27 +31,30 @@ final private[couchbase] class CouchbaseSessionImpl(cluster: AsyncCluster, bucke
   override def underlying: AsyncBucket = cluster.bucket(bucketName)
 
   override def streamedQuery(query: String): Source[JsonObject, NotUsed] = {
-    Source.fromIterator(
-      () =>
-        cluster
-          .query(query)
-          .get()
-          .rowsAsObject()
-          .iterator()
-          .asScala
+    Source.fromPublisher(
+      RxReactiveStreams.toPublisher(
+        rx.Observable.from(
+          cluster
+            .query(query)
+            .get()
+            .rowsAsObject()
+        )
+      )
     )
   }
 
-  override def streamedQuery(query: String, queryOptions: QueryOptions): Source[JsonObject, NotUsed] =
-    Source.fromIterator(
-      () =>
-        cluster
-          .query(query, queryOptions)
-          .get()
-          .rowsAsObject()
-          .iterator()
-          .asScala
+  override def streamedQuery(query: String, queryOptions: QueryOptions): Source[JsonObject, NotUsed] = {
+    Source.fromPublisher(
+      RxReactiveStreams.toPublisher(
+        rx.Observable.from(
+          cluster
+            .query(query, queryOptions)
+            .get()
+            .rowsAsObject()
+        )
+      )
     )
+  }
 
   def close(): Future[Done] =
     Future.successful(Done)
@@ -66,17 +69,30 @@ final private[couchbase] class CouchbaseSessionImpl(cluster: AsyncCluster, bucke
     Option.apply(rows.iterator.next)
   }
 
+  /**
+   * Executes a query and returns its first result, discarding any other results
+   * Tip: use `LIMIT 1` in your query to avoid fetching more than 1 result
+   * @param query — the query to be executed
+   * @return the first row of the resultset
+   */
   override def singleResponseQuery(query: String): Future[Option[JsonObject]] =
     cluster
       .query(query)
-      .thenApply(getSingleResult(_))
       .asScala
+      .map(getSingleResult)(ExecutionContext.parasitic)
 
+  /**
+   * Executes a query and returns its first result, discarding any other results
+   * Tip: use `LIMIT 1` in your query to avoid fetching more than 1 result
+   * @param query the query to be executed
+   * @param queryOptions Couchbase SDK QueryOptions object
+   * @return the first row of the resultset
+   */
   override def singleResponseQuery(query: String, queryOptions: QueryOptions): Future[Option[JsonObject]] =
     cluster
       .query(query, queryOptions)
-      .thenApply(getSingleResult(_))
       .asScala
+      .map(getSingleResult)(ExecutionContext.parasitic)
 
   override def cluster(): AsyncCluster = cluster
 }
