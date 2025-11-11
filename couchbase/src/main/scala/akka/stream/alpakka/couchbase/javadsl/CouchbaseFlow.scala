@@ -74,8 +74,7 @@ object CouchbaseFlow {
   def upsertWithResult[T](sessionSettings: CouchbaseSessionSettings,
                           bucketName: String,
                           scopeName: String,
-                          collectionName: String
-  ): Flow[CouchbaseDocument[T], CouchbaseWriteResult, NotUsed] = {
+                          collectionName: String): Flow[CouchbaseDocument[T], CouchbaseWriteResult, NotUsed] = {
     scaladsl.CouchbaseFlow
       .upsertWithResult[T](sessionSettings, bucketName, scopeName, collectionName)
       .asJava[CouchbaseDocument[T]]
@@ -89,8 +88,7 @@ object CouchbaseFlow {
                           upsertOptions: UpsertOptions,
                           bucketName: String,
                           scopeName: String,
-                          collectionName: String
-  ): Flow[CouchbaseDocument[T], CouchbaseWriteResult, NotUsed] =
+                          collectionName: String): Flow[CouchbaseDocument[T], CouchbaseWriteResult, NotUsed] =
     scaladsl.CouchbaseFlow
       .upsertWithResult[T](sessionSettings, upsertOptions, bucketName, scopeName, collectionName)
       .asJava
