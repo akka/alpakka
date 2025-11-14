@@ -4,24 +4,18 @@
 
 package akka.stream.alpakka.couchbase.impl
 
-import java.util.concurrent.TimeUnit
-
 import akka.annotation.InternalApi
+import akka.stream.alpakka.couchbase.javadsl
 import akka.stream.alpakka.couchbase.scaladsl.CouchbaseSession
-import akka.stream.alpakka.couchbase.{javadsl, CouchbaseWriteSettings}
 import akka.stream.scaladsl.Source
 import akka.{Done, NotUsed}
-import com.couchbase.client.java.bucket.AsyncBucketManager
-import com.couchbase.client.java.document.json.JsonObject
-import com.couchbase.client.java.document.{Document, JsonDocument}
-import com.couchbase.client.java.query.util.IndexInfo
-import com.couchbase.client.java.query.{N1qlQuery, Statement}
+import com.couchbase.client.java.json.JsonObject
+import com.couchbase.client.java.query.{QueryOptions, QueryResult}
 import com.couchbase.client.java.{AsyncBucket, AsyncCluster}
 import rx.RxReactiveStreams
 
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.FutureConverters.CompletionStageOps
 
 /**
  * INTERNAL API
@@ -29,154 +23,76 @@ import scala.concurrent.Future
  * @param cluster if provided, it will be shut down when `close()` is called
  */
 @InternalApi
-final private[couchbase] class CouchbaseSessionImpl(asyncBucket: AsyncBucket, cluster: Option[AsyncCluster])
+final private[couchbase] class CouchbaseSessionImpl(cluster: AsyncCluster, bucketName: String)
     extends CouchbaseSession {
-  import RxUtilities._
 
   override def asJava: javadsl.CouchbaseSession = new CouchbaseSessionJavaAdapter(this)
 
-  override def underlying: AsyncBucket = asyncBucket
+  override def underlying: AsyncBucket = cluster.bucket(bucketName)
 
-  def insert(document: JsonDocument): Future[JsonDocument] = insertDoc(document)
-
-  def insertDoc[T <: Document[_]](document: T): Future[T] =
-    singleObservableToFuture(asyncBucket.insert(document), document)
-
-  def insert(document: JsonDocument, writeSettings: CouchbaseWriteSettings): Future[JsonDocument] =
-    insertDoc(document, writeSettings)
-
-  def insertDoc[T <: Document[_]](document: T, writeSettings: CouchbaseWriteSettings): Future[T] =
-    singleObservableToFuture(asyncBucket.insert(document,
-                                                writeSettings.persistTo,
-                                                writeSettings.replicateTo,
-                                                writeSettings.timeout.toMillis,
-                                                TimeUnit.MILLISECONDS),
-                             document)
-
-  def get(id: String): Future[Option[JsonDocument]] =
-    zeroOrOneObservableToFuture(asyncBucket.get(id))
-
-  def get[T <: Document[_]](id: String, documentClass: Class[T]): Future[Option[T]] =
-    zeroOrOneObservableToFuture(asyncBucket.get(id, documentClass))
-
-  def get(id: String, timeout: FiniteDuration): Future[Option[JsonDocument]] =
-    zeroOrOneObservableToFuture(asyncBucket.get(id, timeout.toMillis, TimeUnit.MILLISECONDS))
-
-  def get[T <: Document[_]](id: String,
-                            timeout: FiniteDuration,
-                            documentClass: Class[T]): scala.concurrent.Future[Option[T]] =
-    zeroOrOneObservableToFuture(asyncBucket.get(id, documentClass, timeout.toMillis, TimeUnit.MILLISECONDS))
-
-  def upsert(document: JsonDocument): Future[JsonDocument] = upsertDoc(document)
-
-  def upsertDoc[T <: Document[_]](document: T): Future[T] =
-    singleObservableToFuture(asyncBucket.upsert(document), document.id)
-
-  def upsert(document: JsonDocument, writeSettings: CouchbaseWriteSettings): Future[JsonDocument] =
-    upsertDoc(document, writeSettings)
-
-  def upsertDoc[T <: Document[_]](document: T, writeSettings: CouchbaseWriteSettings): Future[T] =
-    singleObservableToFuture(asyncBucket.upsert(document,
-                                                writeSettings.persistTo,
-                                                writeSettings.replicateTo,
-                                                writeSettings.timeout.toMillis,
-                                                TimeUnit.MILLISECONDS),
-                             document.id)
-
-  def replace(document: JsonDocument): Future[JsonDocument] = replaceDoc(document)
-
-  def replaceDoc[T <: Document[_]](document: T): Future[T] =
-    singleObservableToFuture(asyncBucket.replace(document), document.id)
-
-  def replace(document: JsonDocument, writeSettings: CouchbaseWriteSettings): Future[JsonDocument] =
-    replaceDoc(document, writeSettings)
-
-  def replaceDoc[T <: Document[_]](document: T, writeSettings: CouchbaseWriteSettings): Future[T] =
-    singleObservableToFuture(asyncBucket.replace(document,
-                                                 writeSettings.persistTo,
-                                                 writeSettings.replicateTo,
-                                                 writeSettings.timeout.toMillis,
-                                                 TimeUnit.MILLISECONDS),
-                             document.id)
-
-  def remove(id: String): Future[Done] =
-    singleObservableToFuture(asyncBucket.remove(id), id)
-      .map(_ => Done)(ExecutionContext.parasitic)
-
-  def remove(id: String, writeSettings: CouchbaseWriteSettings): Future[Done] =
-    singleObservableToFuture(asyncBucket.remove(id,
-                                                writeSettings.persistTo,
-                                                writeSettings.replicateTo,
-                                                writeSettings.timeout.toMillis,
-                                                TimeUnit.MILLISECONDS),
-                             id)
-      .map(_ => Done)(ExecutionContext.parasitic)
-
-  def streamedQuery(query: N1qlQuery): Source[JsonObject, NotUsed] =
-    // FIXME verify cancellation works
-    Source.fromPublisher(RxReactiveStreams.toPublisher(asyncBucket.query(query).flatMap(RxUtilities.unfoldJsonObjects)))
-
-  def streamedQuery(query: Statement): Source[JsonObject, NotUsed] =
-    Source.fromPublisher(RxReactiveStreams.toPublisher(asyncBucket.query(query).flatMap(RxUtilities.unfoldJsonObjects)))
-
-  def singleResponseQuery(query: Statement): Future[Option[JsonObject]] =
-    singleResponseQuery(N1qlQuery.simple(query))
-  def singleResponseQuery(query: N1qlQuery): Future[Option[JsonObject]] =
-    zeroOrOneObservableToFuture(asyncBucket.query(query).flatMap(RxUtilities.unfoldJsonObjects))
-
-  def counter(id: String, delta: Long, initial: Long): Future[Long] =
-    singleObservableToFuture(asyncBucket.counter(id, delta, initial), id)
-      .map(_.content(): Long)(ExecutionContext.parasitic)
-
-  def counter(id: String, delta: Long, initial: Long, writeSettings: CouchbaseWriteSettings): Future[Long] =
-    singleObservableToFuture(asyncBucket.counter(id,
-                                                 delta,
-                                                 initial,
-                                                 writeSettings.persistTo,
-                                                 writeSettings.replicateTo,
-                                                 writeSettings.timeout.toMillis,
-                                                 TimeUnit.MILLISECONDS),
-                             id)
-      .map(_.content(): Long)(ExecutionContext.parasitic)
-
-  def close(): Future[Done] =
-    if (!asyncBucket.isClosed) {
-      singleObservableToFuture(asyncBucket.close(), "close")
-        .flatMap { _ =>
-          cluster match {
-            case Some(cluster) =>
-              singleObservableToFuture(cluster.disconnect(), "close").map(_ => Done)(ExecutionContext.global)
-            case None => Future.successful(Done)
-          }
-        }(ExecutionContext.global)
-    } else {
-      Future.successful(Done)
-    }
-
-  override def toString: String = s"CouchbaseSession(${asyncBucket.name()})"
-
-  override def createIndex(indexName: String, ignoreIfExist: Boolean, fields: AnyRef*): Future[Boolean] =
-    singleObservableToFuture(
-      asyncBucket
-        .bucketManager()
-        .flatMap(
-          func1Observable[AsyncBucketManager, Boolean](
-            _.createN1qlIndex(indexName, ignoreIfExist, false, fields: _*)
-              .map(func1(Boolean.unbox))
-          )
-        ),
-      s"Create index: $indexName"
-    )
-
-  override def listIndexes(): Source[IndexInfo, NotUsed] =
+  override def streamedQuery(query: String): Source[JsonObject, NotUsed] = {
     Source.fromPublisher(
       RxReactiveStreams.toPublisher(
-        asyncBucket
-          .bucketManager()
-          .flatMap(
-            func1Observable((abm: AsyncBucketManager) => abm.listN1qlIndexes())
-          )
+        rx.Observable.from(
+          cluster
+            .query(query)
+            .get()
+            .rowsAsObject()
+        )
       )
     )
+  }
 
+  override def streamedQuery(query: String, queryOptions: QueryOptions): Source[JsonObject, NotUsed] = {
+    Source.fromPublisher(
+      RxReactiveStreams.toPublisher(
+        rx.Observable.from(
+          cluster
+            .query(query, queryOptions)
+            .get()
+            .rowsAsObject()
+        )
+      )
+    )
+  }
+
+  def close(): Future[Done] =
+    Future.successful(Done)
+
+  override def toString: String = s"CouchbaseSession(${underlying.name()})"
+
+  private def getSingleResult(gr: QueryResult): Option[JsonObject] = {
+    val rows = gr.rowsAsObject()
+    if (rows.isEmpty) {
+      return Option.empty
+    }
+    Option.apply(rows.iterator.next)
+  }
+
+  /**
+   * Executes a query and returns its first result, discarding any other results
+   * Tip: use `LIMIT 1` in your query to avoid fetching more than 1 result
+   * @param query — the query to be executed
+   * @return the first row of the resultset
+   */
+  override def singleResponseQuery(query: String): Future[Option[JsonObject]] =
+    cluster
+      .query(query)
+      .asScala
+      .map(getSingleResult)(ExecutionContext.parasitic)
+
+  /**
+   * Executes a query and returns its first result, discarding any other results
+   * Tip: use `LIMIT 1` in your query to avoid fetching more than 1 result
+   * @param query the query to be executed
+   * @param queryOptions Couchbase SDK QueryOptions object
+   * @return the first row of the resultset
+   */
+  override def singleResponseQuery(query: String, queryOptions: QueryOptions): Future[Option[JsonObject]] =
+    cluster
+      .query(query, queryOptions)
+      .asScala
+      .map(getSingleResult)(ExecutionContext.parasitic)
+
+  override def cluster(): AsyncCluster = cluster
 }

@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.couchbase
 import akka.annotation.InternalApi
-import com.couchbase.client.java.document.json.JsonObject
+import com.couchbase.client.java.json.JsonObject
 
 /**
  * Describes a Couchbase related failure with an error code.

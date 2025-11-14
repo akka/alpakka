@@ -4,12 +4,13 @@
 
 package akka.stream.alpakka.couchbase.javadsl
 
-import java.util.concurrent.CompletionStage
-
 import akka.stream.alpakka.couchbase._
 import akka.stream.javadsl.{Keep, Sink}
 import akka.{Done, NotUsed}
-import com.couchbase.client.java.document.{Document, JsonDocument}
+import com.couchbase.client.java.json.JsonValue
+import com.couchbase.client.java.kv.{RemoveOptions, ReplaceOptions, UpsertOptions}
+
+import java.util.concurrent.CompletionStage
 
 /**
  * Java API: Factory methods for Couchbase sinks.
@@ -20,50 +21,69 @@ object CouchbaseSink {
    * Create a sink to update or insert a Couchbase [[com.couchbase.client.java.document.JsonDocument JsonDocument]].
    */
   def upsert(sessionSettings: CouchbaseSessionSettings,
-             writeSettings: CouchbaseWriteSettings,
-             bucketName: String): Sink[JsonDocument, CompletionStage[Done]] =
+             bucketName: String,
+             scopeName: String,
+             collectionName: String): Sink[CouchbaseDocument[JsonValue], CompletionStage[Done]] =
     CouchbaseFlow
-      .upsert(sessionSettings, writeSettings, bucketName)
+      .upsert(sessionSettings, bucketName, scopeName, collectionName)
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
-   * Create a sink to update or insert a Couchbase document of the given class.
+   * Create a sink to update or insert a Couchbase document.
    */
-  def upsertDoc[T <: Document[_]](sessionSettings: CouchbaseSessionSettings,
-                                  writeSettings: CouchbaseWriteSettings,
-                                  bucketName: String): Sink[T, CompletionStage[Done]] =
+  def upsert(sessionSettings: CouchbaseSessionSettings,
+             upsertOptions: UpsertOptions,
+             bucketName: String,
+             scopeName: String,
+             collectionName: String): Sink[CouchbaseDocument[JsonValue], CompletionStage[Done]] =
     CouchbaseFlow
-      .upsertDoc[T](sessionSettings, writeSettings, bucketName)
+      .upsert(sessionSettings, upsertOptions, bucketName, scopeName, collectionName)
+      .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
+
+  /**
+   * Create a sink to replace a Couchbase document.
+   */
+  def replace(sessionSettings: CouchbaseSessionSettings,
+              bucketName: String,
+              scopeName: String,
+              collectionName: String): Sink[CouchbaseDocument[Any], CompletionStage[Done]] =
+    CouchbaseFlow
+      .replace(sessionSettings, bucketName, scopeName, collectionName)
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
    * Create a sink to replace a Couchbase [[com.couchbase.client.java.document.JsonDocument JsonDocument]].
    */
   def replace(sessionSettings: CouchbaseSessionSettings,
-              writeSettings: CouchbaseWriteSettings,
-              bucketName: String): Sink[JsonDocument, CompletionStage[Done]] =
+              replaceOptions: ReplaceOptions,
+              bucketName: String,
+              scopeName: String,
+              collectionName: String): Sink[CouchbaseDocument[Any], CompletionStage[Done]] =
     CouchbaseFlow
-      .replace(sessionSettings, writeSettings, bucketName)
-      .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
-
-  /**
-   * Create a sink to replace a Couchbase document of the given class.
-   */
-  def replaceDoc[T <: Document[_]](sessionSettings: CouchbaseSessionSettings,
-                                   writeSettings: CouchbaseWriteSettings,
-                                   bucketName: String): Sink[T, CompletionStage[Done]] =
-    CouchbaseFlow
-      .replaceDoc[T](sessionSettings, writeSettings, bucketName)
+      .replace(sessionSettings, replaceOptions, bucketName, scopeName, collectionName)
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
    * Create a sink to delete documents from Couchbase by `id`.
    */
   def delete(sessionSettings: CouchbaseSessionSettings,
-             writeSettings: CouchbaseWriteSettings,
-             bucketName: String): Sink[String, CompletionStage[Done]] =
+             bucketName: String,
+             scopeName: String,
+             collectionName: String): Sink[String, CompletionStage[Done]] =
     CouchbaseFlow
-      .delete(sessionSettings, writeSettings, bucketName)
+      .delete(sessionSettings, bucketName, scopeName, collectionName)
+      .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
+
+  /**
+   * Create a sink to delete documents from Couchbase by `id`.
+   */
+  def delete(sessionSettings: CouchbaseSessionSettings,
+             removeOptions: RemoveOptions,
+             bucketName: String,
+             scopeName: String,
+             collectionName: String): Sink[String, CompletionStage[Done]] =
+    CouchbaseFlow
+      .delete(sessionSettings, removeOptions, bucketName, scopeName, collectionName)
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
 
 }
