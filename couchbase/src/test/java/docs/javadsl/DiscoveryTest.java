@@ -8,8 +8,8 @@ import akka.actor.ActorSystem;
 // #registry
 import akka.stream.alpakka.couchbase.CouchbaseSessionRegistry;
 import akka.stream.alpakka.couchbase.CouchbaseSessionSettings;
-import akka.stream.alpakka.couchbase.javadsl.DiscoverySupport;
 import akka.stream.alpakka.couchbase.javadsl.CouchbaseSession;
+import akka.stream.alpakka.couchbase.javadsl.DiscoverySupport;
 // #registry
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.testkit.javadsl.TestKit;

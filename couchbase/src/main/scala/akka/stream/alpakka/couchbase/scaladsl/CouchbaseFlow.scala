@@ -88,10 +88,10 @@ object CouchbaseFlow {
   /**
    * Create a flow to update or insert a Couchbase [[com.couchbase.client.java.document.JsonDocument JsonDocument]].
    */
-  def upsert[T: ClassTag](sessionSettings: CouchbaseSessionSettings,
-                          bucketName: String,
-                          scopeName: String,
-                          collectionName: String): Flow[CouchbaseDocument[T], Done, NotUsed] =
+  def upsert[T](sessionSettings: CouchbaseSessionSettings,
+                bucketName: String,
+                scopeName: String,
+                collectionName: String): Flow[CouchbaseDocument[T], Done, NotUsed] =
     Flow
       .fromMaterializer { (materializer, _) =>
         implicit val ec = materializer.executionContext
@@ -111,11 +111,11 @@ object CouchbaseFlow {
   /**
    * Create a flow to update or insert a Couchbase [[com.couchbase.client.java.document.JsonDocument JsonDocument]].
    */
-  def upsert[T: ClassTag](sessionSettings: CouchbaseSessionSettings,
-                          upsertOptions: UpsertOptions,
-                          bucketName: String,
-                          scopeName: String,
-                          collectionName: String): Flow[CouchbaseDocument[T], Done, NotUsed] =
+  def upsert[T](sessionSettings: CouchbaseSessionSettings,
+                upsertOptions: UpsertOptions,
+                bucketName: String,
+                scopeName: String,
+                collectionName: String): Flow[CouchbaseDocument[T], Done, NotUsed] =
     Flow
       .fromMaterializer { (materializer, _) =>
         implicit val ec = materializer.executionContext

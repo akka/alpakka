@@ -10,8 +10,6 @@ import akka.stream.javadsl.Flow
 import com.couchbase.client.java.json.JsonValue
 import com.couchbase.client.java.kv.{RemoveOptions, ReplaceOptions, UpsertOptions}
 
-import scala.reflect.ClassTag
-
 /**
  * Java API: Factory methods for Couchbase flows.
  */
@@ -27,15 +25,6 @@ object CouchbaseFlow {
     scaladsl.CouchbaseFlow.fromId[JsonValue](sessionSettings, bucketName, scopeName, collectionName).asJava
 
   /**
-   * Create a flow to query Couchbase for by `id` and emit documents of the given class.
-   */
-  def fromId[T: ClassTag](sessionSettings: CouchbaseSessionSettings,
-                          bucketName: String,
-                          scopeName: String,
-                          collectionName: String): Flow[String, CouchbaseDocument[T], NotUsed] =
-    scaladsl.CouchbaseFlow.fromId[T](sessionSettings, bucketName, scopeName, collectionName).asJava
-
-  /**
    * Create a flow to query Couchbase for by `id` and emit [[com.couchbase.client.java.document.JsonDocument JsonDocument]]s.
    */
   def bytesFromId(sessionSettings: CouchbaseSessionSettings,
@@ -47,10 +36,10 @@ object CouchbaseFlow {
   /**
    * Create a flow to update or insert a Couchbase document.
    */
-  def upsert[T: ClassTag](sessionSettings: CouchbaseSessionSettings,
-                          bucketName: String,
-                          scopeName: String,
-                          collectionName: String): Flow[CouchbaseDocument[T], Done, NotUsed] =
+  def upsert[T](sessionSettings: CouchbaseSessionSettings,
+                bucketName: String,
+                scopeName: String,
+                collectionName: String): Flow[CouchbaseDocument[T], Done, NotUsed] =
     scaladsl.CouchbaseFlow
       .upsert[T](sessionSettings, bucketName, scopeName, collectionName)
       .asJava
@@ -58,11 +47,11 @@ object CouchbaseFlow {
   /**
    * Create a flow to update or insert a Couchbase document.
    */
-  def upsert[T: ClassTag](sessionSettings: CouchbaseSessionSettings,
-                          upsertOptions: UpsertOptions,
-                          bucketName: String,
-                          scopeName: String,
-                          collectionName: String): Flow[CouchbaseDocument[T], Done, NotUsed] =
+  def upsert[T](sessionSettings: CouchbaseSessionSettings,
+                upsertOptions: UpsertOptions,
+                bucketName: String,
+                scopeName: String,
+                collectionName: String): Flow[CouchbaseDocument[T], Done, NotUsed] =
     scaladsl.CouchbaseFlow
       .upsert[T](sessionSettings, upsertOptions, bucketName, scopeName, collectionName)
       .asJava

@@ -48,6 +48,13 @@ class CouchbaseFlowSpec
 
     "insert RawJsonDocument" in assertAllStagesStopped {
       // #upsert
+      import akka.Done
+      import akka.stream.alpakka.couchbase.CouchbaseDocument
+      import akka.stream.alpakka.couchbase.scaladsl.CouchbaseFlow
+      import akka.stream.scaladsl.{Sink, Source}
+
+      import scala.concurrent.Future
+
       val result: Future[Done] =
         Source
           .single(sampleData)
@@ -74,7 +81,6 @@ class CouchbaseFlowSpec
     }
 
     "insert JsonDocument" in assertAllStagesStopped {
-      // #upsert
       val jsonDocumentUpsert: Future[Done] =
         Source
           .single(sampleData)
@@ -90,14 +96,11 @@ class CouchbaseFlowSpec
           .runWith(Sink.ignore)
       jsonDocumentUpsert.futureValue
 
-      // #upsert
-
       val msgFuture = session.collection(scopeName, collectionName).get[JsonObject](sampleData.getId)
       msgFuture.futureValue.getDocument.get("value") shouldEqual sampleData.getDocument
     }
 
     "insert StringDocument" in assertAllStagesStopped {
-      // #upsert
 
       val stringDocumentUpsert: Future[Done] =
         Source
@@ -113,15 +116,12 @@ class CouchbaseFlowSpec
           .runWith(Sink.ignore)
       stringDocumentUpsert.futureValue
 
-      // #upsert
-
       val msgFuture = session.collection(scopeName, collectionName).get[String](sampleData.getId)
       msgFuture.futureValue.getId shouldEqual sampleData.getId
       msgFuture.futureValue.getDocument shouldEqual sampleData.getDocument
     }
 
     "insert BinaryDocument" in assertAllStagesStopped {
-      // #upsert
       val result: Future[Done] =
         Source
           .single(sampleData)
@@ -130,15 +130,12 @@ class CouchbaseFlowSpec
           .runWith(Sink.ignore)
       result.futureValue
 
-      // #upsert
-
       val msgFuture = session.collection(scopeName, collectionName).getBytes(sampleData.getId)
       msgFuture.futureValue.getId shouldEqual sampleData.getId
       msgFuture.futureValue.getDocument shouldEqual sampleData.getDocument.getBytes
     }
 
     "insert multiple RawJsonDocuments" in assertAllStagesStopped {
-      // #upsert
       val bulkUpsertResult: Future[Done] = Source(sampleSequence)
         .map(doc => new CouchbaseDocument(doc.getId, JsonObject.create().put("value", doc.getDocument)))
         .via(
@@ -153,8 +150,6 @@ class CouchbaseFlowSpec
 
       bulkUpsertResult.futureValue
 
-      // #upsert
-
       val resultsAsFuture =
         Source(sampleSequence.map(_.getId))
           .via(CouchbaseFlow.fromId[String](sessionSettings, bucketName, scopeName, collectionName))
@@ -164,7 +159,6 @@ class CouchbaseFlowSpec
     }
 
     "insert multiple JsonDocuments" in assertAllStagesStopped {
-      // #upsert
       val bulkUpsertResult: Future[Done] = Source(sampleSequence)
         .map(doc => new CouchbaseDocument(doc.getId, JsonObject.create().put("value", doc.getDocument)))
         .via(
@@ -174,9 +168,12 @@ class CouchbaseFlowSpec
 
       bulkUpsertResult.futureValue
 
-      // #upsert
-
       // #fromId
+      import akka.stream.alpakka.couchbase.scaladsl.CouchbaseFlow
+      import akka.stream.scaladsl.Sink
+      import akka.stream.scaladsl.Source
+      import com.couchbase.client.java.json.JsonObject
+
       val ids = immutable.Seq("First", "Second", "Third", "Fourth")
 
       val futureResult =
@@ -275,6 +272,10 @@ class CouchbaseFlowSpec
       upsertFuture.futureValue
 
       // #delete
+      import akka.Done
+      import akka.stream.alpakka.couchbase.scaladsl.CouchbaseFlow
+      import akka.stream.scaladsl.{Sink, Source}
+
       val deleteFuture: Future[Done] =
         Source
           .single(sampleData.getId)
@@ -391,6 +392,14 @@ class CouchbaseFlowSpec
       val obj = new CouchbaseDocument("Second", "SecondReplace")
 
       // #replace
+      import akka.Done
+      import akka.stream.alpakka.couchbase.CouchbaseDocument
+      import akka.stream.alpakka.couchbase.scaladsl.CouchbaseFlow
+      import akka.stream.scaladsl.{Sink, Source}
+      import com.couchbase.client.java.json.JsonObject
+
+      import scala.concurrent.Future
+
       val replaceFuture: Future[Done] =
         Source
           .single(obj)
@@ -479,7 +488,12 @@ class CouchbaseFlowSpec
     "Couchbase upsert with result" should {
       "write documents" in assertAllStagesStopped {
         // #upsertWithResult
-        import akka.stream.alpakka.couchbase.{CouchbaseWriteFailure, CouchbaseWriteResult}
+        import akka.stream.alpakka.couchbase.scaladsl.CouchbaseFlow
+        import akka.stream.alpakka.couchbase.{CouchbaseDocument, CouchbaseWriteFailure, CouchbaseWriteResult}
+        import akka.stream.scaladsl.{Sink, Source}
+
+        import scala.collection.immutable
+        import scala.concurrent.Future
 
         val result: Future[immutable.Seq[CouchbaseWriteResult]] =
           Source(sampleSequence)
@@ -557,6 +571,12 @@ class CouchbaseFlowSpec
             .runWith(Sink.head)
 
         // #deleteWithResult
+        import akka.stream.alpakka.couchbase.CouchbaseDeleteResult
+        import akka.stream.alpakka.couchbase.scaladsl.CouchbaseFlow
+        import akka.stream.scaladsl.{Sink, Source}
+        import com.couchbase.client.core.msg.kv.DurabilityLevel
+        import com.couchbase.client.java.kv.RemoveOptions
+
         val deleteResult: Future[CouchbaseDeleteResult] =
           Source
             .single("non-existent")
@@ -588,6 +608,8 @@ class CouchbaseFlowSpec
 
       // #replaceWithResult
       import akka.stream.alpakka.couchbase.CouchbaseWriteFailure
+      import akka.stream.alpakka.couchbase.scaladsl.CouchbaseFlow
+      import akka.stream.scaladsl.{Sink, Source}
 
       val result =
         Source(sampleSequence)

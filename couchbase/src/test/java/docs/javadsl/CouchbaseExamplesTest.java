@@ -7,11 +7,7 @@ package docs.javadsl;
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.stream.Materializer;
-// #deleteWithResult
 import akka.stream.alpakka.couchbase.*;
-// #deleteWithResult
-// #upsertWithResult
-// #upsertWithResult
 import akka.stream.alpakka.couchbase.javadsl.CouchbaseFlow;
 import akka.stream.alpakka.couchbase.javadsl.CouchbaseSource;
 import akka.stream.alpakka.couchbase.testing.CouchbaseSupportClass;
@@ -32,14 +28,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
-// #registry
-// #session
 import akka.stream.alpakka.couchbase.javadsl.CouchbaseSession;
-import scala.reflect.ClassTag;
-// #session
-// #registry
-// #sessionFromBucket
-// #sessionFromBucket
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -47,6 +36,89 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+
+// #statement
+import akka.stream.alpakka.couchbase.javadsl.CouchbaseSource;
+import com.couchbase.client.java.json.JsonObject;
+
+// #statement
+
+// #fromId
+import akka.stream.alpakka.couchbase.CouchbaseDocument;
+import akka.stream.alpakka.couchbase.javadsl.CouchbaseFlow;
+import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
+
+// #fromId
+
+// #upsert
+import akka.stream.alpakka.couchbase.CouchbaseWriteResult;
+import akka.stream.alpakka.couchbase.javadsl.CouchbaseFlow;
+import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
+
+// #upsert
+
+// #upsertWithResult
+import akka.stream.alpakka.couchbase.CouchbaseWriteFailure;
+import akka.stream.alpakka.couchbase.CouchbaseWriteResult;
+import akka.stream.alpakka.couchbase.javadsl.CouchbaseFlow;
+import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
+
+// #upsertWithResult
+
+// #replace
+import akka.stream.alpakka.couchbase.CouchbaseWriteResult;
+import akka.stream.alpakka.couchbase.javadsl.CouchbaseFlow;
+import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
+
+// #replace
+// #replaceWithResult
+import akka.stream.alpakka.couchbase.CouchbaseWriteFailure;
+import akka.stream.alpakka.couchbase.CouchbaseWriteResult;
+import akka.stream.alpakka.couchbase.javadsl.CouchbaseFlow;
+import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
+
+// #replaceWithResult
+
+// #delete
+import akka.stream.alpakka.couchbase.javadsl.CouchbaseFlow;
+import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
+
+// #delete
+// #deleteWithResult
+import akka.stream.alpakka.couchbase.CouchbaseDeleteResult;
+import akka.stream.alpakka.couchbase.javadsl.CouchbaseFlow;
+import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
+
+// #deleteWithResult
+
+// #registry
+import akka.stream.alpakka.couchbase.CouchbaseSessionRegistry;
+import akka.stream.alpakka.couchbase.CouchbaseSessionSettings;
+import akka.stream.alpakka.couchbase.javadsl.CouchbaseSession;
+import com.couchbase.client.java.env.ClusterEnvironment;
+
+// #registry
+
+// #session
+import akka.stream.alpakka.couchbase.CouchbaseDocument;
+import akka.stream.alpakka.couchbase.CouchbaseSessionSettings;
+import akka.stream.alpakka.couchbase.javadsl.CouchbaseSession;
+
+// #session
+
+// #fromCluster
+import akka.stream.alpakka.couchbase.CouchbaseDocument;
+import akka.stream.alpakka.couchbase.javadsl.CouchbaseSession;
+import com.couchbase.client.java.Cluster;
+
+// #fromCluster
 
 public class CouchbaseExamplesTest {
 
@@ -128,7 +200,6 @@ public class CouchbaseExamplesTest {
   @Test
   public void sessionFromBucket() {
     // #fromCluster
-
     Cluster cluster = Cluster.connect("localhost", "Administrator", "password");
     CouchbaseSession.create(cluster.async(), bucketName).thenAccept(session -> {
       actorSystem.registerOnTermination(
@@ -205,15 +276,13 @@ public class CouchbaseExamplesTest {
     CouchbaseDocument<String> obj = new CouchbaseDocument<>("First", "First");
 
     // #upsert
-    CompletionStage<CouchbaseWriteResult> jsonDocumentUpsert =
+    CompletionStage<Done> jsonDocumentUpsert =
         Source.single(obj)
-            .via(CouchbaseFlow.upsertWithResult(sessionSettings, bucketName, support.scopeName(), support.collectionName()))
+            .via(CouchbaseFlow.upsert(sessionSettings, bucketName, support.scopeName(), support.collectionName()))
             .runWith(Sink.head(), actorSystem);
     // #upsert
 
-    CouchbaseWriteResult result = jsonDocumentUpsert.toCompletableFuture().get(3, TimeUnit.SECONDS);
-
-    assertTrue(result.isSuccess());
+    jsonDocumentUpsert.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
 
   @Test
@@ -331,8 +400,8 @@ public class CouchbaseExamplesTest {
         Source.single("non-existent")
             .via(CouchbaseFlow.deleteWithResult(sessionSettings, bucketName, support.scopeName(), support.collectionName()))
             .runWith(Sink.head(), actorSystem);
-    // #deleteWithResult
     CouchbaseDeleteResult deleteResult = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    // #deleteWithResult
     assertTrue(deleteResult.isFailure());
   }
 }

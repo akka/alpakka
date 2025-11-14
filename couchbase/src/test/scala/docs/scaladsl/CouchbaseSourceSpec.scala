@@ -18,6 +18,14 @@ import org.scalatest.wordspec.AnyWordSpec
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
+// #statement
+import akka.stream.alpakka.couchbase.scaladsl.CouchbaseSource
+import akka.stream.scaladsl.Sink
+import com.couchbase.client.java.json.JsonValue
+
+import scala.concurrent.Future
+// #statement
+
 class CouchbaseSourceSpec
     extends AnyWordSpec
     with BeforeAndAfterAll
