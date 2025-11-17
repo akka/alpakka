@@ -7,7 +7,7 @@ package docs.scaladsl
 import akka.Done
 import akka.stream.alpakka.couchbase.scaladsl.CouchbaseFlow
 import akka.stream.alpakka.couchbase.testing.CouchbaseSupport
-import akka.stream.alpakka.couchbase.{CouchbaseDeleteFailure, CouchbaseDeleteResult, CouchbaseDocument}
+import akka.stream.alpakka.couchbase.{CouchbaseDeleteFailure, CouchbaseDocument}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit._
@@ -170,8 +170,7 @@ class CouchbaseFlowSpec
 
       // #fromId
       import akka.stream.alpakka.couchbase.scaladsl.CouchbaseFlow
-      import akka.stream.scaladsl.Sink
-      import akka.stream.scaladsl.Source
+      import akka.stream.scaladsl.{Sink, Source}
       import com.couchbase.client.java.json.JsonObject
 
       val ids = immutable.Seq("First", "Second", "Third", "Fourth")

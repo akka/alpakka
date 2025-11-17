@@ -4,18 +4,14 @@
 
 package docs.scaladsl
 
-import akka.stream.alpakka.couchbase.scaladsl.CouchbaseSource
 import akka.stream.alpakka.couchbase.testing.CouchbaseSupport
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
-import akka.stream.scaladsl.Sink
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import com.couchbase.client.java.json.JsonValue
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.concurrent.Future
 import scala.concurrent.duration._
 
 // #statement

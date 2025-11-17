@@ -4,12 +4,11 @@
 
 package docs.scaladsl
 
-import akka.stream.alpakka.couchbase.scaladsl.CouchbaseSession
 import akka.stream.alpakka.couchbase.testing.CouchbaseSupport
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import com.couchbase.client.core.error.DocumentNotFoundException
+import com.couchbase.client.java.ClusterOptions
 import com.couchbase.client.java.env.ClusterEnvironment
-import com.couchbase.client.java.{Cluster, ClusterOptions}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
