@@ -1,11 +1,5 @@
 # Couchbase
 
-@@@ warning { title="End of life" }
-
-The Couchbase connector has not been updated for too long and is now considered End of Life. It will be removed with the next release of Alpakka.
-
-@@@
-
 @@@ note { title="Couchbase"}
 
 Couchbase is an open-source, distributed (shared-nothing architecture) multi-model NoSQL document-oriented database software package that is optimized for interactive applications. These applications may serve many concurrent users by creating, storing, retrieving, aggregating, manipulating and presenting data. In support of these kinds of application needs, Couchbase Server is designed to provide easy-to-scale key-value or JSON document access with low latency and high sustained throughput. It is designed to be clustered from a single machine to very large-scale deployments spanning many machines. 
@@ -18,7 +12,8 @@ Couchbase provides client protocol compatibility with memcached, but adds disk p
 
 Alpakka Couchbase allows you to read and write to Couchbase. You can query a bucket from CouchbaseSource using N1QL queries or reading by document ID. Couchbase connector uses @extref[Couchbase Java SDK](couchbase:start-using-sdk.html) version @var[couchbase.version] behind the scenes.
 
-The Couchbase connector supports all document formats which are supported by the SDK. All those formats use the @java[`Document<T>`]@scala[`Document[T]`] interface and this is the level of abstraction that this connector is using.
+The Couchbase connector supports all document formats which are supported by the SDK. 
+All those formats use the `CouchbaseDocument[T]` interface and this is the level of abstraction that this connector is using.
 
 
 @@project-info{ projectId="couchbase" }
@@ -51,7 +46,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 Alpakka Couchbase offers both @ref:[Akka Streams APIs](#reading-from-couchbase-in-akka-streams) and a more @ref:[direct API](#using-couchbasesession-directly) to access Couchbase:
 
-* @apidoc[CouchbaseSession] offers a direct API for one-off operations
+* @apidoc[CouchbaseSession] offers a direct API for one-off operations via @apidoc[CouchbaseCollectionSession]s
 * @apidoc[CouchbaseSessionRegistry$] is an Akka extension to keep track and share `CouchbaseSession`s within an `ActorSystem`
 * @apidoc[CouchbaseSource$], @apidoc[CouchbaseFlow$], and @apidoc[CouchbaseSink$] offer factory methods to create Akka Stream operators
 
@@ -85,9 +80,9 @@ Java
 
 # Reading from Couchbase in Akka Streams
 
-## Using statements
+## Using SQL++ queries
 
-To query Couchbase using the statement DSL use `CouchbaseSource.fromStatement`. 
+To query Couchbase bucket using the @extref[SQL++ queries](couchbase:howtos/sqlpp-queries-with-sdk.html) use `CouchbaseSource.fromQuery`. 
 
 Scala
 : @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseSourceSpec.scala) { #statement }
@@ -96,20 +91,9 @@ Java
 : @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #statement }
 
 
-## Using N1QL queries
-
-To query Couchbase using the @extref["N1QL" queries](couchbase:n1ql-query.html) use `CouchbaseSource.fromN1qlQuery`. 
-
-Scala
-: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseSourceSpec.scala) { #n1ql }
-
-Java
-: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #n1ql }
-
-
 ## Get by ID
 
-`CouchbaseFlow.fromId` methods allow to read documents specified by the document ID in the Akka Stream.
+`CouchbaseFlow.fromId` and `CouchbaseFlow.bytesFromId` methods allow to read documents specified by the document ID in the Akka Stream.
 
 Scala
 : @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #fromId }
@@ -120,29 +104,40 @@ Java
 
 # Writing to Couchbase in Akka Streams
 
-For each mutation operation we need to create @apidoc[CouchbaseWriteSettings] instance which consists of the following parameters
+## Access Parallelism
+Parallelism in accessing Couchbase can be configureed using @apidoc[CouchbaseSessionSettings$], and by default is set to 1.
 
-- Parallelism in access to Couchbase (default 1)
+@@@ note
+
+The default durability and parallelism values are not recommended for production use.
+
+@@@
+
+## Operation Options
+All mutation operations provided include overloaded methods that accept corresponding operation options (`InsertOptions`, `UpsertOptions`, etc...) as a parameter. 
+These options include:
+
 - Couchbase Replication Factor (default `ReplicateTo.NONE`) 
 - Couchbase Persistence Level for Write Operation (default `PersistTo.NONE`)
-- 2 seconds operation timeout 
+- Optional mutation expiration value
+- Optional transcoder for serializing document values persisted on the cluster
 
-These default values are not recommended for production use, as they do not persist to disk for any node. 
+Read more about durability settings in the @extref[Couchbase documentation](couchbase:data-durability-acid-transactions.html#durability). 
 
-Scala
-: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #write-settings }
+All mutation operations are designed to choose transcoders for stored documents based on the `T` type parameter of `CouchbaseDocument[T]` interface:
 
-Java
-: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #write-settings }
+- a `RawBinaryTranscoder` will be selected for `Array[Byte]` documents
+- a `RawStringTranscoder` will be selected for `String` documents
+- a default session transcoder (usually `JsonTranscoder`) will be chosen otherwise
 
-
-Read more about durability settings in the @extref[Couchbase documentation](couchbase:durability.html#configuring-durability). 
+This behavior can be overridden by providing a specific transcoder in mutation operation options or in session environment settings.
 
 ## Upsert
 
-The `CouchbaseFlow` and `CouchbaseSink` offer factories for upserting documents (insert or update) in Couchbase. `upsert` is used for the most commonly used `JsonDocument`, and `upsertDoc` has as type parameter to support any variants of @scala[`Document[T]`]@java[`Document<T>`] which may be `RawJsonDocument`, `StringDocument` or `BinaryDocument`.
+The `CouchbaseFlow` and `CouchbaseSink` offer factories for upserting documents (insert or update) in Couchbase. 
 
-The `upsert` and `upsertDoc` operators fail the stream on any error when writing to Couchbase. To handle failures in-stream use `upsertDocWithResult` shown below. 
+The `upsert` operators fail the stream on any error when writing to Couchbase. 
+To handle failures in-stream use `upsertWithResult` shown below. 
 
 Scala
 : @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #upsert }
@@ -157,19 +152,19 @@ For single document modifications you may consider using the `CouchbaseSession` 
 
 @@@
 
-Couchbase writes may fail temporarily for a particular node. If you want to handle such failures without restarting the whole stream, the `upsertDocWithResult` operator captures failures from Couchbase and emits `CouchbaseWriteResult` sub-classes `CouchbaseWriteSuccess` and `CouchbaseWriteFailure` downstream.
+Couchbase writes may fail temporarily for a particular node. If you want to handle such failures without restarting the whole stream, the `upsertWithResult` operator captures failures from Couchbase and emits `CouchbaseWriteResult` sub-classes `CouchbaseWriteSuccess` and `CouchbaseWriteFailure` downstream.
 
 Scala
-: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #upsertDocWithResult }
+: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #upsertWithResult }
 
 Java
-: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #upsertDocWithResult }
+: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #upsertWithResult }
 
 ## Replace
 
-The `CouchbaseFlow` and `CouchbaseSink` offer factories for replacing documents in Couchbase. `replace` is used for the most commonly used `JsonDocument`, and `replaceDoc` has as type parameter to support any variants of @scala[`Document[T]`]@java[`Document<T>`] which may be `RawJsonDocument`, `StringDocument` or `BinaryDocument`.
+The `CouchbaseFlow` and `CouchbaseSink` offer factories for replacing documents in Couchbase. 
 
-The `replace` and `replaceDoc` operators fail the stream on any error when writing to Couchbase. To handle failures in-stream use `replaceDocWithResult` shown below. 
+The `replace` operators fail the stream on any error when writing to Couchbase. To handle failures in-stream use `replaceWithResult` shown below. 
 
 A `replace` action will fail if the original Document can't be found in Couchbase with a `DocumentDoesNotExistException`.
 
@@ -186,13 +181,13 @@ For single document modifications you may consider using the `CouchbaseSession` 
 
 @@@
 
-Couchbase writes may fail temporarily for a particular node. If you want to handle such failures without restarting the whole stream, the `replaceDocWithResult` operator captures failures from Couchbase and emits `CouchbaseWriteResult` sub-classes `CouchbaseWriteSuccess` and `CouchbaseWriteFailure` downstream.
+Couchbase writes may fail temporarily for a particular node. If you want to handle such failures without restarting the whole stream, the `replaceWithResult` operator captures failures from Couchbase and emits `CouchbaseWriteResult` sub-classes `CouchbaseWriteSuccess` and `CouchbaseWriteFailure` downstream.
 
 Scala
-: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #upsertDocWithResult }
+: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #replaceWithResult }
 
 Java
-: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #upsertDocWithResult }
+: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #replaceWithResult }
 
 ## Delete
 
@@ -238,14 +233,14 @@ Java
 : @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #session }
 
 
-## Manage bucket life-cycle
+## Manage Cluster life-cycle
 
-For full control a `CouchbaseSession` may be created from a Couchbase `Bucket`. See @extref:[Scalability and Concurrency](couchbase:managing-connections.html#concurrency) in the Couchbase documentation for details.
+For full control a `CouchbaseSession` may be created from a Couchbase `Cluster`. See @extref:[Connection Lifecycle](couchbase:managing-connections.html#connection-lifecycle) in the Couchbase documentation for details.
 
 Scala
-: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseSessionExamplesSpec.scala) { #fromBucket }
+: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseSessionExamplesSpec.scala) { #fromCluster }
 
 Java
-: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #sessionFromBucket }
+: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #fromCluster }
 
 To learn about the full range of operations on `CouchbaseSession`, read the @apidoc[CouchbaseSession] API documentation.
