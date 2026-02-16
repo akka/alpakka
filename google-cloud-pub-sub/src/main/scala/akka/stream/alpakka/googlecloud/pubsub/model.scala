@@ -64,7 +64,7 @@ object PubSubConfig {
           .apply()
           .copy(
             projectId = projectId,
-            credentials = ServiceAccountCredentials(projectId,
+            credentials = ServiceAccountCredentials(Some(projectId),
                                                     clientEmail,
                                                     privateKey,
                                                     Seq("https://www.googleapis.com/auth/pubsub"))
@@ -93,7 +93,7 @@ object PubSubConfig {
           .apply()
           .copy(
             projectId = projectId,
-            credentials = ServiceAccountCredentials(projectId,
+            credentials = ServiceAccountCredentials(Some(projectId),
                                                     clientEmail,
                                                     privateKey,
                                                     Seq("https://www.googleapis.com/auth/pubsub"))

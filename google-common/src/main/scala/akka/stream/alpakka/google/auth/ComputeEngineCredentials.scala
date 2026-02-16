@@ -25,7 +25,7 @@ private[auth] object ComputeEngineCredentials {
 
 @InternalApi
 private final class ComputeEngineCredentials(projectId: String)(implicit mat: Materializer)
-    extends OAuth2Credentials(projectId) {
+    extends OAuth2Credentials(Some(projectId)) {
   override protected def getAccessToken()(implicit mat: Materializer,
                                           @unused settings: RequestSettings,
                                           clock: Clock): Future[AccessToken] =
