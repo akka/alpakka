@@ -62,7 +62,7 @@ private[fcm] object FcmFlows {
       else
         Credentials.cache((conf.projectId, conf.clientEmail, conf.privateKey, scopes, mat.system.name)) {
           ServiceAccountCredentials(
-            conf.projectId,
+            Some(conf.projectId),
             conf.clientEmail,
             conf.privateKey,
             scopes

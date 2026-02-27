@@ -13,9 +13,9 @@ import com.google.auth.{Credentials => GoogleCredentials}
 import com.typesafe.config.Config
 
 import java.util.concurrent.Executor
-
 import scala.collection.immutable.ListMap
 import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.jdk.CollectionConverters._
 import scala.jdk.DurationConverters._
 import scala.util.control.NonFatal
 
@@ -29,7 +29,7 @@ object Credentials {
     case "application-default" =>
       val log = Logging(system.classicSystem, classOf[Credentials])
       try {
-        val creds = parseServiceAccount(c)
+        val creds = parseApplicationDefault(c)
         log.info("Using service account credentials")
         creds
       } catch {
@@ -40,18 +40,10 @@ object Credentials {
             creds
           } catch {
             case NonFatal(ex2) =>
-              try {
-                val creds = parseUserAccess(c)
-                log.info("Using user access credentials")
-                creds
-              } catch {
-                case NonFatal(ex3) =>
-                  log.warning("Unable to find Application Default Credentials for Google APIs")
-                  log.warning("Service account: {}", ex1.getMessage)
-                  log.warning("Compute Engine: {}", ex2.getMessage)
-                  log.warning("User access: {}", ex3.getMessage)
-                  parseNone(c) // TODO Once credentials are guaranteed to be managed centrally we can throw an error instead
-              }
+              log.warning("Unable to find Application Default Credentials for Google APIs")
+              log.warning("Application default: {}", ex1.getMessage)
+              log.warning("Compute Engine: {}", ex2.getMessage)
+              parseNone(c) // TODO Once credentials are guaranteed to be managed centrally we can throw an error instead
           }
       }
     case "service-account" => parseServiceAccount(c)
@@ -68,6 +60,11 @@ object Credentials {
 
   private def parseUserAccess(c: Config)(implicit system: ClassicActorSystemProvider) =
     UserAccessCredentials(c.getConfig("user-access"))
+
+  private def parseApplicationDefault(c: Config)(implicit system: ClassicActorSystemProvider) = {
+    val scopes = c.getStringList("scopes").asScala.toSeq
+    ApplicationDefaultCredentials(c.getConfig("application-default"), scopes)
+  }
 
   private def parseNone(c: Config) = NoCredentials(c.getConfig("none"))
 
@@ -88,7 +85,7 @@ object Credentials {
 @DoNotInherit
 abstract class Credentials private[auth] () {
 
-  private[google] def projectId: String
+  private[google] def projectId: Option[String]
 
   private[google] def get()(implicit ec: ExecutionContext, settings: RequestSettings): Future[HttpCredentials]
 
@@ -106,4 +103,11 @@ abstract class Credentials private[auth] () {
    */
   final def asGoogle(exec: Executor, settings: RequestSettings): GoogleCredentials =
     asGoogle(ExecutionContext.fromExecutor(exec): ExecutionContext, settings)
+
+  /**
+   * Release any resources that this credentials provider is using.
+   *
+   * This is intended to be called in cases where credentials are instantiated dynamically.
+   */
+  def close(): Unit = {}
 }

@@ -17,12 +17,12 @@ import scala.concurrent.{ExecutionContext, Future}
 @InternalApi
 private[alpakka] object NoCredentials {
 
-  def apply(c: Config): NoCredentials = NoCredentials(c.getString("project-id"), c.getString("token"))
+  def apply(c: Config): NoCredentials = NoCredentials(Some(c.getString("project-id")), c.getString("token"))
 
 }
 
 @InternalApi
-private[auth] final case class NoCredentials private (projectId: String, token: String) extends Credentials {
+private[auth] final case class NoCredentials private (projectId: Option[String], token: String) extends Credentials {
 
   private val futureToken = Future.successful(OAuth2BearerToken(token))
 

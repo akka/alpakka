@@ -26,6 +26,18 @@ import scala.concurrent.duration._
 object GoogleSettings {
   val ConfigPath = "alpakka.google"
 
+  private def projectId(c: Config, fromCredentials: Option[String]): String = {
+    val fromConfig = Some(c.getString("project-id")).filter(_.nonEmpty)
+    fromConfig.orElse(fromCredentials).getOrElse {
+      val defaultProjectId = c.getString("default-project-id")
+      require(
+        defaultProjectId.nonEmpty,
+        "No project id configured explicitly, detected from credentials provider, or detected from environment. Either set alpakka.google.project-id to explicitly set it, or set the GCP_PROJECT or GOOGLE_CLOUD_PROJECT environment variables."
+      )
+      defaultProjectId
+    }
+  }
+
   /**
    * Reads from the given config.
    */
@@ -34,7 +46,7 @@ object GoogleSettings {
     val credentials = Credentials(c.getConfig("credentials"))
     val requestSettings = RequestSettings(c)
 
-    GoogleSettings(credentials.projectId, credentials, requestSettings)
+    GoogleSettings(projectId(c, credentials.projectId), credentials, requestSettings)
   }
 
   /**

@@ -317,7 +317,7 @@ import scala.concurrent.Future
         )
       ) {
         ServiceAccountCredentials(
-          legacySettings.projectId,
+          Some(legacySettings.projectId),
           legacySettings.clientEmail,
           legacySettings.privateKey,
           legacyScopes

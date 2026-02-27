@@ -41,7 +41,7 @@ class OAuth2CredentialsSpec
     @volatile var accessTokenPromise: Promise[AccessToken] = Promise.failed(new RuntimeException)
   }
 
-  val testableCredentials = new OAuth2Credentials("dummyProject") {
+  val testableCredentials = new OAuth2Credentials(Some("dummyProject")) {
     override protected def getAccessToken()(implicit @unused mat: Materializer,
                                             @unused settings: RequestSettings,
                                             @unused clock: Clock): Future[AccessToken] =
