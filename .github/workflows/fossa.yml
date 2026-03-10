@@ -35,6 +35,9 @@ jobs:
         with:
           jvm: temurin:1.17
 
+      - name: Run akka/github-actions-scripts
+        uses: akka/github-actions-scripts/setup_global_resolver@main
+
       - name: FOSSA policy check
         run: |-
           curl -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/fossas/fossa-cli/master/install-latest.sh | bash

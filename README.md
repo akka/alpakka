@@ -47,6 +47,13 @@ Alpakka components are not always binary compatible between releases. API change
 
 Our goal is to improve the stability and test coverage for Alpakka APIs over time.
 
+## Build Token
+
+To build locally, you need to fetch a token at https://account.akka.io/token that you have to place into `~/.sbt/1.0/akka-commercial.sbt` file like this:
+```
+ThisBuild / resolvers += "lightbend-akka".at("your token resolver here")
+```
+
 License
 -------
 Alpakka is licensed under the [Business Source License (BSL) 1.1](https://github.com/akka/alpakka/blob/main/LICENSE), please see the [Akka License FAQ](https://www.lightbend.com/akka/license-faq).
