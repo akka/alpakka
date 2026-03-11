@@ -44,6 +44,9 @@ jobs:
         with:
           jvm: temurin:1.25
 
+      - name: Run akka/github-actions-scripts
+        uses: akka/github-actions-scripts/setup_global_resolver@main
+
       - name: "Code style, compile tests, MiMa. Run locally with: sbt \"verifyCodeStyle; +Test/compile; mimaReportBinaryIssues\""
         run: sbt "verifyCodeStyle; +Test/compile; mimaReportBinaryIssues"
 
@@ -132,6 +135,10 @@ jobs:
         uses: coursier/setup-action@7bde40eee928896f074dbb76d22dd772eed5c65f
         with:
           jvm: temurin:1.11
+
+      - name: Run akka/github-actions-scripts
+        if: env.execute_build == 'true'
+        uses: akka/github-actions-scripts/setup_global_resolver@main
 
       - name: ${{ matrix.connector }}
         if: env.execute_build == 'true'

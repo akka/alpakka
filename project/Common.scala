@@ -129,7 +129,6 @@ object Common extends AutoPlugin {
             Seq("-Werror")
           case _ => Seq.empty[String]
         }),
-      resolvers += "Akka library repository".at("https://repo.akka.io/maven/github_actions"),
       dynverSonatypeSnapshots := true,
       autoAPIMappings := true,
       apiURL := Some(url(s"https://doc.akka.io/api/alpakka/${version.value}/akka/stream/alpakka/index.html")),
