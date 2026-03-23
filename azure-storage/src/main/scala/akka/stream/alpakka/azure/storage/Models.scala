@@ -192,3 +192,51 @@ final class ObjectMetadata private (val metadata: Seq[HttpHeader]) {
 object ObjectMetadata {
   def apply(metadata: Seq[HttpHeader]) = new ObjectMetadata(metadata)
 }
+
+/**
+ * Represents a blob returned by the List Blobs operation.
+ *
+ * @param name blob name
+ * @param eTag entity tag
+ * @param contentLength size in bytes
+ * @param contentType MIME type
+ * @param lastModified last modified date as an RFC 1123 string
+ * @param blobType BlockBlob, PageBlob, or AppendBlob
+ */
+final case class BlobItem(
+    name: String,
+    eTag: Option[String],
+    contentLength: Long,
+    contentType: Option[String],
+    lastModified: Option[String],
+    blobType: String
+) {
+  import scala.jdk.OptionConverters._
+
+  /** Java API */
+  def getETag: Optional[String] = eTag.toJava
+
+  /** Java API */
+  def getContentType: Optional[String] = contentType.toJava
+
+  /** Java API */
+  def getLastModified: Optional[String] = lastModified.toJava
+}
+
+/** An entry returned by the List Files and Directories operation on Azure File Share. */
+sealed trait FileShareEntry
+
+/**
+ * Represents a file entry returned by the List Files and Directories operation.
+ *
+ * @param name file name
+ * @param contentLength size in bytes
+ */
+final case class ShareFileItem(name: String, contentLength: Long) extends FileShareEntry
+
+/**
+ * Represents a directory entry returned by the List Files and Directories operation.
+ *
+ * @param name directory name
+ */
+final case class ShareDirectoryItem(name: String) extends FileShareEntry

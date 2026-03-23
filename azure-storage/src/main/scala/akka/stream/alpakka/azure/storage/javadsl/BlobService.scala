@@ -16,6 +16,7 @@ import akka.stream.alpakka.azure.storage.requests.{
   DeleteFile,
   GetBlob,
   GetProperties,
+  ListBlobs,
   PutAppendBlock,
   PutBlockBlob,
   PutPageBlock
@@ -123,6 +124,17 @@ object BlobService {
       .putBlob(objectPath, requestBuilder, None)
       .map(opt => Optional.ofNullable(opt.orNull))
       .asJava
+
+  /**
+   * Lists blobs in a container.
+   *
+   * @param objectPath container name, e.g. `my-container`
+   * @param requestBuilder builder to configure the list request (prefix, delimiter, maxResults)
+   * @return A [[akka.stream.javadsl.Source Source]] of [[akka.stream.alpakka.azure.storage.BlobItem]] elements,
+   *         automatically paginated
+   */
+  def listBlobs(objectPath: String, requestBuilder: ListBlobs): Source[BlobItem, NotUsed] =
+    AzureStorageStream.listBlobs(objectPath, requestBuilder).asJava
 
   /**
    * Create container.
