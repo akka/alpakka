@@ -117,7 +117,7 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
 
   /**
    * The results of a query job.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/getQueryResults BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/jobs/getQueryResults BigQuery reference]]
    *
    * @param jobId job ID of the query job
    * @param startIndex zero-based index of the starting row

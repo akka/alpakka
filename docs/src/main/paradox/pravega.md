@@ -92,7 +92,7 @@ Java
 
 A Pravega Flow or Sink needs a @apidoc[WriterSettings] to operate, it can be built from configuration and programmatically customized:
 
-You may want to use a @extref[routing key](pravega:/pravega-concepts/#ordering-guarantees), you have to provide a @apidoc[key extractor function](WriterSettingsBuilder){ scala="#withKeyExtractor" java="#withKeyExtractor" } for your message type.
+You may want to use a @extref[routing key](pravega:/pravega-concepts/#ordering-guarantees), you have to provide a @apidoc[key extractor function](WriterSettingsBuilder) for your message type.
 
 Scala
 :   @@snip[snip](/pravega/src/test/scala/docs/scaladsl/PravegaSettingsSpec.scala) { #writer-settings }

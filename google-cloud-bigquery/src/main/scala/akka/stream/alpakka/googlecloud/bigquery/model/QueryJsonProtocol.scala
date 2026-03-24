@@ -167,7 +167,7 @@ object QueryRequest {
 /**
  * QueryResponse model
  * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query#response-body BigQuery reference]]
- * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/getQueryResults#response-body BigQuery reference]]
+ * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/jobs/getQueryResults#response-body BigQuery reference]]
  *
  * @param schema the schema of the results
  * @param jobReference reference to the Job that was created to run the query
@@ -281,7 +281,7 @@ object QueryResponse {
   /**
    * Java API: QueryResponse model
    * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query#response-body BigQuery reference]]
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/getQueryResults#response-body BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/jobs/getQueryResults#response-body BigQuery reference]]
    *
    * @param schema the schema of the results
    * @param jobReference reference to the Job that was created to run the query
