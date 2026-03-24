@@ -34,7 +34,7 @@ private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
 
   /**
    * Returns information about a specific job.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/get BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/jobs/get BigQuery reference]]
    *
    * @param jobId job ID of the requested job
    * @param location the geographic location of the job. Required except for US and EU
@@ -51,7 +51,7 @@ private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
 
   /**
    * Requests that a job be cancelled.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/cancel BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/jobs/cancel BigQuery reference]]
    *
    * @param jobId job ID of the job to cancel
    * @param location the geographic location of the job. Required except for US and EU
@@ -146,7 +146,7 @@ private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
    * Starts a new asynchronous upload job.
    * @note WARNING: Pending the resolution of [[https://issuetracker.google.com/176002651 BigQuery issue 176002651]] this method may not work as expected.
    *       As a workaround, you can use the config setting `akka.http.parsing.conflicting-content-type-header-processing-mode = first` with Akka HTTP v10.2.4 or later.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/insert BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/jobs/insert BigQuery reference]]
    * @see [[https://cloud.google.com/bigquery/docs/reference/api-uploads BigQuery reference]]
    *
    * @param job the job to start

@@ -18,7 +18,7 @@ import scala.jdk.CollectionConverters._
 
 /**
  * Table resource model
- * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#resource:-table BigQuery reference]]
+ * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tables#resource:-table BigQuery reference]]
  *
  * @param tableReference reference describing the ID of this table
  * @param labels the labels associated with this table
@@ -66,7 +66,7 @@ object Table {
 
   /**
    * Java API: Table resource model
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#resource:-table BigQueryReference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tables#resource:-table BigQueryReference]]
    *
    * @param tableReference reference describing the ID of this table
    * @param labels the labels associated with this table
@@ -93,7 +93,7 @@ object Table {
 
 /**
  * TableReference model
- * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/TableReference BigQuery reference]]
+ * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/TableReference BigQuery reference]]
  *
  * @param projectId the ID of the project containing this table
  * @param datasetId the ID of the dataset containing this table
@@ -123,7 +123,7 @@ object TableReference {
 
   /**
    * Java API: TableReference model
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/TableReference BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/TableReference BigQuery reference]]
    *
    * @param projectId the ID of the project containing this table
    * @param datasetId the ID of the dataset containing this table
@@ -138,7 +138,7 @@ object TableReference {
 
 /**
  * Schema of a table
- * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#tableschema BigQuery reference]]
+ * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tables#tableschema BigQuery reference]]
  *
  * @param fields describes the fields in a table
  */
@@ -161,7 +161,7 @@ object TableSchema {
 
   /**
    * Java API: Schema of a table
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#tableschema BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tables#tableschema BigQuery reference]]
    *
    * @param fields describes the fields in a table
    * @return a [[TableSchema]]
@@ -170,7 +170,7 @@ object TableSchema {
 
   /**
    * Java API: Schema of a table
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#tableschema BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tables#tableschema BigQuery reference]]
    *
    * @param fields describes the fields in a table
    * @return a [[TableSchema]]
@@ -183,7 +183,7 @@ object TableSchema {
 
 /**
  * A field in TableSchema
- * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#tablefieldschema BigQuery reference]]
+ * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tables#tablefieldschema BigQuery reference]]
  *
  * @param name the field name
  * @param `type` the field data type
@@ -234,7 +234,7 @@ object TableFieldSchema {
 
   /**
    * A field in TableSchema
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#tablefieldschema BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tables#tablefieldschema BigQuery reference]]
    *
    * @param name the field name
    * @param `type` the field data type
@@ -250,7 +250,7 @@ object TableFieldSchema {
 
   /**
    * A field in TableSchema
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#tablefieldschema BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tables#tablefieldschema BigQuery reference]]
    *
    * @param name the field name
    * @param `type` the field data type
@@ -342,7 +342,7 @@ object TableFieldSchemaMode {
 
 /**
  * TableListResponse model
- * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables/list#response-body BigQuery reference]]
+ * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tables/list#response-body BigQuery reference]]
  *
  * @param nextPageToken a token to request the next page of results
  * @param tables tables in the requested dataset
@@ -368,7 +368,7 @@ object TableListResponse {
 
   /**
    * Java API: TableListResponse model
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables/list#response-body BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tables/list#response-body BigQuery reference]]
    *
    * @param nextPageToken a token to request the next page of results
    * @param tables tables in the requested dataset

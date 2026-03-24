@@ -235,7 +235,7 @@ Java
 
 ## Manage Cluster life-cycle
 
-For full control a `CouchbaseSession` may be created from a Couchbase `Cluster`. See @extref:[Connection Lifecycle](couchbase:managing-connections.html#connection-lifecycle) in the Couchbase documentation for details.
+For full control a `CouchbaseSession` may be created from a Couchbase `Cluster`. See @extref:[Connection Lifecycle](couchbase:howtos/managing-connections.html#connection-lifecycle) in the Couchbase documentation for details.
 
 Scala
 : @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseSessionExamplesSpec.scala) { #fromCluster }

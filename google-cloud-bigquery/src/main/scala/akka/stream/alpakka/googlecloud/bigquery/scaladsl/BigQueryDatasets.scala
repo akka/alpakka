@@ -24,7 +24,7 @@ private[scaladsl] trait BigQueryDatasets { this: BigQueryRest =>
 
   /**
    * Lists all datasets in the specified project to which the user has been granted the READER dataset role.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets/list BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/datasets/list BigQuery reference]]
    *
    * @return a [[akka.stream.scaladsl.Source]] that emits each [[akka.stream.alpakka.googlecloud.bigquery.model.Dataset]]
    */
@@ -32,7 +32,7 @@ private[scaladsl] trait BigQueryDatasets { this: BigQueryRest =>
 
   /**
    * Lists all datasets in the specified project to which the user has been granted the READER dataset role.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets/list BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/datasets/list BigQuery reference]]
    *
    * @param maxResults the maximum number of results to return in a single response page
    * @param all whether to list all datasets, including hidden ones
@@ -55,7 +55,7 @@ private[scaladsl] trait BigQueryDatasets { this: BigQueryRest =>
 
   /**
    * Returns the specified dataset.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets/get BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/datasets/get BigQuery reference]]
    *
    * @param datasetId dataset ID of the requested dataset
    * @return a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.Dataset]]
@@ -70,7 +70,7 @@ private[scaladsl] trait BigQueryDatasets { this: BigQueryRest =>
 
   /**
    * Creates a new empty dataset.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets/insert BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/datasets/insert BigQuery reference]]
    *
    * @param datasetId dataset ID of the new dataset
    * @return a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.Dataset]]
@@ -83,7 +83,7 @@ private[scaladsl] trait BigQueryDatasets { this: BigQueryRest =>
 
   /**
    * Creates a new empty dataset.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets/insert BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/datasets/insert BigQuery reference]]
    *
    * @param dataset the [[akka.stream.alpakka.googlecloud.bigquery.model.Dataset]] to create
    * @return a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.Dataset]]

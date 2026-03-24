@@ -23,7 +23,7 @@ import scala.util.control.NonFatal
 
 /**
  * Data Access Object for Cassandra. The statements are expressed in
- * <a href="https://cassandra.apache.org/doc/stable/cassandra/cql/">Apache Cassandra Query Language</a>
+ * <a href="https://cassandra.apache.org/doc/latest/cql/">Apache Cassandra Query Language</a>
  * (CQL) syntax.
  *
  * See even <a href="https://docs.datastax.com/en/dse/6.7/cql/">CQL for Datastax Enterprise</a>.

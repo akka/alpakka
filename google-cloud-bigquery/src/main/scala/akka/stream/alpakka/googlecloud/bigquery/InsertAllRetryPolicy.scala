@@ -39,7 +39,7 @@ object InsertAllRetryPolicy {
 
   /**
    * Retry failed insert requests with best-effort deduplication
-   * @see [[https://cloud.google.com/bigquery/streaming-data-into-bigquery#dataconsistency BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/streaming-data-into-bigquery#dataconsistency BigQuery reference]]
    */
   case object WithDeduplication extends InsertAllRetryPolicy {
     override def retry: Boolean = true
@@ -48,7 +48,7 @@ object InsertAllRetryPolicy {
 
   /**
    * Java API: Retry failed insert requests with best-effort deduplication
-   * @see [[https://cloud.google.com/bigquery/streaming-data-into-bigquery#dataconsistency BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/streaming-data-into-bigquery#dataconsistency BigQuery reference]]
    */
   def withDeduplication = WithDeduplication
 }

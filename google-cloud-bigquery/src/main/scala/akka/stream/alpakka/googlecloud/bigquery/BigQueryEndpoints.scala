@@ -8,7 +8,7 @@ import akka.http.scaladsl.model.Uri
 
 /**
  * Endpoints for the BigQuery REST API
- * @see [[https://cloud.google.com/bigquery/docs/reference/rest BigQuery reference]]
+ * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest BigQuery reference]]
  */
 object BigQueryEndpoints extends BigQueryEndpoints(Uri("https://bigquery.googleapis.com/bigquery/v2")) {
   private final implicit class UriWithSlash(val uri: Uri) extends AnyVal {

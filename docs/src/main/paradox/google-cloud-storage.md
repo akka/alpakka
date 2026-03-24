@@ -2,7 +2,7 @@
 
 Google Cloud Storage allows world-wide storage and retrieval of any amount of data at any time.
 
-Further information at the official [Google Cloud Storage documentation website](https://cloud.google.com/storage/docs/).
+Further information at the official [Google Cloud Storage documentation website](https://docs.cloud.google.com/storage/docs/).
 This connector communicates to Cloud Storage via HTTP requests.
 
 @@project-info{ projectId="google-cloud-storage" }
@@ -123,7 +123,7 @@ In case of the Future API user can specify attributes to the request in the meth
 For more information about attributes see: @scaladoc[GCStorageAttributes](akka.stream.alpakka.googlecloud.storage.GCStorageAttributes$) and @scaladoc[Attributes](akka.stream.Attributes)
 
 ### Make bucket
-In order to create a bucket in Google Cloud Storage you need to specify it's unique name. This value has to be set accordingly to the [requirements](https://cloud.google.com/storage/docs/naming-buckets).
+In order to create a bucket in Google Cloud Storage you need to specify it's unique name. This value has to be set accordingly to the [requirements](https://docs.cloud.google.com/storage/docs/naming-buckets).
 The bucket will be created in the given location.
 
 Scala

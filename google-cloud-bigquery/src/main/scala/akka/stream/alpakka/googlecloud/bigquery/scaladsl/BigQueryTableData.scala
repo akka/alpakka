@@ -31,7 +31,7 @@ private[scaladsl] trait BigQueryTableData { this: BigQueryRest =>
 
   /**
    * Lists the content of a table in rows.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/list BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/list BigQuery reference]]
    *
    * @param datasetId dataset ID of the table to list
    * @param tableId table ID of the table to list
@@ -60,7 +60,7 @@ private[scaladsl] trait BigQueryTableData { this: BigQueryRest =>
 
   /**
    * Streams data into BigQuery one record at a time without needing to run a load job
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll BigQuery reference]]
    *
    * @param datasetId dataset id of the table to insert into
    * @param tableId table id of the table to insert into
@@ -105,7 +105,7 @@ private[scaladsl] trait BigQueryTableData { this: BigQueryRest =>
 
   /**
    * Streams data into BigQuery one record at a time without needing to run a load job.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll BigQuery reference]]
    *
    * @param datasetId dataset ID of the table to insert into
    * @param tableId table ID of the table to insert into

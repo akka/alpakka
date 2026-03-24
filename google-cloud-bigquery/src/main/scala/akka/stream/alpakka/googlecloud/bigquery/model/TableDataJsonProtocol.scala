@@ -20,7 +20,7 @@ import scala.jdk.OptionConverters._
 
 /**
  * TableDataListResponse model
- * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/list#response-body BigQuery reference]]
+ * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/list#response-body BigQuery reference]]
  *
  * @param totalRows total rows of the entire table
  * @param pageToken a token indicates from where we should start the next read
@@ -59,7 +59,7 @@ object TableDataListResponse {
 
   /**
    * Java API: TableDataListResponse model
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/list#response-body BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/list#response-body BigQuery reference]]
    *
    * @param totalRows total rows of the entire table
    * @param pageToken a token indicates from where we should start the next read
@@ -81,7 +81,7 @@ object TableDataListResponse {
 
 /**
  * TableDataInsertAllRequest model
- * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll#request-body BigQuery reference]]
+ * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll#request-body BigQuery reference]]
  *
  * @param skipInvalidRows insert all valid rows of a request, even if invalid rows exist
  * @param ignoreUnknownValues accept rows that contain values that do not match the schema
@@ -135,7 +135,7 @@ object TableDataInsertAllRequest {
 
   /**
    * Java API: TableDataInsertAllRequest model
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll#request-body BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll#request-body BigQuery reference]]
    *
    * @param skipInvalidRows insert all valid rows of a request, even if invalid rows exist
    * @param ignoreUnknownValues accept rows that contain values that do not match the schema
@@ -166,7 +166,7 @@ object TableDataInsertAllRequest {
 
 /**
  * Row model
- * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll#request-body BigQuery reference]]
+ * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll#request-body BigQuery reference]]
  *
  * @param insertId a unique ID for deduplication
  * @param json the record this row contains
@@ -190,7 +190,7 @@ object Row {
 
   /**
    * Java API: Row model
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll#request-body BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll#request-body BigQuery reference]]
    *
    * @param insertId a unique ID for deduplication
    * @param json the record this row contains
@@ -203,7 +203,7 @@ object Row {
 
 /**
  * TableDataInsertAllResponse model
- * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll#response-body BigQuery reference]]
+ * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll#response-body BigQuery reference]]
  */
 final case class TableDataInsertAllResponse private (insertErrors: Option[Seq[InsertError]]) {
   def getInsertErrors = insertErrors.map(_.asJava).toJava
@@ -219,7 +219,7 @@ object TableDataInsertAllResponse {
 
   /**
    * Java API: TableDataInsertAllResponse model
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll#response-body BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll#response-body BigQuery reference]]
    */
   def create(insertErrors: util.Optional[util.List[InsertError]]) =
     TableDataInsertAllResponse(insertErrors.toScala.map(_.asScala.toList))
@@ -230,7 +230,7 @@ object TableDataInsertAllResponse {
 
 /**
  * InsertError model
- * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll#response-body BigQuery reference]]
+ * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll#response-body BigQuery reference]]
  */
 final case class InsertError private (index: Int, errors: Option[Seq[ErrorProto]]) {
   def getIndex = index
@@ -249,7 +249,7 @@ object InsertError {
 
   /**
    * Java API: InsertError model
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll#response-body BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll#response-body BigQuery reference]]
    */
   def create(index: Int, errors: util.Optional[util.List[ErrorProto]]) =
     InsertError(index, errors.toScala.map(_.asScala.toList))

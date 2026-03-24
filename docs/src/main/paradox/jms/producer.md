@@ -106,7 +106,7 @@ Java
 #### Object sinks
 
 Create and configure ActiveMQ connection factory to support serialization.
-See [ActiveMQ Security](https://activemq.apache.org/objectmessage.html) for more information on this.
+See [ActiveMQ Security](https://activemq.apache.org/components/classic/documentation/objectmessage) for more information on this.
 Create a sink, that accepts and forwards @apidoc[.jms.JmsObjectMessage$]s to the JMS provider:
 
 Scala
