@@ -121,10 +121,10 @@ private[alpakka] object ResumableUpload {
       Flow[HttpRequest]
         .map((_, ()))
         .via(
-          GoogleHttp().cachedHostConnectionPoolWithContext(
-            uri.authority.host.address,
-            uri.effectivePort,
-            https = uri.scheme == "https")(um))
+          GoogleHttp().cachedHostConnectionPoolWithContext(uri.authority.host.address,
+                                                           uri.effectivePort,
+                                                           https = uri.scheme == "https")(um)
+        )
         .map(_._1.recoverWith { case DoNotRetry(ex) => Failure(ex) })
     }
 
