@@ -84,7 +84,7 @@ Java
 ]
 @java[
   To enable support for (un)marshalling `User` and `Address` as BigQuery table rows and query results we use Jackson’s @javadoc[@JsonCreator](com.fasterxml.jackson.annotation.JsonCreator) and @javadoc[@JsonProperty](com.fasterxml.jackson.annotation.JsonProperty) annotations.
-  Note that a custom @javadoc[@JsonCreator](com.fasterxml.jackson.annotation.JsonCreator) constructor is necessary due to BigQuery’s unusual encoding of rows as “a series of JSON f,v objects for indicating fields and values” ([reference documentation](https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/getQueryResults#body.GetQueryResultsResponse.FIELDS.rows)).
+  Note that a custom @javadoc[@JsonCreator](com.fasterxml.jackson.annotation.JsonCreator) constructor is necessary due to BigQuery’s unusual encoding of rows as “a series of JSON f,v objects for indicating fields and values” ([reference documentation](https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/jobs/getQueryResults#body.GetQueryResultsResponse.FIELDS.rows)).
   In addition, we also define `NameAddressesPair` to model the result of the query in the @ref[next section](google-cloud-bigquery.md#run-a-query).
 ]
 

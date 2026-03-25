@@ -17,7 +17,7 @@ import scala.jdk.OptionConverters._
 
 /**
  * Job model
- * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job BigQuery reference]]
+ * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/Job BigQuery reference]]
  *
  * @param configuration describes the job configuration
  * @param jobReference reference describing the unique-per-user name of the job
@@ -51,7 +51,7 @@ object Job {
 
   /**
    * Java API: Job model
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/Job BigQuery reference]]
    *
    * @param configuration describes the job configuration
    * @param jobReference reference describing the unique-per-user name of the job
@@ -68,7 +68,7 @@ object Job {
 
 /**
  * JobConfiguration model
- * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfiguration BigQuery reference]]
+ * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfiguration BigQuery reference]]
  *
  * @param load configures a load job
  * @param labels the labels associated with this job
@@ -92,7 +92,7 @@ object JobConfiguration {
 
   /**
    * JobConfiguration model
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfiguration BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfiguration BigQuery reference]]
    *
    * @param load configures a load job
    * @return a [[JobConfiguration]]
@@ -102,7 +102,7 @@ object JobConfiguration {
 
   /**
    * Java API: JobConfiguration model
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfiguration BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfiguration BigQuery reference]]
    *
    * @param load configures a load job
    * @return a [[JobConfiguration]]
@@ -112,7 +112,7 @@ object JobConfiguration {
 
   /**
    * Java API: JobConfiguration model
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfiguration BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfiguration BigQuery reference]]
    *
    * @param load configures a load job
    * @param labels the labels associated with this job
@@ -126,7 +126,7 @@ object JobConfiguration {
 
 /**
  * JobConfigurationLoad model
- * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfigurationload BigQuery reference]]
+ * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfigurationload BigQuery reference]]
  *
  * @param schema the schema for the destination table
  * @param destinationTable the destination table to load the data into
@@ -176,7 +176,7 @@ object JobConfigurationLoad {
 
   /**
    * Java API: JobConfigurationLoad model
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfigurationload BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfigurationload BigQuery reference]]
    *
    * @param schema the schema for the destination table
    * @param destinationTable the destination table to load the data into
@@ -254,7 +254,7 @@ object SourceFormat {
 
 /**
  * JobReference model
- * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/JobReference BigQuery reference]]
+ * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/JobReference BigQuery reference]]
  *
  * @param projectId the ID of the project containing this job.
  * @param jobId the ID of the job
@@ -293,7 +293,7 @@ object JobReference {
 
   /**
    * Java API: JobReference model
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/JobReference BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/JobReference BigQuery reference]]
    *
    * @param projectId the ID of the project containing this job.
    * @param jobId the ID of the job
@@ -308,7 +308,7 @@ object JobReference {
 
 /**
  * JobStatus model
- * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobstatus BigQuery reference]]
+ * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobstatus BigQuery reference]]
  *
  * @param errorResult final error result of the job; if present, indicates that the job has completed and was unsuccessful
  * @param errors the first errors encountered during the running of the job
@@ -338,7 +338,7 @@ object JobStatus {
 
   /**
    * Java API: JobStatus model
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobstatus BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobstatus BigQuery reference]]
    *
    * @param errorResult final error result of the job; if present, indicates that the job has completed and was unsuccessful
    * @param errors the first errors encountered during the running of the job

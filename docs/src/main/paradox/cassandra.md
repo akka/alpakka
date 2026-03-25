@@ -103,7 +103,7 @@ Alpakka Cassandra includes a default implementation @apidoc[DefaultSessionProvid
 The @apidoc[DefaultSessionProvider] config section must contain:
 
 * a settings section `service-discovery` which may be used to discover Cassandra contact points via @ref:[Akka Discovery](#using-akka-discovery),
-* and a reference to a Cassandra config section in `datastax-java-driver-config` which is used to configure the Cassandra client. For details see the @extref:[Datastax Java Driver configuration](cassandra-driver:manual/core/configuration/#quick-overview) and the driver's @extref:[`reference.conf`](cassandra-driver:manual/core/configuration/reference/).
+* and a reference to a Cassandra config section in `datastax-java-driver-config` which is used to configure the Cassandra client. For details see the @extref:[Datastax Java Driver configuration](cassandra-driver:core/configuration/) and the driver's reference configuration.
 
 reference.conf
 : @@snip [snip](/cassandra/src/main/resources/reference.conf)

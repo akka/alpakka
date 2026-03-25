@@ -14,7 +14,7 @@ import scala.concurrent.duration.{FiniteDuration, _}
 
 /**
  * Quality of Service constants as defined in
- *[[http://www.eclipse.org/paho/files/javadoc/org/eclipse/paho/client/mqttv3/MqttMessage.html#setQos-int-]]
+ *[[https://eclipse.dev/paho/files/javadoc/org/eclipse/paho/client/mqttv3/MqttMessage.html#setQos-int-]]
  */
 sealed abstract class MqttQoS {
   def value: Int
@@ -22,7 +22,7 @@ sealed abstract class MqttQoS {
 
 /**
  * Quality of Service constants as defined in
- * [[http://www.eclipse.org/paho/files/javadoc/org/eclipse/paho/client/mqttv3/MqttMessage.html#setQos-int-]]
+ * [[https://eclipse.dev/paho/files/javadoc/org/eclipse/paho/client/mqttv3/MqttMessage.html#setQos-int-]]
  */
 object MqttQoS {
 
@@ -142,7 +142,7 @@ private[mqtt] final case class MqttOfflinePersistenceSettings(
 /**
  * Connection settings passed to the underlying Paho client.
  *
- * See [[https://www.eclipse.org/paho/files/javadoc/org/eclipse/paho/client/mqttv3/MqttConnectOptions.html]]
+ * See [[https://eclipse.dev/paho/files/javadoc/org/eclipse/paho/client/mqttv3/MqttConnectOptions.html]]
  */
 final class MqttConnectionSettings private (val broker: String,
                                             val clientId: String,
@@ -311,7 +311,7 @@ final class MqttConnectionSettings private (val broker: String,
 /**
  * Factory for connection settings passed to the underlying Paho client.
  *
- * See [[https://www.eclipse.org/paho/files/javadoc/org/eclipse/paho/client/mqttv3/MqttConnectOptions.html]]
+ * See [[https://eclipse.dev/paho/files/javadoc/org/eclipse/paho/client/mqttv3/MqttConnectOptions.html]]
  */
 object MqttConnectionSettings {
 

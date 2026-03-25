@@ -148,7 +148,7 @@ Such sink and source can be started the same way as in the previous example.
 
 ## Using rabbitmq as an RPC mechanism
 
-If you have remote workers that you want to incorporate into a stream, you can do it using rabbit RPC workflow [RabbitMQ RPC](https://www.rabbitmq.com/tutorials/tutorial-six-java.html)
+If you have remote workers that you want to incorporate into a stream, you can do it using rabbit RPC workflow [RabbitMQ RPC](https://www.rabbitmq.com/tutorials/tutorial-six-java)
 
 Scala
 : @@snip [snip](/amqp/src/test/scala/docs/scaladsl/AmqpDocsSpec.scala) { #create-rpc-flow }

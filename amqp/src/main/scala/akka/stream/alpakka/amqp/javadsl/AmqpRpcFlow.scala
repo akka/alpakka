@@ -16,7 +16,7 @@ object AmqpRpcFlow {
 
   /**
    * Java API:
-   * Create an [[https://www.rabbitmq.com/tutorials/tutorial-six-java.html RPC style flow]] for processing and communicating
+   * Create an [[https://www.rabbitmq.com/tutorials/tutorial-six-java RPC style flow]] for processing and communicating
    * over a rabbitmq message bus. This will create a private queue, and add the reply-to header to messages sent out.
    *
    * This stage materializes to a `CompletionStage<String>`, which is the name of the private exclusive queue used for RPC communication.

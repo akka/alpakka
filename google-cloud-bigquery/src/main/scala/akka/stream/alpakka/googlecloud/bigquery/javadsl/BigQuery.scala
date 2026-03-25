@@ -47,7 +47,7 @@ object BigQuery extends Google {
 
   /**
    * Lists all datasets in the specified project to which the user has been granted the READER dataset role.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets/list BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/datasets/list BigQuery reference]]
    *
    * @param maxResults the maximum number of results to return in a single response page
    * @param all whether to list all datasets, including hidden ones
@@ -61,7 +61,7 @@ object BigQuery extends Google {
 
   /**
    * Returns the specified dataset.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets/get BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/datasets/get BigQuery reference]]
    *
    * @param datasetId dataset ID of the requested dataset
    * @param settings the [[akka.stream.alpakka.google.GoogleSettings]]
@@ -75,7 +75,7 @@ object BigQuery extends Google {
 
   /**
    * Creates a new empty dataset.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets/insert BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/datasets/insert BigQuery reference]]
    *
    * @param datasetId dataset ID of the new dataset
    * @param settings the [[akka.stream.alpakka.google.GoogleSettings]]
@@ -89,7 +89,7 @@ object BigQuery extends Google {
 
   /**
    * Creates a new empty dataset.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets/insert BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/datasets/insert BigQuery reference]]
    *
    * @param dataset the [[akka.stream.alpakka.googlecloud.bigquery.model.Dataset]] to create
    * @param settings the [[akka.stream.alpakka.google.GoogleSettings]]
@@ -118,7 +118,7 @@ object BigQuery extends Google {
 
   /**
    * Lists all tables in the specified dataset.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables/list BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tables/list BigQuery reference]]
    *
    * @param datasetId dataset ID of the tables to list
    * @param maxResults the maximum number of results to return in a single response page
@@ -129,7 +129,7 @@ object BigQuery extends Google {
 
   /**
    * Gets the specified table resource. This method does not return the data in the table, it only returns the table resource, which describes the structure of this table.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables/get BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tables/get BigQuery reference]]
    *
    * @param datasetId dataset ID of the requested table
    * @param tableId table ID of the requested table
@@ -145,7 +145,7 @@ object BigQuery extends Google {
 
   /**
    * Creates a new, empty table in the dataset.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables/insert BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tables/insert BigQuery reference]]
    *
    * @param datasetId dataset ID of the new table
    * @param tableId table ID of the new table
@@ -163,7 +163,7 @@ object BigQuery extends Google {
 
   /**
    * Creates a new, empty table in the dataset.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables/insert BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tables/insert BigQuery reference]]
    *
    * @param table the [[akka.stream.alpakka.googlecloud.bigquery.model.Table]] to create
    * @param settings the [[akka.stream.alpakka.google.GoogleSettings]]
@@ -175,7 +175,7 @@ object BigQuery extends Google {
 
   /**
    * Deletes the specified table from the dataset. If the table contains data, all the data will be deleted.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables/delete BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tables/delete BigQuery reference]]
    *
    * @param datasetId dataset ID of the table to delete
    * @param tableId table ID of the table to delete
@@ -191,7 +191,7 @@ object BigQuery extends Google {
 
   /**
    * Lists the content of a table in rows.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/list BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/list BigQuery reference]]
    *
    * @param datasetId dataset ID of the table to list
    * @param tableId table ID of the table to list
@@ -219,7 +219,7 @@ object BigQuery extends Google {
 
   /**
    * Streams data into BigQuery one record at a time without needing to run a load job
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll BigQuery reference]]
    *
    * @param datasetId dataset id of the table to insert into
    * @param tableId table id of the table to insert into
@@ -245,7 +245,7 @@ object BigQuery extends Google {
 
   /**
    * Streams data into BigQuery one record at a time without needing to run a load job.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll BigQuery reference]]
    *
    * @param datasetId dataset ID of the table to insert into
    * @param tableId table ID of the table to insert into
@@ -266,7 +266,7 @@ object BigQuery extends Google {
 
   /**
    * Runs a BigQuery SQL query.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query BigQuery reference]]
    *
    * @param query a query string, following the BigQuery query syntax, of the query to execute
    * @param dryRun if set to `true` BigQuery doesn't run the job and instead returns statistics about the job such as how many bytes would be processed
@@ -288,7 +288,7 @@ object BigQuery extends Google {
 
   /**
    * Runs a BigQuery SQL query.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query BigQuery reference]]
    *
    * @param query the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryRequest]]
    * @param unmarshaller [[akka.http.javadsl.unmarshalling.Unmarshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.QueryResponse]]
@@ -313,7 +313,7 @@ object BigQuery extends Google {
 
   /**
    * The results of a query job.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/getQueryResults BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/jobs/getQueryResults BigQuery reference]]
    *
    * @param jobId job ID of the query job
    * @param startIndex zero-based index of the starting row
@@ -345,7 +345,7 @@ object BigQuery extends Google {
 
   /**
    * Returns information about a specific job.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/get BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/jobs/get BigQuery reference]]
    *
    * @param jobId job ID of the requested job
    * @param location the geographic location of the job. Required except for US and EU
@@ -361,7 +361,7 @@ object BigQuery extends Google {
 
   /**
    * Requests that a job be cancelled.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/cancel BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/jobs/cancel BigQuery reference]]
    *
    * @param jobId job ID of the job to cancel
    * @param location the geographic location of the job. Required except for US and EU
@@ -377,7 +377,7 @@ object BigQuery extends Google {
 
   /**
    * Loads data into BigQuery via a series of asynchronous load jobs created at the rate [[akka.stream.alpakka.googlecloud.bigquery.BigQuerySettings.loadJobPerTableQuota]].
-   * @note WARNING: Pending the resolution of [[https://issuetracker.google.com/176002651 BigQuery issue 176002651]] this method may not work as expected.
+   * @note WARNING: Pending the resolution of [[https://issuetracker.google.com/issues/176002651 BigQuery issue 176002651]] this method may not work as expected.
    *       As a workaround, you can use the config setting `akka.http.parsing.conflicting-content-type-header-processing-mode = first` with Akka HTTP v10.2.4 or later.
    *
    * @param datasetId dataset ID of the table to insert into
@@ -395,7 +395,7 @@ object BigQuery extends Google {
 
   /**
    * Loads data into BigQuery via a series of asynchronous load jobs created at the rate [[akka.stream.alpakka.googlecloud.bigquery.BigQuerySettings.loadJobPerTableQuota]].
-   * @note WARNING: Pending the resolution of [[https://issuetracker.google.com/176002651 BigQuery issue 176002651]] this method may not work as expected.
+   * @note WARNING: Pending the resolution of [[https://issuetracker.google.com/issues/176002651 BigQuery issue 176002651]] this method may not work as expected.
    *       As a workaround, you can use the config setting `akka.http.parsing.conflicting-content-type-header-processing-mode = first` with Akka HTTP v10.2.4 or later.
    *
    * @param datasetId dataset ID of the table to insert into
@@ -414,9 +414,9 @@ object BigQuery extends Google {
 
   /**
    * Starts a new asynchronous upload job.
-   * @note WARNING: Pending the resolution of [[https://issuetracker.google.com/176002651 BigQuery issue 176002651]] this method may not work as expected.
+   * @note WARNING: Pending the resolution of [[https://issuetracker.google.com/issues/176002651 BigQuery issue 176002651]] this method may not work as expected.
    *       As a workaround, you can use the config setting `akka.http.parsing.conflicting-content-type-header-processing-mode = first` with Akka HTTP v10.2.4 or later.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/insert BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/jobs/insert BigQuery reference]]
    * @see [[https://cloud.google.com/bigquery/docs/reference/api-uploads BigQuery reference]]
    *
    * @param job the job to start

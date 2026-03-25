@@ -15,7 +15,7 @@ import scala.jdk.OptionConverters._
 
 /**
  * Dataset resource model
- * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets#resource:-dataset BigQuery reference]]
+ * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/datasets#resource:-dataset BigQuery reference]]
  *
  * @param datasetReference a reference that identifies the dataset
  * @param friendlyName a descriptive name for the dataset
@@ -53,7 +53,7 @@ object Dataset {
 
   /**
    * Java API: Dataset resource model
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets#resource:-dataset BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/datasets#resource:-dataset BigQuery reference]]
    *
    * @param datasetReference a reference that identifies the dataset
    * @param friendlyName a descriptive name for the dataset
@@ -72,7 +72,7 @@ object Dataset {
 
 /**
  * DatasetReference model
- * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets#datasetreference BigQuery reference]]
+ * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/datasets#datasetreference BigQuery reference]]
  *
  * @param datasetId A unique ID for this dataset, without the project name
  * @param projectId The ID of the project containing this dataset
@@ -97,7 +97,7 @@ object DatasetReference {
 
   /**
    * Java API: DatasetReference model
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets#datasetreference BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/datasets#datasetreference BigQuery reference]]
    *
    * @param datasetId A unique ID for this dataset, without the project name
    * @param projectId The ID of the project containing this dataset
@@ -111,7 +111,7 @@ object DatasetReference {
 
 /**
  * DatasetListResponse model
- * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets/list#response-body BigQuery reference]]
+ * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/datasets/list#response-body BigQuery reference]]
  *
  * @param nextPageToken a token that can be used to request the next results page
  * @param datasets an array of the dataset resources in the project
@@ -136,7 +136,7 @@ object DatasetListResponse {
 
   /**
    * Java API: DatasetListResponse model
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets/list#response-body BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/datasets/list#response-body BigQuery reference]]
    *
    * @param nextPageToken a token that can be used to request the next results page
    * @param datasets an array of the dataset resources in the project

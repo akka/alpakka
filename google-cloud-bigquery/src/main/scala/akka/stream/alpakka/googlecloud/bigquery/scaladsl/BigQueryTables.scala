@@ -25,7 +25,7 @@ private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
 
   /**
    * Lists all tables in the specified dataset.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables/list BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tables/list BigQuery reference]]
    *
    * @param datasetId dataset ID of the tables to list
    * @param maxResults the maximum number of results to return in a single response page
@@ -42,7 +42,7 @@ private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
 
   /**
    * Gets the specified table resource. This method does not return the data in the table, it only returns the table resource, which describes the structure of this table.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables/get BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tables/get BigQuery reference]]
    *
    * @param datasetId dataset ID of the requested table
    * @param tableId table ID of the requested table
@@ -58,7 +58,7 @@ private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
 
   /**
    * Creates a new, empty table in the dataset.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables/insert BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tables/insert BigQuery reference]]
    *
    * @param datasetId dataset ID of the new table
    * @param tableId table ID of the new table
@@ -76,7 +76,7 @@ private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
 
   /**
    * Creates a new, empty table in the dataset.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables/insert BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tables/insert BigQuery reference]]
    *
    * @param table the [[akka.stream.alpakka.googlecloud.bigquery.model.Table]] to create
    * @return a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.Table]]
@@ -97,7 +97,7 @@ private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
 
   /**
    * Deletes the specified table from the dataset. If the table contains data, all the data will be deleted.
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables/delete BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tables/delete BigQuery reference]]
    *
    * @param datasetId dataset ID of the table to delete
    * @param tableId table ID of the table to delete

@@ -15,7 +15,7 @@ import scala.jdk.OptionConverters._
 
 /**
  * ErrorProto model
- * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto BigQuery reference]]
+ * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto BigQuery reference]]
  *
  * @param reason a short error code that summarizes the error
  * @param location specifies where the error occurred, if present
@@ -54,7 +54,7 @@ object ErrorProto {
 
   /**
    * Java API: ErrorProto model
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto BigQuery reference]]
+   * @see [[https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto BigQuery reference]]
    *
    * @param reason a short error code that summarizes the error
    * @param location specifies where the error occurred, if present

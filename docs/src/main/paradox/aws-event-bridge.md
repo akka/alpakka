@@ -3,7 +3,7 @@
 @@@ note { title="Amazon EventBridge" }
 
 Amazon EventBridge is a serverless event bus that allows your applications to asynchronously consume events from 3rd party SaaS offerings, AWS services, and other applications in your own infrastructure. 
-It evolved from Amazon CloudWatch Events ([official documentation](https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/WhatIsCloudWatchEvents.html)). 
+It evolved from Amazon CloudWatch Events ([official documentation](https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-cwe-now-eb.html)). 
 The EventBridge acts as broker that you can configure with your own rules to route events to the correct service. 
 
 For more information about AWS EventBridge please visit the [official documentation](https://aws.amazon.com/eventbridge/).
