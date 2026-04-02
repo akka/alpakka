@@ -8,7 +8,7 @@ package storage
 
 import akka.http.scaladsl.model.StatusCode
 
-import scala.util.{Failure, Success, Try}
+import scala.util.control.NonFatal
 import scala.xml.{Elem, NodeSeq, XML}
 
 final case class StorageException(statusCode: StatusCode,
@@ -50,7 +50,7 @@ object StorageException {
       emptyStringToOption(node.text)
     }
 
-    Try {
+    try {
       val utf8_bom = "\uFEFF"
       if (response == null) throw new NullPointerException("null")
       if (response.isBlank) throw new IllegalArgumentException("empty response body")
@@ -64,8 +64,8 @@ object StorageException {
         resourceValue = getOptionalValue(xmlResponse, "QueryParameterValue", Some("HeaderValue")),
         reason = getOptionalValue(xmlResponse, "Reason", Some("AuthenticationErrorDetail"))
       )
-    } match {
-      case Failure(ex) =>
+    } catch {
+      case NonFatal(ex) =>
         val errorMessage = emptyStringToOption(ex.getMessage)
         StorageException(
           statusCode = statusCode,
@@ -75,7 +75,6 @@ object StorageException {
           resourceValue = None,
           reason = None
         )
-      case Success(value) => value
     }
 
   }
