@@ -10,7 +10,6 @@ package scaladsl
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers._
 import StorageWireMockBase.{config, getCallerName, initServer, AccountName, ETagValue}
-import akka.http.scaladsl.model.ContentTypes
 import akka.testkit.TestKit
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
