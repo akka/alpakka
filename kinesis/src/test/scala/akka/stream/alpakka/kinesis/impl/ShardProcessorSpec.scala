@@ -7,16 +7,17 @@ package akka.stream.alpakka.kinesis.impl
 import java.util.Collections
 
 import akka.stream.alpakka.kinesis.{CommittableRecord, DefaultTestContext}
-import org.mockito.Mockito.{verify, when}
-import org.scalatest.concurrent.IntegrationPatience
+import org.mockito.Mockito.{mock => jMock, verify, when}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import org.scalatestplus.mockito.MockitoSugar.mock
 import software.amazon.kinesis.lifecycle.events.{InitializationInput, ProcessRecordsInput, ShardEndedInput}
 import software.amazon.kinesis.processor.RecordProcessorCheckpointer
 import software.amazon.kinesis.retrieval.KinesisClientRecord
 
-class ShardProcessorSpec extends AnyWordSpec with Matchers with DefaultTestContext with IntegrationPatience {
+class ShardProcessorSpec extends AnyWordSpec with Matchers with DefaultTestContext {
+
+  private def mock[T](implicit ct: scala.reflect.ClassTag[T]): T =
+    jMock(ct.runtimeClass.asInstanceOf[Class[T]])
 
   private def mockKinesisRecord(sequenceNumber: String, subSequenceNumber: Long): KinesisClientRecord = {
     val r = mock[KinesisClientRecord]
