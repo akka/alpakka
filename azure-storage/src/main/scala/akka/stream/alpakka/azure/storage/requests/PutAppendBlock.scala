@@ -32,7 +32,7 @@ final class PutAppendBlock(val contentType: ContentType,
       .withContentLengthHeader(0L)
       .withContentTypeHeader(contentType)
       .witServerSideEncryption(sse)
-      .withBlobTypeHeader(BlobTypeHeader.PageBlobHeader)
+      .withBlobTypeHeader(BlobTypeHeader.AppendBlobHeader)
       .withLeaseIdHeader(leaseId)
       .withAdditionalHeaders(additionalHeaders)
       .headers

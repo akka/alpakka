@@ -52,6 +52,8 @@ object StorageException {
 
     Try {
       val utf8_bom = "\uFEFF"
+      if (response == null) throw new NullPointerException("null")
+      if (response.isBlank) throw new IllegalArgumentException("empty response body")
       val sanitizedResponse = if (response.startsWith(utf8_bom)) response.substring(1) else response
       val xmlResponse = XML.loadString(sanitizedResponse)
       StorageException(

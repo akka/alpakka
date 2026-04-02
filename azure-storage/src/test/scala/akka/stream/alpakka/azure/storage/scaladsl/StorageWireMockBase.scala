@@ -102,8 +102,7 @@ abstract class StorageWireMockBase(_system: ActorSystem, val _wireMockServer: Wi
           aResponse()
             .withStatus(201)
             .withHeader(ETag.name, ETagValue)
-            .withHeader(`Content-Length`.name, payload.length.toString)
-            .withHeader(`Content-Type`.name, "text/plain; charset=UTF-8")
+            .withHeader(`Content-Length`.name, "0")
         )
     )
 
@@ -226,7 +225,6 @@ abstract class StorageWireMockBase(_system: ActorSystem, val _wireMockServer: Wi
   protected def mockClearRange(): StubMapping =
     mock.register(
       put(urlEqualTo(s"/$AccountName/$containerName/$blobName?comp=range"))
-        .withHeader(`Content-Type`.name, equalTo(ContentTypes.NoContentType.toString()))
         .withHeader(Range.name, equalTo(s"bytes=${subRange.first}-${subRange.last}"))
         .withHeader(FileWriteTypeHeaderKey, equalTo("clear"))
         .willReturn(

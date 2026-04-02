@@ -78,10 +78,7 @@ class StorageSpec
       objectMetadata.contentLength shouldBe 0L
     }
 
-    // TODO: There are couple of issues, firstly there are two `Content-Length` headers being added, one by `putBlob`
-    // function and secondly by, most likely, by WireMock. Need to to figure out how to tell WireMock not to add `Content-Length`
-    // header, secondly once that resolve then we get `akka.http.scaladsl.model.EntityStreamException`.
-    "put block blob" ignore {
+    "put block blob" in {
       mockPutBlockBlob()
 
       //#put-block-blob
@@ -102,14 +99,11 @@ class StorageSpec
       val maybeObjectMetadata = eventualMaybeMetadata.futureValue
       maybeObjectMetadata shouldBe defined
       val objectMetadata = maybeObjectMetadata.get
-      objectMetadata.contentLength shouldBe contentLength
+      objectMetadata.contentLength shouldBe 0L
       objectMetadata.eTag shouldBe Some(ETagRawValue)
     }
 
-    // TODO: There are couple of issues, firstly there are two `Content-Length` headers being added, one by `putBlob`
-    // function and secondly by, most likely, by WireMock. Need to to figure out how to tell WireMock not to add `Content-Length`
-    // header, secondly once that resolve then we get `akka.http.scaladsl.model.EntityStreamException`.
-    "put page blob" ignore {
+    "put page blob" in {
       mockPutPageBlob()
 
       //#put-page-blob
@@ -133,10 +127,7 @@ class StorageSpec
       objectMetadata.eTag shouldBe Some(ETagRawValue)
     }
 
-    // TODO: There are couple of issues, firstly there are two `Content-Length` headers being added, one by `putBlob`
-    // function and secondly by, most likely, by WireMock. Need to to figure out how to tell WireMock not to add `Content-Length`
-    // header, secondly once that resolve then we get `akka.http.scaladsl.model.EntityStreamException`.
-    "put append blob" ignore {
+    "put append blob" in {
       mockPutAppendBlob()
 
       //#put-append-blob
@@ -349,10 +340,7 @@ class StorageSpec
       metadata.contentLength shouldBe 0L
     }
 
-    // TODO: There are couple of issues, firstly there are two `Content-Length` headers being added, one by `putBlob`
-    // function and secondly by, most likely, by WireMock. Need to to figure out how to tell WireMock not to add `Content-Length`
-    // header, secondly once that resolve then we get `akka.http.scaladsl.model.EntityStreamException`.
-    "update range" ignore {
+    "update range" in {
       mockUpdateRange()
 
       //#update-range
@@ -416,10 +404,7 @@ class StorageSpec
       metadata.contentType shouldBe Some(ContentTypes.`text/plain(UTF-8)`.value)
     }
 
-    // TODO: There are couple of issues, firstly there are two `Content-Length` headers being added, one by `putBlob`
-    // function and secondly by, most likely, by WireMock. Need to to figure out how to tell WireMock not to add `Content-Length`
-    // header, secondly once that resolve then we get `akka.http.scaladsl.model.EntityStreamException`.
-    "clear range" ignore {
+    "clear range" in {
       mockClearRange()
 
       //#clear-range

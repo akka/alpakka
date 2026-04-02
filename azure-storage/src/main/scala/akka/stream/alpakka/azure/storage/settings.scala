@@ -114,7 +114,8 @@ final class StorageSettings(val apiVersion: String,
 
 object StorageSettings {
   private[storage] val ConfigPath = "alpakka.azure-storage"
-  private val AuthorizationTypes = Seq(AnonymousAuthorizationType, SharedKeyAuthorizationType, SasAuthorizationType)
+  private val AuthorizationTypes =
+    Seq(AnonymousAuthorizationType, SharedKeyAuthorizationType, SharedKeyLiteAuthorizationType, SasAuthorizationType)
 
   def apply(
       apiVersion: String,

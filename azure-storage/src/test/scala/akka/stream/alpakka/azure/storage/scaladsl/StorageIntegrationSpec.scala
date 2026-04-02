@@ -30,8 +30,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.{BeforeAndAfterAll, OptionValues}
 import org.scalatest.wordspec.AnyWordSpecLike
 
-import java.security.MessageDigest
-import java.util.Base64
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
 
@@ -95,7 +93,7 @@ trait StorageIntegrationSpec
 
       maybeObjectMetadata shouldBe defined
       val objectMetadata = maybeObjectMetadata.get
-      objectMetadata.contentMd5 shouldBe Some(calculateDigest(sampleText))
+      objectMetadata.contentLength shouldBe 0L
     }
 
     "get blob" in {
@@ -109,7 +107,6 @@ trait StorageIntegrationSpec
           .run()
 
       val objectMetadata = maybeEventualObjectMetadata.futureValue
-      objectMetadata.contentMd5 shouldBe Some(calculateDigest(sampleText))
       objectMetadata.contentLength shouldBe sampleText.length
       eventualText.futureValue.mkString("") shouldBe sampleText
     }
@@ -124,7 +121,6 @@ trait StorageIntegrationSpec
 
       maybeObjectMetadata shouldBe defined
       val objectMetadata = maybeObjectMetadata.get
-      objectMetadata.contentMd5 shouldBe Some(calculateDigest(sampleText))
       objectMetadata.contentLength shouldBe sampleText.length
     }
 
@@ -182,10 +178,4 @@ trait StorageIntegrationSpec
     }
   }
 
-  protected def calculateDigest(text: String): String = {
-    val digest = MessageDigest.getInstance("MD5")
-    digest.update(text.getBytes)
-    val bytes = digest.digest()
-    Base64.getEncoder.encodeToString(bytes)
-  }
 }

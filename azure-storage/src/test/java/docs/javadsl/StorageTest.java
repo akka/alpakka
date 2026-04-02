@@ -39,7 +39,6 @@ import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import scala.Option;
@@ -102,13 +101,6 @@ public class StorageTest extends StorageWireMockBase {
     Assert.assertEquals(objectMetadata.getContentLength(), 0L);
   }
 
-  // TODO: There are couple of issues, firstly there are two `Content-Length` headers being added,
-  // one by `putBlob`
-  // function and secondly by, most likely, by WireMock. Need to to figure out how to tell WireMock
-  // not to add `Content-Length`
-  // header, secondly once that resolve then we get
-  // `akka.http.scaladsl.model.EntityStreamException`.
-  @Ignore("Fix this test case")
   @Test
   public void putBlockBlob() throws Exception {
     mockPutBlockBlob();
@@ -128,7 +120,6 @@ public class StorageTest extends StorageWireMockBase {
     Assert.assertTrue(optionalObjectMetadata.isPresent());
   }
 
-  @Ignore("Test is failing due to multiple content length headers in the request.")
   @Test
   public void putPageBlob() throws Exception {
     mockPutPageBlob();
@@ -147,7 +138,6 @@ public class StorageTest extends StorageWireMockBase {
     Assert.assertTrue(optionalObjectMetadata.isPresent());
   }
 
-  @Ignore("Test is failing due to multiple content length headers in the request.")
   @Test
   public void putAppendBlob() throws Exception {
     mockPutAppendBlob();
@@ -301,16 +291,9 @@ public class StorageTest extends StorageWireMockBase {
     Assert.assertEquals(0L, objectMetadata.getContentLength());
   }
 
-  // TODO: There are couple of issues, firstly there are two `Content-Length` headers being added,
-  // one by `putBlob`
-  // function and secondly by, most likely, by WireMock. Need to to figure out how to tell WireMock
-  // not to add `Content-Length`
-  // header, secondly once that resolve then we get
-  // `akka.http.scaladsl.model.EntityStreamException`.
-  @Ignore("Fix this test case")
   @Test
   public void updateRange() throws Exception {
-    mockCreateFile();
+    mockUpdateRange();
 
     // #update-range
     final Source<Optional<ObjectMetadata>, NotUsed> source =
@@ -369,13 +352,6 @@ public class StorageTest extends StorageWireMockBase {
         Optional.of(ContentTypes.TEXT_PLAIN_UTF8.toString()), objectMetadata.getContentType());
   }
 
-  // TODO: There are couple of issues, firstly there are two `Content-Length` headers being added,
-  // one by `putBlob`
-  // function and secondly by, most likely, by WireMock. Need to to figure out how to tell WireMock
-  // not to add `Content-Length`
-  // header, secondly once that resolve then we get
-  // `akka.http.scaladsl.model.EntityStreamException`.
-  @Ignore("Fix this test case")
   @Test
   public void clearRange() throws Exception {
     mockClearRange();
