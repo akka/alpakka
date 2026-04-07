@@ -9,6 +9,7 @@ import com.typesafe.config.Config
 
 import java.time.{Clock, ZoneOffset}
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 package object storage {
 
@@ -34,8 +35,14 @@ package object storage {
   private[storage] val PageBlobType = "PageBlob"
   private[storage] val AppendBlobType = "AppendBlob"
 
+  // RFC 7231 IMF-fixdate format. We can't use DateTimeFormatter.RFC_1123_DATE_TIME because it
+  // emits a single-digit day-of-month for days 1-9, which Azure Storage rejects with
+  // "The Date header in the request is incorrect." (RFC 7231 mandates two-digit day.)
+  private[storage] val ImfFixdateFormatter: DateTimeFormatter =
+    DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss 'GMT'", Locale.US)
+
   private[storage] def getFormattedDate(implicit clock: Clock): String =
-    DateTimeFormatter.RFC_1123_DATE_TIME.format(clock.instant().atOffset(ZoneOffset.UTC))
+    ImfFixdateFormatter.format(clock.instant().atOffset(ZoneOffset.UTC))
 
   /** Removes ETag quotes in the same way the official AWS tooling does. See
    */
