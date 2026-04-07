@@ -164,8 +164,7 @@ object AzureStorageStream {
    * @param requestBuilder builder to configure the list request
    * @return Source of [[BlobItem]] elements
    */
-  private[storage] def listBlobs(objectPath: String,
-                                 requestBuilder: ListBlobs): Source[BlobItem, NotUsed] =
+  private[storage] def listBlobs(objectPath: String, requestBuilder: ListBlobs): Source[BlobItem, NotUsed] =
     Source
       .fromMaterializer { (mat, attr) =>
         implicit val system: ActorSystem = mat.system
@@ -203,8 +202,7 @@ object AzureStorageStream {
    * @param requestBuilder builder to configure the list request
    * @return Source of [[FileShareEntry]] elements (either [[ShareFileItem]] or [[ShareDirectoryItem]])
    */
-  private[storage] def listFiles(objectPath: String,
-                                 requestBuilder: ListFiles): Source[FileShareEntry, NotUsed] =
+  private[storage] def listFiles(objectPath: String, requestBuilder: ListFiles): Source[FileShareEntry, NotUsed] =
     Source
       .fromMaterializer { (mat, attr) =>
         implicit val system: ActorSystem = mat.system
@@ -361,8 +359,16 @@ object AzureStorageStream {
   private case class BlobListResult(items: Seq[BlobItem], nextMarker: Option[String])
   private case class FileListResult(entries: Seq[FileShareEntry], nextMarker: Option[String])
 
+  // Azure Storage list responses include a UTF-8 BOM at the start of the body. After the entity
+  // is decoded to String the BOM survives as a literal U+FEFF character, which scala.xml's
+  // loadString rejects with "Content is not allowed in prolog". Strip it before parsing.
+  private def loadAzureXml(rawXml: String): scala.xml.Elem = {
+    val stripped = if (rawXml.nonEmpty && rawXml.charAt(0) == '\uFEFF') rawXml.substring(1) else rawXml
+    XML.loadString(stripped)
+  }
+
   private def parseBlobListXml(rawXml: String): BlobListResult = {
-    val root = XML.loadString(rawXml)
+    val root = loadAzureXml(rawXml)
     val items = (root \\ "Blob").map { blob =>
       val name = (blob \ "Name").text
       val props = blob \ "Properties"
@@ -378,7 +384,7 @@ object AzureStorageStream {
   }
 
   private def parseFileListXml(rawXml: String): FileListResult = {
-    val root = XML.loadString(rawXml)
+    val root = loadAzureXml(rawXml)
     val entries = (root \\ "Entries").flatMap(_.child).collect {
       case file if file.label == "File" =>
         val name = (file \ "Name").text

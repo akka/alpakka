@@ -236,8 +236,12 @@ abstract class StorageWireMockBase(_system: ActorSystem, val _wireMockServer: Wi
         )
     )
 
+  // Real Azure Storage list responses are prefixed with a UTF-8 BOM (U+FEFF). Mirror that here
+  // so the parser code path that strips the BOM is exercised by the wiremock-based tests.
+  private val Bom = "\uFEFF"
+
   protected val blobListXml: String =
-    s"""<?xml version="1.0" encoding="utf-8"?>
+    s"""$Bom<?xml version="1.0" encoding="utf-8"?>
        |<EnumerationResults ContainerName="https://$AccountName.blob.core.windows.net/$containerName">
        |  <Blobs>
        |    <Blob>
@@ -255,7 +259,7 @@ abstract class StorageWireMockBase(_system: ActorSystem, val _wireMockServer: Wi
        |</EnumerationResults>""".stripMargin
 
   protected val fileListXml: String =
-    s"""<?xml version="1.0" encoding="utf-8"?>
+    s"""$Bom<?xml version="1.0" encoding="utf-8"?>
        |<EnumerationResults ServiceEndpoint="https://$AccountName.file.core.windows.net/" ShareName="$containerName" DirectoryPath="">
        |  <Entries>
        |    <File>
