@@ -50,32 +50,40 @@ object StorageException {
       emptyStringToOption(node.text)
     }
 
-    try {
-      val utf8_bom = "\uFEFF"
-      if (response == null) throw new NullPointerException("null")
-      if (response.isBlank) throw new IllegalArgumentException("empty response body")
-      val sanitizedResponse = if (response.startsWith(utf8_bom)) response.substring(1) else response
-      val xmlResponse = XML.loadString(sanitizedResponse)
+    if (response == null || response.isBlank) {
       StorageException(
         statusCode = statusCode,
-        errorCode = (xmlResponse \ "Code").text,
-        errorMessage = (xmlResponse \ "Message").text,
-        resourceName = getOptionalValue(xmlResponse, "QueryParameterName", Some("HeaderName")),
-        resourceValue = getOptionalValue(xmlResponse, "QueryParameterValue", Some("HeaderValue")),
-        reason = getOptionalValue(xmlResponse, "Reason", Some("AuthenticationErrorDetail"))
+        errorCode = "empty response body",
+        errorMessage = "empty response body",
+        resourceName = None,
+        resourceValue = None,
+        reason = None
       )
-    } catch {
-      case NonFatal(ex) =>
-        val errorMessage = emptyStringToOption(ex.getMessage)
+    } else {
+      try {
+        val utf8_bom = "\uFEFF"
+        val sanitizedResponse = if (response.startsWith(utf8_bom)) response.substring(1) else response
+        val xmlResponse = XML.loadString(sanitizedResponse)
         StorageException(
           statusCode = statusCode,
-          errorCode = errorMessage.getOrElse("null"),
-          errorMessage = emptyStringToOption(response).orElse(errorMessage).getOrElse("null"),
-          resourceName = None,
-          resourceValue = None,
-          reason = None
+          errorCode = (xmlResponse \ "Code").text,
+          errorMessage = (xmlResponse \ "Message").text,
+          resourceName = getOptionalValue(xmlResponse, "QueryParameterName", Some("HeaderName")),
+          resourceValue = getOptionalValue(xmlResponse, "QueryParameterValue", Some("HeaderValue")),
+          reason = getOptionalValue(xmlResponse, "Reason", Some("AuthenticationErrorDetail"))
         )
+      } catch {
+        case NonFatal(ex) =>
+          val parseError = emptyStringToOption(ex.getMessage)
+          StorageException(
+            statusCode = statusCode,
+            errorCode = parseError.getOrElse("null"),
+            errorMessage = response,
+            resourceName = None,
+            resourceValue = None,
+            reason = None
+          )
+      }
     }
-
   }
 }

@@ -19,8 +19,8 @@ private[storage] class StorageHeaders private (val contentLengthHeader: Option[H
                                                val rangeHeader: Option[HttpHeader] = None,
                                                val blobTypeHeader: Option[HttpHeader] = None,
                                                val leaseIdHeader: Option[HttpHeader] = None,
-                                               val fileWriteTypeHeader: Option[HttpHeader] = None,
                                                val rangeWriteTypeHeader: Option[HttpHeader] = None,
+                                               val fileTypeHeader: Option[HttpHeader] = None,
                                                val fileMaxContentLengthHeader: Option[HttpHeader] = None,
                                                val pageBlobContentLengthHeader: Option[HttpHeader] = None,
                                                val pageBlobSequenceNumberHeader: Option[HttpHeader] = None,
@@ -32,8 +32,8 @@ private[storage] class StorageHeaders private (val contentLengthHeader: Option[H
     rangeHeader ++
     blobTypeHeader ++
     leaseIdHeader ++
-    fileWriteTypeHeader ++
     rangeWriteTypeHeader ++
+    fileTypeHeader ++
     fileMaxContentLengthHeader ++
     pageBlobContentLengthHeader ++
     pageBlobSequenceNumberHeader).toSeq ++ sse.map(_.headers).getOrElse(Seq.empty) ++ additionalHeaders
@@ -59,11 +59,11 @@ private[storage] class StorageHeaders private (val contentLengthHeader: Option[H
   private[storage] def withLeaseIdHeader(leaseId: Option[String]): StorageHeaders =
     copy(leaseIdHeader = leaseId.map(value => RawHeader(LeaseIdHeaderKey, value)))
 
-  private[storage] def withRangeWriteTypeHeader(fileWriteTypeHeader: RangeWriteTypeHeader): StorageHeaders =
-    copy(fileWriteTypeHeader = Some(fileWriteTypeHeader.header))
+  private[storage] def withRangeWriteTypeHeader(rangeWriteTypeHeader: RangeWriteTypeHeader): StorageHeaders =
+    copy(rangeWriteTypeHeader = Some(rangeWriteTypeHeader.header))
 
   private[storage] def withFileTypeHeader(): StorageHeaders =
-    copy(rangeWriteTypeHeader = Some(RawHeader(FileTypeHeaderKey, "file")))
+    copy(fileTypeHeader = Some(RawHeader(FileTypeHeaderKey, "file")))
 
   private[storage] def withFileMaxContentLengthHeader(contentLength: Long): StorageHeaders =
     copy(fileMaxContentLengthHeader = Some(RawHeader(XMsContentLengthHeaderKey, contentLength.toString)))
@@ -89,8 +89,8 @@ private[storage] class StorageHeaders private (val contentLengthHeader: Option[H
                    sse: Option[ServerSideEncryption] = sse,
                    blobTypeHeader: Option[HttpHeader] = blobTypeHeader,
                    leaseIdHeader: Option[HttpHeader] = leaseIdHeader,
-                   fileWriteTypeHeader: Option[HttpHeader] = fileWriteTypeHeader,
                    rangeWriteTypeHeader: Option[HttpHeader] = rangeWriteTypeHeader,
+                   fileTypeHeader: Option[HttpHeader] = fileTypeHeader,
                    fileMaxContentLengthHeader: Option[HttpHeader] = fileMaxContentLengthHeader,
                    pageBlobContentLengthHeader: Option[HttpHeader] = pageBlobContentLengthHeader,
                    pageBlobSequenceNumberHeader: Option[HttpHeader] = pageBlobSequenceNumberHeader,
@@ -102,8 +102,8 @@ private[storage] class StorageHeaders private (val contentLengthHeader: Option[H
       rangeHeader = rangeHeader,
       blobTypeHeader = blobTypeHeader,
       leaseIdHeader = leaseIdHeader,
-      fileWriteTypeHeader = fileWriteTypeHeader,
       rangeWriteTypeHeader = rangeWriteTypeHeader,
+      fileTypeHeader = fileTypeHeader,
       fileMaxContentLengthHeader = fileMaxContentLengthHeader,
       pageBlobContentLengthHeader = pageBlobContentLengthHeader,
       pageBlobSequenceNumberHeader = pageBlobSequenceNumberHeader,
@@ -118,8 +118,8 @@ private[storage] class StorageHeaders private (val contentLengthHeader: Option[H
        | sse=${sse.toString},
        | blobTypeHeader=${blobTypeHeader.map(_.value()).getOrElse("None")},
        | leaseIdHeader=${leaseIdHeader.map(_.value()).getOrElse("None")},
-       | fileWriteTypeHeader=${fileWriteTypeHeader.map(_.value()).getOrElse("None")},
        | rangeWriteTypeHeader=${rangeWriteTypeHeader.map(_.value()).getOrElse("None")},
+       | fileTypeHeader=${fileTypeHeader.map(_.value()).getOrElse("None")},
        | fileMaxContentLengthHeader=${fileMaxContentLengthHeader.map(_.value()).getOrElse("None")},
        | pageBlobContentLengthHeader=${pageBlobContentLengthHeader.map(_.value()).getOrElse("None")},
        | pageBlobSequenceNumberHeader=${pageBlobSequenceNumberHeader.map(_.value()).getOrElse("None")},
@@ -135,8 +135,8 @@ private[storage] class StorageHeaders private (val contentLengthHeader: Option[H
         Objects.equals(rangeHeader, other.rangeHeader) &&
         Objects.equals(blobTypeHeader, other.blobTypeHeader) &&
         Objects.equals(leaseIdHeader, other.leaseIdHeader) &&
-        Objects.equals(fileWriteTypeHeader, other.fileWriteTypeHeader) &&
         Objects.equals(rangeWriteTypeHeader, other.rangeWriteTypeHeader) &&
+        Objects.equals(fileTypeHeader, other.fileTypeHeader) &&
         Objects.equals(fileMaxContentLengthHeader, other.fileMaxContentLengthHeader) &&
         Objects.equals(pageBlobContentLengthHeader, other.pageBlobContentLengthHeader) &&
         Objects.equals(pageBlobSequenceNumberHeader, other.pageBlobSequenceNumberHeader) &&
@@ -152,8 +152,8 @@ private[storage] class StorageHeaders private (val contentLengthHeader: Option[H
       rangeHeader,
       blobTypeHeader,
       leaseIdHeader,
-      fileWriteTypeHeader,
       rangeWriteTypeHeader,
+      fileTypeHeader,
       fileMaxContentLengthHeader,
       pageBlobContentLengthHeader,
       pageBlobSequenceNumberHeader,

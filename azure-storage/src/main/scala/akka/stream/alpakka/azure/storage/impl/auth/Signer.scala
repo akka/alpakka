@@ -59,6 +59,10 @@ final case class Signer(initialRequest: HttpRequest, settings: StorageSettings)(
     getHeaderOptionalValue(headerName).getOrElse(defaultValue)
 
   private def getContentLengthValue = {
+    // The Content-Length value comes from `CustomContentLengthHeader`, which is added to the
+    // request by `StorageHeaders.withContentLengthHeader` purely so the SharedKey signature can
+    // see it here. That custom header has `renderInRequests = false` to avoid producing a
+    // duplicate Content-Length on the wire (Akka HTTP synthesises one from the entity).
     val contentLengthValue = getHeaderValue(`Content-Length`.name, "0")
     if (contentLengthValue == "0") "" else contentLengthValue
   }

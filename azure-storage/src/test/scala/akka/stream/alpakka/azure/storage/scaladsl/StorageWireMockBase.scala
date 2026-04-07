@@ -226,6 +226,8 @@ abstract class StorageWireMockBase(_system: ActorSystem, val _wireMockServer: Wi
       put(urlEqualTo(s"/$AccountName/$containerName/$blobName?comp=range"))
         .withHeader(Range.name, equalTo(s"bytes=${subRange.first}-${subRange.last}"))
         .withHeader(FileWriteTypeHeaderKey, equalTo("clear"))
+        // clear-range has no body, so the request must not carry a Content-Type
+        .withHeader(`Content-Type`.name, absent())
         .willReturn(
           aResponse()
             .withStatus(201)

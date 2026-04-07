@@ -22,7 +22,6 @@ import akka.http.scaladsl.model.{
   StatusCode
 }
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.alpakka.azure.storage.headers.CustomContentTypeHeader
 import akka.stream.{Attributes, Materializer}
 import akka.stream.alpakka.azure.storage.impl.auth.Signer
 import akka.stream.alpakka.azure.storage.requests.{
@@ -240,9 +239,7 @@ object AzureStorageStream {
       .parseFromValueString(entity.contentType.value)
       .map(Seq(_))
       .getOrElse(Nil)
-    ObjectMetadata(
-      headers ++ contentLengthHeader ++ contentTypeHeader ++ Seq(CustomContentTypeHeader(entity.contentType))
-    )
+    ObjectMetadata(headers ++ contentLengthHeader ++ contentTypeHeader)
   }
 
   private def isTransientError(status: StatusCode): Boolean = {
