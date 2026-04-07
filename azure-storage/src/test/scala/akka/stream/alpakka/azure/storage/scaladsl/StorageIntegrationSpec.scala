@@ -19,6 +19,7 @@ import akka.stream.alpakka.azure.storage.requests.{
   DeleteContainer,
   GetBlob,
   GetProperties,
+  ListBlobs,
   PutBlockBlob
 }
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
@@ -138,6 +139,19 @@ trait StorageIntegrationSpec
       val objectMetadata = maybeEventualObjectMetadata.futureValue
       objectMetadata.contentLength shouldBe (range.last - range.first + 1)
       eventualText.futureValue.head shouldBe "The quick"
+    }
+
+    "list blobs" in {
+      val blobs =
+        BlobService
+          .listBlobs(defaultContainerName, ListBlobs())
+          .withAttributes(getDefaultAttributes)
+          .runWith(Sink.seq)
+          .futureValue
+
+      blobs.map(_.name) should contain(fileName)
+      val blob = blobs.find(_.name == fileName).value
+      blob.contentLength shouldBe contentLength
     }
 
     "delete blob" in {
