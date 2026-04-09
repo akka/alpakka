@@ -146,8 +146,8 @@ lazy val azureStorage = alpakkaProject(
   Test / fork := true,
   Test / envVars := Map(
       "AZURE_STORAGE_AUTHORIZATION_TYPE" -> "SharedKey",
-      "AZURE_STORAGE_ACCOUNT_NAME" -> "<populate_azure_storage_account_name>",
-      "AZURE_STORAGE_ACCOUNT_KEY" -> "<populate_azure_storage_account_key>"
+      "AZURE_STORAGE_ACCOUNT_NAME" -> "none",
+      "AZURE_STORAGE_ACCOUNT_KEY" -> "none"
     )
 ).settings(mimaPreviousArtifacts := Set.empty) // FIXME remove after first release
 

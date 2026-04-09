@@ -10,11 +10,7 @@ package scaladsl
 import akka.actor.ActorSystem
 import akka.stream.Attributes
 import com.dimafeng.testcontainers.ForAllTestContainer
-import org.scalatest.Ignore
 
-// TODO: investigate how Azurite works, it is not even working with pure Java API
-// `putBlob` operations fails with "Premature end of file." error with BadRequest.
-@Ignore
 class AzuriteIntegrationSpec extends StorageIntegrationSpec with ForAllTestContainer {
 
   override lazy val container: AzuriteContainer = new AzuriteContainer()

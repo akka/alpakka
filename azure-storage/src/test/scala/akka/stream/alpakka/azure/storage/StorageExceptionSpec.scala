@@ -87,11 +87,13 @@ class StorageExceptionSpec extends AnyFlatSpecLike with Matchers {
 
   it should "survive null" in {
     StorageException(null, StatusCodes.ServiceUnavailable) shouldBe
-    StorageException(statusCode = StatusCodes.ServiceUnavailable,
-                     errorCode = "null",
-                     errorMessage = "null",
-                     resourceName = None,
-                     resourceValue = None,
-                     reason = None)
+    StorageException(
+      statusCode = StatusCodes.ServiceUnavailable,
+      errorCode = "empty response body",
+      errorMessage = "empty response body",
+      resourceName = None,
+      resourceValue = None,
+      reason = None
+    )
   }
 }

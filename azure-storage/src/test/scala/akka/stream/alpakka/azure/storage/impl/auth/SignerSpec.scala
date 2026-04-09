@@ -28,6 +28,9 @@ import org.scalatest.matchers.should.Matchers
 
 import java.net.URL
 import java.time.{Clock, Instant, ZoneOffset}
+import java.util.Base64
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
 import scala.jdk.CollectionConverters._
 
 class SignerSpec
@@ -197,6 +200,81 @@ class SignerSpec
       s"https://${storageSharedKeyCredential.getAccountName}.$storageType.core.windows.net/$objectPath$queryString"
     )
     storageSharedKeyCredential.generateAuthorizationHeader(url, httpMethod, allHeaders.asJava)
+  }
+
+  // -----------------------------------------------------------------------
+  // SharedKeyLite tests
+  // -----------------------------------------------------------------------
+
+  private lazy val sharedKeyLiteSettings = storageSettings.withAuthorizationType(SharedKeyLiteAuthorizationType)
+
+  it should "sign request with SharedKeyLite (no comp parameter)" in {
+    val request =
+      GetBlob().createRequest(settings = sharedKeyLiteSettings, storageType = BlobType, objectPath = objectPath)
+
+    val expected = sharedKeyLiteAuthorizationHeader(
+      verb = HttpMethods.GET.name(),
+      contentMd5 = "",
+      contentType = "",
+      xmsHeaders = Seq("x-ms-date" -> getFormattedDate, "x-ms-version" -> sharedKeyLiteSettings.apiVersion),
+      canonicalizedResource = s"/${sharedKeyLiteSettings.azureNameKeyCredential.accountName}/$objectPath"
+    )
+    Signer(request, sharedKeyLiteSettings).generateAuthorizationHeader shouldBe expected
+  }
+
+  it should "sign request with SharedKeyLite ignoring non-comp query parameters" in {
+    val request = GetBlob()
+      .withVersionId(versionId)
+      .createRequest(settings = sharedKeyLiteSettings, storageType = BlobType, objectPath = objectPath)
+
+    // versionId must NOT influence the SharedKeyLite signature.
+    val expected = sharedKeyLiteAuthorizationHeader(
+      verb = HttpMethods.GET.name(),
+      contentMd5 = "",
+      contentType = "",
+      xmsHeaders = Seq("x-ms-date" -> getFormattedDate, "x-ms-version" -> sharedKeyLiteSettings.apiVersion),
+      canonicalizedResource = s"/${sharedKeyLiteSettings.azureNameKeyCredential.accountName}/$objectPath"
+    )
+    Signer(request, sharedKeyLiteSettings).generateAuthorizationHeader shouldBe expected
+  }
+
+  it should "sign PutBlockBlob request with SharedKeyLite (Content-Type included, Content-Length is not)" in {
+    val request = PutBlockBlob(1024, ContentTypes.`text/csv(UTF-8)`)
+      .createRequest(settings = sharedKeyLiteSettings, storageType = BlobType, objectPath = objectPath)
+
+    val expected = sharedKeyLiteAuthorizationHeader(
+      verb = HttpMethods.PUT.name(),
+      contentMd5 = "",
+      contentType = ContentTypes.`text/csv(UTF-8)`.value,
+      xmsHeaders = Seq(
+        "x-ms-blob-type" -> BlockBlobType,
+        "x-ms-date" -> getFormattedDate,
+        "x-ms-version" -> sharedKeyLiteSettings.apiVersion
+      ),
+      canonicalizedResource = s"/${sharedKeyLiteSettings.azureNameKeyCredential.accountName}/$objectPath"
+    )
+    Signer(request, sharedKeyLiteSettings).generateAuthorizationHeader shouldBe expected
+  }
+
+  // Independent reference implementation of the SharedKeyLite StringToSign per the Azure
+  // spec for Blob/Queue/File services. We use this in tests to verify Signer's output
+  // without relying on Azure's SDK (which only exposes SharedKey).
+  private def sharedKeyLiteAuthorizationHeader(verb: String,
+                                               contentMd5: String,
+                                               contentType: String,
+                                               xmsHeaders: Seq[(String, String)],
+                                               canonicalizedResource: String): String = {
+    val canonicalizedHeaders =
+      xmsHeaders.sortBy(_._1.toLowerCase).map { case (k, v) => s"${k.toLowerCase}:$v" }
+    val stringToSign =
+      (Seq(verb.toUpperCase, contentMd5, contentType, "") ++ canonicalizedHeaders ++ Seq(canonicalizedResource))
+        .mkString("\n")
+    val mac = Mac.getInstance(sharedKeyLiteSettings.algorithm)
+    mac.init(
+      new SecretKeySpec(sharedKeyLiteSettings.azureNameKeyCredential.accountKey, sharedKeyLiteSettings.algorithm)
+    )
+    val signature = Base64.getEncoder.encodeToString(mac.doFinal(stringToSign.getBytes))
+    s"$SharedKeyLiteAuthorizationType ${sharedKeyLiteSettings.azureNameKeyCredential.accountName}:$signature"
   }
 
 }

@@ -58,6 +58,7 @@ jobs:
           - { connector: avroparquet-tests }
           - { connector: awslambda }
           - { connector: aws-event-bridge,             pre_cmd: 'docker compose up -d amazoneventbridge' }
+          - { connector: azure-storage }
           - { connector: azure-storage-queue }
           - { connector: cassandra,                    pre_cmd: 'docker compose up -d cassandra' }
           - { connector: couchbase,                    pre_cmd: 'docker compose up -d couchbase_prep' }

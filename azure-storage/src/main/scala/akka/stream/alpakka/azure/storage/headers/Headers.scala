@@ -26,7 +26,10 @@ private[storage] case class CustomContentLengthHeader(contentLength: Long) exten
 
   override def value(): String = contentLength.toString
 
-  override def renderInRequests(): Boolean = true
+  // Do not render in requests: the value is used only for Shared Key signature computation.
+  // Akka HTTP will automatically emit a Content-Length header from the entity, so rendering
+  // this header as well would produce a duplicate Content-Length that breaks Azure / Azurite.
+  override def renderInRequests(): Boolean = false
 
   override def renderInResponses(): Boolean = true
 }
