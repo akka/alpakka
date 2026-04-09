@@ -67,15 +67,28 @@ final case class Signer(initialRequest: HttpRequest, settings: StorageSettings)(
     if (contentLengthValue == "0") "" else contentLengthValue
   }
 
-  private def buildHeadersToSign(headerNames: Seq[String]) = {
+  private def buildSharedKeyHeadersToSign = {
     def getValue(headerName: String) = {
       if (headerName == `Content-Length`.name) getContentLengthValue
       else getHeaderValue(headerName)
     }
 
-    Seq(requestWithHeaders.method.value.toUpperCase) ++ headerNames.map(getValue) ++
+    Seq(requestWithHeaders.method.value.toUpperCase) ++ Signer.SharedKeyHeaders.map(getValue) ++
     getAdditionalXmsHeaders ++ getCanonicalizedResource
   }
+
+  // SharedKeyLite (Blob/Queue/File) StringToSign:
+  //   VERB + "\n" + Content-MD5 + "\n" + Content-Type + "\n" + Date + "\n" +
+  //   CanonicalizedHeaders + CanonicalizedResource
+  // The Date line is empty because we always set x-ms-date (which is included in
+  // CanonicalizedHeaders), per the Azure spec.
+  private def buildSharedKeyLiteHeadersToSign =
+    Seq(
+      requestWithHeaders.method.value.toUpperCase,
+      getHeaderValue("Content-MD5"),
+      getHeaderValue(`Content-Type`.name),
+      ""
+    ) ++ getAdditionalXmsHeaders ++ getCanonicalizedResourceLite
 
   private def getAdditionalXmsHeaders =
     requestWithHeaders.headers.filter(header => header.name().startsWith("x-ms-")).sortBy(_.name()).map { header =>
@@ -99,10 +112,21 @@ final case class Signer(initialRequest: HttpRequest, settings: StorageSettings)(
     Seq(resourcePath) ++ queries
   }
 
+  // SharedKeyLite CanonicalizedResource is a single line: "/<account><path>" with an
+  // optional "?comp=<value>" suffix. Unlike SharedKey, no other query parameters are
+  // included in the signature.
+  private def getCanonicalizedResourceLite = {
+    val uri = requestWithHeaders.uri
+    val resourcePath = s"/${credential.accountName}${uri.path.toString()}"
+    val compSuffix = uri.query().get("comp").map(value => s"?comp=$value").getOrElse("")
+    Seq(resourcePath + compSuffix)
+  }
+
   private[auth] def generateAuthorizationHeader: String = {
-    import Signer._
     val authorizationType = settings.authorizationType
-    val headersToSign = buildHeadersToSign(SharedKeyHeaders)
+    val headersToSign =
+      if (authorizationType == SharedKeyLiteAuthorizationType) buildSharedKeyLiteHeadersToSign
+      else buildSharedKeyHeadersToSign
     val signature = Base64.getEncoder.encodeToString(mac.doFinal(headersToSign.mkString(NewLine).getBytes))
     s"$authorizationType ${credential.accountName}:$signature"
   }
