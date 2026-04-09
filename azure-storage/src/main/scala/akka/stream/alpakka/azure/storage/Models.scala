@@ -13,7 +13,6 @@ import com.typesafe.config.Config
 import java.util.{Base64, Optional}
 import scala.jdk.CollectionConverters._
 import scala.jdk.OptionConverters._
-import scala.util.Try
 
 final case class AzureNameKeyCredential(accountName: String, accountKey: Array[Byte])
 
@@ -28,9 +27,13 @@ object AzureNameKeyCredential {
   def apply(config: Config): AzureNameKeyCredential = {
     val accountName = config.getString("account-name", "")
     val accountKey = config.getString("account-key", "")
-    // The key is only used for SharedKey auth. For other auth types (anon, sas) the key
-    // may be a placeholder that is not valid base64, so we decode defensively.
-    val decodedKey = Try(Base64.getDecoder.decode(accountKey)).getOrElse(Array.empty[Byte])
+    // The key is only required for SharedKey/SharedKeyLite auth. For other auth types
+    // (anon, sas) the value is the reference.conf placeholder "none", which is not
+    // valid base64. An actual user-supplied key that fails to decode should surface
+    // as an error rather than be silently dropped.
+    val decodedKey =
+      if (accountKey.isEmpty || accountKey == "none") Array.empty[Byte]
+      else Base64.getDecoder.decode(accountKey)
     new AzureNameKeyCredential(accountName, decodedKey)
   }
 }
