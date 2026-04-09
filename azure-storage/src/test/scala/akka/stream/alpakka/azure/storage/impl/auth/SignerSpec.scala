@@ -209,9 +209,8 @@ class SignerSpec
   private lazy val sharedKeyLiteSettings = storageSettings.withAuthorizationType(SharedKeyLiteAuthorizationType)
 
   it should "sign request with SharedKeyLite (no comp parameter)" in {
-    val request = GetBlob().createRequest(settings = sharedKeyLiteSettings,
-                                          storageType = BlobType,
-                                          objectPath = objectPath)
+    val request =
+      GetBlob().createRequest(settings = sharedKeyLiteSettings, storageType = BlobType, objectPath = objectPath)
 
     val expected = sharedKeyLiteAuthorizationHeader(
       verb = HttpMethods.GET.name(),
@@ -271,7 +270,9 @@ class SignerSpec
       (Seq(verb.toUpperCase, contentMd5, contentType, "") ++ canonicalizedHeaders ++ Seq(canonicalizedResource))
         .mkString("\n")
     val mac = Mac.getInstance(sharedKeyLiteSettings.algorithm)
-    mac.init(new SecretKeySpec(sharedKeyLiteSettings.azureNameKeyCredential.accountKey, sharedKeyLiteSettings.algorithm))
+    mac.init(
+      new SecretKeySpec(sharedKeyLiteSettings.azureNameKeyCredential.accountKey, sharedKeyLiteSettings.algorithm)
+    )
     val signature = Base64.getEncoder.encodeToString(mac.doFinal(stringToSign.getBytes))
     s"$SharedKeyLiteAuthorizationType ${sharedKeyLiteSettings.azureNameKeyCredential.accountName}:$signature"
   }
