@@ -317,6 +317,20 @@ class StorageSpec
       blob.contentType shouldBe Some("text/plain")
       blob.blobType shouldBe "BlockBlob"
     }
+
+    "list blobs across multiple pages" in {
+      mockListBlobsPaged()
+
+      import akka.stream.alpakka.azure.storage.scaladsl.BlobService
+      import akka.stream.alpakka.azure.storage.BlobItem
+      import akka.stream.alpakka.azure.storage.requests.ListBlobs
+
+      val source: Source[BlobItem, NotUsed] =
+        BlobService.listBlobs(containerName, ListBlobs())
+
+      val blobs = source.runWith(Sink.seq).futureValue
+      blobs.map(_.name) shouldBe Seq(blobName, secondBlobName)
+    }
   }
 
   "AzureStorage File connector" should {
@@ -513,6 +527,20 @@ class StorageSpec
       entries.collectFirst { case d: ShareDirectoryItem => d } shouldBe defined
       val dir = entries.collectFirst { case d: ShareDirectoryItem => d }.get
       dir.name shouldBe "my-directory"
+    }
+
+    "list files across multiple pages" in {
+      mockListFilesPaged()
+
+      import akka.stream.alpakka.azure.storage.scaladsl.FileService
+      import akka.stream.alpakka.azure.storage.{FileShareEntry, ShareFileItem}
+      import akka.stream.alpakka.azure.storage.requests.ListFiles
+
+      val source: Source[FileShareEntry, NotUsed] =
+        FileService.listFiles(containerName, ListFiles())
+
+      val entries = source.runWith(Sink.seq).futureValue
+      entries.collect { case f: ShareFileItem => f.name } shouldBe Seq(blobName, secondBlobName)
     }
   }
 }

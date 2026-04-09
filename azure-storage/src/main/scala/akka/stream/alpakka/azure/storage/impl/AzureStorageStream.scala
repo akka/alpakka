@@ -47,6 +47,8 @@ import scala.xml.XML
 
 object AzureStorageStream {
 
+  private val futureNone = Future.successful(None)
+
   private[storage] def getObject(storageType: String,
                                  objectPath: String,
                                  requestBuilder: RequestBuilder): Source[ByteString, Future[ObjectMetadata]] =
@@ -174,7 +176,7 @@ object AzureStorageStream {
 
         Source
           .unfoldAsync[Option[String], Seq[BlobItem]](Some("")) {
-            case None => Future.successful(None)
+            case None => futureNone
             case Some(marker) =>
               val rb = if (marker.isEmpty) requestBuilder else requestBuilder.withMarker(marker)
               signAndRequest(rb.createRequest(settings, BlobType, objectPath), settings)
@@ -212,7 +214,7 @@ object AzureStorageStream {
 
         Source
           .unfoldAsync[Option[String], Seq[FileShareEntry]](Some("")) {
-            case None => Future.successful(None)
+            case None => futureNone
             case Some(marker) =>
               val rb = if (marker.isEmpty) requestBuilder else requestBuilder.withMarker(marker)
               signAndRequest(rb.createRequest(settings, FileType, objectPath), settings)

@@ -286,6 +286,58 @@ abstract class StorageWireMockBase(_system: ActorSystem, val _wireMockServer: Wi
         )
     )
 
+  // second blob for the second page in paginated list tests
+  protected val secondBlobName = "my-blob-2.txt"
+  protected val nextMarkerValue = "marker-page-2"
+
+  private def blobPageXml(blobName: String, nextMarker: String): String =
+    s"""$Bom<?xml version="1.0" encoding="utf-8"?>
+       |<EnumerationResults ContainerName="https://$AccountName.blob.core.windows.net/$containerName">
+       |  <Blobs>
+       |    <Blob>
+       |      <Name>$blobName</Name>
+       |      <Properties>
+       |        <Last-Modified>Thu, 01 Jan 2020 00:00:00 GMT</Last-Modified>
+       |        <Etag>${ETagValue}</Etag>
+       |        <Content-Length>${payload.length}</Content-Length>
+       |        <Content-Type>text/plain</Content-Type>
+       |        <BlobType>BlockBlob</BlobType>
+       |      </Properties>
+       |    </Blob>
+       |  </Blobs>
+       |  <NextMarker>$nextMarker</NextMarker>
+       |</EnumerationResults>""".stripMargin
+
+  // Registers two mappings so unfoldAsync drives two sequential requests: the first (no marker
+  // query param) returns a non-empty NextMarker, the second (marker query param present) returns
+  // an empty NextMarker which terminates pagination.
+  protected def mockListBlobsPaged(): Unit = {
+    mock.register(
+      get(urlPathEqualTo(s"/$AccountName/$containerName"))
+        .withQueryParam("restype", equalTo("container"))
+        .withQueryParam("comp", equalTo("list"))
+        .withQueryParam("marker", absent())
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader(`Content-Type`.name, "application/xml")
+            .withBody(blobPageXml(blobName, nextMarkerValue))
+        )
+    )
+    mock.register(
+      get(urlPathEqualTo(s"/$AccountName/$containerName"))
+        .withQueryParam("restype", equalTo("container"))
+        .withQueryParam("comp", equalTo("list"))
+        .withQueryParam("marker", equalTo(nextMarkerValue))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader(`Content-Type`.name, "application/xml")
+            .withBody(blobPageXml(secondBlobName, ""))
+        )
+    )
+  }
+
   protected def mockListFiles(): StubMapping =
     mock.register(
       get(urlEqualTo(s"/$AccountName/$containerName?restype=directory&comp=list"))
@@ -296,6 +348,47 @@ abstract class StorageWireMockBase(_system: ActorSystem, val _wireMockServer: Wi
             .withBody(fileListXml)
         )
     )
+
+  private def fileEntryPageXml(fileName: String, nextMarker: String): String =
+    s"""$Bom<?xml version="1.0" encoding="utf-8"?>
+       |<EnumerationResults ServiceEndpoint="https://$AccountName.file.core.windows.net/" ShareName="$containerName" DirectoryPath="">
+       |  <Entries>
+       |    <File>
+       |      <Name>$fileName</Name>
+       |      <Properties>
+       |        <Content-Length>${payload.length}</Content-Length>
+       |      </Properties>
+       |    </File>
+       |  </Entries>
+       |  <NextMarker>$nextMarker</NextMarker>
+       |</EnumerationResults>""".stripMargin
+
+  protected def mockListFilesPaged(): Unit = {
+    mock.register(
+      get(urlPathEqualTo(s"/$AccountName/$containerName"))
+        .withQueryParam("restype", equalTo("directory"))
+        .withQueryParam("comp", equalTo("list"))
+        .withQueryParam("marker", absent())
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader(`Content-Type`.name, "application/xml")
+            .withBody(fileEntryPageXml(blobName, nextMarkerValue))
+        )
+    )
+    mock.register(
+      get(urlPathEqualTo(s"/$AccountName/$containerName"))
+        .withQueryParam("restype", equalTo("directory"))
+        .withQueryParam("comp", equalTo("list"))
+        .withQueryParam("marker", equalTo(nextMarkerValue))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader(`Content-Type`.name, "application/xml")
+            .withBody(fileEntryPageXml(secondBlobName, ""))
+        )
+    )
+  }
 
   protected def mock404s(): StubMapping =
     mock.register(
