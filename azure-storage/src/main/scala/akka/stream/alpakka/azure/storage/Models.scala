@@ -181,7 +181,7 @@ final class ObjectMetadata private (val metadata: Seq[HttpHeader]) {
 
   override def toString: String =
     s"ObjectMetadata(contentMd5=$contentMd5,eTag=$eTag,contentLength=$contentLength," +
-      s"contentType=$contentType,lastModified=$lastModified)"
+    s"contentType=$contentType,lastModified=$lastModified)"
 }
 
 object ObjectMetadata {
