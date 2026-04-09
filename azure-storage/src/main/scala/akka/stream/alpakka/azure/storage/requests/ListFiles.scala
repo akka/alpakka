@@ -11,6 +11,9 @@ import akka.http.scaladsl.model.{HttpHeader, HttpMethod, HttpMethods}
 import akka.stream.alpakka.azure.storage.headers.ServerSideEncryption
 import akka.stream.alpakka.azure.storage.impl.StorageHeaders
 
+import java.util.{Optional, OptionalInt}
+import scala.jdk.OptionConverters._
+
 final class ListFiles(val prefix: Option[String] = None,
                       val maxResults: Option[Int] = None,
                       private[storage] val marker: Option[String] = None,
@@ -25,6 +28,12 @@ final class ListFiles(val prefix: Option[String] = None,
     prefix.map("prefix" -> _).toMap ++
     maxResults.map("maxresults" -> _.toString).toMap ++
     marker.map("marker" -> _).toMap
+
+  /** Java API */
+  def getPrefix: Optional[String] = prefix.toJava
+
+  /** Java API */
+  def getMaxResults: OptionalInt = maxResults.fold(OptionalInt.empty())(OptionalInt.of)
 
   def withPrefix(prefix: String): ListFiles = copy(prefix = Some(prefix))
 

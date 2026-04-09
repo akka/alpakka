@@ -11,6 +11,9 @@ import akka.http.scaladsl.model.{HttpHeader, HttpMethod, HttpMethods}
 import akka.stream.alpakka.azure.storage.headers.ServerSideEncryption
 import akka.stream.alpakka.azure.storage.impl.StorageHeaders
 
+import java.util.{Optional, OptionalInt}
+import scala.jdk.OptionConverters._
+
 final class ListBlobs(val prefix: Option[String] = None,
                       val delimiter: Option[String] = None,
                       val maxResults: Option[Int] = None,
@@ -27,6 +30,15 @@ final class ListBlobs(val prefix: Option[String] = None,
     delimiter.map("delimiter" -> _).toMap ++
     maxResults.map("maxresults" -> _.toString).toMap ++
     marker.map("marker" -> _).toMap
+
+  /** Java API */
+  def getPrefix: Optional[String] = prefix.toJava
+
+  /** Java API */
+  def getDelimiter: Optional[String] = delimiter.toJava
+
+  /** Java API */
+  def getMaxResults: OptionalInt = maxResults.fold(OptionalInt.empty())(OptionalInt.of)
 
   def withPrefix(prefix: String): ListBlobs = copy(prefix = Some(prefix))
 
