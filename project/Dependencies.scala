@@ -42,7 +42,7 @@ object Dependencies {
   }
 
   // https://github.com/jwt-scala/jwt-scala/releases
-  val JwtScalaVersion = "9.4.6"
+  val JwtScalaVersion = "11.0.3"
 
   // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L16
   val slf4jVersion = "2.0.17"
