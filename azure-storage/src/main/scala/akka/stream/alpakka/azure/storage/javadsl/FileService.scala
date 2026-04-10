@@ -18,6 +18,7 @@ import akka.stream.alpakka.azure.storage.requests.{
   DeleteFile,
   GetFile,
   GetProperties,
+  ListFiles,
   UpdateFileRange
 }
 import akka.stream.javadsl.Source
@@ -127,6 +128,18 @@ object FileService {
       .clearRange(objectPath, requestBuilder)
       .map(opt => Optional.ofNullable(opt.orNull))
       .asJava
+
+  /**
+   * Lists files and directories in an Azure File Share directory.
+   *
+   * @param objectPath share and directory path, e.g. `my-share` or `my-share/my-directory`
+   * @param requestBuilder builder to configure the list request (prefix, maxResults)
+   * @return A [[akka.stream.javadsl.Source Source]] of [[akka.stream.alpakka.azure.storage.FileShareEntry]] elements
+   *         (either [[akka.stream.alpakka.azure.storage.ShareFileItem]] or
+   *         [[akka.stream.alpakka.azure.storage.ShareDirectoryItem]]), automatically paginated
+   */
+  def listFiles(objectPath: String, requestBuilder: ListFiles): Source[FileShareEntry, NotUsed] =
+    AzureStorageStream.listFiles(objectPath, requestBuilder).asJava
 
   /**
    * Create directory.

@@ -61,7 +61,7 @@ final class ObjectMetadata private (val metadata: Seq[HttpHeader]) {
    * Java API
    * Content MD5
    */
-  lazy val getContentMd5: Optional[String] = contentMd5.toJava
+  def getContentMd5: Optional[String] = contentMd5.toJava
 
   /** Gets the hex encoded 128-bit MD5 digest of the associated object according to RFC 1864. This data is used as an
    * integrity check to verify that the data received by the caller is the same data that was sent by Azure Storage.
@@ -87,7 +87,7 @@ final class ObjectMetadata private (val metadata: Seq[HttpHeader]) {
    * @return
    *   The hex encoded MD5 hash of the content for the associated object as calculated by Azure Storage.
    */
-  lazy val getETag: Optional[String] = eTag.toJava
+  def getETag: Optional[String] = eTag.toJava
 
   /** <p> Gets the Content-Length HTTP header indicating the size of the associated object in bytes. </p> <p> This field
    * is required when uploading objects to Storage, but the Azure Storage Java client will automatically set it when
@@ -123,7 +123,7 @@ final class ObjectMetadata private (val metadata: Seq[HttpHeader]) {
    * @see
    *   ObjectMetadata#setContentLength(long)
    */
-  lazy val getContentLength: Long = contentLength
+  def getContentLength: Long = contentLength
 
   /** <p> Gets the Content-Type HTTP header, which indicates the type of content stored in the associated object. The
    * value of this header is a standard MIME type. </p> <p> When uploading files, the Azure Storage Java client will
@@ -156,7 +156,7 @@ final class ObjectMetadata private (val metadata: Seq[HttpHeader]) {
    * @see
    *   ObjectMetadata#setContentType(String)
    */
-  lazy val getContentType: Optional[String] = contentType.toJava
+  def getContentType: Optional[String] = contentType.toJava
 
   /** Gets the value of the Last-Modified header, indicating the date and time at which Azure Storage last recorded a
    * modification to the associated object.
@@ -177,18 +177,155 @@ final class ObjectMetadata private (val metadata: Seq[HttpHeader]) {
    * @return
    * The date and time at which Azure Storage last recorded a modification to the associated object.
    */
-  lazy val getLastModified: Option[DateTime] = lastModified
+  def getLastModified: Option[DateTime] = lastModified
 
   override def toString: String =
-    s"""ObjectMetadata(
-       |contentMd5=$contentMd5
-       | eTag=$eTag,
-       | contentLength=$contentLength,
-       | contentType=$contentType,
-       | lastModified=$lastModified
-       |)""".stripMargin.replaceAll(System.lineSeparator(), "")
+    s"ObjectMetadata(contentMd5=$contentMd5,eTag=$eTag,contentLength=$contentLength," +
+    s"contentType=$contentType,lastModified=$lastModified)"
 }
 
 object ObjectMetadata {
   def apply(metadata: Seq[HttpHeader]) = new ObjectMetadata(metadata)
+}
+
+/**
+ * Represents a blob returned by the List Blobs operation.
+ *
+ * @param name blob name
+ * @param eTag entity tag
+ * @param contentLength size in bytes
+ * @param contentType MIME type
+ * @param lastModified last modified date as an RFC 1123 string
+ * @param blobType BlockBlob, PageBlob, or AppendBlob
+ */
+final class BlobItem private (
+    val name: String,
+    val eTag: Option[String],
+    val contentLength: Long,
+    val contentType: Option[String],
+    val lastModified: Option[String],
+    val blobType: String
+) {
+  import scala.jdk.OptionConverters._
+
+  /** Java API */
+  def getName: String = name
+
+  /** Java API */
+  def getETag: Optional[String] = eTag.toJava
+
+  /** Java API */
+  def getContentLength: Long = contentLength
+
+  /** Java API */
+  def getContentType: Optional[String] = contentType.toJava
+
+  /** Java API */
+  def getLastModified: Optional[String] = lastModified.toJava
+
+  /** Java API */
+  def getBlobType: String = blobType
+
+  override def toString: String =
+    s"BlobItem(name=$name, eTag=$eTag, contentLength=$contentLength, " +
+    s"contentType=$contentType, lastModified=$lastModified, blobType=$blobType)"
+
+  override def equals(other: Any): Boolean = other match {
+    case that: BlobItem =>
+      name == that.name &&
+      eTag == that.eTag &&
+      contentLength == that.contentLength &&
+      contentType == that.contentType &&
+      lastModified == that.lastModified &&
+      blobType == that.blobType
+    case _ => false
+  }
+
+  override def hashCode(): Int =
+    java.util.Objects.hash(name, eTag, java.lang.Long.valueOf(contentLength), contentType, lastModified, blobType)
+}
+
+object BlobItem {
+
+  /** Scala API */
+  def apply(name: String,
+            eTag: Option[String],
+            contentLength: Long,
+            contentType: Option[String],
+            lastModified: Option[String],
+            blobType: String): BlobItem =
+    new BlobItem(name, eTag, contentLength, contentType, lastModified, blobType)
+
+  /** Java API */
+  def create(name: String,
+             eTag: Optional[String],
+             contentLength: Long,
+             contentType: Optional[String],
+             lastModified: Optional[String],
+             blobType: String): BlobItem =
+    new BlobItem(name, eTag.toScala, contentLength, contentType.toScala, lastModified.toScala, blobType)
+}
+
+/** An entry returned by the List Files and Directories operation on Azure File Share. */
+sealed trait FileShareEntry {
+  def name: String
+
+  /** Java API */
+  def getName: String = name
+}
+
+/**
+ * Represents a file entry returned by the List Files and Directories operation.
+ *
+ * @param name file name
+ * @param contentLength size in bytes
+ */
+final class ShareFileItem private (val name: String, val contentLength: Long) extends FileShareEntry {
+
+  /** Java API */
+  def getContentLength: Long = contentLength
+
+  override def toString: String = s"ShareFileItem(name=$name, contentLength=$contentLength)"
+
+  override def equals(other: Any): Boolean = other match {
+    case that: ShareFileItem => name == that.name && contentLength == that.contentLength
+    case _ => false
+  }
+
+  override def hashCode(): Int = java.util.Objects.hash(name, java.lang.Long.valueOf(contentLength))
+}
+
+object ShareFileItem {
+
+  /** Scala API */
+  def apply(name: String, contentLength: Long): ShareFileItem = new ShareFileItem(name, contentLength)
+
+  /** Java API */
+  def create(name: String, contentLength: Long): ShareFileItem = new ShareFileItem(name, contentLength)
+}
+
+/**
+ * Represents a directory entry returned by the List Files and Directories operation.
+ *
+ * @param name directory name
+ */
+final class ShareDirectoryItem private (val name: String) extends FileShareEntry {
+
+  override def toString: String = s"ShareDirectoryItem(name=$name)"
+
+  override def equals(other: Any): Boolean = other match {
+    case that: ShareDirectoryItem => name == that.name
+    case _ => false
+  }
+
+  override def hashCode(): Int = name.hashCode
+}
+
+object ShareDirectoryItem {
+
+  /** Scala API */
+  def apply(name: String): ShareDirectoryItem = new ShareDirectoryItem(name)
+
+  /** Java API */
+  def create(name: String): ShareDirectoryItem = new ShareDirectoryItem(name)
 }

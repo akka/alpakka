@@ -32,17 +32,22 @@ import akka.stream.alpakka.azure.storage.requests.{
   DeleteContainer,
   DeleteDirectory,
   GetProperties,
+  ListBlobs,
+  ListFiles,
   RequestBuilder,
   UpdateFileRange
 }
-import akka.stream.scaladsl.{Flow, RetryFlow, Source}
+import akka.stream.scaladsl.{Flow, RetryFlow, Sink, Source}
 import akka.util.ByteString
 
 import java.time.Clock
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success, Try}
+import scala.xml.XML
 
 object AzureStorageStream {
+
+  private val futureNone = Future.successful(None)
 
   private[storage] def getObject(storageType: String,
                                  objectPath: String,
@@ -153,6 +158,82 @@ object AzureStorageStream {
                   storageType = FileType,
                   objectPath = directoryPath,
                   requestBuilder = requestBuilder)
+
+  /**
+   * Lists blobs in a container, automatically following pagination markers.
+   *
+   * @param objectPath container name, e.g. `my-container`
+   * @param requestBuilder builder to configure the list request
+   * @return Source of [[BlobItem]] elements
+   */
+  private[storage] def listBlobs(objectPath: String, requestBuilder: ListBlobs): Source[BlobItem, NotUsed] =
+    Source
+      .fromMaterializer { (mat, attr) =>
+        implicit val system: ActorSystem = mat.system
+        implicit val materializer: Materializer = mat
+        import system.dispatcher
+        val settings = resolveSettings(attr, system)
+
+        Source
+          .unfoldAsync[Option[String], Seq[BlobItem]](Some("")) {
+            case None => futureNone
+            case Some(marker) =>
+              val rb = if (marker.isEmpty) requestBuilder else requestBuilder.withMarker(marker)
+              signAndRequest(rb.createRequest(settings, BlobType, objectPath), settings)
+                .flatMapConcat {
+                  case HttpResponse(OK, _, entity, _) =>
+                    Source.future(
+                      Unmarshal(entity).to[String].map { xml =>
+                        val result = parseBlobListXml(xml)
+                        Some((result.nextMarker, result.items))
+                      }
+                    )
+                  case response: HttpResponse =>
+                    Source.future(unmarshalError(response.status, response.entity))
+                }
+                .runWith(Sink.head)
+          }
+          .mapConcat(identity)
+      }
+      .mapMaterializedValue(_ => NotUsed)
+
+  /**
+   * Lists files and directories in an Azure File Share directory, automatically following pagination markers.
+   *
+   * @param objectPath share and directory path, e.g. `my-share` or `my-share/my-directory`
+   * @param requestBuilder builder to configure the list request
+   * @return Source of [[FileShareEntry]] elements (either [[ShareFileItem]] or [[ShareDirectoryItem]])
+   */
+  private[storage] def listFiles(objectPath: String, requestBuilder: ListFiles): Source[FileShareEntry, NotUsed] =
+    Source
+      .fromMaterializer { (mat, attr) =>
+        implicit val system: ActorSystem = mat.system
+        implicit val materializer: Materializer = mat
+        import system.dispatcher
+        val settings = resolveSettings(attr, system)
+
+        Source
+          .unfoldAsync[Option[String], Seq[FileShareEntry]](Some("")) {
+            case None => futureNone
+            case Some(marker) =>
+              val rb = if (marker.isEmpty) requestBuilder else requestBuilder.withMarker(marker)
+              signAndRequest(rb.createRequest(settings, FileType, objectPath), settings)
+                .flatMapConcat {
+                  case HttpResponse(OK, _, entity, _) =>
+                    Source.future(
+                      Unmarshal(entity).to[String].map { xml =>
+                        val result = parseFileListXml(xml)
+                        Some((result.nextMarker, result.entries))
+                      }
+                    )
+                  case response: HttpResponse =>
+                    Source.future(unmarshalError(response.status, response.entity))
+                }
+                .runWith(Sink.head)
+          }
+          .mapConcat(identity)
+      }
+      .mapMaterializedValue(_ => NotUsed)
 
   /**
    * Common function to handle all requests where we don't expect response body.
@@ -276,4 +357,45 @@ object AzureStorageStream {
           .map(settingsPath => storageExtension.settings(settingsPath.path))
           .getOrElse(storageExtension.settings)
       }
+
+  private case class BlobListResult(items: Seq[BlobItem], nextMarker: Option[String])
+  private case class FileListResult(entries: Seq[FileShareEntry], nextMarker: Option[String])
+
+  // Azure Storage list responses include a UTF-8 BOM at the start of the body. After the entity
+  // is decoded to String the BOM survives as a literal U+FEFF character, which scala.xml's
+  // loadString rejects with "Content is not allowed in prolog". Strip it before parsing.
+  private def loadAzureXml(rawXml: String): scala.xml.Elem = {
+    val stripped = if (rawXml.nonEmpty && rawXml.charAt(0) == '\uFEFF') rawXml.substring(1) else rawXml
+    XML.loadString(stripped)
+  }
+
+  private def parseBlobListXml(rawXml: String): BlobListResult = {
+    val root = loadAzureXml(rawXml)
+    val items = (root \\ "Blob").map { blob =>
+      val name = (blob \ "Name").text
+      val props = blob \ "Properties"
+      val eTag = emptyStringToOption((props \ "Etag").text).map(removeQuotes)
+      val contentLength = (props \ "Content-Length").text.toLongOption.getOrElse(0L)
+      val contentType = emptyStringToOption((props \ "Content-Type").text)
+      val lastModified = emptyStringToOption((props \ "Last-Modified").text)
+      val blobType = (props \ "BlobType").text
+      BlobItem(name, eTag, contentLength, contentType, lastModified, blobType)
+    }
+    val nextMarker = emptyStringToOption((root \ "NextMarker").text)
+    BlobListResult(items, nextMarker)
+  }
+
+  private def parseFileListXml(rawXml: String): FileListResult = {
+    val root = loadAzureXml(rawXml)
+    val entries = (root \\ "Entries").flatMap(_.child).collect {
+      case file if file.label == "File" =>
+        val name = (file \ "Name").text
+        val contentLength = (file \ "Properties" \ "Content-Length").text.toLongOption.getOrElse(0L)
+        ShareFileItem(name, contentLength): FileShareEntry
+      case dir if dir.label == "Directory" =>
+        ShareDirectoryItem((dir \ "Name").text): FileShareEntry
+    }
+    val nextMarker = emptyStringToOption((root \ "NextMarker").text)
+    FileListResult(entries, nextMarker)
+  }
 }
