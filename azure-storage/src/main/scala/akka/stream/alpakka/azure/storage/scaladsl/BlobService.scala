@@ -19,9 +19,10 @@ import akka.stream.alpakka.azure.storage.requests.{
   ListBlobs,
   PutAppendBlock,
   PutBlockBlob,
+  PutBlockBlobStreaming,
   PutPageBlock
 }
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 
 import scala.concurrent.Future
@@ -80,6 +81,22 @@ object BlobService {
       .putBlob(objectPath,
                requestBuilder,
                Some(HttpEntity(requestBuilder.contentType, requestBuilder.contentLength, payload)))
+
+  /**
+   * Uploads a block blob using streaming Put Block / Put Block List operations.
+   * The incoming bytes are grouped into blocks of the configured size, each uploaded individually,
+   * then committed as a single blob. Unlike [[putBlockBlob]], this does not require knowing the
+   * content length upfront.
+   *
+   * @param objectPath path of the object, should start with "/" and separated by `/`, e.g. `/container/blob`
+   * @param requestBuilder builder to configure block size, content type, optional lease and SSE
+   * @return A [[akka.stream.scaladsl.Sink]] consuming [[akka.util.ByteString ByteString]] elements and
+   *         materializing a [[scala.concurrent.Future]] of [[akka.stream.alpakka.azure.storage.ObjectMetadata]]
+   *         from the Put Block List response
+   */
+  def putBlockBlobStreaming(objectPath: String,
+                            requestBuilder: PutBlockBlobStreaming): Sink[ByteString, Future[ObjectMetadata]] =
+    AzureStorageStream.putBlockBlobStreaming(objectPath, requestBuilder)
 
   /**
    * Put (Create) Page Blob.

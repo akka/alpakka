@@ -20,7 +20,8 @@ import akka.stream.alpakka.azure.storage.requests.{
   GetBlob,
   GetProperties,
   ListBlobs,
-  PutBlockBlob
+  PutBlockBlob,
+  PutBlockBlobStreaming
 }
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Flow, Framing, Keep, Sink, Source}
@@ -95,6 +96,86 @@ trait StorageIntegrationSpec
       maybeObjectMetadata shouldBe defined
       val objectMetadata = maybeObjectMetadata.get
       objectMetadata.contentLength shouldBe 0L
+    }
+
+    "put blob streaming" in {
+      val streamingBlobPath = s"$defaultContainerName/streaming-blob.txt"
+      val streamingText = "Hello from streaming upload!"
+
+      val objectMetadata =
+        Source
+          .single(ByteString(streamingText))
+          .runWith(
+            BlobService
+              .putBlockBlobStreaming(
+                objectPath = streamingBlobPath,
+                requestBuilder = PutBlockBlobStreaming(ContentTypes.`text/plain(UTF-8)`)
+              )
+              .withAttributes(getDefaultAttributes)
+          )
+          .futureValue
+
+      objectMetadata.contentLength shouldBe 0L
+
+      // Verify uploaded content via get
+      val downloaded =
+        BlobService
+          .getBlob(streamingBlobPath, GetBlob())
+          .withAttributes(getDefaultAttributes)
+          .map(_.utf8String)
+          .toMat(Sink.seq)(Keep.right)
+          .run()
+          .futureValue
+          .mkString("")
+
+      downloaded shouldBe streamingText
+
+      // Clean up
+      BlobService
+        .deleteBlob(streamingBlobPath, DeleteBlob())
+        .withAttributes(getDefaultAttributes)
+        .runWith(Sink.head)
+        .futureValue
+    }
+
+    "put blob streaming with multiple blocks" in {
+      val streamingBlobPath = s"$defaultContainerName/streaming-multi-block.txt"
+      // Use a small block size to force multiple blocks
+      val largeText = sampleText * 10
+
+      val objectMetadata =
+        Source(largeText.grouped(7).map(ByteString(_)).toList)
+          .runWith(
+            BlobService
+              .putBlockBlobStreaming(
+                objectPath = streamingBlobPath,
+                requestBuilder = PutBlockBlobStreaming(ContentTypes.`text/plain(UTF-8)`).withBlockSize(50)
+              )
+              .withAttributes(getDefaultAttributes)
+          )
+          .futureValue
+
+      objectMetadata.contentLength shouldBe 0L
+
+      // Verify uploaded content via get
+      val downloaded =
+        BlobService
+          .getBlob(streamingBlobPath, GetBlob())
+          .withAttributes(getDefaultAttributes)
+          .map(_.utf8String)
+          .toMat(Sink.seq)(Keep.right)
+          .run()
+          .futureValue
+          .mkString("")
+
+      downloaded shouldBe largeText
+
+      // Clean up
+      BlobService
+        .deleteBlob(streamingBlobPath, DeleteBlob())
+        .withAttributes(getDefaultAttributes)
+        .runWith(Sink.head)
+        .futureValue
     }
 
     "get blob" in {
