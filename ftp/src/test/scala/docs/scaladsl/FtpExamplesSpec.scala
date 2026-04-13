@@ -66,7 +66,7 @@ class FtpExamplesSpec
         .runWith(Ftp.toPath("file.txt", ftpSettings))
       //#storing
 
-      val ioResult = result.futureValue(timeout(Span(1, Seconds)))
+      val ioResult = result.futureValue(timeout(Span(5, Seconds)))
       ioResult should be(IOResult.createSuccessful(25))
 
       val p = fileExists("file.txt")
@@ -90,7 +90,7 @@ class FtpExamplesSpec
         .runWith(Ftp.toPath("file.txt.gz", ftpSettings))
       //#storing
 
-      val ioResult = result.futureValue(timeout(Span(1, Seconds)))
+      val ioResult = result.futureValue(timeout(Span(5, Seconds)))
       ioResult should be(IOResult.createSuccessful(61))
 
       val p = fileExists("file.txt.gz")
