@@ -22,10 +22,19 @@ import akka.stream.alpakka.azure.storage.requests.{
 }
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.util.ByteString
-import org.scalatest.Ignore
+import org.scalatest.{Canceled, Outcome}
 
-@Ignore
 class AzureIntegrationTest extends StorageIntegrationSpec {
+
+  private def hasAzureCredentials: Boolean = {
+    val accountName = sys.env.getOrElse("AZURE_STORAGE_ACCOUNT_NAME", "none")
+    accountName != "none" && accountName.nonEmpty
+  }
+
+  override def withFixture(test: NoArgTest): Outcome =
+    if (hasAzureCredentials) super.withFixture(test)
+    else
+      Canceled("Set AZURE_STORAGE_ACCOUNT_NAME and AZURE_STORAGE_ACCOUNT_KEY env vars to run Azure integration tests")
 
   override protected implicit val system: ActorSystem = ActorSystem("AzureIntegrationTest")
 
