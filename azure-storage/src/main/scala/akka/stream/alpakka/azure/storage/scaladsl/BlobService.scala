@@ -88,6 +88,9 @@ object BlobService {
    * then committed as a single blob. Unlike [[putBlockBlob]], this does not require knowing the
    * content length upfront.
    *
+   * Note: Azure limits a block blob to 50,000 blocks. With the default block size of 4 MB this allows
+   * blobs up to ~195 GB. Adjust the block size via [[PutBlockBlobStreaming.withBlockSize]] for larger blobs.
+   *
    * @param objectPath path of the object, should start with "/" and separated by `/`, e.g. `/container/blob`
    * @param requestBuilder builder to configure block size, content type, optional lease and SSE
    * @return A [[akka.stream.scaladsl.Sink]] consuming [[akka.util.ByteString ByteString]] elements and

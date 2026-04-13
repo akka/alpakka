@@ -16,7 +16,8 @@ import akka.stream.alpakka.azure.storage.headers.ServerSideEncryption
  * Unlike [[PutBlockBlob]], this does not require knowing the content length upfront.
  *
  * @param contentType content type of the blob
- * @param blockSize size of each block in bytes (default 4 MB, max 100 MB with API version 2024-11-04)
+ * @param blockSize size of each block in bytes (default 4 MB, max 100 MB with API version 2024-11-04).
+ *                  Azure limits a block blob to 50,000 blocks, so the block size determines the maximum blob size.
  * @param leaseId optional lease ID
  * @param sse optional server-side encryption
  * @param additionalHeaders optional additional headers

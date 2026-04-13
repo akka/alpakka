@@ -155,7 +155,7 @@ object AzureStorageStream {
                 }
                 .runWith(Sink.head)
           }
-          .fold(Seq.empty[String])(_ :+ _)
+          .fold(Vector.empty[String])(_ :+ _)
           .mapAsync(1) { blockIds =>
             val blockListXml = buildBlockListXml(blockIds)
             val xmlBytes = ByteString(blockListXml)
