@@ -19,14 +19,17 @@ import akka.stream.alpakka.azure.storage.requests.{
   ListBlobs,
   PutAppendBlock,
   PutBlockBlob,
+  PutBlockBlobStreaming,
   PutPageBlock
 }
-import akka.stream.javadsl.Source
+import akka.stream.javadsl.{Sink, Source}
 import akka.stream.scaladsl.SourceToCompletionStage
 import akka.util.ByteString
 
 import java.util.Optional
 import java.util.concurrent.CompletionStage
+
+import scala.jdk.FutureConverters._
 
 /**
  * Java API for BlobService operations.
@@ -96,6 +99,28 @@ object BlobService {
       )
       .map(opt => Optional.ofNullable(opt.orNull))
       .asJava
+
+  /**
+   * Uploads a block blob using streaming Put Block / Put Block List operations.
+   * The incoming bytes are grouped into blocks of the configured size, each uploaded individually,
+   * then committed as a single blob. Unlike [[putBlockBlob]], this does not require knowing the
+   * content length upfront.
+   *
+   * Note: Azure limits a block blob to 50,000 blocks. With the default block size of 4 MB this allows
+   * blobs up to ~195 GB. Adjust the block size via [[PutBlockBlobStreaming.withBlockSize]] for larger blobs.
+   *
+   * @param objectPath path of the object, should start with "/" and separated by `/`, e.g. `/container/blob`
+   * @param requestBuilder builder to configure block size, content type, optional lease and SSE
+   * @return A [[akka.stream.javadsl.Sink]] consuming [[akka.util.ByteString ByteString]] elements and
+   *         materializing a [[java.util.concurrent.CompletionStage]] of
+   *         [[akka.stream.alpakka.azure.storage.ObjectMetadata]] from the Put Block List response
+   */
+  def putBlockBlobStreaming(objectPath: String,
+                            requestBuilder: PutBlockBlobStreaming): Sink[ByteString, CompletionStage[ObjectMetadata]] =
+    AzureStorageStream
+      .putBlockBlobStreaming(objectPath, requestBuilder)
+      .mapMaterializedValue[CompletionStage[ObjectMetadata]](_.asJava)
+      .asJava[ByteString]
 
   /**
    * Put (Create) Page Blob.

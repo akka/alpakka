@@ -13,6 +13,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes.{Accepted, Created, NotFound, OK}
 import akka.http.scaladsl.model.headers.{`Content-Length`, `Content-Type`}
 import akka.http.scaladsl.model.{
+  ContentTypes,
   HttpEntity,
   HttpHeader,
   HttpRequest,
@@ -34,13 +35,18 @@ import akka.stream.alpakka.azure.storage.requests.{
   GetProperties,
   ListBlobs,
   ListFiles,
+  PutBlock,
+  PutBlockBlobStreaming,
+  PutBlockList,
   RequestBuilder,
   UpdateFileRange
 }
-import akka.stream.scaladsl.{Flow, RetryFlow, Sink, Source}
+import akka.stream.scaladsl.{Flow, Keep, RetryFlow, Sink, Source}
 import akka.util.ByteString
 
+import java.nio.charset.StandardCharsets
 import java.time.Clock
+import java.util.Base64
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success, Try}
 import scala.xml.XML
@@ -105,6 +111,109 @@ object AzureStorageStream {
                   objectPath = objectPath,
                   requestBuilder = requestBuilder,
                   maybeHttpEntity = maybeHttpEntity)
+
+  /**
+   * Uploads a block blob using streaming Put Block / Put Block List operations.
+   * The incoming bytes are grouped into blocks of the configured size, each uploaded individually,
+   * then committed as a single blob. No need to know the total content length upfront.
+   */
+  private[storage] def putBlockBlobStreaming(
+      objectPath: String,
+      requestBuilder: PutBlockBlobStreaming
+  ): Sink[ByteString, Future[ObjectMetadata]] =
+    Sink
+      .fromMaterializer { (mat, attr) =>
+        implicit val system: ActorSystem = mat.system
+        import system.dispatcher
+        val settings = resolveSettings(attr, system)
+
+        Flow[ByteString]
+          .via(rechunkFlow(requestBuilder.blockSize))
+          .statefulMap(() => 0)(
+            (index, block) => {
+              val blockId = encodeBlockId(index)
+              (index + 1, (blockId, block))
+            },
+            _ => None
+          )
+          .mapAsync(1) {
+            case (blockId, block) =>
+              val putBlock = new PutBlock(blockId,
+                                          block.length.toLong,
+                                          requestBuilder.contentType,
+                                          leaseId = requestBuilder.leaseId,
+                                          sse = requestBuilder.sse,
+                                          additionalHeaders = requestBuilder.additionalHeaders)
+              val entity = HttpEntity.Strict(requestBuilder.contentType, block)
+              val request = putBlock.createRequest(settings, BlobType, objectPath).withEntity(entity)
+              signAndRequest(request, settings)
+                .flatMapConcat {
+                  case HttpResponse(Created, _, responseEntity, _) =>
+                    Source.future(responseEntity.discardBytes().future().map(_ => blockId))
+                  case response: HttpResponse =>
+                    Source.future(unmarshalError(response.status, response.entity))
+                }
+                .runWith(Sink.head)
+          }
+          .fold(Vector.empty[String])(_ :+ _)
+          .mapAsync(1) { blockIds =>
+            val blockListXml = buildBlockListXml(blockIds)
+            val xmlBytes = ByteString(blockListXml)
+            val putBlockList = new PutBlockList(xmlBytes.length.toLong,
+                                                leaseId = requestBuilder.leaseId,
+                                                sse = requestBuilder.sse,
+                                                additionalHeaders = requestBuilder.additionalHeaders)
+            val entity = HttpEntity(ContentTypes.`text/xml(UTF-8)`, xmlBytes)
+            val request = putBlockList.createRequest(settings, BlobType, objectPath).withEntity(entity)
+            signAndRequest(request, settings)
+              .flatMapConcat {
+                case HttpResponse(Created, h, responseEntity, _) =>
+                  Source.future(
+                    responseEntity
+                      .withoutSizeLimit()
+                      .discardBytes()
+                      .future()
+                      .map(_ => computeMetaData(h, responseEntity))
+                  )
+                case response: HttpResponse =>
+                  Source.future(unmarshalError(response.status, response.entity))
+              }
+              .runWith(Sink.head)
+          }
+          .toMat(Sink.head)(Keep.right)
+      }
+      .mapMaterializedValue(_.flatMap(identity)(ExecutionContext.parasitic))
+
+  private def rechunkFlow(blockSize: Int): Flow[ByteString, ByteString, NotUsed] =
+    Flow[ByteString]
+      .statefulMap(() => ByteString.empty)(
+        (buffer, elem) => {
+          val combined = buffer ++ elem
+          if (combined.length >= blockSize) {
+            val blocks = combined.grouped(blockSize).toList
+            // Last chunk may be smaller than blockSize, keep it as buffer
+            if (combined.length % blockSize == 0)
+              (ByteString.empty, blocks)
+            else
+              (blocks.last, blocks.init)
+          } else {
+            (combined, Nil)
+          }
+        },
+        buffer => if (buffer.nonEmpty) Some(List(buffer)) else None
+      )
+      .mapConcat(identity)
+
+  private def encodeBlockId(index: Int): String =
+    Base64.getEncoder.encodeToString(f"$index%06d".getBytes(StandardCharsets.UTF_8))
+
+  private def buildBlockListXml(blockIds: Seq[String]): String = {
+    val entries = blockIds.map(id => s"  <Latest>$id</Latest>").mkString("\n")
+    s"""<?xml version="1.0" encoding="utf-8"?>
+       |<BlockList>
+       |$entries
+       |</BlockList>""".stripMargin
+  }
 
   private[storage] def createFile(objectPath: String,
                                   requestBuilder: CreateFile): Source[Option[ObjectMetadata], NotUsed] =

@@ -18,7 +18,7 @@ import akka.http.scaladsl.model.headers.{
   Range
 }
 import akka.stream.alpakka.azure.storage.headers.ServerSideEncryption
-import akka.stream.alpakka.azure.storage.requests.{GetBlob, GetFile, PutBlockBlob}
+import akka.stream.alpakka.azure.storage.requests.{GetBlob, GetFile, PutBlock, PutBlockBlob}
 import akka.testkit.TestKit
 import com.azure.storage.common.StorageSharedKeyCredential
 import org.scalatest.BeforeAndAfterAll
@@ -185,6 +185,22 @@ class SignerSpec
         )
       )
     }
+    Signer(request, storageSettings).generateAuthorizationHeader shouldBe expectedValue
+  }
+
+  it should "sign PutBlock request with query parameters" in {
+    val blockId = java.util.Base64.getEncoder.encodeToString("000000".getBytes("UTF-8"))
+    val requestBuilder = PutBlock(blockId, 28, ContentTypes.`text/plain(UTF-8)`)
+    val request =
+      requestBuilder.createRequest(settings = storageSettings, storageType = BlobType, objectPath = objectPath)
+    val expectedValue =
+      generateAuthorizationHeader(
+        BlobType,
+        objectPath,
+        HttpMethods.PUT.name(),
+        Map(`Content-Length`.name -> "28", `Content-Type`.name -> ContentTypes.`text/plain(UTF-8)`.value),
+        Some(s"comp=block&blockid=$blockId")
+      )
     Signer(request, storageSettings).generateAuthorizationHeader shouldBe expectedValue
   }
 

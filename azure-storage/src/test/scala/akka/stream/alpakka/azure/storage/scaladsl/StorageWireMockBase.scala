@@ -133,6 +133,30 @@ abstract class StorageWireMockBase(_system: ActorSystem, val _wireMockServer: Wi
         )
     )
 
+  protected def mockPutBlockAndBlockList(): Unit = {
+    // Accept any Put Block request (comp=block with a blockid query param)
+    mock.register(
+      put(urlPathEqualTo(s"/$AccountName/$containerName/$blobName"))
+        .withQueryParam("comp", equalTo("block"))
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader(`Content-Length`.name, "0")
+        )
+    )
+    // Accept Put Block List (comp=blocklist)
+    mock.register(
+      put(urlPathEqualTo(s"/$AccountName/$containerName/$blobName"))
+        .withQueryParam("comp", equalTo("blocklist"))
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader(ETag.name, ETagValue)
+            .withHeader(`Content-Length`.name, "0")
+        )
+    )
+  }
+
   protected def mockGetBlob(versionId: Option[String] = None, leaseId: Option[String] = None): StubMapping =
     mock.register(
       get(urlPathEqualTo(s"/$AccountName/$containerName/$blobName"))

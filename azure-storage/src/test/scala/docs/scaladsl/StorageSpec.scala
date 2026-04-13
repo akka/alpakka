@@ -294,6 +294,62 @@ class StorageSpec
       metadata.contentLength shouldBe 0L
     }
 
+    "put block blob streaming" in {
+      mockPutBlockAndBlockList()
+
+      //#put-block-blob-streaming
+      import akka.stream.alpakka.azure.storage.scaladsl.BlobService
+      import akka.stream.alpakka.azure.storage.ObjectMetadata
+      import akka.stream.alpakka.azure.storage.requests.PutBlockBlobStreaming
+
+      val sink: Sink[ByteString, Future[ObjectMetadata]] =
+        BlobService.putBlockBlobStreaming(
+          objectPath = s"$containerName/$blobName",
+          requestBuilder = PutBlockBlobStreaming(ContentTypes.`text/plain(UTF-8)`)
+        )
+
+      val eventualMetadata: Future[ObjectMetadata] =
+        Source.single(ByteString(payload)).runWith(sink)
+      //#put-block-blob-streaming
+
+      val objectMetadata = eventualMetadata.futureValue
+      objectMetadata.contentLength shouldBe 0L
+      objectMetadata.eTag shouldBe Some(ETagRawValue)
+    }
+
+    "put block blob streaming with multiple blocks" in {
+      mockPutBlockAndBlockList()
+
+      import akka.stream.alpakka.azure.storage.scaladsl.BlobService
+      import akka.stream.alpakka.azure.storage.requests.PutBlockBlobStreaming
+
+      // Use a small block size so the payload gets split into multiple blocks
+      val sink = BlobService.putBlockBlobStreaming(
+        objectPath = s"$containerName/$blobName",
+        requestBuilder = PutBlockBlobStreaming(ContentTypes.`text/plain(UTF-8)`).withBlockSize(10)
+      )
+
+      val objectMetadata = Source.single(ByteString(payload)).runWith(sink).futureValue
+      objectMetadata.eTag shouldBe Some(ETagRawValue)
+    }
+
+    "put block blob streaming from multiple chunks" in {
+      mockPutBlockAndBlockList()
+
+      import akka.stream.alpakka.azure.storage.scaladsl.BlobService
+      import akka.stream.alpakka.azure.storage.requests.PutBlockBlobStreaming
+
+      val sink = BlobService.putBlockBlobStreaming(
+        objectPath = s"$containerName/$blobName",
+        requestBuilder = PutBlockBlobStreaming(ContentTypes.`text/plain(UTF-8)`).withBlockSize(20)
+      )
+
+      // Send payload as many small chunks
+      val chunks = payload.grouped(5).map(ByteString(_)).toList
+      val objectMetadata = Source(chunks).runWith(sink).futureValue
+      objectMetadata.eTag shouldBe Some(ETagRawValue)
+    }
+
     "list blobs" in {
       mockListBlobs()
 
