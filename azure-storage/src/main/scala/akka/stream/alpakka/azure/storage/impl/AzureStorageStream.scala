@@ -163,7 +163,7 @@ object AzureStorageStream {
                                                 leaseId = requestBuilder.leaseId,
                                                 sse = requestBuilder.sse,
                                                 additionalHeaders = requestBuilder.additionalHeaders)
-            val entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, xmlBytes)
+            val entity = HttpEntity(ContentTypes.`text/xml(UTF-8)`, xmlBytes)
             val request = putBlockList.createRequest(settings, BlobType, objectPath).withEntity(entity)
             signAndRequest(request, settings)
               .flatMapConcat {
@@ -200,7 +200,7 @@ object AzureStorageStream {
             (combined, Nil)
           }
         },
-        buffer => if (buffer.nonEmpty) Some(List(buffer)) else Some(Nil)
+        buffer => if (buffer.nonEmpty) Some(List(buffer)) else None
       )
       .mapConcat(identity)
 

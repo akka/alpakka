@@ -37,7 +37,7 @@ private[storage] final class PutBlockList(val contentLength: Long,
   override protected def getHeaders: Seq[HttpHeader] =
     StorageHeaders()
       .withContentLengthHeader(contentLength)
-      .withContentTypeHeader(ContentTypes.`text/plain(UTF-8)`)
+      .withContentTypeHeader(ContentTypes.`text/xml(UTF-8)`)
       .witServerSideEncryption(sse)
       .withLeaseIdHeader(leaseId)
       .withAdditionalHeaders(additionalHeaders)
