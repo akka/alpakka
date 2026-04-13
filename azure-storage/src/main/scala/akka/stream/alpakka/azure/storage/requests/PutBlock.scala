@@ -45,8 +45,7 @@ private[storage] final class PutBlock(val blockId: String,
       .withAdditionalHeaders(additionalHeaders)
       .headers
 
-  private def copy(sse: Option[ServerSideEncryption] = sse,
-                   additionalHeaders: Seq[HttpHeader] = additionalHeaders) =
+  private def copy(sse: Option[ServerSideEncryption] = sse, additionalHeaders: Seq[HttpHeader] = additionalHeaders) =
     new PutBlock(blockId = blockId,
                  contentLength = contentLength,
                  contentType = contentType,

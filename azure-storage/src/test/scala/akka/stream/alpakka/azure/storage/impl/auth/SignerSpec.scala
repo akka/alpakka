@@ -198,8 +198,7 @@ class SignerSpec
         BlobType,
         objectPath,
         HttpMethods.PUT.name(),
-        Map(`Content-Length`.name -> "28",
-            `Content-Type`.name -> ContentTypes.`text/plain(UTF-8)`.value),
+        Map(`Content-Length`.name -> "28", `Content-Type`.name -> ContentTypes.`text/plain(UTF-8)`.value),
         Some(s"comp=block&blockid=$blockId")
       )
     Signer(request, storageSettings).generateAuthorizationHeader shouldBe expectedValue

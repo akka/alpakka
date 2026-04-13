@@ -22,10 +22,10 @@ import akka.stream.alpakka.azure.storage.headers.ServerSideEncryption
  * @param additionalHeaders optional additional headers
  */
 final class PutBlockBlobStreaming(val contentType: ContentType,
-                                 val blockSize: Int = 4 * 1024 * 1024,
-                                 val leaseId: Option[String] = None,
-                                 val sse: Option[ServerSideEncryption] = None,
-                                 val additionalHeaders: Seq[HttpHeader] = Seq.empty) {
+                                  val blockSize: Int = 4 * 1024 * 1024,
+                                  val leaseId: Option[String] = None,
+                                  val sse: Option[ServerSideEncryption] = None,
+                                  val additionalHeaders: Seq[HttpHeader] = Seq.empty) {
 
   def withBlockSize(blockSize: Int): PutBlockBlobStreaming = copy(blockSize = blockSize)
 

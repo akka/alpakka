@@ -138,7 +138,9 @@ object AzureStorageStream {
           )
           .mapAsync(1) {
             case (blockId, block) =>
-              val putBlock = new PutBlock(blockId, block.length.toLong, requestBuilder.contentType,
+              val putBlock = new PutBlock(blockId,
+                                          block.length.toLong,
+                                          requestBuilder.contentType,
                                           leaseId = requestBuilder.leaseId,
                                           sse = requestBuilder.sse,
                                           additionalHeaders = requestBuilder.additionalHeaders)
@@ -167,7 +169,11 @@ object AzureStorageStream {
               .flatMapConcat {
                 case HttpResponse(Created, h, responseEntity, _) =>
                   Source.future(
-                    responseEntity.withoutSizeLimit().discardBytes().future().map(_ => computeMetaData(h, responseEntity))
+                    responseEntity
+                      .withoutSizeLimit()
+                      .discardBytes()
+                      .future()
+                      .map(_ => computeMetaData(h, responseEntity))
                   )
                 case response: HttpResponse =>
                   Source.future(unmarshalError(response.status, response.entity))

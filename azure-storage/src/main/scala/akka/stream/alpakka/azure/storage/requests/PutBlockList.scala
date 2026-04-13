@@ -43,12 +43,8 @@ private[storage] final class PutBlockList(val contentLength: Long,
       .withAdditionalHeaders(additionalHeaders)
       .headers
 
-  private def copy(sse: Option[ServerSideEncryption] = sse,
-                   additionalHeaders: Seq[HttpHeader] = additionalHeaders) =
-    new PutBlockList(contentLength = contentLength,
-                     leaseId = leaseId,
-                     sse = sse,
-                     additionalHeaders = additionalHeaders)
+  private def copy(sse: Option[ServerSideEncryption] = sse, additionalHeaders: Seq[HttpHeader] = additionalHeaders) =
+    new PutBlockList(contentLength = contentLength, leaseId = leaseId, sse = sse, additionalHeaders = additionalHeaders)
 }
 
 /** INTERNAL API */
