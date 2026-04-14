@@ -11,12 +11,12 @@ import akka.stream.alpakka.azure.storage.AzureNameKeyCredential;
 import akka.stream.alpakka.azure.storage.RetrySettings;
 import akka.stream.alpakka.azure.storage.StorageSettings;
 import akka.stream.alpakka.azure.storage.headers.ServerSideEncryption;
-import com.azure.identity.DefaultAzureCredentialBuilder;
-import com.azure.identity.ManagedIdentityCredentialBuilder;
 import akka.stream.alpakka.azure.storage.requests.CreateFile;
 import akka.stream.alpakka.azure.storage.requests.GetBlob;
 import akka.stream.alpakka.azure.storage.requests.PutBlockBlob;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
+import com.azure.identity.DefaultAzureCredentialBuilder;
+import com.azure.identity.ManagedIdentityCredentialBuilder;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -115,9 +115,7 @@ public class RequestBuilderTest {
     // #bearer-token-managed-identity
     // User Assigned Managed Identity
     var credential =
-        new ManagedIdentityCredentialBuilder()
-            .clientId("<managed-identity-client-id>")
-            .build();
+        new ManagedIdentityCredentialBuilder().clientId("<managed-identity-client-id>").build();
 
     var settings =
         StorageSettings.create(
