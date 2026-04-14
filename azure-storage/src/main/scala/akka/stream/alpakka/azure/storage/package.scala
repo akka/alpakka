@@ -29,6 +29,7 @@ package object storage {
   private[storage] val SharedKeyAuthorizationType = "SharedKey"
   private[storage] val SharedKeyLiteAuthorizationType = "SharedKeyLite"
   private[storage] val SasAuthorizationType = "sas"
+  private[storage] val BearerTokenAuthorizationType = "BearerToken"
   private[storage] val BlobType = "blob"
   private[storage] val FileType = "file"
   private[storage] val BlockBlobType = "BlockBlob"

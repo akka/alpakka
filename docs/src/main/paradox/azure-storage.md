@@ -52,6 +52,37 @@ At minimum following configurations needs to be set:
 * `account-key`, Account key to use to create authorization signature, mandatory for `SharedKey` or `SharedKeyLite` authorization types, as described [here](https://learn.microsoft.com/en-us/rest/api/storageservices/authorize-with-shared-key). Environment variable `AZURE_STORAGE_ACCOUNT_KEY` can be set to override this configuration.
 * `sas-token` if authorization type is `sas`. Environment variable `AZURE_STORAGE_SAS_TOKEN` can be set to override this configuration.
 
+### Azure AD authentication (BearerToken)
+
+For environments where shared keys or SAS tokens are not desirable, the connector supports OAuth2 bearer token authentication via the [Azure Identity](https://learn.microsoft.com/en-us/java/api/overview/azure/identity-readme?view=azure-java-stable) library. This enables authentication using Managed Identity (system or user-assigned), workload identity, environment credentials, and other mechanisms supported by `DefaultAzureCredential`.
+
+To use bearer token authentication via configuration, set `authorization-type` to `BearerToken`. This will automatically use `DefaultAzureCredential` which tries multiple credential sources in order:
+
+```
+alpakka.azure-storage.credentials {
+  authorization-type = BearerToken
+  account-name = "myaccount"
+}
+```
+
+To use `DefaultAzureCredential` programmatically:
+
+Scala
+: @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/RequestBuilderSpec.scala) { #bearer-token-default }
+
+Java
+: @@snip [snip](/azure-storage/src/test/java/docs/javadsl/RequestBuilderTest.java) { #bearer-token-default }
+
+For User Assigned Managed Identity (UAMI), provide the client ID of the managed identity:
+
+Scala
+: @@snip [snip](/azure-storage/src/test/scala/docs/scaladsl/RequestBuilderSpec.scala) { #bearer-token-managed-identity }
+
+Java
+: @@snip [snip](/azure-storage/src/test/java/docs/javadsl/RequestBuilderTest.java) { #bearer-token-managed-identity }
+
+Any `com.azure.core.credential.TokenCredential` implementation can be used with `withTokenCredential`, including `ClientSecretCredential`, `ClientCertificateCredential`, `WorkloadIdentityCredential`, and others from the `azure-identity` library.
+
 ## Building request
 
 Each function takes two parameters `objectPath` and `requestBuilder`. The `objectPath` is a `/` separated string of the path of the blob
