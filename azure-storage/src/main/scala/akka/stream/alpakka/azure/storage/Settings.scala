@@ -69,6 +69,7 @@ final class StorageSettings(val apiVersion: String,
   /** Java API */
   def withAlgorithm(algorithm: String): StorageSettings = copy(algorithm = algorithm)
 
+  /** Java API */
   def withTokenCredential(tokenCredential: TokenCredential): StorageSettings =
     copy(authorizationType = BearerTokenAuthorizationType, tokenCredential = Some(tokenCredential))
 
