@@ -116,13 +116,15 @@ object Dependencies {
       )
   )
 
+  val AzureCoreVersion = "1.55.3"
   val AzureIdentityVersion = "1.15.4"
 
   val AzureStorage = Seq(
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-xml" % AkkaHttpVersion,
-        "com.azure" % "azure-identity" % AzureIdentityVersion, // MIT
+        "com.azure" % "azure-core" % AzureCoreVersion, // MIT - TokenCredential API
+        "com.azure" % "azure-identity" % AzureIdentityVersion % "provided,test", // MIT - optional, needed for DefaultAzureCredential
         // for testing authorization signature
         "com.azure" % "azure-storage-common" % "12.29.1" % Test,
         wiremock

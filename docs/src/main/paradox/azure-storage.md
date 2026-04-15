@@ -56,6 +56,14 @@ At minimum following configurations needs to be set:
 
 For environments where shared keys or SAS tokens are not desirable, the connector supports OAuth2 bearer token authentication via the [Azure Identity](https://learn.microsoft.com/en-us/java/api/overview/azure/identity-readme?view=azure-java-stable) library. This enables authentication using Managed Identity (system or user-assigned), workload identity, environment credentials, and other mechanisms supported by `DefaultAzureCredential`.
 
+The `azure-identity` library is an optional dependency. To use bearer token authentication, add it to your project:
+
+@@dependency [sbt,Maven,Gradle] {
+group=com.azure
+artifact=azure-identity
+version=1.15.4
+}
+
 To use bearer token authentication via configuration, set `authorization-type` to `BearerToken`. This will automatically use `DefaultAzureCredential` which tries multiple credential sources in order:
 
 ```

@@ -8,7 +8,6 @@ package storage
 
 import akka.actor.ClassicActorSystemProvider
 import com.azure.core.credential.TokenCredential
-import com.azure.identity.DefaultAzureCredentialBuilder
 import com.typesafe.config.Config
 
 import java.time.{Duration => JavaDuration}
@@ -103,7 +102,7 @@ final class StorageSettings(val apiVersion: String,
   }
 
   override def hashCode(): Int =
-    Objects.hash(apiVersion, authorizationType, azureNameKeyCredential, sasToken, retrySettings, algorithm)
+    Objects.hash(apiVersion, authorizationType, azureNameKeyCredential, sasToken, retrySettings, algorithm, tokenCredential)
 
   private def copy(
       apiVersion: String = apiVersion,
@@ -127,6 +126,20 @@ final class StorageSettings(val apiVersion: String,
 
 object StorageSettings {
   private[storage] val ConfigPath = "alpakka.azure-storage"
+
+  private def buildDefaultAzureCredential(): TokenCredential =
+    try {
+      val clazz = Class.forName("com.azure.identity.DefaultAzureCredentialBuilder")
+      val builder = clazz.getDeclaredConstructor().newInstance()
+      clazz.getMethod("build").invoke(builder).asInstanceOf[TokenCredential]
+    } catch {
+      case _: ClassNotFoundException =>
+        throw new RuntimeException(
+          "BearerToken authorization type requires the 'com.azure:azure-identity' library on the classpath. " +
+          "Add it as a dependency to your project."
+        )
+    }
+
   private val AuthorizationTypes =
     Seq(AnonymousAuthorizationType,
         SharedKeyAuthorizationType,
@@ -185,7 +198,7 @@ object StorageSettings {
       if (config.hasPath("retry-settings")) RetrySettings(config.getConfig("retry-settings")) else RetrySettings.Default
 
     val tokenCredential =
-      if (authorizationType == BearerTokenAuthorizationType) Some(new DefaultAzureCredentialBuilder().build())
+      if (authorizationType == BearerTokenAuthorizationType) Some(buildDefaultAzureCredential())
       else None
 
     new StorageSettings(
