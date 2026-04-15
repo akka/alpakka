@@ -47,29 +47,21 @@ final class StorageSettings(val apiVersion: String,
   /** Java API */
   def getAlgorithm: String = algorithm
 
-  /** Java API */
   def witApiVersion(apiVersion: String): StorageSettings = copy(apiVersion = apiVersion)
 
-  /** Java API */
   def withAuthorizationType(authorizationType: String): StorageSettings = copy(authorizationType = authorizationType)
 
-  /** Java API */
   def withSasToken(sasToken: String): StorageSettings = copy(sasToken = emptyStringToOption(sasToken))
 
-  /** Java API */
   def withAzureNameKeyCredential(azureNameKeyCredential: AzureNameKeyCredential): StorageSettings =
     copy(azureNameKeyCredential = azureNameKeyCredential)
 
-  /** Java API */
   def withEndPointUrl(endPointUrl: String): StorageSettings = copy(endPointUrl = emptyStringToOption(endPointUrl))
 
-  /** Java API */
   def withRetrySettings(retrySettings: RetrySettings): StorageSettings = copy(retrySettings = retrySettings)
 
-  /** Java API */
   def withAlgorithm(algorithm: String): StorageSettings = copy(algorithm = algorithm)
 
-  /** Java API */
   def withTokenCredential(tokenCredential: TokenCredential): StorageSettings =
     copy(authorizationType = BearerTokenAuthorizationType, tokenCredential = Some(tokenCredential))
 
@@ -103,7 +95,13 @@ final class StorageSettings(val apiVersion: String,
   }
 
   override def hashCode(): Int =
-    Objects.hash(apiVersion, authorizationType, azureNameKeyCredential, sasToken, retrySettings, algorithm, tokenCredential)
+    Objects.hash(apiVersion,
+                 authorizationType,
+                 azureNameKeyCredential,
+                 sasToken,
+                 retrySettings,
+                 algorithm,
+                 tokenCredential)
 
   private def copy(
       apiVersion: String = apiVersion,
