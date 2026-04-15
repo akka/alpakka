@@ -11,11 +11,13 @@ import akka.NotUsed
 import akka.http.scaladsl.model.{HttpRequest, Uri}
 import akka.http.scaladsl.model.headers._
 import akka.stream.scaladsl.Source
+import com.azure.core.credential.TokenRequestContext
 
 import java.time.Clock
 import java.util.Base64
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
+import scala.jdk.FutureConverters._
 
 /** Takes initial request and add signed `Authorization` header and essential XMS headers.
  *
@@ -42,7 +44,19 @@ final case class Signer(initialRequest: HttpRequest, settings: StorageSettings)(
     val authorizationType = settings.authorizationType
     if (authorizationType == AnonymousAuthorizationType || authorizationType == SasAuthorizationType)
       Source.single(requestWithHeaders)
-    else
+    else if (authorizationType == BearerTokenAuthorizationType) {
+      val credential = settings.tokenCredential.getOrElse(
+        throw new IllegalStateException("TokenCredential must be provided for BearerToken authorization type")
+      )
+      val context = new TokenRequestContext().addScopes(Signer.StorageScope)
+      Source
+        .future(credential.getToken(context).toFuture.asScala)
+        .map { accessToken =>
+          requestWithHeaders.addHeader(
+            RawHeader(AuthorizationHeaderKey, s"Bearer ${accessToken.getToken}")
+          )
+        }
+    } else
       Source.single(
         requestWithHeaders.addHeader(
           RawHeader(AuthorizationHeaderKey, generateAuthorizationHeader)
@@ -133,6 +147,7 @@ final case class Signer(initialRequest: HttpRequest, settings: StorageSettings)(
 }
 
 object Signer {
+  private val StorageScope = "https://storage.azure.com/.default"
   private val SharedKeyHeaders =
     Seq(
       `Content-Encoding`.name,

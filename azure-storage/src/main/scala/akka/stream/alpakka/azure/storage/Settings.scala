@@ -7,6 +7,7 @@ package azure
 package storage
 
 import akka.actor.ClassicActorSystemProvider
+import com.azure.core.credential.TokenCredential
 import com.typesafe.config.Config
 
 import java.time.{Duration => JavaDuration}
@@ -22,7 +23,8 @@ final class StorageSettings(val apiVersion: String,
                             val azureNameKeyCredential: AzureNameKeyCredential,
                             val sasToken: Option[String],
                             val retrySettings: RetrySettings,
-                            val algorithm: String) {
+                            val algorithm: String,
+                            val tokenCredential: Option[TokenCredential] = None) {
 
   /** Java API */
   def getApiVersion: String = apiVersion
@@ -45,27 +47,29 @@ final class StorageSettings(val apiVersion: String,
   /** Java API */
   def getAlgorithm: String = algorithm
 
-  /** Java API */
-  def witApiVersion(apiVersion: String): StorageSettings = copy(apiVersion = apiVersion)
+  def withApiVersion(apiVersion: String): StorageSettings = copy(apiVersion = apiVersion)
 
-  /** Java API */
+  @deprecated("Use withApiVersion instead", "azure-storage 10.0.0")
+  def witApiVersion(apiVersion: String): StorageSettings = withApiVersion(apiVersion)
+
   def withAuthorizationType(authorizationType: String): StorageSettings = copy(authorizationType = authorizationType)
 
-  /** Java API */
   def withSasToken(sasToken: String): StorageSettings = copy(sasToken = emptyStringToOption(sasToken))
 
-  /** Java API */
   def withAzureNameKeyCredential(azureNameKeyCredential: AzureNameKeyCredential): StorageSettings =
     copy(azureNameKeyCredential = azureNameKeyCredential)
 
-  /** Java API */
   def withEndPointUrl(endPointUrl: String): StorageSettings = copy(endPointUrl = emptyStringToOption(endPointUrl))
 
-  /** Java API */
   def withRetrySettings(retrySettings: RetrySettings): StorageSettings = copy(retrySettings = retrySettings)
 
-  /** Java API */
   def withAlgorithm(algorithm: String): StorageSettings = copy(algorithm = algorithm)
+
+  def withTokenCredential(tokenCredential: TokenCredential): StorageSettings =
+    copy(authorizationType = BearerTokenAuthorizationType, tokenCredential = Some(tokenCredential))
+
+  /** Java API */
+  def getTokenCredential: Optional[TokenCredential] = tokenCredential.toJava
 
   override def toString: String =
     s"""StorageSettings(
@@ -73,9 +77,10 @@ final class StorageSettings(val apiVersion: String,
        | authorizationType=$authorizationType,
        | endPointUrl=$endPointUrl,
        | azureNameKeyCredential=$azureNameKeyCredential,
-       | sasToken=$sasToken
+       | sasToken=$sasToken,
        | retrySettings=$retrySettings,
-       | algorithm=$algorithm
+       | algorithm=$algorithm,
+       | tokenCredential=${tokenCredential.map(_ => "<provided>").getOrElse("<none>")}
        |)""".stripMargin.replaceAll(System.lineSeparator(), "")
 
   override def equals(other: Any): Boolean = other match {
@@ -86,13 +91,21 @@ final class StorageSettings(val apiVersion: String,
       Objects.equals(azureNameKeyCredential, that.azureNameKeyCredential) &&
       sasToken == that.sasToken &&
       Objects.equals(retrySettings, that.retrySettings) &&
-      algorithm == that.algorithm
+      algorithm == that.algorithm &&
+      tokenCredential == that.tokenCredential
 
     case _ => false
   }
 
   override def hashCode(): Int =
-    Objects.hash(apiVersion, authorizationType, azureNameKeyCredential, sasToken, retrySettings, algorithm)
+    Objects.hash(apiVersion,
+                 authorizationType,
+                 endPointUrl,
+                 azureNameKeyCredential,
+                 sasToken,
+                 retrySettings,
+                 algorithm,
+                 tokenCredential)
 
   private def copy(
       apiVersion: String = apiVersion,
@@ -101,21 +114,41 @@ final class StorageSettings(val apiVersion: String,
       azureNameKeyCredential: AzureNameKeyCredential = azureNameKeyCredential,
       sasToken: Option[String] = sasToken,
       retrySettings: RetrySettings = retrySettings,
-      algorithm: String = algorithm
+      algorithm: String = algorithm,
+      tokenCredential: Option[TokenCredential] = tokenCredential
   ) =
-    StorageSettings(apiVersion,
-                    authorizationType,
-                    endPointUrl,
-                    azureNameKeyCredential,
-                    sasToken,
-                    retrySettings,
-                    algorithm)
+    new StorageSettings(apiVersion,
+                        authorizationType,
+                        endPointUrl,
+                        azureNameKeyCredential,
+                        sasToken,
+                        retrySettings,
+                        algorithm,
+                        tokenCredential)
 }
 
 object StorageSettings {
   private[storage] val ConfigPath = "alpakka.azure-storage"
+
+  private def buildDefaultAzureCredential(): TokenCredential =
+    try {
+      val clazz = Class.forName("com.azure.identity.DefaultAzureCredentialBuilder")
+      val builder = clazz.getDeclaredConstructor().newInstance()
+      clazz.getMethod("build").invoke(builder).asInstanceOf[TokenCredential]
+    } catch {
+      case _: ClassNotFoundException =>
+        throw new RuntimeException(
+          "BearerToken authorization type requires the 'com.azure:azure-identity' library on the classpath. " +
+          "Add it as a dependency to your project."
+        )
+    }
+
   private val AuthorizationTypes =
-    Seq(AnonymousAuthorizationType, SharedKeyAuthorizationType, SharedKeyLiteAuthorizationType, SasAuthorizationType)
+    Seq(AnonymousAuthorizationType,
+        SharedKeyAuthorizationType,
+        SharedKeyLiteAuthorizationType,
+        SasAuthorizationType,
+        BearerTokenAuthorizationType)
 
   def apply(
       apiVersion: String,
@@ -167,14 +200,19 @@ object StorageSettings {
     val retrySettings =
       if (config.hasPath("retry-settings")) RetrySettings(config.getConfig("retry-settings")) else RetrySettings.Default
 
-    StorageSettings(
+    val tokenCredential =
+      if (authorizationType == BearerTokenAuthorizationType) Some(buildDefaultAzureCredential())
+      else None
+
+    new StorageSettings(
       apiVersion = apiVersion,
       authorizationType = authorizationType,
       endPointUrl = config.getOptionalString("endpoint-url"),
       azureNameKeyCredential = AzureNameKeyCredential(credentials),
       sasToken = credentials.getOptionalString("sas-token"),
       retrySettings = retrySettings,
-      algorithm = config.getString("signing-algorithm", "HmacSHA256")
+      algorithm = config.getString("signing-algorithm", "HmacSHA256"),
+      tokenCredential = tokenCredential
     )
   }
 

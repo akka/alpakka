@@ -6,6 +6,7 @@ package docs.scaladsl
 
 import akka.http.scaladsl.model.ContentTypes
 import akka.http.scaladsl.model.headers.{ByteRange, RawHeader}
+import akka.stream.alpakka.azure.storage.{AzureNameKeyCredential, StorageSettings}
 import akka.stream.alpakka.azure.storage.headers.ServerSideEncryption
 import akka.stream.alpakka.azure.storage.requests.{CreateFile, GetBlob, PutBlockBlob}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
@@ -66,5 +67,50 @@ class RequestBuilderSpec extends AnyFlatSpec with Matchers with LogCapturing {
     //#request-builder-with-additional-headers
 
     requestBuilder.additionalHeaders shouldBe Seq(RawHeader("If-Match", "foobar"))
+  }
+
+  it should "create settings with default Azure credential" in {
+    //#bearer-token-default
+    import com.azure.identity.DefaultAzureCredentialBuilder
+
+    val credential = new DefaultAzureCredentialBuilder().build()
+
+    val settings = StorageSettings(
+      apiVersion = "2024-11-04",
+      authorizationType = "anon",
+      endPointUrl = None,
+      azureNameKeyCredential = AzureNameKeyCredential("myaccount", Array.empty[Byte]),
+      sasToken = None,
+      retrySettings = akka.stream.alpakka.azure.storage.RetrySettings.Default,
+      algorithm = "HmacSHA256"
+    ).withTokenCredential(credential)
+    //#bearer-token-default
+
+    settings.authorizationType shouldBe "BearerToken"
+    settings.tokenCredential shouldBe defined
+  }
+
+  it should "create settings with managed identity credential" in {
+    //#bearer-token-managed-identity
+    import com.azure.identity.ManagedIdentityCredentialBuilder
+
+    // User Assigned Managed Identity
+    val credential = new ManagedIdentityCredentialBuilder()
+      .clientId("<managed-identity-client-id>")
+      .build()
+
+    val settings = StorageSettings(
+      apiVersion = "2024-11-04",
+      authorizationType = "anon",
+      endPointUrl = None,
+      azureNameKeyCredential = AzureNameKeyCredential("myaccount", Array.empty[Byte]),
+      sasToken = None,
+      retrySettings = akka.stream.alpakka.azure.storage.RetrySettings.Default,
+      algorithm = "HmacSHA256"
+    ).withTokenCredential(credential)
+    //#bearer-token-managed-identity
+
+    settings.authorizationType shouldBe "BearerToken"
+    settings.tokenCredential shouldBe defined
   }
 }

@@ -7,11 +7,16 @@ package docs.javadsl;
 import akka.http.javadsl.model.ContentTypes;
 import akka.http.javadsl.model.headers.ByteRange;
 import akka.http.scaladsl.model.headers.RawHeader;
+import akka.stream.alpakka.azure.storage.AzureNameKeyCredential;
+import akka.stream.alpakka.azure.storage.RetrySettings;
+import akka.stream.alpakka.azure.storage.StorageSettings;
 import akka.stream.alpakka.azure.storage.headers.ServerSideEncryption;
 import akka.stream.alpakka.azure.storage.requests.CreateFile;
 import akka.stream.alpakka.azure.storage.requests.GetBlob;
 import akka.stream.alpakka.azure.storage.requests.PutBlockBlob;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
+import com.azure.identity.DefaultAzureCredentialBuilder;
+import com.azure.identity.ManagedIdentityCredentialBuilder;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -82,5 +87,49 @@ public class RequestBuilderTest {
     Assert.assertEquals(1, requestBuilder.additionalHeaders().size());
     Assert.assertEquals(
         new RawHeader("If-Match", "foobar"), requestBuilder.additionalHeaders().head());
+  }
+
+  @Test
+  public void createSettingsWithDefaultAzureCredential() {
+    // #bearer-token-default
+    var credential = new DefaultAzureCredentialBuilder().build();
+
+    var settings =
+        StorageSettings.create(
+                "2024-11-04",
+                "anon",
+                java.util.Optional.empty(),
+                AzureNameKeyCredential.create("myaccount", ""),
+                java.util.Optional.empty(),
+                RetrySettings.Default(),
+                "HmacSHA256")
+            .withTokenCredential(credential);
+    // #bearer-token-default
+
+    Assert.assertEquals("BearerToken", settings.authorizationType());
+    Assert.assertTrue(settings.getTokenCredential().isPresent());
+  }
+
+  @Test
+  public void createSettingsWithManagedIdentityCredential() {
+    // #bearer-token-managed-identity
+    // User Assigned Managed Identity
+    var credential =
+        new ManagedIdentityCredentialBuilder().clientId("<managed-identity-client-id>").build();
+
+    var settings =
+        StorageSettings.create(
+                "2024-11-04",
+                "anon",
+                java.util.Optional.empty(),
+                AzureNameKeyCredential.create("myaccount", ""),
+                java.util.Optional.empty(),
+                RetrySettings.Default(),
+                "HmacSHA256")
+            .withTokenCredential(credential);
+    // #bearer-token-managed-identity
+
+    Assert.assertEquals("BearerToken", settings.authorizationType());
+    Assert.assertTrue(settings.getTokenCredential().isPresent());
   }
 }
