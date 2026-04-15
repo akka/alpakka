@@ -42,21 +42,51 @@ class AzuriteOAuthIntegrationSpec extends StorageIntegrationSpec with ForAllTest
 
     import scala.sys.process._
     Seq(
-      "keytool", "-genkeypair", "-alias", "azurite", "-keyalg", "RSA", "-keysize", "2048",
-      "-storetype", "PKCS12", "-keystore", keystore.getAbsolutePath,
-      "-storepass", "password", "-validity", "1",
-      "-dname", "CN=localhost", "-ext", "san=dns:localhost,ip:127.0.0.1"
+      "keytool",
+      "-genkeypair",
+      "-alias",
+      "azurite",
+      "-keyalg",
+      "RSA",
+      "-keysize",
+      "2048",
+      "-storetype",
+      "PKCS12",
+      "-keystore",
+      keystore.getAbsolutePath,
+      "-storepass",
+      "password",
+      "-validity",
+      "1",
+      "-dname",
+      "CN=localhost",
+      "-ext",
+      "san=dns:localhost,ip:127.0.0.1"
     ).!!
 
     Seq(
-      "openssl", "pkcs12", "-in", keystore.getAbsolutePath,
-      "-out", certFile.getAbsolutePath, "-clcerts", "-nokeys",
-      "-passin", "pass:password"
+      "openssl",
+      "pkcs12",
+      "-in",
+      keystore.getAbsolutePath,
+      "-out",
+      certFile.getAbsolutePath,
+      "-clcerts",
+      "-nokeys",
+      "-passin",
+      "pass:password"
     ).!!
     Seq(
-      "openssl", "pkcs12", "-in", keystore.getAbsolutePath,
-      "-out", keyFile.getAbsolutePath, "-nocerts", "-nodes",
-      "-passin", "pass:password"
+      "openssl",
+      "pkcs12",
+      "-in",
+      keystore.getAbsolutePath,
+      "-out",
+      keyFile.getAbsolutePath,
+      "-nocerts",
+      "-nodes",
+      "-passin",
+      "pass:password"
     ).!!
 
     certFile.deleteOnExit()
@@ -72,15 +102,24 @@ class AzuriteOAuthIntegrationSpec extends StorageIntegrationSpec with ForAllTest
       exposedPorts = Seq(10000, 10001, 10002),
       command = Seq(
         "azurite",
-        "--blobHost", "0.0.0.0", "--queueHost", "0.0.0.0", "--tableHost", "0.0.0.0",
-        "--oauth", "basic",
-        "--cert", "/certs/cert.pem", "--key", "/certs/key.pem"
+        "--blobHost",
+        "0.0.0.0",
+        "--queueHost",
+        "0.0.0.0",
+        "--tableHost",
+        "0.0.0.0",
+        "--oauth",
+        "basic",
+        "--cert",
+        "/certs/cert.pem",
+        "--key",
+        "/certs/key.pem"
       )
     )
-    c.container.withCopyFileToContainer(
-      MountableFile.forHostPath(new File(certDir, "cert.pem").getAbsolutePath), "/certs/cert.pem")
-    c.container.withCopyFileToContainer(
-      MountableFile.forHostPath(new File(certDir, "key.pem").getAbsolutePath), "/certs/key.pem")
+    c.container.withCopyFileToContainer(MountableFile.forHostPath(new File(certDir, "cert.pem").getAbsolutePath),
+                                        "/certs/cert.pem")
+    c.container.withCopyFileToContainer(MountableFile.forHostPath(new File(certDir, "key.pem").getAbsolutePath),
+                                        "/certs/key.pem")
     c
   }
 
