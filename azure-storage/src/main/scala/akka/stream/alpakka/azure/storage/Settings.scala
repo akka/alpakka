@@ -47,7 +47,10 @@ final class StorageSettings(val apiVersion: String,
   /** Java API */
   def getAlgorithm: String = algorithm
 
-  def witApiVersion(apiVersion: String): StorageSettings = copy(apiVersion = apiVersion)
+  def withApiVersion(apiVersion: String): StorageSettings = copy(apiVersion = apiVersion)
+
+  @deprecated("Use withApiVersion instead", "azure-storage 10.0.0")
+  def witApiVersion(apiVersion: String): StorageSettings = withApiVersion(apiVersion)
 
   def withAuthorizationType(authorizationType: String): StorageSettings = copy(authorizationType = authorizationType)
 
@@ -97,6 +100,7 @@ final class StorageSettings(val apiVersion: String,
   override def hashCode(): Int =
     Objects.hash(apiVersion,
                  authorizationType,
+                 endPointUrl,
                  azureNameKeyCredential,
                  sasToken,
                  retrySettings,
