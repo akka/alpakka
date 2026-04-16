@@ -6,7 +6,8 @@ package akka.stream.alpakka.kinesis.impl
 
 import java.util.Collections
 
-import akka.stream.alpakka.kinesis.{CommittableRecord, DefaultTestContext}
+import akka.stream.alpakka.kinesis.CommittableRecord
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import org.mockito.Mockito.{mock => jMock, verify, when}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -14,7 +15,7 @@ import software.amazon.kinesis.lifecycle.events.{InitializationInput, ProcessRec
 import software.amazon.kinesis.processor.RecordProcessorCheckpointer
 import software.amazon.kinesis.retrieval.KinesisClientRecord
 
-class ShardProcessorSpec extends AnyWordSpec with Matchers with DefaultTestContext {
+class ShardProcessorSpec extends AnyWordSpec with Matchers with LogCapturing {
 
   private def mock[T](implicit ct: scala.reflect.ClassTag[T]): T =
     jMock(ct.runtimeClass.asInstanceOf[Class[T]])
