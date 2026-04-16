@@ -21,23 +21,16 @@ private[kinesis] class ShardProcessor(
     processRecord: CommittableRecord => Unit
 ) extends ShardRecordProcessor {
 
-  // We need extra coordination in the event of a Shard End (for example, when we double
-  // the number of shards, the old shards are ended and the new shards take their place).
-  //
-  // When a shard needs to be ended, the "shardEnded" method is invoked. We block that
-  // invocation until all records (actually we only care about the latest record)
-  // are checkpointed using the asynchronous stream mechanism.
-  //
-  // When all records are checkpointed, the "shardEnded" method can safely acknowledge
-  // that the shard can be ended.
-  //
-  // If we were not to do this extra work, the shard would be ended before we made sure
-  // that all the records have been successfully consumed by the stream.
-  //
-  // To do the coordination we use a Semaphore instance in every ShardProcessor
-  // instance. Both the ShardProcessor and its Semaphore will live in a thread spawned
-  // by the AWS KCL Scheduler after the Scheduler run() method has been invoked.
-  private val lastRecordSemaphore = new Semaphore(1)
+  // Coordination for shard end: we must not call checkpointer.checkpoint() in shardEnded until
+  // the last record we handed out has been checkpointed. Otherwise, when the final batch has
+  // no records (isAtShardEnd was never true in the previous batch), shardEnded would complete
+  // immediately and later checkpoint attempts for in-flight records would fail because the
+  // shard is already checkpointed with SHARD_END. We tie a semaphore to the last record of
+  // each batch; that record releases it on checkpoint. shardEnded waits on it before
+  // checkpointing the shard. If the last batch is empty, lastRecordSemaphore still refers to
+  // the previous batch's last record, so we correctly wait for it.
+  @volatile
+  private var lastRecordSemaphore: Option[Semaphore] = None
 
   private var shardData: ShardProcessorData = _
   private var checkpointer: RecordProcessorCheckpointer = _
@@ -56,20 +49,19 @@ private[kinesis] class ShardProcessor(
                                   processRecordsInput.isAtShardEnd,
                                   processRecordsInput.millisBehindLatest)
 
-    if (batchData.isAtShardEnd) {
-      lastRecordSemaphore.acquire()
-    }
-
     val numberOfRecords = processRecordsInput.records().size()
     processRecordsInput.records().asScala.zipWithIndex.foreach {
       case (record, index) =>
-        processRecord(
-          new InternalCommittableRecord(
-            record,
-            batchData,
-            lastRecord = processRecordsInput.isAtShardEnd && index + 1 == numberOfRecords
-          )
-        )
+        // Only the last record in the batch gets a semaphore; when it is checkpointed it
+        // releases it so shardEnded can proceed. Non-last records pass None.
+        val committableRecord =
+          if (index + 1 == numberOfRecords) {
+            lastRecordSemaphore = Some(new Semaphore(0))
+            new InternalCommittableRecord(record, batchData, checkpointed = lastRecordSemaphore)
+          } else {
+            new InternalCommittableRecord(record, batchData, None)
+          }
+        processRecord(committableRecord)
     }
   }
 
@@ -80,10 +72,11 @@ private[kinesis] class ShardProcessor(
 
   override def shardEnded(shardEndedInput: ShardEndedInput): Unit = {
     checkpointer = shardEndedInput.checkpointer()
-    // We must checkpoint to finish the shard, but we wait
-    // until all records in flight have been processed
+    // We must checkpoint to finish the shard, but we wait until the last record we handed
+    // out has been checkpointed (releases the semaphore). If no records were ever created,
+    // lastRecordSemaphore is None and we proceed without waiting.
     shutdown = Some(ShutdownReason.SHARD_END)
-    lastRecordSemaphore.acquire()
+    lastRecordSemaphore.foreach(_.acquire())
     checkpointer.checkpoint()
   }
 
@@ -94,11 +87,15 @@ private[kinesis] class ShardProcessor(
     shutdown = Some(ShutdownReason.REQUESTED)
   }
 
-  final class InternalCommittableRecord(record: KinesisClientRecord, batchData: BatchData, lastRecord: Boolean)
-      extends CommittableRecord(record, batchData, shardData) {
+  final class InternalCommittableRecord(
+      record: KinesisClientRecord,
+      batchData: BatchData,
+      checkpointed: Option[Semaphore]
+  ) extends CommittableRecord(record, batchData, shardData) {
     private def checkpoint(): Unit = {
       checkpointer.checkpoint(sequenceNumber, subSequenceNumber)
-      if (lastRecord) lastRecordSemaphore.release()
+      // Signal shardEnded that this (last) record is done so it can safely checkpoint the shard.
+      checkpointed.foreach(_.release())
     }
     override def shutdownReason: Option[ShutdownReason] = shutdown
     override def forceCheckpoint(): Unit =
