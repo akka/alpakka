@@ -10,8 +10,8 @@ As all Alpakka modules (excluding Alpakka Kafka) share a single version number, 
 
 Alpakka publishes 
 
-* regular releases to https://repo.akka.io/maven
-* milestone and release candidates (of major versions) to https://repo.akka.io/maven
+* regular releases to the Akka repository (access via token from https://account.akka.io/token)
+* milestone and release candidates (of major versions) to the Akka repository
 * @ref:[snapshots](snapshots.md) to https://repo.akka.io/snapshots
 
 ### Compatibility
