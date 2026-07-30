@@ -47,6 +47,9 @@ jobs:
       - name: "Code style, compile tests, MiMa. Run locally with: sbt \"verifyCodeStyle; +Test/compile; mimaReportBinaryIssues\""
         run: sbt "verifyCodeStyle; +Test/compile; mimaReportBinaryIssues"
 
+      - name: Artifact BOM validation
+        uses: akka/github-actions-scripts/artifact_bom_validation@main
+
   connectors:
     runs-on: Akka-Default
 
