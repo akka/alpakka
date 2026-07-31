@@ -99,7 +99,7 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-handler</artifactId>
-                <version>4.1.119.Final</version>
+                <version>4.1.135.Final</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
@@ -267,7 +267,7 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-handler</artifactId>
-            <version>4.1.119.Final</version>
+            <version>4.1.135.Final</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
