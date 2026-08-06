@@ -15,6 +15,6 @@ addSbtPlugin("com.github.sbt" % "sbt-site-paradox" % "1.5.0")
 // Akka gRPC -- sync with version in Dependencies.scala:22
 addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "2.5.8")
 // templating
-addSbtPlugin("com.github.sbt" % "sbt-boilerplate" % "0.7.0")
+addSbtPlugin("com.github.sbt" % "sbt-boilerplate" % "0.8.1")
 // create pom.xml for scanning tools
 addSbtPlugin("io.akka.sbt" % "sbt-artifact-bom" % "0.2.0")
