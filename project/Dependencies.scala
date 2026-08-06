@@ -221,7 +221,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "commons-net" % "commons-net" % "3.13.0",
         "com.hierynomus" % "sshj" % "0.40.0",
-        ("io.github.hakky54" % "ayza-for-pem" % "10.0.0" % Test)
+        ("io.github.hakky54" % "ayza-for-pem" % "10.0.5" % Test)
       )
   )
 
