@@ -202,7 +202,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "org.apache.parquet" % "parquet-avro" % "1.15.2", //Apache2
         // override the version brought in by parquet-avro to fix CVE-2023-39410
-        "org.apache.avro" % "avro" % "1.12.0" //Apache2
+        "org.apache.avro" % "avro" % "1.12.1" //Apache2
       )
   )
 
@@ -270,7 +270,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         // https://github.com/googleapis/java-bigquerystorage/tree/master/proto-google-cloud-bigquerystorage-v1
         "com.google.api.grpc" % "proto-google-cloud-bigquerystorage-v1" % "3.15.2" % "protobuf-src", // ApacheV2
-        "org.apache.avro" % "avro" % "1.12.0" % "provided",
+        "org.apache.avro" % "avro" % "1.12.1" % "provided",
         "org.apache.arrow" % "arrow-vector" % "19.0.0" % "provided",
         "io.grpc" % "grpc-auth" % akka.grpc.gen.BuildInfo.grpcVersion, // ApacheV2
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
