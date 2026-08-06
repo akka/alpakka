@@ -194,7 +194,7 @@ object Dependencies {
 
   val File = Seq(
     libraryDependencies ++= Seq(
-        "com.google.jimfs" % "jimfs" % "1.3.0" % Test // ApacheV2
+        "com.google.jimfs" % "jimfs" % "1.3.1" % Test // ApacheV2
       )
   )
 
@@ -462,7 +462,7 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http-xml" % AkkaHttpVersion,
         "software.amazon.awssdk" % "auth" % AwsSdk2Version,
         // in-memory filesystem for file related tests
-        "com.google.jimfs" % "jimfs" % "1.3.0" % Test, // ApacheV2
+        "com.google.jimfs" % "jimfs" % "1.3.1" % Test, // ApacheV2
         wiremock
       )
   )
