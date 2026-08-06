@@ -291,7 +291,7 @@ object Dependencies {
     // see Akka gRPC version in plugins.sbt
     libraryDependencies ++= Seq(
         // https://github.com/googleapis/java-pubsub/tree/master/proto-google-cloud-pubsub-v1/
-        "com.google.cloud" % "google-cloud-pubsub" % "1.141.5" % "protobuf-src", // ApacheV2
+        "com.google.cloud" % "google-cloud-pubsub" % "1.152.0" % "protobuf-src", // ApacheV2
         "io.grpc" % "grpc-auth" % akka.grpc.gen.BuildInfo.grpcVersion,
         // https://github.com/googleapis/google-auth-library-java
         "com.google.auth" % "google-auth-library-oauth2-http" % GoogleAuthVersion,
