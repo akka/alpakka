@@ -19,12 +19,14 @@ object CsvParsing {
   val DoubleQuote: Byte = '"'
   val maximumLineLengthDefault: Int = 10 * 1024
 
-  /** Creates CSV parsing flow that reads CSV lines from incoming
+  /**
+   * Creates CSV parsing flow that reads CSV lines from incoming
    * [[akka.util.ByteString]] objects.
    */
   def lineScanner(delimiter: Byte = Comma,
                   quoteChar: Byte = DoubleQuote,
                   escapeChar: Byte = Backslash,
-                  maximumLineLength: Int = maximumLineLengthDefault): Flow[ByteString, List[ByteString], NotUsed] =
+                  maximumLineLength: Int = maximumLineLengthDefault
+  ): Flow[ByteString, List[ByteString], NotUsed] =
     Flow.fromGraph(new CsvParsingStage(delimiter, quoteChar, escapeChar, maximumLineLength))
 }

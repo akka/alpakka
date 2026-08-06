@@ -30,10 +30,12 @@ private[hbase] class HBaseFlowStage[A](settings: HTableSettings[A]) extends Grap
 
       lazy val table: Table = getOrCreateTable(settings.tableName, settings.columnFamilies).get
 
-      setHandler(out, new OutHandler {
-        override def onPull() =
-          pull(in)
-      })
+      setHandler(out,
+                 new OutHandler {
+                   override def onPull() =
+                     pull(in)
+                 }
+      )
 
       setHandler(
         in,

@@ -16,8 +16,8 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 @InternalApi
-private[auth] final class GoogleOAuth2Credentials(credentials: OAuth2Credentials)(
-    implicit ec: ExecutionContext,
+private[auth] final class GoogleOAuth2Credentials(credentials: OAuth2Credentials)(implicit
+    ec: ExecutionContext,
     settings: RequestSettings
 ) extends GoogleCredentials {
 

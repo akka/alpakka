@@ -26,8 +26,8 @@ import scala.collection.immutable
                                                               charset: Charset,
                                                               combineAll: Boolean,
                                                               customFieldValuePlaceholder: Option[V],
-                                                              headerPlaceholder: Option[String])
-    extends GraphStage[FlowShape[immutable.Seq[ByteString], Map[String, V]]] {
+                                                              headerPlaceholder: Option[String]
+) extends GraphStage[FlowShape[immutable.Seq[ByteString], Map[String, V]]] {
 
   override protected def initialAttributes: Attributes = Attributes.name("CsvToMap")
 
@@ -72,25 +72,24 @@ import scala.collection.immutable
     val combined = headers.get
       .zipAll(transformElements(elem),
               headerPlaceholder.getOrElse("MissingHeader"),
-              customFieldValuePlaceholder.getOrElse(fieldValuePlaceholder))
+              customFieldValuePlaceholder.getOrElse(fieldValuePlaceholder)
+      )
     val filtering: String => Boolean = key =>
       headerPlaceholder.map(_.equalsIgnoreCase(key)).fold(key.equalsIgnoreCase("MissingHeader"))(identity)
     val missingHeadersContent =
       combined
-        .filter {
-          case (key, _) => filtering(key)
+        .filter { case (key, _) =>
+          filtering(key)
         }
         .zipWithIndex
-        .map {
-          case (content, index) =>
-            val (key, value) = content
-            (s"$key$index", value)
+        .map { case (content, index) =>
+          val (key, value) = content
+          (s"$key$index", value)
         }
     val contentWithPredefinedHeaders =
       combined
-        .filterNot {
-          case (key, _) =>
-            filtering(key)
+        .filterNot { case (key, _) =>
+          filtering(key)
         }
     val all = contentWithPredefinedHeaders ++ missingHeadersContent
     all.toMap
@@ -104,12 +103,13 @@ import scala.collection.immutable
                                               charset: Charset,
                                               combineAll: Boolean,
                                               customFieldValuePlaceholder: Option[ByteString],
-                                              headerPlaceholder: Option[String])
-    extends CsvToMapStageBase[ByteString](columnNames,
-                                          charset,
-                                          combineAll,
-                                          customFieldValuePlaceholder,
-                                          headerPlaceholder) {
+                                              headerPlaceholder: Option[String]
+) extends CsvToMapStageBase[ByteString](columnNames,
+                                        charset,
+                                        combineAll,
+                                        customFieldValuePlaceholder,
+                                        headerPlaceholder
+    ) {
 
   override val fieldValuePlaceholder: ByteString = ByteString("")
 
@@ -124,8 +124,8 @@ import scala.collection.immutable
                                                        charset: Charset,
                                                        combineAll: Boolean,
                                                        customFieldValuePlaceholder: Option[String],
-                                                       headerPlaceholder: Option[String])
-    extends CsvToMapStageBase[String](columnNames, charset, combineAll, customFieldValuePlaceholder, headerPlaceholder) {
+                                                       headerPlaceholder: Option[String]
+) extends CsvToMapStageBase[String](columnNames, charset, combineAll, customFieldValuePlaceholder, headerPlaceholder) {
 
   override val fieldValuePlaceholder: String = ""
 

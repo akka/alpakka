@@ -32,8 +32,8 @@ private[auth] object UserAccessMetadata {
     HttpRequest(method = POST, uri = tokenUrl, entity = entity).addHeader(`Metadata-Flavor`)
   }
 
-  def getAccessToken(clientId: String, clientSecret: String, refreshToken: String)(
-      implicit mat: Materializer,
+  def getAccessToken(clientId: String, clientSecret: String, refreshToken: String)(implicit
+      mat: Materializer,
       clock: Clock
   ): Future[AccessToken] = {
     import SprayJsonSupport._

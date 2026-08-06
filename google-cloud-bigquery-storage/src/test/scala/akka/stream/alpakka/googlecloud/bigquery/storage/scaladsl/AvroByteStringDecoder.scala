@@ -20,8 +20,9 @@ class AvroByteStringDecoder(schema: Schema) extends FromByteStringUnmarshaller[L
 
   val datumReader = new GenericDatumReader[GenericRecord](schema)
 
-  override def apply(value: ByteString)(implicit ec: ExecutionContext,
-                                        materializer: Materializer): Future[List[BigQueryRecord]] = {
+  override def apply(
+      value: ByteString
+  )(implicit ec: ExecutionContext, materializer: Materializer): Future[List[BigQueryRecord]] = {
 
     val result = ListBuffer[BigQueryRecord]()
 

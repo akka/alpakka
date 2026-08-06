@@ -90,7 +90,8 @@ object BlobService {
    */
   def putBlockBlob(objectPath: String,
                    requestBuilder: PutBlockBlob,
-                   payload: Source[ByteString, _]): Source[Optional[ObjectMetadata], NotUsed] =
+                   payload: Source[ByteString, _]
+  ): Source[Optional[ObjectMetadata], NotUsed] =
     AzureStorageStream
       .putBlob(
         objectPath,
@@ -116,7 +117,8 @@ object BlobService {
    *         [[akka.stream.alpakka.azure.storage.ObjectMetadata]] from the Put Block List response
    */
   def putBlockBlobStreaming(objectPath: String,
-                            requestBuilder: PutBlockBlobStreaming): Sink[ByteString, CompletionStage[ObjectMetadata]] =
+                            requestBuilder: PutBlockBlobStreaming
+  ): Sink[ByteString, CompletionStage[ObjectMetadata]] =
     AzureStorageStream
       .putBlockBlobStreaming(objectPath, requestBuilder)
       .mapMaterializedValue[CompletionStage[ObjectMetadata]](_.asJava)

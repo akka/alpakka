@@ -46,9 +46,8 @@ object SlickSourceWithPlainSQLQueryExample extends App {
       .runWith(Sink.ignore)
   //#source-example
 
-  done.onComplete {
-    case _ =>
-      system.terminate()
+  done.onComplete { case _ =>
+    system.terminate()
   }
 }
 
@@ -78,9 +77,8 @@ object SlickSourceWithTypedQueryExample extends App {
       .runWith(Sink.ignore)
   //#source-with-typed-query
 
-  done.onComplete {
-    case _ =>
-      system.terminate()
+  done.onComplete { case _ =>
+    system.terminate()
   }
 }
 
@@ -110,9 +108,8 @@ object SlickSinkExample extends App {
       )
   //#sink-example
 
-  done.onComplete {
-    case _ =>
-      system.terminate()
+  done.onComplete { case _ =>
+    system.terminate()
   }
 }
 
@@ -185,7 +182,7 @@ object SlickFlowWithPassThroughExample extends App {
         // add an optional first argument to specify the parallelism factor (Int)
         Slick.flowWithPassThrough { kafkaMessage =>
           val user = kafkaMessage.msg
-          (sqlu"INSERT INTO ALPAKKA_SLICK_SCALADSL_TEST_USERS VALUES(${user.id}, ${user.name})")
+          sqlu"INSERT INTO ALPAKKA_SLICK_SCALADSL_TEST_USERS VALUES(${user.id}, ${user.name})"
             .map { insertCount => // map db result to something else
               // allows to keep the kafka message offset so it can be committed in a next stage
               kafkaMessage.map(user => (user, insertCount))
@@ -200,8 +197,7 @@ object SlickFlowWithPassThroughExample extends App {
       .runWith(Sink.ignore)
   //#flowWithPassThrough-example
 
-  done.onComplete {
-    case _ =>
-      system.terminate()
+  done.onComplete { case _ =>
+    system.terminate()
   }
 }

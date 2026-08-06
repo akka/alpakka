@@ -19,8 +19,8 @@ import scala.util.control.NonFatal
 @InternalApi private[csv] class CsvParsingStage(delimiter: Byte,
                                                 quoteChar: Byte,
                                                 escapeChar: Byte,
-                                                maximumLineLength: Int)
-    extends GraphStage[FlowShape[ByteString, List[ByteString]]] {
+                                                maximumLineLength: Int
+) extends GraphStage[FlowShape[ByteString, List[ByteString]]] {
 
   private val in = Inlet[ByteString](Logging.simpleName(this) + ".in")
   private val out = Outlet[List[ByteString]](Logging.simpleName(this) + ".out")

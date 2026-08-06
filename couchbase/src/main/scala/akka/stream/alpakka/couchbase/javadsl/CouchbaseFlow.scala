@@ -21,7 +21,8 @@ object CouchbaseFlow {
   def fromId(sessionSettings: CouchbaseSessionSettings,
              bucketName: String,
              scopeName: String,
-             collectionName: String): Flow[String, CouchbaseDocument[JsonValue], NotUsed] =
+             collectionName: String
+  ): Flow[String, CouchbaseDocument[JsonValue], NotUsed] =
     scaladsl.CouchbaseFlow.fromId[JsonValue](sessionSettings, bucketName, scopeName, collectionName).asJava
 
   /**
@@ -30,7 +31,8 @@ object CouchbaseFlow {
   def bytesFromId(sessionSettings: CouchbaseSessionSettings,
                   bucketName: String,
                   scopeName: String,
-                  collectionName: String): Flow[String, CouchbaseDocument[Array[Byte]], NotUsed] =
+                  collectionName: String
+  ): Flow[String, CouchbaseDocument[Array[Byte]], NotUsed] =
     scaladsl.CouchbaseFlow.bytesFromId(sessionSettings, bucketName, scopeName, collectionName).asJava
 
   /**
@@ -39,7 +41,8 @@ object CouchbaseFlow {
   def upsert[T](sessionSettings: CouchbaseSessionSettings,
                 bucketName: String,
                 scopeName: String,
-                collectionName: String): Flow[CouchbaseDocument[T], Done, NotUsed] =
+                collectionName: String
+  ): Flow[CouchbaseDocument[T], Done, NotUsed] =
     scaladsl.CouchbaseFlow
       .upsert[T](sessionSettings, bucketName, scopeName, collectionName)
       .asJava
@@ -51,7 +54,8 @@ object CouchbaseFlow {
                 upsertOptions: UpsertOptions,
                 bucketName: String,
                 scopeName: String,
-                collectionName: String): Flow[CouchbaseDocument[T], Done, NotUsed] =
+                collectionName: String
+  ): Flow[CouchbaseDocument[T], Done, NotUsed] =
     scaladsl.CouchbaseFlow
       .upsert[T](sessionSettings, upsertOptions, bucketName, scopeName, collectionName)
       .asJava
@@ -63,7 +67,8 @@ object CouchbaseFlow {
   def upsertWithResult[T](sessionSettings: CouchbaseSessionSettings,
                           bucketName: String,
                           scopeName: String,
-                          collectionName: String): Flow[CouchbaseDocument[T], CouchbaseWriteResult, NotUsed] = {
+                          collectionName: String
+  ): Flow[CouchbaseDocument[T], CouchbaseWriteResult, NotUsed] = {
     scaladsl.CouchbaseFlow
       .upsertWithResult[T](sessionSettings, bucketName, scopeName, collectionName)
       .asJava[CouchbaseDocument[T]]
@@ -77,7 +82,8 @@ object CouchbaseFlow {
                           upsertOptions: UpsertOptions,
                           bucketName: String,
                           scopeName: String,
-                          collectionName: String): Flow[CouchbaseDocument[T], CouchbaseWriteResult, NotUsed] =
+                          collectionName: String
+  ): Flow[CouchbaseDocument[T], CouchbaseWriteResult, NotUsed] =
     scaladsl.CouchbaseFlow
       .upsertWithResult[T](sessionSettings, upsertOptions, bucketName, scopeName, collectionName)
       .asJava
@@ -113,7 +119,8 @@ object CouchbaseFlow {
   def replace[T](sessionSettings: CouchbaseSessionSettings,
                  bucketName: String,
                  scopeName: String,
-                 collectionName: String): Flow[CouchbaseDocument[T], Done, NotUsed] =
+                 collectionName: String
+  ): Flow[CouchbaseDocument[T], Done, NotUsed] =
     scaladsl.CouchbaseFlow
       .replace[T](sessionSettings, bucketName, scopeName, collectionName)
       .asJava
@@ -125,7 +132,8 @@ object CouchbaseFlow {
                  replaceOptions: ReplaceOptions,
                  bucketName: String,
                  scopeName: String,
-                 collectionName: String): Flow[CouchbaseDocument[T], Done, NotUsed] =
+                 collectionName: String
+  ): Flow[CouchbaseDocument[T], Done, NotUsed] =
     scaladsl.CouchbaseFlow
       .replace[T](sessionSettings, replaceOptions, bucketName, scopeName, collectionName)
       .asJava
@@ -136,7 +144,8 @@ object CouchbaseFlow {
   def delete(sessionSettings: CouchbaseSessionSettings,
              bucketName: String,
              scopeName: String,
-             collectionName: String): Flow[String, String, NotUsed] =
+             collectionName: String
+  ): Flow[String, String, NotUsed] =
     scaladsl.CouchbaseFlow.delete(sessionSettings, bucketName, scopeName, collectionName).asJava
 
   /**
@@ -146,7 +155,8 @@ object CouchbaseFlow {
              removeOptions: RemoveOptions,
              bucketName: String,
              scopeName: String,
-             collectionName: String): Flow[String, String, NotUsed] =
+             collectionName: String
+  ): Flow[String, String, NotUsed] =
     scaladsl.CouchbaseFlow.delete(sessionSettings, removeOptions, bucketName, scopeName, collectionName).asJava
 
   /**
@@ -155,7 +165,8 @@ object CouchbaseFlow {
   def deleteWithResult(sessionSettings: CouchbaseSessionSettings,
                        bucketName: String,
                        scopeName: String,
-                       collectionName: String): Flow[String, CouchbaseDeleteResult, NotUsed] =
+                       collectionName: String
+  ): Flow[String, CouchbaseDeleteResult, NotUsed] =
     scaladsl.CouchbaseFlow.deleteWithResult(sessionSettings, bucketName, scopeName, collectionName).asJava
 
   /**
@@ -165,7 +176,8 @@ object CouchbaseFlow {
                        removeOptions: RemoveOptions,
                        bucketName: String,
                        scopeName: String,
-                       collectionName: String): Flow[String, CouchbaseDeleteResult, NotUsed] =
+                       collectionName: String
+  ): Flow[String, CouchbaseDeleteResult, NotUsed] =
     scaladsl.CouchbaseFlow
       .deleteWithResult(sessionSettings, removeOptions, bucketName, scopeName, collectionName)
       .asJava

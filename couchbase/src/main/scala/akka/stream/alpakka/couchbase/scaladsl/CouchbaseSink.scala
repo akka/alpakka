@@ -24,7 +24,8 @@ object CouchbaseSink {
                           upsertOptions: UpsertOptions,
                           bucketName: String,
                           scopeName: String,
-                          collectionName: String): Sink[CouchbaseDocument[T], Future[Done]] =
+                          collectionName: String
+  ): Sink[CouchbaseDocument[T], Future[Done]] =
     CouchbaseFlow
       .upsert[T](sessionSettings, upsertOptions, bucketName, scopeName, collectionName)
       .toMat(Sink.ignore)(Keep.right)
@@ -36,7 +37,8 @@ object CouchbaseSink {
              removeOptions: RemoveOptions,
              bucketName: String,
              scopeName: String,
-             collectionName: String): Sink[String, Future[Done]] =
+             collectionName: String
+  ): Sink[String, Future[Done]] =
     CouchbaseFlow
       .delete(sessionSettings, removeOptions, bucketName, scopeName, collectionName)
       .toMat(Sink.ignore)(Keep.right)

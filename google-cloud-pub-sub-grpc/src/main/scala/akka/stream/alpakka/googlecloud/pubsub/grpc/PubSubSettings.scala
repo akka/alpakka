@@ -23,7 +23,8 @@ final class PubSubSettings private (
     val port: Int,
     val useTls: Boolean,
     val rootCa: Option[String],
-    /** @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]] */ @deprecated(
+    /** @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]] */
+    @deprecated(
       "Use akka.stream.alpakka.google.GoogleSettings",
       "3.0.0"
     ) @Deprecated val callCredentials: Option[
@@ -61,7 +62,8 @@ final class PubSubSettings private (
                    port: Int = port,
                    useTls: Boolean = useTls,
                    rootCa: Option[String] = rootCa,
-                   callCredentials: Option[CallCredentials] = callCredentials: @nowarn("msg=deprecated")) =
+                   callCredentials: Option[CallCredentials] = callCredentials: @nowarn("msg=deprecated")
+  ) =
     new PubSubSettings(host, port, useTls, rootCa, callCredentials)
 }
 

@@ -42,8 +42,8 @@ private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettin
                                         subscriptions: Map[String, MqttQoS],
                                         bufferSize: Int,
                                         defaultQoS: MqttQoS,
-                                        manualAcks: Boolean = false)
-    extends GraphStageWithMaterializedValue[FlowShape[MqttMessage, MqttMessageWithAck], Future[Done]] {
+                                        manualAcks: Boolean = false
+) extends GraphStageWithMaterializedValue[FlowShape[MqttMessage, MqttMessageWithAck], Future[Done]] {
 
   private val in = Inlet[MqttMessage]("MqttFlow.in")
   private val out = Outlet[MqttMessageWithAck]("MqttFlow.out")
@@ -61,7 +61,8 @@ private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettin
                                                     subscriptions,
                                                     bufferSize,
                                                     defaultQoS,
-                                                    manualAcks) {
+                                                    manualAcks
+    ) {
 
       override def publishPending(msg: MqttMessage): Unit = super.publishToMqtt(msg)
 
@@ -78,8 +79,8 @@ abstract class MqttFlowStageLogic[I](in: Inlet[I],
                                      subscriptions: Map[String, MqttQoS],
                                      bufferSize: Int,
                                      defaultQoS: MqttQoS,
-                                     manualAcks: Boolean)
-    extends GraphStageLogic(shape)
+                                     manualAcks: Boolean
+) extends GraphStageLogic(shape)
     with StageLogging
     with InHandler
     with OutHandler {
@@ -164,16 +165,15 @@ abstract class MqttFlowStageLogic[I](in: Inlet[I],
     }
 
   private val commitCallback: AsyncCallback[CommitCallbackArguments] =
-    getAsyncCallback[CommitCallbackArguments](
-      (args: CommitCallbackArguments) =>
-        try {
-          mqttClient.messageArrivedComplete(args.messageId, args.qos.value)
-          if (unackedMessages.decrementAndGet() == 0 && (isClosed(out) || (isClosed(in) && queue.isEmpty)))
-            completeStage()
-          args.promise.complete(SuccessfullyDone)
-        } catch {
-          case e: Throwable => args.promise.failure(e)
-        }
+    getAsyncCallback[CommitCallbackArguments]((args: CommitCallbackArguments) =>
+      try {
+        mqttClient.messageArrivedComplete(args.messageId, args.qos.value)
+        if (unackedMessages.decrementAndGet() == 0 && (isClosed(out) || (isClosed(in) && queue.isEmpty)))
+          completeStage()
+        args.promise.complete(SuccessfullyDone)
+      } catch {
+        case e: Throwable => args.promise.failure(e)
+      }
     )
 
   mqttClient.setCallback(new MqttCallbackExtended {
@@ -331,10 +331,9 @@ private[mqtt] object MqttFlowStageLogic {
 
   def asConnectOptions(connectionSettings: MqttConnectionSettings): MqttConnectOptions = {
     val options = new MqttConnectOptions
-    connectionSettings.auth.foreach {
-      case (user, password) =>
-        options.setUserName(user)
-        options.setPassword(password.toCharArray)
+    connectionSettings.auth.foreach { case (user, password) =>
+      options.setUserName(user)
+      options.setPassword(password.toCharArray)
     }
     connectionSettings.socketFactory.foreach(options.setSocketFactory)
     connectionSettings.will.foreach { will =>

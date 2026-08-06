@@ -10,7 +10,8 @@ final class CustomerEncryption private (encryptionAlgorithm: String, keySha256: 
   def withKeySha256(keySha256: String): CustomerEncryption = copy(keySha256 = keySha256)
 
   private def copy(encryptionAlgorithm: String = encryptionAlgorithm,
-                   keySha256: String = keySha256): CustomerEncryption =
+                   keySha256: String = keySha256
+  ): CustomerEncryption =
     new CustomerEncryption(encryptionAlgorithm, keySha256)
 
   override def toString: String =

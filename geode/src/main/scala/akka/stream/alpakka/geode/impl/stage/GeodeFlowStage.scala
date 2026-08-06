@@ -32,21 +32,25 @@ private[geode] class GeodeFlowStage[K, T <: AnyRef](cache: ClientCache, settings
 
       val clientCache = cache
 
-      setHandler(out, new OutHandler {
-        override def onPull() =
-          pull(in)
-      })
+      setHandler(out,
+                 new OutHandler {
+                   override def onPull() =
+                     pull(in)
+                 }
+      )
 
-      setHandler(in, new InHandler {
-        override def onPush() = {
-          val msg = grab(in)
+      setHandler(in,
+                 new InHandler {
+                   override def onPush() = {
+                     val msg = grab(in)
 
-          put(msg)
+                     put(msg)
 
-          push(out, msg)
-        }
+                     push(out, msg)
+                   }
 
-      })
+                 }
+      )
 
       override def postStop() = {
         log.debug("Stage completed")

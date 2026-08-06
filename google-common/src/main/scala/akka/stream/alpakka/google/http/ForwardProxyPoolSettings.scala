@@ -19,8 +19,8 @@ import scala.concurrent.Future
 @InternalApi
 private[google] object ForwardProxyPoolSettings {
 
-  def apply(scheme: String, host: String, port: Int, credentials: Option[BasicHttpCredentials])(
-      implicit system: ActorSystem
+  def apply(scheme: String, host: String, port: Int, credentials: Option[BasicHttpCredentials])(implicit
+      system: ActorSystem
   ): ConnectionPoolSettings = {
     val address = InetSocketAddress.createUnresolved(host, port)
     val transport = scheme match {
@@ -41,8 +41,8 @@ private[google] object ForwardProxyPoolSettings {
 }
 
 private[http] final class ChangeTargetEndpointTransport(address: InetSocketAddress) extends ClientTransport {
-  def connectTo(ignoredHost: String, ignoredPort: Int, settings: ClientConnectionSettings)(
-      implicit system: ActorSystem
+  def connectTo(ignoredHost: String, ignoredPort: Int, settings: ClientConnectionSettings)(implicit
+      system: ActorSystem
   ): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
     Tcp()
       .outgoingConnection(address,
@@ -50,7 +50,8 @@ private[http] final class ChangeTargetEndpointTransport(address: InetSocketAddre
                           settings.socketOptions,
                           halfClose = true,
                           settings.connectingTimeout,
-                          settings.idleTimeout)
+                          settings.idleTimeout
+      )
       .mapMaterializedValue(
         _.map(tcpConn => OutgoingConnection(tcpConn.localAddress, tcpConn.remoteAddress))(system.dispatcher)
       )

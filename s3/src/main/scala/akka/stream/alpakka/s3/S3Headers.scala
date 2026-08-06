@@ -57,7 +57,8 @@ final class S3Headers private (val cannedAcl: Option[CannedAcl] = None,
                                val metaHeaders: Option[MetaHeaders] = None,
                                val storageClass: Option[StorageClass] = None,
                                val customHeaders: Map[String, String] = Map.empty,
-                               val serverSideEncryption: Option[ServerSideEncryption] = None) {
+                               val serverSideEncryption: Option[ServerSideEncryption] = None
+) {
 
   @InternalApi private[s3] val headers: Seq[HttpHeader] =
     cannedAcl.toIndexedSeq.map(_.header) ++
@@ -105,10 +106,10 @@ final class S3Headers private (val cannedAcl: Option[CannedAcl] = None,
   override def equals(other: Any): Boolean = other match {
     case that: S3Headers =>
       Objects.equals(this.cannedAcl, that.cannedAcl) &&
-      Objects.equals(this.metaHeaders, that.metaHeaders) &&
-      Objects.equals(this.storageClass, that.storageClass) &&
-      Objects.equals(this.customHeaders, that.customHeaders) &&
-      Objects.equals(this.serverSideEncryption, that.serverSideEncryption)
+        Objects.equals(this.metaHeaders, that.metaHeaders) &&
+        Objects.equals(this.storageClass, that.storageClass) &&
+        Objects.equals(this.customHeaders, that.customHeaders) &&
+        Objects.equals(this.serverSideEncryption, that.serverSideEncryption)
     case _ => false
   }
 

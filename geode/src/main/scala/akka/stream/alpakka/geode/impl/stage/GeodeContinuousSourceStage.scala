@@ -28,36 +28,38 @@ private[geode] class GeodeContinuousSourceStage[V](cache: ClientCache, name: Str
 
     (new GeodeCQueryGraphLogic[V](shape, cache, name, sql) {
 
-      override val onConnect: AsyncCallback[Unit] = getAsyncCallback[Unit] { v =>
-        subPromise.success(Done)
-      }
+       override val onConnect: AsyncCallback[Unit] = getAsyncCallback[Unit] { v =>
+         subPromise.success(Done)
+       }
 
-      val onElement: AsyncCallback[V] = getAsyncCallback[V] { element =>
-        if (isAvailable(out) && incomingQueueIsEmpty) {
-          pushElement(out, element)
-        } else
-          enqueue(element)
-        handleTerminaison()
-      }
+       val onElement: AsyncCallback[V] = getAsyncCallback[V] { element =>
+         if (isAvailable(out) && incomingQueueIsEmpty) {
+           pushElement(out, element)
+         } else
+           enqueue(element)
+         handleTerminaison()
+       }
 
-      //
-      // This handler, will first forward initial (old) result, then new ones (continuous).
-      //
-      setHandler(
-        out,
-        new OutHandler {
-          override def onPull() = {
-            if (initialResultsIterator.hasNext)
-              push(out, initialResultsIterator.next())
-            else
-              dequeue() foreach { e =>
-                pushElement(out, e)
-              }
-            handleTerminaison()
-          }
-        }
-      )
+       //
+       // This handler, will first forward initial (old) result, then new ones (continuous).
+       //
+       setHandler(
+         out,
+         new OutHandler {
+           override def onPull() = {
+             if (initialResultsIterator.hasNext)
+               push(out, initialResultsIterator.next())
+             else
+               dequeue() foreach { e =>
+                 pushElement(out, e)
+               }
+             handleTerminaison()
+           }
+         }
+       )
 
-    }, subPromise.future)
+     },
+     subPromise.future
+    )
   }
 }

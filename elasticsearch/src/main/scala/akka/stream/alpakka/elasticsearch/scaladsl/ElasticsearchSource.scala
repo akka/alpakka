@@ -40,7 +40,8 @@ object ElasticsearchSource {
    */
   def apply(elasticsearchParams: ElasticsearchParams,
             searchParams: Map[String, String],
-            settings: SourceSettingsBase[_, _]): Source[ReadResult[JsObject], NotUsed] =
+            settings: SourceSettingsBase[_, _]
+  ): Source[ReadResult[JsObject], NotUsed] =
     create(elasticsearchParams, searchParams, settings)
 
   /**
@@ -49,7 +50,8 @@ object ElasticsearchSource {
    */
   def create(elasticsearchParams: ElasticsearchParams,
              query: String,
-             settings: SourceSettingsBase[_, _]): Source[ReadResult[JsObject], NotUsed] =
+             settings: SourceSettingsBase[_, _]
+  ): Source[ReadResult[JsObject], NotUsed] =
     create(elasticsearchParams, Map("query" -> query), settings)
 
   /**
@@ -62,7 +64,8 @@ object ElasticsearchSource {
    */
   def create(elasticsearchParams: ElasticsearchParams,
              searchParams: Map[String, String],
-             settings: SourceSettingsBase[_, _]): Source[ReadResult[JsObject], NotUsed] =
+             settings: SourceSettingsBase[_, _]
+  ): Source[ReadResult[JsObject], NotUsed] =
     Source
       .fromMaterializer { (mat, _) =>
         implicit val system: ActorSystem = mat.system
@@ -84,8 +87,8 @@ object ElasticsearchSource {
    * Creates a [[akka.stream.scaladsl.Source]] from Elasticsearch that streams [[ReadResult]]s of type `T`
    * converted by Spray's [[spray.json.JsonReader]]
    */
-  def typed[T](elasticsearchParams: ElasticsearchParams, query: String, settings: SourceSettingsBase[_, _])(
-      implicit sprayJsonReader: JsonReader[T]
+  def typed[T](elasticsearchParams: ElasticsearchParams, query: String, settings: SourceSettingsBase[_, _])(implicit
+      sprayJsonReader: JsonReader[T]
   ): Source[ReadResult[T], NotUsed] =
     typed(elasticsearchParams, Map("query" -> query), settings)
 
@@ -99,8 +102,9 @@ object ElasticsearchSource {
    */
   def typed[T](elasticsearchParams: ElasticsearchParams,
                searchParams: Map[String, String],
-               settings: SourceSettingsBase[_, _])(
-      implicit sprayJsonReader: JsonReader[T]
+               settings: SourceSettingsBase[_, _]
+  )(implicit
+      sprayJsonReader: JsonReader[T]
   ): Source[ReadResult[T], NotUsed] =
     Source
       .fromMaterializer { (mat, _) =>
@@ -112,7 +116,8 @@ object ElasticsearchSource {
           new impl.ElasticsearchSourceStage(elasticsearchParams,
                                             searchParams,
                                             settings,
-                                            new SprayJsonReader[T]()(sprayJsonReader))
+                                            new SprayJsonReader[T]()(sprayJsonReader)
+          )
         )
       }
       .mapMaterializedValue(_ => NotUsed)

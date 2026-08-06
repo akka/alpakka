@@ -18,8 +18,8 @@ import scala.collection.mutable.Queue
  * INTERNAL API
  */
 @InternalApi private[storagequeue] final class AzureQueueSourceStage(cloudQueue: () => CloudQueue,
-                                                                     settings: AzureQueueSourceSettings)
-    extends GraphStage[SourceShape[CloudQueueMessage]] {
+                                                                     settings: AzureQueueSourceSettings
+) extends GraphStage[SourceShape[CloudQueueMessage]] {
   val out: Outlet[CloudQueueMessage] = Outlet("AzureCloudQueue.out")
   override val shape: SourceShape[CloudQueueMessage] = SourceShape(out)
 

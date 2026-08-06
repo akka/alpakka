@@ -16,8 +16,8 @@ final class PutBlockBlob(val contentLength: Long,
                          val contentType: ContentType,
                          val leaseId: Option[String] = None,
                          override val sse: Option[ServerSideEncryption] = None,
-                         override val additionalHeaders: Seq[HttpHeader] = Seq.empty)
-    extends RequestBuilder {
+                         override val additionalHeaders: Seq[HttpHeader] = Seq.empty
+) extends RequestBuilder {
 
   override protected val method: HttpMethod = HttpMethods.PUT
 
@@ -40,12 +40,14 @@ final class PutBlockBlob(val contentLength: Long,
 
   private def copy(leaseId: Option[String] = leaseId,
                    sse: Option[ServerSideEncryption] = sse,
-                   additionalHeaders: Seq[HttpHeader] = additionalHeaders) =
+                   additionalHeaders: Seq[HttpHeader] = additionalHeaders
+  ) =
     new PutBlockBlob(contentLength = contentLength,
                      contentType = contentType,
                      leaseId = leaseId,
                      sse = sse,
-                     additionalHeaders = additionalHeaders)
+                     additionalHeaders = additionalHeaders
+    )
 }
 
 object PutBlockBlob {

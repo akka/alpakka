@@ -25,8 +25,9 @@ import scala.annotation.tailrec
  * Splits up a byte stream source into sub-flows of a minimum size. Does not attempt to create chunks of an exact size.
  */
 @InternalApi private[impl] object SplitAfterSize {
-  def apply[I, M](minChunkSize: Int,
-                  maxChunkSize: Int)(in: Flow[I, ByteString, M]): SubFlow[ByteString, M, in.Repr, in.Closed] = {
+  def apply[I, M](minChunkSize: Int, maxChunkSize: Int)(
+      in: Flow[I, ByteString, M]
+  ): SubFlow[ByteString, M, in.Repr, in.Closed] = {
     require(minChunkSize < maxChunkSize, "the min chunk size must be smaller than the max chunk size")
     in.via(insertMarkers(minChunkSize, maxChunkSize)).splitWhen(_ == NewStream).collect { case bs: ByteString => bs }
   }

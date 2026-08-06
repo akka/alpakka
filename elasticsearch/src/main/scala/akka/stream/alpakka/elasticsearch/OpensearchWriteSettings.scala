@@ -12,20 +12,22 @@ final class OpensearchWriteSettings private (connection: ElasticsearchConnection
                                              retryLogic: RetryLogic,
                                              versionType: Option[String],
                                              apiVersion: OpensearchApiVersion,
-                                             allowExplicitIndex: Boolean)
-    extends WriteSettingsBase[OpensearchApiVersion, OpensearchWriteSettings](connection,
-                                                                             bufferSize,
-                                                                             retryLogic,
-                                                                             versionType,
-                                                                             apiVersion,
-                                                                             allowExplicitIndex) {
+                                             allowExplicitIndex: Boolean
+) extends WriteSettingsBase[OpensearchApiVersion, OpensearchWriteSettings](connection,
+                                                                           bufferSize,
+                                                                           retryLogic,
+                                                                           versionType,
+                                                                           apiVersion,
+                                                                           allowExplicitIndex
+    ) {
 
   protected override def copy(connection: ElasticsearchConnectionSettings,
                               bufferSize: Int,
                               retryLogic: RetryLogic,
                               versionType: Option[String],
                               apiVersion: OpensearchApiVersion,
-                              allowExplicitIndex: Boolean): OpensearchWriteSettings =
+                              allowExplicitIndex: Boolean
+  ): OpensearchWriteSettings =
     new OpensearchWriteSettings(connection, bufferSize, retryLogic, versionType, apiVersion, allowExplicitIndex)
 
   override def toString: String =

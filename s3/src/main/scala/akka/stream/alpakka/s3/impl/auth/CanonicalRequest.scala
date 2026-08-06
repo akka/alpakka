@@ -74,11 +74,10 @@ import akka.http.scaladsl.model.{HttpHeader, HttpRequest}
   def canonicalHeaderString(headers: Seq[HttpHeader]): String =
     headers
       .groupBy(_.lowercaseName)
-      .map {
-        case (name, headers) =>
-          name -> headers
-            .map(header => header.value.replaceAll("\\s+", " ").trim)
-            .mkString(",")
+      .map { case (name, headers) =>
+        name -> headers
+          .map(header => header.value.replaceAll("\\s+", " ").trim)
+          .mkString(",")
       }
       .toList
       .sortBy { case (name, _) => name }

@@ -25,11 +25,10 @@ private[fcm] object FcmFlows {
       .fromMaterializer { (mat, attr) =>
         val settings = GoogleAttributes.resolveSettings(mat, attr)
         val sender = new FcmSender()
-        Flow[(FcmNotification, T)].mapAsync(conf.maxConcurrentConnections) {
-          case (notification, data) =>
-            sender
-              .send(Http(mat.system), FcmSend(conf.isTest, notification))(mat, settings)
-              .zip(Future.successful(data))
+        Flow[(FcmNotification, T)].mapAsync(conf.maxConcurrentConnections) { case (notification, data) =>
+          sender
+            .send(Http(mat.system), FcmSend(conf.isTest, notification))(mat, settings)
+            .zip(Future.successful(data))
         }
       }
       .mapMaterializedValue(_ => NotUsed)

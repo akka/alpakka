@@ -8,7 +8,8 @@ import scala.concurrent.duration._
 
 final class SqsPublishGroupedSettings private (val maxBatchSize: Int,
                                                val maxBatchWait: scala.concurrent.duration.FiniteDuration,
-                                               val concurrentRequests: Int) {
+                                               val concurrentRequests: Int
+) {
 
   require(
     maxBatchSize > 0 && maxBatchSize <= 10,
@@ -31,10 +32,12 @@ final class SqsPublishGroupedSettings private (val maxBatchSize: Int,
 
   private def copy(maxBatchSize: Int = maxBatchSize,
                    maxBatchWait: scala.concurrent.duration.FiniteDuration = maxBatchWait,
-                   concurrentRequests: Int = concurrentRequests): SqsPublishGroupedSettings =
+                   concurrentRequests: Int = concurrentRequests
+  ): SqsPublishGroupedSettings =
     new SqsPublishGroupedSettings(maxBatchSize = maxBatchSize,
                                   maxBatchWait = maxBatchWait,
-                                  concurrentRequests = concurrentRequests)
+                                  concurrentRequests = concurrentRequests
+    )
 
   override def toString =
     "SqsPublishGroupedSettings(" +

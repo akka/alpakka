@@ -88,7 +88,8 @@ private[influxdb] sealed abstract class InfluxDbLogic[T, C](
 
   protected def toBatchPoints(databaseName: Option[String],
                               retentionPolicy: Option[String],
-                              seq: Seq[InfluxDbWriteMessage[T, C]]) = {
+                              seq: Seq[InfluxDbWriteMessage[T, C]]
+  ) = {
 
     val builder = BatchPoints.database(databaseName.orNull)
 
@@ -159,5 +160,6 @@ private[influxdb] final class InfluxDbMapperRecordLogic[T, C](
   def convertToBatchPoints(wm: ((Some[String], Some[String]), immutable.Seq[InfluxDbWriteMessage[T, C]])) =
     toBatchPoints(wm._1._1,
                   wm._1._2,
-                  wm._2.map(im => im.withPoint(mapperHelper.convertModelToPoint(im.point).asInstanceOf[T])))
+                  wm._2.map(im => im.withPoint(mapperHelper.convertModelToPoint(im.point).asInstanceOf[T]))
+    )
 }

@@ -65,8 +65,8 @@ object BigQueryStorageSettings {
         case _ => bigQueryConfig
       }
 
-    Seq(setRootCa).foldLeft(bigQueryConfig) {
-      case (c, f) => f(c)
+    Seq(setRootCa).foldLeft(bigQueryConfig) { case (c, f) =>
+      f(c)
     }
   }
 

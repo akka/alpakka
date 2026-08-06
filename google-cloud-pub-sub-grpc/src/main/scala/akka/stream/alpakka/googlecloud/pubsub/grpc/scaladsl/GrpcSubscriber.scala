@@ -31,8 +31,9 @@ final class GrpcSubscriber private (settings: PubSubSettings, googleSettings: Go
 }
 
 object GrpcSubscriber {
-  def apply(settings: PubSubSettings,
-            googleSettings: GoogleSettings)(implicit sys: ClassicActorSystemProvider): GrpcSubscriber =
+  def apply(settings: PubSubSettings, googleSettings: GoogleSettings)(implicit
+      sys: ClassicActorSystemProvider
+  ): GrpcSubscriber =
     new GrpcSubscriber(settings, googleSettings, sys.classicSystem)
 
   def apply(settings: PubSubSettings, googleSettings: GoogleSettings, sys: ActorSystem): GrpcSubscriber =

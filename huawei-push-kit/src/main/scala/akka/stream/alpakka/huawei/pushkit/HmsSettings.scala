@@ -180,7 +180,8 @@ object ForwardProxy {
   def apply(host: String,
             port: Int,
             credentials: Option[ForwardProxyCredentials],
-            trustPem: Option[ForwardProxyTrustPem]) =
+            trustPem: Option[ForwardProxyTrustPem]
+  ) =
     new ForwardProxy(host, port, credentials, trustPem)
 
   /**
@@ -189,7 +190,8 @@ object ForwardProxy {
   def create(host: String,
              port: Int,
              credentials: Option[ForwardProxyCredentials],
-             trustPem: Option[ForwardProxyTrustPem]) =
+             trustPem: Option[ForwardProxyTrustPem]
+  ) =
     apply(host, port, credentials, trustPem)
 
   def apply(host: String, port: Int) =
@@ -214,7 +216,8 @@ object ForwardProxy {
 final case class ForwardProxy @InternalApi private (host: String,
                                                     port: Int,
                                                     credentials: Option[ForwardProxyCredentials],
-                                                    trustPem: Option[ForwardProxyTrustPem]) {
+                                                    trustPem: Option[ForwardProxyTrustPem]
+) {
 
   def getHost = host
   def getPort = port

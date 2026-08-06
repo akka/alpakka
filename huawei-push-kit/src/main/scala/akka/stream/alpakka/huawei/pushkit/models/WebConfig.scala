@@ -10,7 +10,8 @@ package akka.stream.alpakka.huawei.pushkit.models
  */
 case class WebConfig(hms_options: Option[String] = None,
                      headers: Option[Map[String, String]] = None,
-                     notification: Option[WebNotification] = None) {
+                     notification: Option[WebNotification] = None
+) {
   def withHmsOptions(options: String): WebConfig = this.copy(hms_options = Option(options))
   def withHeaders(headers: Map[String, String]): WebConfig = this.copy(headers = Option(headers))
   def withNotification(notification: WebNotification): WebConfig =
@@ -38,7 +39,8 @@ case class WebNotification(title: Option[String] = None,
                            require_interaction: Option[Boolean] = None,
                            silent: Option[Boolean] = None,
                            timestamp: Option[Long] = None,
-                           actions: Option[Seq[WebActions]] = None) {
+                           actions: Option[Seq[WebActions]] = None
+) {
   def withTitle(value: String): WebNotification = this.copy(title = Option(value))
   def withBody(value: String): WebNotification = this.copy(body = Option(value))
   def withIcon(value: String): WebNotification = this.copy(icon = Option(value))

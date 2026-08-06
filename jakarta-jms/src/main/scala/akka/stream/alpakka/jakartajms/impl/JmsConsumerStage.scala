@@ -40,7 +40,8 @@ private[jakartajms] final class JmsConsumerStage(settings: JmsConsumerSettings, 
     private val backpressure = new Semaphore(bufferSize)
 
     protected def createSession(connection: jms.Connection,
-                                createDestination: jms.Session => jakarta.jms.Destination): JmsConsumerSession = {
+                                createDestination: jms.Session => jakarta.jms.Destination
+    ): JmsConsumerSession = {
       val session =
         connection.createSession(false, settings.acknowledgeMode.getOrElse(AcknowledgeMode.AutoAcknowledge).mode)
 

@@ -27,8 +27,9 @@ object GCStorage {
    * @param bucketName the name of the bucket to look up
    * @return a `Future` containing `Bucket` if it exists
    */
-  def getBucket(bucketName: String)(implicit mat: Materializer,
-                                    attr: Attributes = Attributes()): Future[Option[Bucket]] =
+  def getBucket(
+      bucketName: String
+  )(implicit mat: Materializer, attr: Attributes = Attributes()): Future[Option[Bucket]] =
     GCStorageStream.getBucket(bucketName)
 
   /**
@@ -51,8 +52,10 @@ object GCStorage {
    * @param location the region to put the bucket in
    * @return a `Future` of `Bucket` with created bucket
    */
-  def createBucket(bucketName: String, location: String)(implicit mat: Materializer,
-                                                         attr: Attributes = Attributes()): Future[Bucket] =
+  def createBucket(bucketName: String, location: String)(implicit
+      mat: Materializer,
+      attr: Attributes = Attributes()
+  ): Future[Bucket] =
     GCStorageStream.createBucket(bucketName, location)
 
   /**
@@ -190,7 +193,8 @@ object GCStorage {
    */
   def download(bucket: String,
                objectName: String,
-               generation: Option[Long]): Source[Option[Source[ByteString, NotUsed]], NotUsed] =
+               generation: Option[Long]
+  ): Source[Option[Source[ByteString, NotUsed]], NotUsed] =
     GCStorageStream.download(bucket, objectName, generation)
 
   /**
@@ -207,7 +211,8 @@ object GCStorage {
   def simpleUpload(bucket: String,
                    objectName: String,
                    data: Source[ByteString, _],
-                   contentType: ContentType): Source[StorageObject, NotUsed] =
+                   contentType: ContentType
+  ): Source[StorageObject, NotUsed] =
     GCStorageStream.putObject(bucket, objectName, data, contentType)
 
   /**
@@ -226,7 +231,8 @@ object GCStorage {
                       objectName: String,
                       contentType: ContentType,
                       chunkSize: Int,
-                      metadata: Map[String, String]): Sink[ByteString, Future[StorageObject]] =
+                      metadata: Map[String, String]
+  ): Sink[ByteString, Future[StorageObject]] =
     resumableUpload(bucket, objectName, contentType, chunkSize, Some(metadata))
 
   /**
@@ -243,14 +249,16 @@ object GCStorage {
   def resumableUpload(bucket: String,
                       objectName: String,
                       contentType: ContentType,
-                      chunkSize: Int): Sink[ByteString, Future[StorageObject]] =
+                      chunkSize: Int
+  ): Sink[ByteString, Future[StorageObject]] =
     resumableUpload(bucket, objectName, contentType, chunkSize, metadata = None)
 
   private def resumableUpload(bucket: String,
                               objectName: String,
                               contentType: ContentType,
                               chunkSize: Int,
-                              metadata: Option[Map[String, String]]): Sink[ByteString, Future[StorageObject]] = {
+                              metadata: Option[Map[String, String]]
+  ): Sink[ByteString, Future[StorageObject]] = {
     assert(
       (chunkSize >= (256 * 1024)) && (chunkSize % (256 * 1024) == 0),
       "Chunk size must be a multiple of 256KB"
@@ -270,7 +278,8 @@ object GCStorage {
    */
   def resumableUpload(bucket: String,
                       objectName: String,
-                      contentType: ContentType): Sink[ByteString, Future[StorageObject]] =
+                      contentType: ContentType
+  ): Sink[ByteString, Future[StorageObject]] =
     GCStorageStream.resumableUpload(bucket, objectName, contentType)
 
   /**
@@ -287,7 +296,8 @@ object GCStorage {
   def rewrite(sourceBucket: String,
               sourceObjectName: String,
               destinationBucket: String,
-              destinationObjectName: String): RunnableGraph[Future[StorageObject]] =
+              destinationObjectName: String
+  ): RunnableGraph[Future[StorageObject]] =
     GCStorageStream.rewrite(sourceBucket, sourceObjectName, destinationBucket, destinationObjectName)
 
   /**

@@ -26,8 +26,8 @@ private[auth] object GoogleOAuth2 {
 
   private val oAuthTokenUrl = "https://oauth2.googleapis.com/token"
 
-  def getAccessToken(clientEmail: String, privateKey: String, scopes: Seq[String])(
-      implicit mat: Materializer,
+  def getAccessToken(clientEmail: String, privateKey: String, scopes: Seq[String])(implicit
+      mat: Materializer,
       settings: RequestSettings,
       clock: Clock
   ): Future[AccessToken] = {
@@ -49,15 +49,16 @@ private[auth] object GoogleOAuth2 {
     }
   }
 
-  private def generateJwt(clientEmail: String, privateKey: String, scopes: Seq[String])(
-      implicit clock: Clock
+  private def generateJwt(clientEmail: String, privateKey: String, scopes: Seq[String])(implicit
+      clock: Clock
   ): String = {
     import spray.json._
 
     val scope = scopes.mkString(" ")
     val claim = JwtClaim(content = JwtClaimContent(scope).toJson.compactPrint,
                          audience = Some(Set(oAuthTokenUrl)),
-                         issuer = Some(clientEmail))
+                         issuer = Some(clientEmail)
+    )
       .expiresIn(3600)
       .issuedNow
 

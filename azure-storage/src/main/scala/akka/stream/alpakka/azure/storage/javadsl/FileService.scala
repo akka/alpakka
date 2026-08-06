@@ -102,13 +102,15 @@ object FileService {
    */
   def updateRange(objectPath: String,
                   requestBuilder: UpdateFileRange,
-                  payload: Source[ByteString, _]): Source[Optional[ObjectMetadata], NotUsed] = {
+                  payload: Source[ByteString, _]
+  ): Source[Optional[ObjectMetadata], NotUsed] = {
     AzureStorageStream
       .updateRange(
         objectPath,
         HttpEntity(requestBuilder.contentType,
                    requestBuilder.range.last - requestBuilder.range.first + 1,
-                   payload.asScala),
+                   payload.asScala
+        ),
         requestBuilder
       )
       .map(opt => Optional.ofNullable(opt.orNull))
@@ -150,7 +152,8 @@ object FileService {
    *         [[akka.stream.alpakka.azure.storage.ObjectMetadata]], will be [[scala.None]] in case the object does not exist
    */
   def createDirectory(directoryPath: String,
-                      requestBuilder: CreateDirectory): Source[Optional[ObjectMetadata], NotUsed] =
+                      requestBuilder: CreateDirectory
+  ): Source[Optional[ObjectMetadata], NotUsed] =
     AzureStorageStream.createDirectory(directoryPath, requestBuilder).map(opt => Optional.ofNullable(opt.orNull)).asJava
 
   /**
@@ -162,7 +165,8 @@ object FileService {
    *         [[akka.stream.alpakka.azure.storage.ObjectMetadata]], will be [[scala.None]] in case the object does not exist
    */
   def deleteDirectory(directoryPath: String,
-                      requestBuilder: DeleteDirectory): Source[Optional[ObjectMetadata], NotUsed] =
+                      requestBuilder: DeleteDirectory
+  ): Source[Optional[ObjectMetadata], NotUsed] =
     AzureStorageStream.deleteDirectory(directoryPath, requestBuilder).map(opt => Optional.ofNullable(opt.orNull)).asJava
 
 }

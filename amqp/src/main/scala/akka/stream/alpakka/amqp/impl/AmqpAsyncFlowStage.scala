@@ -42,41 +42,43 @@ import scala.concurrent.{Future, Promise}
     val streamCompletion = Promise[Done]()
     (new AbstractAmqpAsyncFlowStageLogic(settings, streamCompletion, shape) {
 
-      private var buffer = TreeMap[DeliveryTag, AwaitingMessage[T]]()
+       private var buffer = TreeMap[DeliveryTag, AwaitingMessage[T]]()
 
-      override def enqueueMessage(tag: DeliveryTag, passThrough: T): Unit =
-        buffer += (tag -> AwaitingMessage(tag, passThrough))
+       override def enqueueMessage(tag: DeliveryTag, passThrough: T): Unit =
+         buffer += (tag -> AwaitingMessage(tag, passThrough))
 
-      override def dequeueAwaitingMessages(tag: DeliveryTag, multiple: Boolean): Iterable[AwaitingMessage[T]] =
-        if (multiple) {
-          dequeueWhile((t, _) => t <= tag)
-        } else {
-          setReady(tag)
-          if (isAtHead(tag)) {
-            dequeueWhile((_, message) => message.ready)
-          } else {
-            Seq.empty
-          }
-        }
+       override def dequeueAwaitingMessages(tag: DeliveryTag, multiple: Boolean): Iterable[AwaitingMessage[T]] =
+         if (multiple) {
+           dequeueWhile((t, _) => t <= tag)
+         } else {
+           setReady(tag)
+           if (isAtHead(tag)) {
+             dequeueWhile((_, message) => message.ready)
+           } else {
+             Seq.empty
+           }
+         }
 
-      private def dequeueWhile(
-          predicate: (DeliveryTag, AwaitingMessage[T]) => Boolean
-      ): Iterable[AwaitingMessage[T]] = {
-        val dequeued = buffer.takeWhile { case (k, v) => predicate(k, v) }
-        buffer --= dequeued.keys
-        dequeued.values
-      }
+       private def dequeueWhile(
+           predicate: (DeliveryTag, AwaitingMessage[T]) => Boolean
+       ): Iterable[AwaitingMessage[T]] = {
+         val dequeued = buffer.takeWhile { case (k, v) => predicate(k, v) }
+         buffer --= dequeued.keys
+         dequeued.values
+       }
 
-      private def isAtHead(tag: DeliveryTag): Boolean =
-        buffer.headOption.exists { case (tag, _) => tag == tag }
+       private def isAtHead(tag: DeliveryTag): Boolean =
+         buffer.headOption.exists { case (tag, _) => tag == tag }
 
-      private def setReady(tag: DeliveryTag): Unit =
-        buffer.get(tag).foreach(message => buffer += (tag -> message.copy(ready = true)))
+       private def setReady(tag: DeliveryTag): Unit =
+         buffer.get(tag).foreach(message => buffer += (tag -> message.copy(ready = true)))
 
-      override def messagesAwaitingDelivery: Int = buffer.size
+       override def messagesAwaitingDelivery: Int = buffer.size
 
-      override def noAwaitingMessages: Boolean = buffer.isEmpty
+       override def noAwaitingMessages: Boolean = buffer.isEmpty
 
-    }, streamCompletion.future)
+     },
+     streamCompletion.future
+    )
   }
 }

@@ -13,7 +13,8 @@ import akka.util.ByteString
 
 import scala.collection.immutable
 
-/** Provides CSV formatting flows that convert a sequence of String into their CSV representation
+/**
+ * Provides CSV formatting flows that convert a sequence of String into their CSV representation
  * in [[akka.util.ByteString]].
  */
 object CsvFormatting {

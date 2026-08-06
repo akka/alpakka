@@ -26,10 +26,11 @@ private[bigquery] final class BigQueryExt private (sys: ExtendedActorSystem) ext
 
   def settings(path: String): BigQuerySettings =
     cachedSettings.getOrElse(path, {
-      val settings = BigQuerySettings(sys.settings.config.getConfig(path))
-      cachedSettings += path -> settings
-      settings
-    })
+                               val settings = BigQuerySettings(sys.settings.config.getConfig(path))
+                               cachedSettings += path -> settings
+                               settings
+                             }
+    )
 }
 
 @InternalApi

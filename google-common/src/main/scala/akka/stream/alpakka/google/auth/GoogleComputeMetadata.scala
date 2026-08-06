@@ -28,8 +28,8 @@ private[auth] object GoogleComputeMetadata {
   private val tokenRequest = HttpRequest(GET, tokenUrl).addHeader(`Metadata-Flavor`)
   private val projectIdRequest = HttpRequest(GET, projectIdUrl).addHeader(`Metadata-Flavor`)
 
-  def getAccessToken()(
-      implicit mat: Materializer,
+  def getAccessToken()(implicit
+      mat: Materializer,
       clock: Clock
   ): Future[AccessToken] = {
     import SprayJsonSupport._
@@ -41,8 +41,8 @@ private[auth] object GoogleComputeMetadata {
     } yield token
   }
 
-  def getProjectId()(
-      implicit mat: Materializer
+  def getProjectId()(implicit
+      mat: Materializer
   ): Future[String] = {
     import mat.executionContext
     implicit val system: ActorSystem = mat.system

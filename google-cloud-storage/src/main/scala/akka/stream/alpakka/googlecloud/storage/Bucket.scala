@@ -77,11 +77,11 @@ final class Bucket private (
   override def equals(other: Any): Boolean = other match {
     case that: Bucket =>
       java.util.Objects.equals(this.name, that.name) &&
-      java.util.Objects.equals(this.location, that.location) &&
-      java.util.Objects.equals(this.kind, that.kind) &&
-      java.util.Objects.equals(this.id, that.id) &&
-      java.util.Objects.equals(this.selfLink, that.selfLink) &&
-      java.util.Objects.equals(this.etag, that.etag)
+        java.util.Objects.equals(this.location, that.location) &&
+        java.util.Objects.equals(this.kind, that.kind) &&
+        java.util.Objects.equals(this.id, that.id) &&
+        java.util.Objects.equals(this.selfLink, that.selfLink) &&
+        java.util.Objects.equals(this.etag, that.etag)
     case _ => false
   }
 

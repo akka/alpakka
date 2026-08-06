@@ -25,22 +25,19 @@ object AvroSource {
   def readRecords(client: BigQueryReadClient, session: ReadSession): Seq[Source[BigQueryRecord, NotUsed]] =
     read(client, session)
       .map { a =>
-        a.map(
-            b =>
-              AvroDecoder(session.schema.avroSchema.get.schema)
-                .decodeRows(b.serializedBinaryRows)
-                .map(BigQueryRecord.fromAvro)
-          )
-          .mapConcat(c => c)
+        a.map(b =>
+          AvroDecoder(session.schema.avroSchema.get.schema)
+            .decodeRows(b.serializedBinaryRows)
+            .map(BigQueryRecord.fromAvro)
+        ).mapConcat(c => c)
       }
 
   def read(client: BigQueryReadClient, session: ReadSession): Seq[Source[AvroRows, NotUsed]] =
     SDKClientSource
       .read(client, session)
-      .map(
-        s =>
-          s.map(r => r.avroRows.toList)
-            .mapConcat(a => a)
+      .map(s =>
+        s.map(r => r.avroRows.toList)
+          .mapConcat(a => a)
       )
 
 }

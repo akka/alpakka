@@ -18,7 +18,8 @@ final class StorageSettings private (val projectId: String, val clientEmail: Str
 
   private def copy(projectId: String = projectId,
                    clientEmail: String = clientEmail,
-                   privateKey: String = privateKey): StorageSettings =
+                   privateKey: String = privateKey
+  ): StorageSettings =
     new StorageSettings(projectId, clientEmail, privateKey)
 
   override def toString: String =

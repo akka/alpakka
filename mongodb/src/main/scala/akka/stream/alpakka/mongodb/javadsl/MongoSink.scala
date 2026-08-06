@@ -54,7 +54,8 @@ object MongoSink {
    * @param options options to apply to the operation
    */
   def insertMany[T](collection: MongoCollection[T],
-                    options: InsertManyOptions): Sink[java.util.List[T], CompletionStage[Done]] =
+                    options: InsertManyOptions
+  ): Sink[java.util.List[T], CompletionStage[Done]] =
     MongoFlow.insertMany(collection, options).toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
@@ -72,7 +73,8 @@ object MongoSink {
    * @param options options to apply to the operation
    */
   def updateOne[T](collection: MongoCollection[T],
-                   options: UpdateOptions): Sink[DocumentUpdate, CompletionStage[Done]] =
+                   options: UpdateOptions
+  ): Sink[DocumentUpdate, CompletionStage[Done]] =
     MongoFlow.updateOne(collection, options).toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
@@ -90,7 +92,8 @@ object MongoSink {
    * @param options options to apply to the operation
    */
   def updateMany[T](collection: MongoCollection[T],
-                    options: UpdateOptions): Sink[DocumentUpdate, CompletionStage[Done]] =
+                    options: UpdateOptions
+  ): Sink[DocumentUpdate, CompletionStage[Done]] =
     MongoFlow.updateMany(collection, options).toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
 
   /**

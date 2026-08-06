@@ -17,8 +17,8 @@ final class PutPageBlock(val maxBlockSize: Long,
                          val leaseId: Option[String] = None,
                          val blobSequenceNumber: Option[Int] = None,
                          override val sse: Option[ServerSideEncryption] = None,
-                         override val additionalHeaders: Seq[HttpHeader] = Seq.empty)
-    extends RequestBuilder {
+                         override val additionalHeaders: Seq[HttpHeader] = Seq.empty
+) extends RequestBuilder {
 
   override protected val method: HttpMethod = HttpMethods.PUT
 
@@ -47,13 +47,15 @@ final class PutPageBlock(val maxBlockSize: Long,
   private def copy(leaseId: Option[String] = leaseId,
                    blobSequenceNumber: Option[Int] = blobSequenceNumber,
                    sse: Option[ServerSideEncryption] = sse,
-                   additionalHeaders: Seq[HttpHeader] = additionalHeaders) =
+                   additionalHeaders: Seq[HttpHeader] = additionalHeaders
+  ) =
     new PutPageBlock(maxBlockSize = maxBlockSize,
                      contentType = contentType,
                      leaseId = leaseId,
                      blobSequenceNumber = blobSequenceNumber,
                      sse = sse,
-                     additionalHeaders = additionalHeaders)
+                     additionalHeaders = additionalHeaders
+    )
 }
 
 object PutPageBlock {

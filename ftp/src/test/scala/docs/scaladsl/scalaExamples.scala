@@ -109,7 +109,8 @@ object scalaExamples {
 
     def processAndMove(sourcePath: String,
                        destinationPath: FtpFile => String,
-                       settings: FtpSettings): RunnableGraph[NotUsed] =
+                       settings: FtpSettings
+    ): RunnableGraph[NotUsed] =
       Ftp
         .ls(sourcePath, settings)
         .flatMapConcat(ftpFile => Ftp.fromPath(ftpFile.path, settings).map((_, ftpFile)))

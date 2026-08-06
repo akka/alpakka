@@ -72,10 +72,11 @@ object Credentials {
   @deprecated("Intended only to help with migration", "3.0.0")
   private[alpakka] def cache(key: Any)(default: => Credentials) =
     _cache.getOrElse(key, {
-      val credentials = default
-      _cache += (key -> credentials)
-      credentials
-    })
+                       val credentials = default
+                       _cache += (key -> credentials)
+                       credentials
+                     }
+    )
 
 }
 

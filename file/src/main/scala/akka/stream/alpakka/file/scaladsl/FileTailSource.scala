@@ -33,7 +33,8 @@ object FileTailSource {
   def apply(path: Path,
             maxChunkSize: Int,
             startingPosition: Long,
-            pollingInterval: FiniteDuration): Source[ByteString, NotUsed] =
+            pollingInterval: FiniteDuration
+  ): Source[ByteString, NotUsed] =
     Source.fromGraph(
       new akka.stream.alpakka.file.impl.FileTailSource(path, maxChunkSize, startingPosition, pollingInterval)
     )
@@ -56,7 +57,8 @@ object FileTailSource {
             maxLineSize: Int,
             pollingInterval: FiniteDuration,
             lf: String = System.getProperty("line.separator"),
-            charset: Charset = StandardCharsets.UTF_8): Source[String, NotUsed] =
+            charset: Charset = StandardCharsets.UTF_8
+  ): Source[String, NotUsed] =
     apply(path, maxLineSize, 0, pollingInterval)
       .via(akka.stream.scaladsl.Framing.delimiter(ByteString.fromString(lf, charset.name), maxLineSize, false))
       .map(_.decodeString(charset))

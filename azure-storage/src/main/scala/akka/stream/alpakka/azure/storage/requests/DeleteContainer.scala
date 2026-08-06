@@ -13,8 +13,8 @@ import akka.stream.alpakka.azure.storage.impl.StorageHeaders
 
 final class DeleteContainer(val leaseId: Option[String] = None,
                             override val sse: Option[ServerSideEncryption] = None,
-                            override val additionalHeaders: Seq[HttpHeader] = Seq.empty)
-    extends RequestBuilder {
+                            override val additionalHeaders: Seq[HttpHeader] = Seq.empty
+) extends RequestBuilder {
 
   override protected val method: HttpMethod = HttpMethods.DELETE
 
@@ -36,7 +36,8 @@ final class DeleteContainer(val leaseId: Option[String] = None,
 
   private def copy(leaseId: Option[String] = leaseId,
                    sse: Option[ServerSideEncryption] = sse,
-                   additionalHeaders: Seq[HttpHeader] = additionalHeaders) =
+                   additionalHeaders: Seq[HttpHeader] = additionalHeaders
+  ) =
     new DeleteContainer(leaseId = leaseId, sse = sse, additionalHeaders = additionalHeaders)
 }
 

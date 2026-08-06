@@ -27,7 +27,8 @@ private[alpakka] object ExternalAccountCredentials {
 
   def apply(json: JsValue, scopes: Seq[String])(implicit system: ClassicActorSystemProvider): Credentials = {
     require(scopes.nonEmpty && scopes.forall(_.nonEmpty),
-            "External account credentials requires that at least one scope is specified.")
+            "External account credentials requires that at least one scope is specified."
+    )
 
     val credentials = json.convertTo[ExternalAccount]
     new ExternalAccountCredentials(scopes, credentials)
@@ -128,9 +129,11 @@ private[alpakka] class ExternalAccountCredentials private (scopes: Seq[String], 
   private val AccessTokenTokenType = "urn:ietf:params:oauth:token-type:access_token"
   private val DefaultTokenLifetime = 3600.seconds
 
-  override protected def getAccessToken()(implicit mat: Materializer,
-                                          settings: RequestSettings,
-                                          clock: Clock): Future[AccessToken] = {
+  override protected def getAccessToken()(implicit
+      mat: Materializer,
+      settings: RequestSettings,
+      clock: Clock
+  ): Future[AccessToken] = {
     import mat.executionContext
     for {
       subjectToken <- obtainSubjectToken()
@@ -185,8 +188,8 @@ private[alpakka] class ExternalAccountCredentials private (scopes: Seq[String], 
       uri = Uri(url),
       headers = externalAccount.credential_source.headers
         .getOrElse(Map.empty)
-        .map {
-          case (key, value) => RawHeader(key, value)
+        .map { case (key, value) =>
+          RawHeader(key, value)
         }
         .toSeq
     )
@@ -207,12 +210,12 @@ private[alpakka] class ExternalAccountCredentials private (scopes: Seq[String], 
     // SDK libraries do:
     // https://docs.cloud.google.com/iam/docs/reference/sts/rest/v1/TopLevel/token
     val formData = Seq(
-        "grant_type" -> TokenExchangeGrantType,
-        "subject_token_type" -> externalAccount.subject_token_type,
-        "subject_token" -> subjectToken,
-        "requested_token_type" -> AccessTokenTokenType,
-        "audience" -> externalAccount.audience
-      ) ++ scopes.map("scope" -> _)
+      "grant_type" -> TokenExchangeGrantType,
+      "subject_token_type" -> externalAccount.subject_token_type,
+      "subject_token" -> subjectToken,
+      "requested_token_type" -> AccessTokenTokenType,
+      "audience" -> externalAccount.audience
+    ) ++ scopes.map("scope" -> _)
     val request = HttpRequest(
       method = HttpMethods.POST,
       uri = Uri(externalAccount.token_url),

@@ -31,8 +31,9 @@ final class GrpcPublisher private (settings: PubSubSettings, googleSettings: Goo
 }
 
 object GrpcPublisher {
-  def apply(settings: PubSubSettings,
-            googleSettings: GoogleSettings)(implicit sys: ClassicActorSystemProvider): GrpcPublisher =
+  def apply(settings: PubSubSettings, googleSettings: GoogleSettings)(implicit
+      sys: ClassicActorSystemProvider
+  ): GrpcPublisher =
     new GrpcPublisher(settings, googleSettings, sys.classicSystem)
 
   def apply(settings: PubSubSettings, googleSettings: GoogleSettings, sys: ActorSystem): GrpcPublisher =

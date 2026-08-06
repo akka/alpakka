@@ -39,7 +39,8 @@ private[kinesis] class ShardProcessor(
   override def initialize(initializationInput: InitializationInput): Unit =
     shardData = new ShardProcessorData(initializationInput.shardId,
                                        initializationInput.extendedSequenceNumber,
-                                       initializationInput.pendingCheckpointSequenceNumber)
+                                       initializationInput.pendingCheckpointSequenceNumber
+    )
 
   override def processRecords(processRecordsInput: ProcessRecordsInput): Unit = {
     checkpointer = processRecordsInput.checkpointer()
@@ -47,21 +48,21 @@ private[kinesis] class ShardProcessor(
     val batchData = new BatchData(processRecordsInput.cacheEntryTime,
                                   processRecordsInput.cacheExitTime,
                                   processRecordsInput.isAtShardEnd,
-                                  processRecordsInput.millisBehindLatest)
+                                  processRecordsInput.millisBehindLatest
+    )
 
     val numberOfRecords = processRecordsInput.records().size()
-    processRecordsInput.records().asScala.zipWithIndex.foreach {
-      case (record, index) =>
-        // Only the last record in the batch gets a semaphore; when it is checkpointed it
-        // releases it so shardEnded can proceed. Non-last records pass None.
-        val committableRecord =
-          if (index + 1 == numberOfRecords) {
-            lastRecordSemaphore = Some(new Semaphore(0))
-            new InternalCommittableRecord(record, batchData, checkpointed = lastRecordSemaphore)
-          } else {
-            new InternalCommittableRecord(record, batchData, None)
-          }
-        processRecord(committableRecord)
+    processRecordsInput.records().asScala.zipWithIndex.foreach { case (record, index) =>
+      // Only the last record in the batch gets a semaphore; when it is checkpointed it
+      // releases it so shardEnded can proceed. Non-last records pass None.
+      val committableRecord =
+        if (index + 1 == numberOfRecords) {
+          lastRecordSemaphore = Some(new Semaphore(0))
+          new InternalCommittableRecord(record, batchData, checkpointed = lastRecordSemaphore)
+        } else {
+          new InternalCommittableRecord(record, batchData, None)
+        }
+      processRecord(committableRecord)
     }
   }
 

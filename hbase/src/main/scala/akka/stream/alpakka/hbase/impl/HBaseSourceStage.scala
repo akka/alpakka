@@ -24,8 +24,8 @@ private[hbase] final class HBaseSourceStage[A](scan: Scan, settings: HTableSetti
 private[hbase] final class HBaseSourceLogic[A](scan: Scan,
                                                settings: HTableSettings[A],
                                                out: Outlet[Result],
-                                               shape: SourceShape[Result])
-    extends GraphStageLogic(shape)
+                                               shape: SourceShape[Result]
+) extends GraphStageLogic(shape)
     with OutHandler
     with StageLogging
     with HBaseCapabilities {

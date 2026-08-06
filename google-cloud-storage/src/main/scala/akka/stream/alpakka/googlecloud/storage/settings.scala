@@ -78,7 +78,7 @@ final class GCSSettings private (val endpointUrl: String, val basePath: String) 
   override def equals(other: Any): Boolean = other match {
     case that: GCSSettings =>
       Objects.equals(this.endpointUrl, that.endpointUrl) &&
-      Objects.equals(this.basePath, that.basePath)
+        Objects.equals(this.basePath, that.basePath)
     case _ => false
   }
 

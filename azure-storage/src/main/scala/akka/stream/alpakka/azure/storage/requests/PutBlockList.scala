@@ -21,8 +21,8 @@ import akka.stream.alpakka.azure.storage.impl.StorageHeaders
 private[storage] final class PutBlockList(val contentLength: Long,
                                           val leaseId: Option[String] = None,
                                           override val sse: Option[ServerSideEncryption] = None,
-                                          override val additionalHeaders: Seq[HttpHeader] = Seq.empty)
-    extends RequestBuilder {
+                                          override val additionalHeaders: Seq[HttpHeader] = Seq.empty
+) extends RequestBuilder {
 
   override protected val method: HttpMethod = HttpMethods.PUT
 

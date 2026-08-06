@@ -20,7 +20,8 @@ import scala.jdk.CollectionConverters._
  * @param pullMaxMessagesPerInternalBatch when pulling messages, the maximum that will be in the batch of messages. Defaults to 1000.
  */
 class PubSubConfig private (
-    /** @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]] */ @deprecated(
+    /** @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]] */
+    @deprecated(
       "Use akka.stream.alpakka.google.GoogleSettings",
       "3.0.0"
     ) @Deprecated val projectId: String,
@@ -52,8 +53,8 @@ object PubSubConfig {
    */
   @deprecated("Use akka.stream.alpakka.google.GoogleSettings to manage credentials", "3.0.0")
   @Deprecated
-  def apply(projectId: String, clientEmail: String, privateKey: String)(
-      implicit actorSystem: ActorSystem
+  def apply(projectId: String, clientEmail: String, privateKey: String)(implicit
+      actorSystem: ActorSystem
   ): PubSubConfig =
     new PubSubConfig(
       projectId = projectId,
@@ -67,7 +68,8 @@ object PubSubConfig {
             credentials = ServiceAccountCredentials(Some(projectId),
                                                     clientEmail,
                                                     privateKey,
-                                                    Seq("https://www.googleapis.com/auth/pubsub"))
+                                                    Seq("https://www.googleapis.com/auth/pubsub")
+            )
           )
       )
     )
@@ -81,8 +83,9 @@ object PubSubConfig {
             clientEmail: String,
             privateKey: String,
             pullReturnImmediately: Boolean,
-            pullMaxMessagesPerInternalBatch: Int)(
-      implicit actorSystem: ActorSystem
+            pullMaxMessagesPerInternalBatch: Int
+  )(implicit
+      actorSystem: ActorSystem
   ): PubSubConfig =
     new PubSubConfig(
       projectId = projectId,
@@ -96,7 +99,8 @@ object PubSubConfig {
             credentials = ServiceAccountCredentials(Some(projectId),
                                                     clientEmail,
                                                     privateKey,
-                                                    Seq("https://www.googleapis.com/auth/pubsub"))
+                                                    Seq("https://www.googleapis.com/auth/pubsub")
+            )
           )
       )
     )
@@ -121,13 +125,15 @@ object PubSubConfig {
              privateKey: String,
              actorSystem: ActorSystem,
              pullReturnImmediately: Boolean,
-             pullMaxMessagesPerInternalBatch: Int): PubSubConfig =
+             pullMaxMessagesPerInternalBatch: Int
+  ): PubSubConfig =
     apply(projectId, clientEmail, privateKey, pullReturnImmediately, pullMaxMessagesPerInternalBatch)(actorSystem)
 }
 
 final class PublishMessage private (val data: String,
                                     val attributes: Option[immutable.Map[String, String]],
-                                    val orderingKey: Option[String]) {
+                                    val orderingKey: Option[String]
+) {
   def this(data: String, attributes: Option[immutable.Map[String, String]]) = this(data, attributes, None)
 
   override def toString: String =
@@ -161,7 +167,8 @@ object PublishMessage {
    */
   def create(data: String,
              attributes: java.util.Map[String, String],
-             orderingKey: java.util.Optional[String]): PublishMessage =
+             orderingKey: java.util.Optional[String]
+  ): PublishMessage =
     new PublishMessage(data, Some(attributes.asScala.toMap), Option(orderingKey.orElse(null)))
 }
 
@@ -177,12 +184,14 @@ final class PubSubMessage private (val data: Option[String],
                                    val attributes: Option[immutable.Map[String, String]],
                                    val messageId: String,
                                    val publishTime: Instant,
-                                   val orderingKey: Option[String]) {
+                                   val orderingKey: Option[String]
+) {
 
   def this(data: Option[String],
            attributes: Option[immutable.Map[String, String]],
            messageId: String,
-           publishTime: Instant) = this(data, attributes, messageId, publishTime, None)
+           publishTime: Instant
+  ) = this(data, attributes, messageId, publishTime, None)
 
   def withAttributes(attributes: java.util.Map[String, String]): PubSubMessage =
     new PubSubMessage(data, Some(attributes.asScala.toMap), messageId, publishTime, orderingKey)
@@ -210,14 +219,16 @@ object PubSubMessage {
   def apply(data: Option[String],
             attributes: Option[immutable.Map[String, String]],
             messageId: String,
-            publishTime: Instant) =
+            publishTime: Instant
+  ) =
     new PubSubMessage(data, attributes, messageId, publishTime, None)
 
   def apply(data: Option[String] = None,
             attributes: Option[immutable.Map[String, String]] = None,
             messageId: String,
             publishTime: Instant,
-            orderingKey: Option[String] = None) =
+            orderingKey: Option[String] = None
+  ) =
     new PubSubMessage(data, attributes, messageId, publishTime, orderingKey)
 
   /**
@@ -226,7 +237,8 @@ object PubSubMessage {
   def create(data: java.util.Optional[String],
              attributes: java.util.Optional[java.util.Map[String, String]],
              messageId: String,
-             publishTime: Instant): PubSubMessage =
+             publishTime: Instant
+  ): PubSubMessage =
     create(data, attributes, messageId, publishTime, java.util.Optional.empty())
 
   /**
@@ -236,12 +248,14 @@ object PubSubMessage {
              attributes: java.util.Optional[java.util.Map[String, String]],
              messageId: String,
              publishTime: Instant,
-             orderingKey: java.util.Optional[String]): PubSubMessage =
+             orderingKey: java.util.Optional[String]
+  ): PubSubMessage =
     new PubSubMessage(Option(data.orElse(null)),
                       Option(attributes.orElse(null)).map(_.asScala.toMap),
                       messageId,
                       publishTime,
-                      Option(orderingKey.orElse(null)))
+                      Option(orderingKey.orElse(null))
+    )
 
 }
 

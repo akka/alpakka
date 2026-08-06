@@ -49,9 +49,8 @@ object Archive {
   ): Source[Pair[ZipArchiveMetadata, Source[ByteString, NotUsed]], NotUsed] =
     Source
       .fromGraph(new ZipSource(file, chunkSize, fileCharset))
-      .map(func {
-        case (metadata, source) =>
-          Pair(metadata, source.asJava)
+      .map(func { case (metadata, source) =>
+        Pair(metadata, source.asJava)
       })
   def zipReader(file: File): Source[Pair[ZipArchiveMetadata, Source[ByteString, NotUsed]], NotUsed] =
     zipReader(file, 8192)
@@ -61,9 +60,8 @@ object Archive {
   ): Source[Pair[ZipArchiveMetadata, Source[ByteString, NotUsed]], NotUsed] =
     Source
       .fromGraph(new ZipSource(file, chunkSize, StandardCharsets.UTF_8))
-      .map(func {
-        case (metadata, source) =>
-          Pair(metadata, source.asJava)
+      .map(func { case (metadata, source) =>
+        Pair(metadata, source.asJava)
       })
 
   /**
@@ -82,9 +80,8 @@ object Archive {
   def tarReader(): Flow[ByteString, Pair[TarArchiveMetadata, Source[ByteString, NotUsed]], NotUsed] =
     Flow
       .fromGraph(new TarReaderStage())
-      .map(func {
-        case (metadata, source) =>
-          Pair(metadata, source.asJava)
+      .map(func { case (metadata, source) =>
+        Pair(metadata, source.asJava)
       })
 
   private def func[T, R](f: T => R) = new akka.japi.function.Function[T, R] {

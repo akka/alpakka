@@ -24,8 +24,9 @@ class ArrowByteStringDecoder(val schema: ArrowSchema) extends FromByteStringUnma
 
   val allocator = new RootAllocator(Long.MaxValue)
 
-  override def apply(batch: ByteString)(implicit ec: ExecutionContext,
-                                        materializer: Materializer): Future[List[BigQueryRecord]] = {
+  override def apply(
+      batch: ByteString
+  )(implicit ec: ExecutionContext, materializer: Materializer): Future[List[BigQueryRecord]] = {
     val sd = MessageSerializer.deserializeSchema(
       new ReadChannel(
         new ByteArrayReadableSeekableByteChannel(
@@ -43,7 +44,8 @@ class ArrowByteStringDecoder(val schema: ArrowSchema) extends FromByteStringUnma
                                                                          batch.toByteBuffer.array()
                                                                        )
                                                                      ),
-                                                                     allocator);
+                                                                     allocator
+    );
     loader.load(deserializedBatch)
     deserializedBatch.close()
 

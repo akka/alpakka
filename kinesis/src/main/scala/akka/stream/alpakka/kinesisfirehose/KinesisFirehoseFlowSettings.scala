@@ -7,7 +7,8 @@ package akka.stream.alpakka.kinesisfirehose
 final class KinesisFirehoseFlowSettings private (val parallelism: Int,
                                                  val maxBatchSize: Int,
                                                  val maxRecordsPerSecond: Int,
-                                                 val maxBytesPerSecond: Int) {
+                                                 val maxBytesPerSecond: Int
+) {
 
   require(
     maxBatchSize >= 1 && maxBatchSize <= 500,

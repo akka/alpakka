@@ -31,7 +31,8 @@ object SolrSink {
     SolrFlow
       .documents(collection, settings, client)
       .toMat(javadsl.Sink.ignore[java.util.List[WriteResult[SolrInputDocument, NotUsed]]](),
-             javadsl.Keep.right[NotUsed, CompletionStage[Done]])
+             javadsl.Keep.right[NotUsed, CompletionStage[Done]]
+      )
 
   /**
    * Write Java bean stream elements to Solr.
@@ -46,7 +47,8 @@ object SolrSink {
     SolrFlow
       .beans[T](collection, settings, client, clazz)
       .toMat(javadsl.Sink.ignore[java.util.List[WriteResult[T, NotUsed]]](),
-             javadsl.Keep.right[NotUsed, CompletionStage[Done]])
+             javadsl.Keep.right[NotUsed, CompletionStage[Done]]
+      )
 
   /**
    * Write stream elements to Solr.
@@ -63,5 +65,6 @@ object SolrSink {
     SolrFlow
       .typeds[T](collection, settings, binder, client, clazz)
       .toMat(javadsl.Sink.ignore[java.util.List[WriteResult[T, NotUsed]]](),
-             javadsl.Keep.right[NotUsed, CompletionStage[Done]])
+             javadsl.Keep.right[NotUsed, CompletionStage[Done]]
+      )
 }

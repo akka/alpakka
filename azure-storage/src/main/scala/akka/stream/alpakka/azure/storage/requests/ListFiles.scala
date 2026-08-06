@@ -18,8 +18,8 @@ final class ListFiles(val prefix: Option[String] = None,
                       val maxResults: Option[Int] = None,
                       private[storage] val marker: Option[String] = None,
                       override val sse: Option[ServerSideEncryption] = None,
-                      override val additionalHeaders: Seq[HttpHeader] = Seq.empty)
-    extends RequestBuilder {
+                      override val additionalHeaders: Seq[HttpHeader] = Seq.empty
+) extends RequestBuilder {
 
   override protected val method: HttpMethod = HttpMethods.GET
 
@@ -50,12 +50,14 @@ final class ListFiles(val prefix: Option[String] = None,
                    maxResults: Option[Int] = maxResults,
                    marker: Option[String] = marker,
                    sse: Option[ServerSideEncryption] = sse,
-                   additionalHeaders: Seq[HttpHeader] = additionalHeaders) =
+                   additionalHeaders: Seq[HttpHeader] = additionalHeaders
+  ) =
     new ListFiles(prefix = prefix,
                   maxResults = maxResults,
                   marker = marker,
                   sse = sse,
-                  additionalHeaders = additionalHeaders)
+                  additionalHeaders = additionalHeaders
+    )
 
   override protected def getHeaders: Seq[HttpHeader] =
     StorageHeaders()

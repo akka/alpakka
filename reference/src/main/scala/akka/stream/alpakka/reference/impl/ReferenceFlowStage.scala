@@ -40,9 +40,11 @@ import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
     }
   )
 
-  setHandler(out, new OutHandler {
-    override def onPull(): Unit = pull(in)
-  })
+  setHandler(out,
+             new OutHandler {
+               override def onPull(): Unit = pull(in)
+             }
+  )
 
   /**
    * Cleanup logic

@@ -24,7 +24,8 @@ final class StorageSettings(val apiVersion: String,
                             val sasToken: Option[String],
                             val retrySettings: RetrySettings,
                             val algorithm: String,
-                            val tokenCredential: Option[TokenCredential] = None) {
+                            val tokenCredential: Option[TokenCredential] = None
+) {
 
   /** Java API */
   def getApiVersion: String = apiVersion
@@ -86,13 +87,13 @@ final class StorageSettings(val apiVersion: String,
   override def equals(other: Any): Boolean = other match {
     case that: StorageSettings =>
       apiVersion == that.apiVersion &&
-      authorizationType == that.authorizationType &&
-      endPointUrl == that.endPointUrl &&
-      Objects.equals(azureNameKeyCredential, that.azureNameKeyCredential) &&
-      sasToken == that.sasToken &&
-      Objects.equals(retrySettings, that.retrySettings) &&
-      algorithm == that.algorithm &&
-      tokenCredential == that.tokenCredential
+        authorizationType == that.authorizationType &&
+        endPointUrl == that.endPointUrl &&
+        Objects.equals(azureNameKeyCredential, that.azureNameKeyCredential) &&
+        sasToken == that.sasToken &&
+        Objects.equals(retrySettings, that.retrySettings) &&
+        algorithm == that.algorithm &&
+        tokenCredential == that.tokenCredential
 
     case _ => false
   }
@@ -105,7 +106,8 @@ final class StorageSettings(val apiVersion: String,
                  sasToken,
                  retrySettings,
                  algorithm,
-                 tokenCredential)
+                 tokenCredential
+    )
 
   private def copy(
       apiVersion: String = apiVersion,
@@ -124,7 +126,8 @@ final class StorageSettings(val apiVersion: String,
                         sasToken,
                         retrySettings,
                         algorithm,
-                        tokenCredential)
+                        tokenCredential
+    )
 }
 
 object StorageSettings {
@@ -148,7 +151,8 @@ object StorageSettings {
         SharedKeyAuthorizationType,
         SharedKeyLiteAuthorizationType,
         SasAuthorizationType,
-        BearerTokenAuthorizationType)
+        BearerTokenAuthorizationType
+    )
 
   def apply(
       apiVersion: String,
@@ -165,7 +169,8 @@ object StorageSettings {
                         azureNameKeyCredential,
                         sasToken,
                         retrySettings,
-                        algorithm)
+                        algorithm
+    )
 
   /** Java API */
   def create(
@@ -183,7 +188,8 @@ object StorageSettings {
                     azureNameKeyCredential,
                     Option(sasToken.orElse(null)),
                     retrySettings,
-                    algorithm)
+                    algorithm
+    )
 
   def apply(config: Config): StorageSettings = {
     val apiVersion = config.getString("api-version", "2024-11-04")
@@ -223,7 +229,8 @@ object StorageSettings {
 final class RetrySettings private (val maxRetries: Int,
                                    val minBackoff: FiniteDuration,
                                    val maxBackoff: FiniteDuration,
-                                   val randomFactor: Double) {
+                                   val randomFactor: Double
+) {
 
   /** Java API */
   def getMaxRetries: Int = maxRetries
@@ -271,9 +278,9 @@ final class RetrySettings private (val maxRetries: Int,
   override def equals(other: Any): Boolean = other match {
     case that: RetrySettings =>
       Objects.equals(this.maxRetries, that.maxRetries) &&
-      Objects.equals(this.minBackoff, that.minBackoff) &&
-      Objects.equals(this.maxBackoff, that.maxBackoff) &&
-      Objects.equals(this.randomFactor, that.randomFactor)
+        Objects.equals(this.minBackoff, that.minBackoff) &&
+        Objects.equals(this.maxBackoff, that.maxBackoff) &&
+        Objects.equals(this.randomFactor, that.randomFactor)
     case _ => false
   }
 

@@ -12,8 +12,8 @@ import akka.stream.alpakka.azure.storage.headers.ServerSideEncryption
 import akka.stream.alpakka.azure.storage.impl.StorageHeaders
 
 final class CreateContainer(override val sse: Option[ServerSideEncryption] = None,
-                            override val additionalHeaders: Seq[HttpHeader] = Seq.empty)
-    extends RequestBuilder {
+                            override val additionalHeaders: Seq[HttpHeader] = Seq.empty
+) extends RequestBuilder {
 
   override protected val method: HttpMethod = HttpMethods.PUT
 

@@ -15,7 +15,8 @@ case class PushKitNotification(data: Option[String] = None,
                                webpush: Option[WebConfig] = None,
                                token: Option[Seq[String]] = None,
                                topic: Option[String] = None,
-                               condition: Option[String] = None) {
+                               condition: Option[String] = None
+) {
   def withNotification(notification: BasicNotification): PushKitNotification =
     this.copy(notification = Option(notification))
 

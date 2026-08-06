@@ -55,7 +55,8 @@ object MongoFlow {
    * @param options options to apply to the operation
    */
   def insertMany[T](collection: MongoCollection[T],
-                    options: InsertManyOptions): Flow[java.util.List[T], java.util.List[T], NotUsed] =
+                    options: InsertManyOptions
+  ): Flow[java.util.List[T], java.util.List[T], NotUsed] =
     akka.stream.scaladsl
       .Flow[java.util.List[T]]
       .map(_.asScala.toIndexedSeq)
@@ -122,7 +123,8 @@ object MongoFlow {
    * @param options options to apply to the operation
    */
   def deleteOne[T](collection: MongoCollection[T],
-                   options: DeleteOptions): Flow[Bson, akka.japi.Pair[DeleteResult, Bson], NotUsed] =
+                   options: DeleteOptions
+  ): Flow[Bson, akka.japi.Pair[DeleteResult, Bson], NotUsed] =
     scaladsl.MongoFlow.deleteOne(collection, options).map(fromTupleToPair).asJava
 
   /**
@@ -140,7 +142,8 @@ object MongoFlow {
    * @param options options to apply to the operation
    */
   def deleteMany[T](collection: MongoCollection[T],
-                    options: DeleteOptions): Flow[Bson, akka.japi.Pair[DeleteResult, Bson], NotUsed] =
+                    options: DeleteOptions
+  ): Flow[Bson, akka.japi.Pair[DeleteResult, Bson], NotUsed] =
     scaladsl.MongoFlow.deleteMany(collection, options).map(fromTupleToPair).asJava
 
   /**

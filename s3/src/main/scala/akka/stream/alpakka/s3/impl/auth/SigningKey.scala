@@ -22,7 +22,8 @@ import software.amazon.awssdk.regions.Region
 @InternalApi private[impl] final case class SigningKey(requestDate: ZonedDateTime,
                                                        credProvider: AwsCredentialsProvider,
                                                        scope: CredentialScope,
-                                                       algorithm: String = "HmacSHA256") {
+                                                       algorithm: String = "HmacSHA256"
+) {
 
   private val credentials: AwsCredentials = credProvider.resolveCredentials
 

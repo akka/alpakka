@@ -30,7 +30,8 @@ final case class Table private (tableReference: TableReference,
                                 labels: Option[Map[String, String]],
                                 schema: Option[TableSchema],
                                 numRows: Option[Long],
-                                location: Option[String]) {
+                                location: Option[String]
+) {
 
   def getTableReference = tableReference
   def getLabels = labels.map(_.asJava).toJava
@@ -79,7 +80,8 @@ object Table {
              labels: util.Optional[util.Map[String, String]],
              schema: util.Optional[TableSchema],
              numRows: util.OptionalLong,
-             location: util.Optional[String]) =
+             location: util.Optional[String]
+  ) =
     Table(
       tableReference,
       labels.toScala.map(_.asScala.toMap),
@@ -193,14 +195,16 @@ object TableSchema {
 final case class TableFieldSchema private (name: String,
                                            `type`: TableFieldSchemaType,
                                            mode: Option[TableFieldSchemaMode],
-                                           fields: Option[Seq[TableFieldSchema]]) {
+                                           fields: Option[Seq[TableFieldSchema]]
+) {
 
   @nowarn("msg=never used")
   @JsonCreator
   private def this(@JsonProperty(value = "name", required = true) name: String,
                    @JsonProperty(value = "type", required = true) `type`: String,
                    @JsonProperty("mode") mode: String,
-                   @JsonProperty("fields") fields: util.List[TableFieldSchema]) =
+                   @JsonProperty("fields") fields: util.List[TableFieldSchema]
+  ) =
     this(
       name,
       TableFieldSchemaType(`type`),
@@ -245,7 +249,8 @@ object TableFieldSchema {
   def create(name: String,
              `type`: TableFieldSchemaType,
              mode: util.Optional[TableFieldSchemaMode],
-             fields: util.Optional[util.List[TableFieldSchema]]) =
+             fields: util.Optional[util.List[TableFieldSchema]]
+  ) =
     TableFieldSchema(name, `type`, mode.toScala, fields.toScala.map(_.asScala.toList))
 
   /**
@@ -262,7 +267,8 @@ object TableFieldSchema {
   def create(name: String,
              `type`: TableFieldSchemaType,
              mode: util.Optional[TableFieldSchemaMode],
-             fields: TableFieldSchema*) =
+             fields: TableFieldSchema*
+  ) =
     TableFieldSchema(name, `type`, mode.toScala, if (fields.nonEmpty) Some(fields.toList) else None)
 
   implicit val format: JsonFormat[TableFieldSchema] = lazyFormat(
@@ -350,7 +356,8 @@ object TableFieldSchemaMode {
  */
 final case class TableListResponse private (nextPageToken: Option[String],
                                             tables: Option[Seq[Table]],
-                                            totalItems: Option[Int]) {
+                                            totalItems: Option[Int]
+) {
 
   def getNextPageToken = nextPageToken.toJava
   def getTables = tables.map(_.asJava).toJava
@@ -377,7 +384,8 @@ object TableListResponse {
    */
   def createTableListResponse(nextPageToken: util.Optional[String],
                               tables: util.Optional[util.List[Table]],
-                              totalItems: util.OptionalInt) =
+                              totalItems: util.OptionalInt
+  ) =
     TableListResponse(nextPageToken.toScala, tables.toScala.map(_.asScala.toList), totalItems.toScala)
 
   implicit val format: RootJsonFormat[TableListResponse] = jsonFormat3(apply)

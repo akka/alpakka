@@ -24,9 +24,7 @@ object ArrowSource {
 
   def readRecordsMerged(client: BigQueryReadClient, readSession: ReadSession): Source[List[BigQueryRecord], NotUsed] =
     readMerged(client, readSession)
-      .map(
-        a => new SimpleRowReader(readSession.schema.arrowSchema.get).read(a)
-      )
+      .map(a => new SimpleRowReader(readSession.schema.arrowSchema.get).read(a))
 
   def readMerged(client: BigQueryReadClient, session: ReadSession): Source[ArrowRecordBatch, NotUsed] =
     read(client, session)
@@ -70,7 +68,8 @@ final class SimpleRowReader(val schema: ArrowSchema) extends AutoCloseable {
                                                                          batch.serializedRecordBatch.toByteArray
                                                                        )
                                                                      ),
-                                                                     allocator);
+                                                                     allocator
+    );
     loader.load(deserializedBatch)
     deserializedBatch.close()
 
