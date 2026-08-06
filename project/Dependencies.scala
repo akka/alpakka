@@ -34,7 +34,7 @@ object Dependencies {
 
   // https://github.com/mockito/mockito/releases
   val mockitoVersion = "5.20.0"
-  val hoverflyVersion = "0.14.1"
+  val hoverflyVersion = "0.14.4"
 
   val CouchbaseVersion = "3.9.1"
   val CouchbaseVersionForDocs = VersionNumber(CouchbaseVersion).numbers match {
