@@ -269,7 +269,7 @@ object Dependencies {
     // see Akka gRPC version in plugins.sbt
     libraryDependencies ++= Seq(
         // https://github.com/googleapis/java-bigquerystorage/tree/master/proto-google-cloud-bigquerystorage-v1
-        "com.google.api.grpc" % "proto-google-cloud-bigquerystorage-v1" % "3.15.2" % "protobuf-src", // ApacheV2
+        "com.google.api.grpc" % "proto-google-cloud-bigquerystorage-v1" % "3.15.3" % "protobuf-src", // ApacheV2
         "org.apache.avro" % "avro" % "1.12.0" % "provided",
         "org.apache.arrow" % "arrow-vector" % "18.3.0" % "provided",
         "io.grpc" % "grpc-auth" % akka.grpc.gen.BuildInfo.grpcVersion, // ApacheV2
