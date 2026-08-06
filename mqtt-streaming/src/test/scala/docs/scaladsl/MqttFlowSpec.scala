@@ -28,12 +28,14 @@ import org.scalatest.wordspec.AnyWordSpecLike
 class UntypedMqttFlowSpec
     extends ParametrizedTestKit("untyped-flow-spec/flow",
                                 "untyped-flow-spec/topic1",
-                                ActorSystem("UntypedMqttFlowSpec"))
+                                ActorSystem("UntypedMqttFlowSpec")
+    )
     with MqttFlowSpec
 class TypedMqttFlowSpec
     extends ParametrizedTestKit("typed-flow-spec/flow",
                                 "typed-flow-spec/topic1",
-                                akka.actor.typed.ActorSystem(Behaviors.ignore, "TypedMqttFlowSpec").toClassic)
+                                akka.actor.typed.ActorSystem(Behaviors.ignore, "TypedMqttFlowSpec").toClassic
+    )
     with MqttFlowSpec
 
 class ParametrizedTestKit(val clientId: String, val topic: String, system: ActorSystem) extends TestKit(system)
@@ -71,8 +73,8 @@ trait MqttFlowSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll 
         Source
           .queue(2, OverflowStrategy.fail)
           .via(mqttFlow)
-          .collect {
-            case Right(Event(p: Publish, _)) => p
+          .collect { case Right(Event(p: Publish, _)) =>
+            p
           }
           .toMat(Sink.head)(Keep.both)
           .run()
@@ -113,7 +115,8 @@ trait MqttFlowSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll 
         Tcp()
           .bind(host, 0)
           .flatMapMerge(
-            maxConnections, { connection =>
+            maxConnections,
+            { connection =>
               val mqttFlow: Flow[Command[Nothing], Either[MqttCodec.DecodeError, Event[Nothing]], NotUsed] =
                 Mqtt
                   .serverSessionFlow(session, ByteString(connection.remoteAddress.getAddress.getAddress))
@@ -162,8 +165,8 @@ trait MqttFlowSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll 
           .queue(2, OverflowStrategy.fail)
           .via(mqttFlow)
           .log("received")
-          .collect {
-            case Right(Event(p: Publish, _)) => p
+          .collect { case Right(Event(p: Publish, _)) =>
+            p
           }
           .toMat(Sink.head)(Keep.both)
           .run()
@@ -191,7 +194,8 @@ trait MqttFlowSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll 
   "mqtt client" should {
     Seq(SubscribeQoSFlags.QoSAtMostOnceDelivery,
         SubscribeQoSFlags.QoSAtLeastOnceDelivery,
-        SubscribeQoSFlags.QoSExactlyOnceDelivery).foreach { qos =>
+        SubscribeQoSFlags.QoSExactlyOnceDelivery
+    ).foreach { qos =>
       s"subscribe at QoS ${qos.underlying.toString} level" in assertAllStagesStopped {
         val id = qos.underlying.toString
 
@@ -202,8 +206,8 @@ trait MqttFlowSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll 
         val (commands, events) = Source
           .queue(10)
           .via(mqttFlow)
-          .collect {
-            case Right(Event(p: SubAck, _)) => p
+          .collect { case Right(Event(p: SubAck, _)) =>
+            p
           }
           .toMat(Sink.head)(Keep.both)
           .run()

@@ -144,7 +144,8 @@ class XmlWritingSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll wi
         StartElement("x",
                      namespace = None,
                      prefix = None,
-                     namespaceCtx = List(Namespace("http://ecommerce.example.org/schema", prefix = Some("edi")))),
+                     namespaceCtx = List(Namespace("http://ecommerce.example.org/schema", prefix = Some("edi")))
+        ),
         EndElement("x"),
         EndDocument
       )
@@ -162,7 +163,8 @@ class XmlWritingSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll wi
           namespace = Some("urn:loc.gov:books"),
           prefix = Some("bk"),
           namespaceCtx = List(Namespace("urn:loc.gov:books", prefix = Some("bk")),
-                              Namespace("urn:ISBN:0-395-36341-6", prefix = Some("isbn")))
+                              Namespace("urn:ISBN:0-395-36341-6", prefix = Some("isbn"))
+          )
         ),
         StartElement(
           "title",

@@ -117,9 +117,11 @@ class AzuriteOAuthIntegrationSpec extends StorageIntegrationSpec with ForAllTest
       )
     )
     c.container.withCopyFileToContainer(MountableFile.forHostPath(new File(certDir, "cert.pem").getAbsolutePath),
-                                        "/certs/cert.pem")
+                                        "/certs/cert.pem"
+    )
     c.container.withCopyFileToContainer(MountableFile.forHostPath(new File(certDir, "key.pem").getAbsolutePath),
-                                        "/certs/key.pem")
+                                        "/certs/key.pem"
+    )
     c
   }
 

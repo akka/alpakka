@@ -114,7 +114,7 @@ class ItemSpec extends TestKit(ActorSystem("ItemSpec")) with AsyncWordSpecLike w
       for {
         _ <- DynamoDb.single(deleteTableRequest)
         list <- DynamoDb.single(listTablesRequest)
-      } yield list.tableNames.asScala should not contain (tableName)
+      } yield list.tableNames.asScala should not contain tableName
     }
 
   }

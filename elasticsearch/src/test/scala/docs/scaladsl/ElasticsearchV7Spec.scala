@@ -155,13 +155,12 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
           WriteMessage.createIndexMessage("3", Book("Die unendliche Geschichte").toJson.toString())
         )
       ).via(
-          ElasticsearchFlow.create(
-            constructElasticsearchParams(indexName, "_doc", ApiVersion.V7),
-            settings = baseWriteSettings,
-            StringMessageWriter
-          )
+        ElasticsearchFlow.create(
+          constructElasticsearchParams(indexName, "_doc", ApiVersion.V7),
+          settings = baseWriteSettings,
+          StringMessageWriter
         )
-        .runWith(Sink.seq)
+      ).runWith(Sink.seq)
 
       // Assert no errors
       write.futureValue.filter(!_.success) shouldBe empty
@@ -222,7 +221,10 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
 
       // Make sure all messages was committed to kafka
       committedOffsets.map(_.offset) should contain theSameElementsAs Seq(0, 1, 2)
-      readTitlesFrom(ApiVersion.V7, baseSourceSettings, indexName).futureValue.toList should contain allElementsOf messagesFromKafka
+      readTitlesFrom(ApiVersion.V7,
+                     baseSourceSettings,
+                     indexName
+      ).futureValue.toList should contain allElementsOf messagesFromKafka
         .map(_.book.title)
     }
 
@@ -275,7 +277,10 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
 
       // Make sure all messages was committed to kafka
       committedOffsets.map(_.offset) should contain theSameElementsAs Seq(0, 1, 2)
-      readTitlesFrom(ApiVersion.V7, baseSourceSettings, indexName).futureValue.toList should contain allElementsOf messagesFromKafka
+      readTitlesFrom(ApiVersion.V7,
+                     baseSourceSettings,
+                     indexName
+      ).futureValue.toList should contain allElementsOf messagesFromKafka
         .map(_.book.title)
     }
 
@@ -333,7 +338,10 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
 
       // Make sure all messages was committed to kafka
       committedOffsets.map(_.offset) should contain theSameElementsAs Seq(0, 1, 2, 3, 4, 5)
-      readTitlesFrom(ApiVersion.V7, baseSourceSettings, indexName).futureValue.toList should contain allElementsOf messagesFromKafka
+      readTitlesFrom(ApiVersion.V7,
+                     baseSourceSettings,
+                     indexName
+      ).futureValue.toList should contain allElementsOf messagesFromKafka
         .filterNot(_.book.shouldSkip.getOrElse(false))
         .map(_.book.title)
     }
@@ -428,9 +436,8 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
         """{"match_all": {}}""",
         baseSourceSettings
       ).map { message =>
-          message.source
-        }
-        .runWith(Sink.seq)
+        message.source
+      }.runWith(Sink.seq)
 
       // Docs should contain both columns
       readBooks.futureValue.sortBy(_.fields("title").compactPrint) shouldEqual Seq(

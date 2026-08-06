@@ -28,25 +28,23 @@ object PdxEncoder {
   implicit val hnilEncoder: PdxEncoder[HNil] =
     instance[HNil] { case _ => true }
 
-  implicit def hlistEncoder[K <: Symbol, H, T <: shapeless.HList](
-      implicit witness: Witness.Aux[K],
+  implicit def hlistEncoder[K <: Symbol, H, T <: shapeless.HList](implicit
+      witness: Witness.Aux[K],
       isHCons: IsHCons.Aux[H :: T, H, T],
       hEncoder: Lazy[PdxEncoder[H]],
       tEncoder: Lazy[PdxEncoder[T]]
   ): PdxEncoder[FieldType[K, H] :: T] =
-    instance[FieldType[K, H] :: T] {
-      case (writer, o, fieldName) =>
-        hEncoder.value.encode(writer, isHCons.head(o), witness.value)
-        tEncoder.value.encode(writer, isHCons.tail(o), fieldName)
+    instance[FieldType[K, H] :: T] { case (writer, o, fieldName) =>
+      hEncoder.value.encode(writer, isHCons.head(o), witness.value)
+      tEncoder.value.encode(writer, isHCons.tail(o), fieldName)
 
     }
 
-  implicit def objectEncoder[A, Repr <: HList](
-      implicit gen: LabelledGeneric.Aux[A, Repr],
+  implicit def objectEncoder[A, Repr <: HList](implicit
+      gen: LabelledGeneric.Aux[A, Repr],
       hlistEncoder: Lazy[PdxEncoder[Repr]]
-  ): PdxEncoder[A] = instance {
-    case (writer, o, fieldName) =>
-      hlistEncoder.value.encode(writer, gen.to(o), fieldName)
+  ): PdxEncoder[A] = instance { case (writer, o, fieldName) =>
+    hlistEncoder.value.encode(writer, gen.to(o), fieldName)
   }
 
   def apply[A](implicit enc: PdxEncoder[A]): PdxEncoder[A] = enc

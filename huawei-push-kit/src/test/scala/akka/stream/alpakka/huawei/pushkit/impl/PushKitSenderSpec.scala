@@ -54,7 +54,8 @@ class PushKitSenderSpec
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),
                            any[ConnectionPoolSettings](),
-                           any[LoggingAdapter]())
+                           any[LoggingAdapter]()
+        )
       ).thenReturn(
         Future.successful(
           HttpResponse(
@@ -65,13 +66,15 @@ class PushKitSenderSpec
       )
 
       Await.result(sender.send(config, "token", http, PushKitSend(false, PushKitNotification.empty), system),
-                   defaultPatience.timeout)
+                   defaultPatience.timeout
+      )
 
       val captor: ArgumentCaptor[HttpRequest] = ArgumentCaptor.forClass(classOf[HttpRequest])
       verify(http).singleRequest(captor.capture(),
                                  any[HttpsConnectionContext](),
                                  any[ConnectionPoolSettings](),
-                                 any[LoggingAdapter]())
+                                 any[LoggingAdapter]()
+      )
       val request: HttpRequest = captor.getValue
       Unmarshal(request.entity).to[PushKitSend].futureValue shouldBe PushKitSend(false, PushKitNotification.empty)
       request.uri.toString shouldBe "https://push-api.cloud.huawei.com/v1/" + config.appId + "/messages:send"
@@ -86,12 +89,14 @@ class PushKitSenderSpec
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),
                            any[ConnectionPoolSettings](),
-                           any[LoggingAdapter]())
+                           any[LoggingAdapter]()
+        )
       ).thenReturn(
         Future.successful(
           HttpResponse(
             entity = HttpEntity(ContentTypes.`application/json`,
-                                """{"code": "80000000", "msg": "Success", "requestId": "1357"}""")
+                                """{"code": "80000000", "msg": "Success", "requestId": "1357"}"""
+            )
           )
         )
       )
@@ -108,13 +113,15 @@ class PushKitSenderSpec
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),
                            any[ConnectionPoolSettings](),
-                           any[LoggingAdapter]())
+                           any[LoggingAdapter]()
+        )
       ).thenReturn(
         Future.successful(
           HttpResponse(
             status = StatusCodes.ServiceUnavailable,
             entity = HttpEntity(ContentTypes.`application/json`,
-                                """{"code": "80100003", "msg": "Illegal payload", "requestId": "1357"}""")
+                                """{"code": "80100003", "msg": "Illegal payload", "requestId": "1357"}"""
+            )
           )
         )
       )

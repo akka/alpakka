@@ -29,7 +29,8 @@ private[mqtt] object QueueOfferState {
   def waitForQueueOfferCompleted[T](result: Future[QueueOfferResult],
                                     f: Try[QueueOfferResult] => T with QueueOfferCompleted,
                                     behavior: Behavior[T],
-                                    stash: Seq[T]): Behavior[T] = Behaviors.setup { context =>
+                                    stash: Seq[T]
+  ): Behavior[T] = Behaviors.setup { context =>
     import context.executionContext
 
     val s = stash.map(BehaviorRunner.StoredMessage.apply)
@@ -75,8 +76,7 @@ private[mqtt] object QueueOfferState {
           behaviorImpl(behavior, stash :+ BehaviorRunner.StoredMessage(other))
 
       }
-      .receiveSignal {
-        case (_, signal) =>
-          behaviorImpl(behavior, stash :+ BehaviorRunner.StoredSignal(signal))
+      .receiveSignal { case (_, signal) =>
+        behaviorImpl(behavior, stash :+ BehaviorRunner.StoredSignal(signal))
       }
 }

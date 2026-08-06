@@ -24,9 +24,11 @@ private[google] object OAuth2Credentials {
 
   def custom(retrieveAccessToken: () => Future[(String, Instant)], mat: Materializer): Credentials = {
     new OAuth2Credentials(None)(mat) {
-      override protected def getAccessToken()(implicit mat: Materializer,
-                                              settings: RequestSettings,
-                                              clock: Clock): Future[AccessToken] = {
+      override protected def getAccessToken()(implicit
+          mat: Materializer,
+          settings: RequestSettings,
+          clock: Clock
+      ): Future[AccessToken] = {
         retrieveAccessToken()
           .map { token =>
             AccessToken(token._1, token._2.getEpochSecond)
@@ -55,15 +57,17 @@ private[auth] abstract class OAuth2Credentials(val projectId: Option[String])(im
   override def asGoogle(implicit ec: ExecutionContext, settings: RequestSettings): GoogleCredentials =
     new GoogleOAuth2Credentials(this)(ec, settings)
 
-  protected def getAccessToken()(implicit mat: Materializer,
-                                 settings: RequestSettings,
-                                 clock: Clock): Future[AccessToken]
+  protected def getAccessToken()(implicit
+      mat: Materializer,
+      settings: RequestSettings,
+      clock: Clock
+  ): Future[AccessToken]
 
   private def stream =
     Source
       .actorRef[OAuth2Credentials.Command](
-        {
-          case Close => CompletionStrategy.draining
+        { case Close =>
+          CompletionStrategy.draining
         }: PartialFunction[Any, CompletionStrategy],
         PartialFunction.empty[Any, Throwable],
         Int.MaxValue,
@@ -77,9 +81,8 @@ private[auth] abstract class OAuth2Credentials(val projectId: Option[String])(im
               Future.successful(cachedToken)
             case (_, TokenRequest(promise, settings)) =>
               getAccessToken()(mat, settings, Clock.systemUTC())
-                .andThen {
-                  case response =>
-                    promise.complete(response.map(t => OAuth2BearerToken(t.token)))
+                .andThen { case response =>
+                  promise.complete(response.map(t => OAuth2BearerToken(t.token)))
                 }(ExecutionContext.parasitic)
                 .map(Some(_))(ExecutionContext.parasitic)
                 .recover { case _ => None }(ExecutionContext.parasitic)

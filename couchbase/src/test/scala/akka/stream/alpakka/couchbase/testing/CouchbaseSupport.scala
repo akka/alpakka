@@ -29,10 +29,10 @@ trait CouchbaseSupport {
   val sampleData = new CouchbaseDocument("First", "First")
 
   val sampleSequence: Seq[CouchbaseDocument[String]] = sampleData +: Seq[CouchbaseDocument[String]](
-      new CouchbaseDocument("Second", "Second"),
-      new CouchbaseDocument("Third", "Third"),
-      new CouchbaseDocument("Fourth", "Fourth")
-    )
+    new CouchbaseDocument("Second", "Second"),
+    new CouchbaseDocument("Third", "Third"),
+    new CouchbaseDocument("Fourth", "Fourth")
+  )
 
   val sampleJsonSequence: Seq[CouchbaseDocument[String]] = Seq[CouchbaseDocument[String]](
     new CouchbaseDocument("FirstJson", "\"First\""),

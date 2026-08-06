@@ -424,10 +424,10 @@ class CouchbaseFlowSpec
     "replace multiple RawJsonDocuments" in assertAllStagesStopped {
 
       val replaceSequence = sampleData +: Seq[CouchbaseDocument[String]](
-          new CouchbaseDocument("Second", "SecondReplace"),
-          new CouchbaseDocument("Third", "ThirdReplace"),
-          new CouchbaseDocument("Fourth", "FourthReplace")
-        )
+        new CouchbaseDocument("Second", "SecondReplace"),
+        new CouchbaseDocument("Third", "ThirdReplace"),
+        new CouchbaseDocument("Fourth", "FourthReplace")
+      )
 
       upsertSampleData(bucketName, scopeName, collectionName)
 
@@ -453,7 +453,8 @@ class CouchbaseFlowSpec
       resultsAsFuture.futureValue.map(doc => new String(doc.getDocument)) should contain.inOrderOnly("First",
                                                                                                      "SecondReplace",
                                                                                                      "ThirdReplace",
-                                                                                                     "FourthReplace")
+                                                                                                     "FourthReplace"
+      )
     }
 
     "replace RawJsonDocument" in assertAllStagesStopped {
@@ -622,8 +623,8 @@ class CouchbaseFlowSpec
           )
           .runWith(Sink.seq)
 
-      val failedDocs = result.futureValue.collect {
-        case res: CouchbaseWriteFailure => res
+      val failedDocs = result.futureValue.collect { case res: CouchbaseWriteFailure =>
+        res
       }
       // #replaceWithResult
 

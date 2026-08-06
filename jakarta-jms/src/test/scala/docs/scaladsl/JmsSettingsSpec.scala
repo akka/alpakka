@@ -92,7 +92,8 @@ class JmsSettingsSpec extends JmsSpec with OptionValues {
     }
 
     "read from user config" in {
-      val config = ConfigFactory.parseString("""
+      val config = ConfigFactory
+        .parseString("""
           |connection-retry {
           |    connect-timeout = 10 seconds
           |    initial-retry = 100 millis
@@ -110,7 +111,9 @@ class JmsSettingsSpec extends JmsSpec with OptionValues {
           |selector = "some text" # optional
           |acknowledge-mode = duplicates-ok
           |ack-timeout = 5 second
-        """.stripMargin).withFallback(consumerConfig).resolve()
+        """.stripMargin)
+        .withFallback(consumerConfig)
+        .resolve()
 
       val settings = JmsConsumerSettings(config, connectionFactory)
       settings.credentials.value should be(Credentials("some text", "other text"))
@@ -122,7 +125,8 @@ class JmsSettingsSpec extends JmsSpec with OptionValues {
     }
 
     "read numeric acknowledge mode" in {
-      val config = ConfigFactory.parseString("""
+      val config = ConfigFactory
+        .parseString("""
           |connection-retry {
           |    connect-timeout = 10 seconds
           |    initial-retry = 100 millis
@@ -140,7 +144,9 @@ class JmsSettingsSpec extends JmsSpec with OptionValues {
           |// selector = "some text" # optional
           |acknowledge-mode = 42
           |ack-timeout = 1 second
-        """.stripMargin).withFallback(consumerConfig).resolve()
+        """.stripMargin)
+        .withFallback(consumerConfig)
+        .resolve()
 
       val settings = JmsConsumerSettings(config, connectionFactory)
       settings.acknowledgeMode.value should be(new AcknowledgeMode(42))

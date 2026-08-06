@@ -75,7 +75,7 @@ class PravegaReadWriteDocs {
   Using(Pravega.readerGroupManager("an_existing_scope", readerSettings.clientConfig)) { readerGroupManager =>
     readerGroupManager.createReaderGroup("myGroup", "stream1", "stream2")
   }
-  // #reader-group
+    // #reader-group
     .foreach { readerGroup =>
       // #reading
 

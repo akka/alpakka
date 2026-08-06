@@ -29,7 +29,8 @@ private trait JmsConsumerConnector extends JmsConnector[JmsConsumerSession] {
   override val startConnection = true
 
   protected def createSession(connection: jms.Connection,
-                              createDestination: jms.Session => jms.Destination): JmsConsumerSession
+                              createDestination: jms.Session => jms.Destination
+  ): JmsConsumerSession
 
 }
 
@@ -41,8 +42,8 @@ private abstract class SourceStageLogic[T](shape: SourceShape[T],
                                            out: Outlet[T],
                                            settings: JmsConsumerSettings,
                                            val destination: Destination,
-                                           inheritedAttributes: Attributes)
-    extends TimerGraphStageLogic(shape)
+                                           inheritedAttributes: Attributes
+) extends TimerGraphStageLogic(shape)
     with JmsConsumerConnector
     with StageLogging {
 

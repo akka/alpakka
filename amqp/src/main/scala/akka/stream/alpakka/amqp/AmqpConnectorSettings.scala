@@ -75,7 +75,8 @@ final class NamedQueueSourceSettings private (
                    exclusive: Boolean = exclusive,
                    ackRequired: Boolean = ackRequired,
                    consumerTag: String = consumerTag,
-                   arguments: Map[String, AnyRef] = arguments) =
+                   arguments: Map[String, AnyRef] = arguments
+  ) =
     new NamedQueueSourceSettings(
       connectionProvider,
       queue,
@@ -230,7 +231,8 @@ final class AmqpWriteSettings private (
                    routingKey: Option[String] = routingKey,
                    declarations: immutable.Seq[Declaration] = declarations,
                    bufferSize: Int = bufferSize,
-                   confirmationTimeout: FiniteDuration = confirmationTimeout) =
+                   confirmationTimeout: FiniteDuration = confirmationTimeout
+  ) =
     new AmqpWriteSettings(connectionProvider, exchange, routingKey, declarations, bufferSize, confirmationTimeout)
 
   override def toString: String =
@@ -287,7 +289,8 @@ final class QueueDeclaration private (
                    durable: Boolean = durable,
                    exclusive: Boolean = exclusive,
                    autoDelete: Boolean = autoDelete,
-                   arguments: Map[String, AnyRef] = arguments) =
+                   arguments: Map[String, AnyRef] = arguments
+  ) =
     new QueueDeclaration(name, durable, exclusive, autoDelete, arguments)
 
   override def toString: String =
@@ -377,7 +380,8 @@ final class ExchangeDeclaration private (
   private def copy(durable: Boolean = durable,
                    autoDelete: Boolean = autoDelete,
                    internal: Boolean = internal,
-                   arguments: Map[String, AnyRef] = arguments) =
+                   arguments: Map[String, AnyRef] = arguments
+  ) =
     new ExchangeDeclaration(name, exchangeType, durable, autoDelete, internal, arguments)
 
   override def toString: String =

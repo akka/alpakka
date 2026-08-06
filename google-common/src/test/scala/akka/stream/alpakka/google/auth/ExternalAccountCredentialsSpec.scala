@@ -56,11 +56,11 @@ class ExternalAccountCredentialsSpec
        |  "token_url" : "$url/sts-token",
        |  "credential_source": {
        |    ${sourceFile match {
-         case Some(file) =>
-           s"""
+      case Some(file) =>
+        s"""
              |      "file" : "$file"""".stripMargin
-         case None =>
-           s"""
+      case None =>
+        s"""
              |    "url": "$url/credential-source",
              |    "headers" : {
              |      "Authorization" : "Bearer $UrlCredentialSourceToken"
@@ -70,9 +70,11 @@ class ExternalAccountCredentialsSpec
              |      "subject_token_field_name" : "value"
              |    }
              |""".stripMargin
-       }}
-       |  }${impersonate.map(account => s""",
-           |  "service_account_impersonation_url" : "$url/impersonate/$account"""").getOrElse("")}
+    }}
+       |  }${impersonate
+      .map(account => s""",
+           |  "service_account_impersonation_url" : "$url/impersonate/$account"""")
+      .getOrElse("")}
        |}
        |""".stripMargin
   }
@@ -84,7 +86,8 @@ class ExternalAccountCredentialsSpec
   private case class ServerCalls(baseUrl: String,
                                  credentialSource: Future[CapturedRequest],
                                  stsToken: Future[CapturedRequest],
-                                 impersonate: Future[CapturedRequest])
+                                 impersonate: Future[CapturedRequest]
+  )
 
   private var bindings: Seq[Http.ServerBinding] = Nil
 
@@ -106,11 +109,15 @@ class ExternalAccountCredentialsSpec
           request.uri.path.toString match {
             case "/credential-source" =>
               credentialSource.success(capturedRequest)
-              HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, s"""
+              HttpResponse(entity =
+                HttpEntity(ContentTypes.`application/json`,
+                           s"""
                |{
                |  "value": "$UrlAccessToken"
                |}
-               |""".stripMargin))
+               |""".stripMargin
+                )
+              )
             case "/sts-token" =>
               // Implements https://docs.cloud.google.com/iam/docs/reference/sts/rest/v1/TopLevel/token
               stsToken.success(capturedRequest)
@@ -149,7 +156,8 @@ class ExternalAccountCredentialsSpec
     ServerCalls(s"http://127.0.0.1:${binding.localAddress.getPort}",
                 credentialSource.future,
                 stsToken.future,
-                impersonate.future)
+                impersonate.future
+    )
   }
 
   private def mockFile(contents: String): Path = {
@@ -164,13 +172,12 @@ class ExternalAccountCredentialsSpec
     // https://docs.cloud.google.com/iam/docs/reference/sts/rest/v1/TopLevel/token
     val stsParams = request.entity.data.utf8String
       .split("&")
-      .map(
-        v =>
-          v.split("=", 2) match {
-            case Array(key, value) => (key, URLDecoder.decode(value, "utf-8"))
-            case Array(key) => (key, "")
-            case _ => ("", "")
-          }
+      .map(v =>
+        v.split("=", 2) match {
+          case Array(key, value) => (key, URLDecoder.decode(value, "utf-8"))
+          case Array(key) => (key, "")
+          case _ => ("", "")
+        }
       )
       .toMap
     stsParams.get("grant_type").value should ===("urn:ietf:params:oauth:grant-type:token-exchange")

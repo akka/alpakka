@@ -41,7 +41,8 @@ class CouchbaseSourceSpec
         CouchbaseSource
           .fromQuery(sessionSettings,
                      bucketName,
-                     "SELECT * FROM `" + bucketName + "`.`" + scopeName + "`.`" + collectionName + "` LIMIT 10")
+                     "SELECT * FROM `" + bucketName + "`.`" + scopeName + "`.`" + collectionName + "` LIMIT 10"
+          )
           .runWith(Sink.seq)
       // #statement
 

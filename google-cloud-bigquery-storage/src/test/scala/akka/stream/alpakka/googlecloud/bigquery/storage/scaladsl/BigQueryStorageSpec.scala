@@ -37,7 +37,8 @@ class BigQueryStorageSpec
                                                    Dataset,
                                                    Table,
                                                    DataFormat.AVRO,
-                                                   Some(TableReadOptions(rowRestriction = "true = false")))
+                                                   Some(TableReadOptions(rowRestriction = "true = false"))
+        )
         .withAttributes(mockBQReader())
         .runWith(Sink.seq)
         .futureValue shouldBe empty
@@ -86,7 +87,8 @@ class BigQueryStorageSpec
                                                    Dataset,
                                                    Table,
                                                    DataFormat.AVRO,
-                                                   Some(TableReadOptions(List("col1"))))
+                                                   Some(TableReadOptions(List("col1")))
+        )
         .withAttributes(mockBQReader())
         .runWith(Sink.seq)
         .futureValue shouldBe List.fill(DefaultNumStreams * ResponsesPerStream)(records)

@@ -158,11 +158,10 @@ class ArchiveSpec
         // #zip-reader
         Archive
           .zipReader(zipFile)
-          .mapAsyncUnordered(4) {
-            case (metadata, source) =>
-              val targetFile = target.resolve(metadata.name)
-              targetFile.toFile.getParentFile.mkdirs() //missing error handler
-              source.runWith(FileIO.toPath(targetFile))
+          .mapAsyncUnordered(4) { case (metadata, source) =>
+            val targetFile = target.resolve(metadata.name)
+            targetFile.toFile.getParentFile.mkdirs() //missing error handler
+            source.runWith(FileIO.toPath(targetFile))
           }
         // #zip-reader
       }
@@ -182,9 +181,8 @@ class ArchiveSpec
   private def filesToStream(
       files: Map[String, ByteString]
   ): Source[(ArchiveMetadata, Source[ByteString, NotUsed]), NotUsed] = {
-    val sourceFiles = files.toList.map {
-      case (title, content) =>
-        (ArchiveMetadata(title), Source(content.grouped(10).toList))
+    val sourceFiles = files.toList.map { case (title, content) =>
+      (ArchiveMetadata(title), Source(content.grouped(10).toList))
     }
     Source(sourceFiles)
   }

@@ -37,7 +37,9 @@ object CustomOAuth2Credentials {
    */
   def create(credentials: CustomOAuth2Credentials, sys: ClassicActorSystemProvider): Credentials = {
     OAuth2Credentials.custom(() => {
-      credentials.retrieveAccessToken().asScala.map(_.toScala)(sys.classicSystem.dispatcher)
-    }, Materializer.matFromSystem(sys))
+                               credentials.retrieveAccessToken().asScala.map(_.toScala)(sys.classicSystem.dispatcher)
+                             },
+                             Materializer.matFromSystem(sys)
+    )
   }
 }

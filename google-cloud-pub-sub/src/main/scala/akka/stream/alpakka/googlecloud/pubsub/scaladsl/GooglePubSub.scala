@@ -36,7 +36,8 @@ protected[pubsub] trait GooglePubSub {
   def publish(topic: String,
               config: PubSubConfig,
               overrideHost: String,
-              parallelism: Int): Flow[PublishRequest, immutable.Seq[String], NotUsed] =
+              parallelism: Int
+  ): Flow[PublishRequest, immutable.Seq[String], NotUsed] =
     internalPublish(topic, config, Some(overrideHost), parallelism)
 
   /**
@@ -47,7 +48,8 @@ protected[pubsub] trait GooglePubSub {
    */
   def publish(topic: String,
               config: PubSubConfig,
-              overrideHost: String): Flow[PublishRequest, immutable.Seq[String], NotUsed] =
+              overrideHost: String
+  ): Flow[PublishRequest, immutable.Seq[String], NotUsed] =
     internalPublish(topic, config, Some(overrideHost), parallelism = 1)
 
   /**
@@ -55,13 +57,15 @@ protected[pubsub] trait GooglePubSub {
    */
   def publish(topic: String,
               config: PubSubConfig,
-              parallelism: Int = 1): Flow[PublishRequest, immutable.Seq[String], NotUsed] =
+              parallelism: Int = 1
+  ): Flow[PublishRequest, immutable.Seq[String], NotUsed] =
     internalPublish(topic, config, None, parallelism)
 
   private def internalPublish(topic: String,
                               config: PubSubConfig,
                               overrideHost: Option[String],
-                              parallelism: Int): Flow[PublishRequest, immutable.Seq[String], NotUsed] =
+                              parallelism: Int
+  ): Flow[PublishRequest, immutable.Seq[String], NotUsed] =
     Flow[PublishRequest]
       .map((_, ()))
       .via(

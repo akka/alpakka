@@ -85,7 +85,8 @@ class CouchbaseSessionExamplesSpec
                                              ClusterOptions.clusterOptions(
                                                "Administrator",
                                                "password"
-                                             ))
+                                             )
+      )
       val session: CouchbaseSession = CouchbaseSession(cluster.async(), "akka").futureValue
       actorSystem.registerOnTermination {
         session.close()

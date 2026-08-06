@@ -48,9 +48,11 @@ class FileTailSourceExtrasSpec
           case (p, DirectoryChange.Deletion) if path == p =>
             throw new FileNotFoundException(path.toString)
         }
-        .recoverWithRetries(1, {
-          case _: FileNotFoundException => Source.empty
-        })
+        .recoverWithRetries(1,
+                            { case _: FileNotFoundException =>
+                              Source.empty
+                            }
+        )
 
       val stream = FileTailSource
         .lines(path = path, maxLineSize = 8192, pollingInterval = 250.millis)
@@ -78,9 +80,11 @@ class FileTailSourceExtrasSpec
       val stream = FileTailSource
         .lines(path = path, maxLineSize = 8192, pollingInterval = 250.millis)
         .idleTimeout(5.seconds)
-        .recoverWithRetries(1, {
-          case _: TimeoutException => Source.empty
-        })
+        .recoverWithRetries(1,
+                            { case _: TimeoutException =>
+                              Source.empty
+                            }
+        )
 
       // #shutdown-on-idle-timeout
 

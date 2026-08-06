@@ -89,7 +89,10 @@ class StorageSettingsSpec
     }
 
     "throw RuntimeException if credentials are missing" in {
-      Try(StorageSettings(ConfigFactory.parseString(s"""
+      Try(
+        StorageSettings(
+          ConfigFactory
+            .parseString(s"""
            |api-version = "2024-11-04"
            |signing-algorithm = "HmacSHA256"
            |
@@ -99,7 +102,10 @@ class StorageSettingsSpec
            |  max-backoff = 10s
            |  random-factor = 0.0
            |}
-           |""".stripMargin).resolve())) match {
+           |""".stripMargin)
+            .resolve()
+        )
+      ) match {
         case Failure(ex) =>
           ex shouldBe a[RuntimeException]
           ex.getMessage shouldBe "credentials must be defined."
@@ -112,11 +118,14 @@ class StorageSettingsSpec
       settings.retrySettings shouldBe RetrySettings(maxRetries = 5,
                                                     minBackoff = 300.milliseconds,
                                                     maxBackoff = 5.seconds,
-                                                    randomFactor = 0.3)
+                                                    randomFactor = 0.3
+      )
     }
 
     "use default retry settings if config is missing" in {
-      val settings = StorageSettings(ConfigFactory.parseString(s"""
+      val settings = StorageSettings(
+        ConfigFactory
+          .parseString(s"""
                                                                   |api-version = "2024-11-04"
                                                                   |signing-algorithm = "HmacSHA256"
                                                                   |credentials {
@@ -126,7 +135,9 @@ class StorageSettingsSpec
                                                                   |  sas-token = ""
                                                                   |}
                                                                   |
-                                                                  |""".stripMargin).resolve())
+                                                                  |""".stripMargin)
+          .resolve()
+      )
       settings.retrySettings shouldBe RetrySettings.Default
     }
 

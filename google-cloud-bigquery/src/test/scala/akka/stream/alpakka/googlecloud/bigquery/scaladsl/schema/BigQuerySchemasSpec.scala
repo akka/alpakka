@@ -35,7 +35,8 @@ class BigQuerySchemasSpec extends AnyWordSpecLike with Matchers {
             TableFieldSchema("repeated",
                              Record,
                              Some(Repeated),
-                             Some(List(TableFieldSchema("numeric", Numeric, Some(Required), None))))
+                             Some(List(TableFieldSchema("numeric", Numeric, Some(Required), None)))
+            )
           )
         )
       )

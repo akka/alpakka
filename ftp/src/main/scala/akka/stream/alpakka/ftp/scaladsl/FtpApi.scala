@@ -105,7 +105,8 @@ sealed trait FtpApi[FtpClient, S <: RemoteFileSettings] { factory: FtpSourceFact
   def ls(basePath: String,
          connectionSettings: S,
          branchSelector: FtpFile => Boolean,
-         emitTraversedDirectories: Boolean): Source[FtpFile, NotUsed]
+         emitTraversedDirectories: Boolean
+  ): Source[FtpFile, NotUsed]
 
   /**
    * Scala API for creating a directory in a given path
@@ -123,8 +124,8 @@ sealed trait FtpApi[FtpClient, S <: RemoteFileSettings] { factory: FtpSourceFact
    * @param connectionSettings connection settings
    * @return [[scala.concurrent.Future Future]] of [[akka.Done]] indicating a materialized, asynchronous request
    */
-  def mkdirAsync(basePath: String, name: String, connectionSettings: S)(
-      implicit system: ClassicActorSystemProvider
+  def mkdirAsync(basePath: String, name: String, connectionSettings: S)(implicit
+      system: ClassicActorSystemProvider
   ): Future[Done]
 
   /**
@@ -232,7 +233,8 @@ object Ftp extends FtpApi[FTPClient, FtpSettings] with FtpSourceParams {
   def ls(basePath: String,
          connectionSettings: S,
          branchSelector: FtpFile => Boolean,
-         emitTraversedDirectories: Boolean): Source[FtpFile, NotUsed] =
+         emitTraversedDirectories: Boolean
+  ): Source[FtpFile, NotUsed] =
     Source.fromGraph(createBrowserGraph(basePath, connectionSettings, branchSelector, emitTraversedDirectories))
 
   def fromPath(host: String, path: String): Source[ByteString, Future[IOResult]] = fromPath(path, defaultSettings(host))
@@ -242,20 +244,22 @@ object Ftp extends FtpApi[FTPClient, FtpSettings] with FtpSourceParams {
 
   def fromPath(path: String,
                connectionSettings: S,
-               chunkSize: Int = DefaultChunkSize): Source[ByteString, Future[IOResult]] =
+               chunkSize: Int = DefaultChunkSize
+  ): Source[ByteString, Future[IOResult]] =
     fromPath(path, connectionSettings, chunkSize, 0L)
 
   def fromPath(path: String,
                connectionSettings: S,
                chunkSize: Int,
-               offset: Long): Source[ByteString, Future[IOResult]] =
+               offset: Long
+  ): Source[ByteString, Future[IOResult]] =
     Source.fromGraph(createIOSource(path, connectionSettings, chunkSize, offset))
 
   def mkdir(basePath: String, name: String, connectionSettings: S): Source[Done, NotUsed] =
     Source.fromGraph(createMkdirGraph(basePath, name, connectionSettings)).map(_ => Done)
 
-  def mkdirAsync(basePath: String, name: String, connectionSettings: S)(
-      implicit system: ClassicActorSystemProvider
+  def mkdirAsync(basePath: String, name: String, connectionSettings: S)(implicit
+      system: ClassicActorSystemProvider
   ): Future[Done] =
     mkdir(basePath, name, connectionSettings).runWith(Sink.head)
 
@@ -292,7 +296,8 @@ object Ftps extends FtpApi[FTPSClient, FtpsSettings] with FtpsSourceParams {
   def ls(basePath: String,
          connectionSettings: S,
          branchSelector: FtpFile => Boolean,
-         emitTraversedDirectories: Boolean): Source[FtpFile, NotUsed] =
+         emitTraversedDirectories: Boolean
+  ): Source[FtpFile, NotUsed] =
     Source.fromGraph(createBrowserGraph(basePath, connectionSettings, branchSelector, emitTraversedDirectories))
 
   def fromPath(host: String, path: String): Source[ByteString, Future[IOResult]] = fromPath(path, defaultSettings(host))
@@ -302,20 +307,22 @@ object Ftps extends FtpApi[FTPSClient, FtpsSettings] with FtpsSourceParams {
 
   def fromPath(path: String,
                connectionSettings: S,
-               chunkSize: Int = DefaultChunkSize): Source[ByteString, Future[IOResult]] =
+               chunkSize: Int = DefaultChunkSize
+  ): Source[ByteString, Future[IOResult]] =
     fromPath(path, connectionSettings, chunkSize, 0L)
 
   def fromPath(path: String,
                connectionSettings: S,
                chunkSize: Int,
-               offset: Long): Source[ByteString, Future[IOResult]] =
+               offset: Long
+  ): Source[ByteString, Future[IOResult]] =
     Source.fromGraph(createIOSource(path, connectionSettings, chunkSize, offset))
 
   def mkdir(basePath: String, name: String, connectionSettings: S): Source[Done, NotUsed] =
     Source.fromGraph(createMkdirGraph(basePath, name, connectionSettings)).map(_ => Done)
 
-  def mkdirAsync(basePath: String, name: String, connectionSettings: S)(
-      implicit system: ClassicActorSystemProvider
+  def mkdirAsync(basePath: String, name: String, connectionSettings: S)(implicit
+      system: ClassicActorSystemProvider
   ): Future[Done] =
     mkdir(basePath, name, connectionSettings).runWith(Sink.head)
 
@@ -351,7 +358,8 @@ class SftpApi extends FtpApi[SSHClient, SftpSettings] with SftpSourceParams {
   def ls(basePath: String,
          connectionSettings: S,
          branchSelector: FtpFile => Boolean,
-         emitTraversedDirectories: Boolean): Source[FtpFile, NotUsed] =
+         emitTraversedDirectories: Boolean
+  ): Source[FtpFile, NotUsed] =
     Source.fromGraph(createBrowserGraph(basePath, connectionSettings, branchSelector, emitTraversedDirectories))
 
   def fromPath(host: String, path: String): Source[ByteString, Future[IOResult]] = fromPath(path, defaultSettings(host))
@@ -361,20 +369,22 @@ class SftpApi extends FtpApi[SSHClient, SftpSettings] with SftpSourceParams {
 
   def fromPath(path: String,
                connectionSettings: S,
-               chunkSize: Int = DefaultChunkSize): Source[ByteString, Future[IOResult]] =
+               chunkSize: Int = DefaultChunkSize
+  ): Source[ByteString, Future[IOResult]] =
     fromPath(path, connectionSettings, chunkSize, 0L)
 
   def fromPath(path: String,
                connectionSettings: S,
                chunkSize: Int,
-               offset: Long): Source[ByteString, Future[IOResult]] =
+               offset: Long
+  ): Source[ByteString, Future[IOResult]] =
     Source.fromGraph(createIOSource(path, connectionSettings, chunkSize, offset))
 
   def mkdir(basePath: String, name: String, connectionSettings: S): Source[Done, NotUsed] =
     Source.fromGraph(createMkdirGraph(basePath, name, connectionSettings)).map(_ => Done)
 
-  def mkdirAsync(basePath: String, name: String, connectionSettings: S)(
-      implicit system: ClassicActorSystemProvider
+  def mkdirAsync(basePath: String, name: String, connectionSettings: S)(implicit
+      system: ClassicActorSystemProvider
   ): Future[Done] =
     mkdir(basePath, name, connectionSettings).runWith(Sink.head)
 

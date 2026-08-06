@@ -47,8 +47,8 @@ private[xml] object StreamingXmlParser {
  */
 @InternalApi private[xml] class StreamingXmlParser[A, B, Ctx](ignoreInvalidChars: Boolean,
                                                               configureFactory: AsyncXMLInputFactory => Unit,
-                                                              transform: StreamingXmlParser.ContextHandler[A, B, Ctx])
-    extends GraphStage[FlowShape[A, B]] {
+                                                              transform: StreamingXmlParser.ContextHandler[A, B, Ctx]
+) extends GraphStage[FlowShape[A, B]] {
   val in: Inlet[A] = Inlet("XMLParser.in")
   val out: Outlet[B] = Outlet("XMLParser.out")
   override val shape: FlowShape[A, B] = FlowShape(in, out)
@@ -121,7 +121,8 @@ private[xml] object StreamingXmlParser {
                 Attribute(name = parser.getAttributeLocalName(i),
                           value = parser.getAttributeValue(i),
                           prefix = optPrefix,
-                          namespace = optNs)
+                          namespace = optNs
+                )
               }.toList
               val namespaces = (0 until parser.getNamespaceCount).map { i =>
                 val namespace = parser.getNamespaceURI(i)
@@ -136,8 +137,10 @@ private[xml] object StreamingXmlParser {
                                                    attributes,
                                                    optPrefix.filterNot(_ == ""),
                                                    optNs.filterNot(_ == ""),
-                                                   namespaceCtx = namespaces),
-                                      context)
+                                                   namespaceCtx = namespaces
+                                      ),
+                                      context
+                )
               )
 
             case XMLStreamConstants.END_ELEMENT =>
@@ -149,7 +152,9 @@ private[xml] object StreamingXmlParser {
             case XMLStreamConstants.PROCESSING_INSTRUCTION =>
               push(out,
                    transform.buildOutput(ProcessingInstruction(Option(parser.getPITarget), Option(parser.getPIData)),
-                                         context))
+                                         context
+                   )
+              )
 
             case XMLStreamConstants.COMMENT =>
               push(out, transform.buildOutput(Comment(parser.getText), context))

@@ -478,8 +478,8 @@ class MqttSessionSpec
             .clientSessionFlow(session, ByteString("1"))
             .join(pipeToServer)
         )
-        .collect {
-          case Right(Event(cp: Publish, None)) => cp
+        .collect { case Right(Event(cp: Publish, None)) =>
+          cp
         }
         .wireTap(_ => publishReceived.success(Done))
         .toMat(Sink.ignore)(Keep.both)
@@ -539,8 +539,8 @@ class MqttSessionSpec
             .clientSessionFlow(session, ByteString("1"))
             .join(pipeToServer)
         )
-        .collect {
-          case Right(Event(cp: Publish, None)) => cp
+        .collect { case Right(Event(cp: Publish, None)) =>
+          cp
         }
         .wireTap(_ => publishReceived.success(Done))
         .toMat(Sink.ignore)(Keep.both)
@@ -612,8 +612,8 @@ class MqttSessionSpec
             .clientSessionFlow(session, ByteString("1"))
             .join(pipeToServer)
         )
-        .collect {
-          case Right(Event(cp: Publish, None)) => cp
+        .collect { case Right(Event(cp: Publish, None)) =>
+          cp
         }
         .wireTap { _ =>
           if (!publish1Received.isCompleted)
@@ -691,8 +691,8 @@ class MqttSessionSpec
             .clientSessionFlow(session, ByteString("1"))
             .join(pipeToServer)
         )
-        .collect {
-          case Right(Event(cp: Publish, None)) => cp
+        .collect { case Right(Event(cp: Publish, None)) =>
+          cp
         }
         .wireTap(_ => publishReceived.success(Done))
         .toMat(Sink.ignore)(Keep.left)
@@ -704,7 +704,8 @@ class MqttSessionSpec
 
       val publish = Publish(PublishQoSFlags.QoSAtLeastOnceDelivery | ControlPacketFlags.DUP,
                             "some-topic",
-                            ByteString("some-payload"))
+                            ByteString("some-payload")
+      )
       val publishBytes = publish.encode(ByteString.newBuilder, Some(PacketId(1))).result()
 
       client.offer(Command(connect))
@@ -1552,8 +1553,7 @@ class MqttSessionSpec
 
       unsubscribeReceived.future.foreach(_ => server.offer(Command(unsubAck)))(executionContext)
 
-      client.fishForSpecificMessage(3.seconds.dilated) {
-        case `unsubAckBytes` =>
+      client.fishForSpecificMessage(3.seconds.dilated) { case `unsubAckBytes` =>
       }
 
       fromClientQueue.complete()

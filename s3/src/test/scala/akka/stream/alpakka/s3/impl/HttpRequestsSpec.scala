@@ -366,7 +366,8 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
 
     req.uri.query() shouldEqual Query("list-type" -> "2",
                                       "prefix" -> "random/prefix",
-                                      "continuation-token" -> "randomToken")
+                                      "continuation-token" -> "randomToken"
+    )
   }
 
   it should "properly construct the list bucket request with a delimiter and token passed" in {

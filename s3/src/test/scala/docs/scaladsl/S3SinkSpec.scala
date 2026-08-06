@@ -147,7 +147,8 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec with Option
     val s3Sink: Sink[ByteString, Future[MultipartUploadResult]] =
       S3.multipartUploadWithHeaders(bucket,
                                     bucketKey,
-                                    s3Headers = S3Headers().withCannedAcl(CannedAcl.AuthenticatedRead))
+                                    s3Headers = S3Headers().withCannedAcl(CannedAcl.AuthenticatedRead)
+      )
 
     val result: Future[MultipartUploadResult] = Source.single(ByteString(body)).runWith(s3Sink)
 
@@ -216,8 +217,8 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec with Option
                        bucketKey,
                        targetBucket,
                        targetBucketKey,
-                       s3Headers = S3Headers().withServerSideEncryption(keys))
-        .run()
+                       s3Headers = S3Headers().withServerSideEncryption(keys)
+      ).run()
     //#multipart-copy-sse
 
     result.futureValue shouldBe MultipartUploadResult(targetUrl, targetBucket, targetBucketKey, etag, None)
@@ -245,15 +246,14 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec with Option
 
     val result =
       S3.multipartCopy(
-          bucket,
-          bucketKey,
-          targetBucket,
-          targetBucketKey,
-          s3Headers = S3Headers()
-            .withServerSideEncryption(keys)
-            .withCustomHeaders(Map(requestPayerHeader -> requestPayerHeaderValue))
-        )
-        .run()
+        bucket,
+        bucketKey,
+        targetBucket,
+        targetBucketKey,
+        s3Headers = S3Headers()
+          .withServerSideEncryption(keys)
+          .withCustomHeaders(Map(requestPayerHeader -> requestPayerHeaderValue))
+      ).run()
 
     result.futureValue shouldBe MultipartUploadResult(targetUrl, targetBucket, targetBucketKey, etag, None)
 
@@ -303,8 +303,8 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec with Option
                        bucketKey,
                        targetBucket,
                        targetBucketKey,
-                       sourceVersionId = Some("3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo"))
-        .run()
+                       sourceVersionId = Some("3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo")
+      ).run()
     //#multipart-copy-with-source-version
 
     result.futureValue shouldBe MultipartUploadResult(

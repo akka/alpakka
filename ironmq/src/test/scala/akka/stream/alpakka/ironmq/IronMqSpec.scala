@@ -36,12 +36,14 @@ abstract class IronMqSpec
   def config: Config = mutableConfig.getOrElse(throw new IllegalStateException("Config not initialized"))
 
   protected def initConfig(): Config =
-    ConfigFactory.parseString(s"""alpakka.ironmq {
+    ConfigFactory
+      .parseString(s"""alpakka.ironmq {
                                  |  credentials {
                                  |    project-id = "${MurmurHash3.stringHash(System.currentTimeMillis().toString)}"
                                  |  }
                                  |}
-      """.stripMargin).withFallback(ConfigFactory.load())
+      """.stripMargin)
+      .withFallback(ConfigFactory.load())
 
   /**
    * Override to tune the time the test will wait for the actor system to terminate.

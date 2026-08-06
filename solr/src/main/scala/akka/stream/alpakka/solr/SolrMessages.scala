@@ -21,28 +21,30 @@ object WriteMessage {
 
   def createUpdateMessage[T](idField: String,
                              idValue: String,
-                             updates: Map[String, Map[String, Any]]): WriteMessage[T, NotUsed] =
+                             updates: Map[String, Map[String, Any]]
+  ): WriteMessage[T, NotUsed] =
     new WriteMessage(AtomicUpdate,
                      idField = Option(idField),
                      idFieldValue = Option(idValue),
                      routingFieldValue = None,
-                     updates = updates)
+                     updates = updates
+    )
 
   /**
    * Java API
    */
   def createUpdateMessage[T](idField: String,
                              idValue: String,
-                             updates: java.util.Map[String, java.util.Map[String, Object]]): WriteMessage[T, NotUsed] =
+                             updates: java.util.Map[String, java.util.Map[String, Object]]
+  ): WriteMessage[T, NotUsed] =
     WriteMessage.createUpdateMessage(idField, idValue, asScalaUpdates(updates))
 
   @InternalApi
   private[solr] def asScalaUpdates(
       jupdates: java.util.Map[String, java.util.Map[String, Object]]
   ): Map[String, Map[String, Any]] =
-    jupdates.asScala.map {
-      case (k, v: java.util.Map[String, Object]) =>
-        (k, v.asScala.toMap)
+    jupdates.asScala.map { case (k, v: java.util.Map[String, Object]) =>
+      (k, v.asScala.toMap)
     }.toMap
 
   def createPassThrough[C](passThrough: C): WriteMessage[NotUsed, C] =
@@ -120,7 +122,8 @@ final case class WriteResult[T, C](idField: Option[String],
                                    source: Option[T],
                                    updates: Map[String, Map[String, Any]],
                                    passThrough: C,
-                                   status: Int)
+                                   status: Int
+)
 
 sealed trait Operation
 object Upsert extends Operation

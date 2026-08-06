@@ -255,7 +255,7 @@ class LogRotatorSinkSpec
       val completion =
         Source(test.map(ByteString.apply)).runWith(
           LogRotatorSink.withSinkFactory[Unit, Done](
-            triggerGeneratorCreator = () => (_: ByteString) => Some({}),
+            triggerGeneratorCreator = () => (_: ByteString) => Some {},
             sinkFactory = (_: Unit) =>
               Flow[ByteString].toMat(new StrangeSlowSink[ByteString](add, 100.millis, 200.millis))(Keep.right)
           )
@@ -353,7 +353,8 @@ class LogRotatorSinkSpec
       exactly(
         1,
         List(exception, // Akka 2.5 throws nio exception directly
-             exception.getCause) // Akka 2.6 wraps nio exception in a akka.stream.IOOperationIncompleteException
+             exception.getCause
+        ) // Akka 2.6 wraps nio exception in a akka.stream.IOOperationIncompleteException
       ) shouldBe a[java.nio.channels.NonWritableChannelException]
     }
 
@@ -393,7 +394,8 @@ class LogRotatorSinkSpec
     exactly(
       1,
       List(exception, // Akka 2.5 throws nio exception directly
-           exception.getCause) // Akka 2.6 wraps nio exception in a akka.stream.IOOperationIncompleteException
+           exception.getCause
+      ) // Akka 2.6 wraps nio exception in a akka.stream.IOOperationIncompleteException
     ) shouldBe a[IllegalArgumentException]
   }
 

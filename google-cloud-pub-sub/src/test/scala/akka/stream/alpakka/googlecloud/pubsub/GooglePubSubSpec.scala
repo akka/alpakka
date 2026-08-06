@@ -97,7 +97,8 @@ class GooglePubSubSpec extends AnyFlatSpec with ScalaFutures with Matchers with 
 
       override def publish[T](topic: String,
                               parallelism: Int,
-                              host: Option[String]): FlowWithContext[PublishRequest, T, PublishResponse, T, NotUsed] =
+                              host: Option[String]
+      ): FlowWithContext[PublishRequest, T, PublishResponse, T, NotUsed] =
         FlowWithContext[PublishRequest, T].map(_ => PublishResponse(Seq("id2")))
     }
 
