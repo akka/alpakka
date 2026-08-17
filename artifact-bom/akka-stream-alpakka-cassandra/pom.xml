@@ -14,17 +14,17 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-annotations</artifactId>
-                <version>2.18.9</version>
+                <version>2.20</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
-                <version>2.18.9</version>
+                <version>2.20.1</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>2.18.9</version>
+                <version>2.20.1</version>
             </dependency>
             <dependency>
                 <groupId>com.github.jnr</groupId>
@@ -84,47 +84,47 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-buffer</artifactId>
-                <version>4.1.119.Final</version>
+                <version>4.1.130.Final</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-codec</artifactId>
-                <version>4.1.119.Final</version>
+                <version>4.1.130.Final</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-common</artifactId>
-                <version>4.1.119.Final</version>
+                <version>4.1.130.Final</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-handler</artifactId>
-                <version>4.1.119.Final</version>
+                <version>4.1.130.Final</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-resolver</artifactId>
-                <version>4.1.119.Final</version>
+                <version>4.1.130.Final</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-transport</artifactId>
-                <version>4.1.119.Final</version>
+                <version>4.1.130.Final</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-transport-native-unix-common</artifactId>
-                <version>4.1.119.Final</version>
+                <version>4.1.130.Final</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.cassandra</groupId>
                 <artifactId>java-driver-core</artifactId>
-                <version>4.19.2</version>
+                <version>4.19.3</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.cassandra</groupId>
                 <artifactId>java-driver-guava-shaded</artifactId>
-                <version>4.19.2</version>
+                <version>4.19.3</version>
             </dependency>
             <dependency>
                 <groupId>org.hdrhistogram</groupId>
@@ -182,17 +182,17 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>2.18.9</version>
+            <version>2.20</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>2.18.9</version>
+            <version>2.20.1</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.18.9</version>
+            <version>2.20.1</version>
         </dependency>
         <dependency>
             <groupId>com.github.jnr</groupId>
@@ -252,47 +252,47 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-buffer</artifactId>
-            <version>4.1.119.Final</version>
+            <version>4.1.130.Final</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-codec</artifactId>
-            <version>4.1.119.Final</version>
+            <version>4.1.130.Final</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-common</artifactId>
-            <version>4.1.119.Final</version>
+            <version>4.1.130.Final</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-handler</artifactId>
-            <version>4.1.119.Final</version>
+            <version>4.1.130.Final</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-resolver</artifactId>
-            <version>4.1.119.Final</version>
+            <version>4.1.130.Final</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-transport</artifactId>
-            <version>4.1.119.Final</version>
+            <version>4.1.130.Final</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-transport-native-unix-common</artifactId>
-            <version>4.1.119.Final</version>
+            <version>4.1.130.Final</version>
         </dependency>
         <dependency>
             <groupId>org.apache.cassandra</groupId>
             <artifactId>java-driver-core</artifactId>
-            <version>4.19.2</version>
+            <version>4.19.3</version>
         </dependency>
         <dependency>
             <groupId>org.apache.cassandra</groupId>
             <artifactId>java-driver-guava-shaded</artifactId>
-            <version>4.19.2</version>
+            <version>4.19.3</version>
         </dependency>
         <dependency>
             <groupId>org.hdrhistogram</groupId>
