@@ -32,9 +32,9 @@ object Dependencies {
   val ScalaTestVersion = "3.2.19"
   val TestContainersScalaTestVersion = "0.40.3" // pulls Testcontainers 1.16.2
 
-  // https://github.com/mockito/mockito/releases
+  // https://github.com/mockito/
   val mockitoVersion = "5.20.0"
-  val hoverflyVersion = "0.14.1"
+  val hoverflyVersion = "0.20.2"
 
   val CouchbaseVersion = "3.9.1"
   val CouchbaseVersionForDocs = VersionNumber(CouchbaseVersion).numbers match {
