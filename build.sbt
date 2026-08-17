@@ -1,5 +1,7 @@
 import com.geirsson.CiReleasePlugin
 
+ThisBuild / makeBomIncludeDependencies := true
+
 lazy val alpakka = project
   .in(file("."))
   .enablePlugins(ScalaUnidocPlugin)
@@ -153,12 +155,15 @@ lazy val azureStorage = alpakkaProject(
 
 lazy val cassandra =
   alpakkaProject("cassandra", "cassandra", Dependencies.Cassandra)
+    .enablePlugins(ArtifactBomPlugin)
     .settings(Scala3.settings)
 
 lazy val couchbase =
   alpakkaProject("couchbase", "couchbase", Dependencies.Couchbase)
 
-lazy val csv = alpakkaProject("csv", "csv").settings(Scala3.settings)
+lazy val csv = alpakkaProject("csv", "csv")
+  .enablePlugins(ArtifactBomPlugin)
+  .settings(Scala3.settings)
 
 lazy val csvBench = internalProject("csv-bench")
   .dependsOn(csv)
