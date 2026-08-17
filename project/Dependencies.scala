@@ -9,7 +9,7 @@ object Dependencies {
   val CronBuild = sys.env.get("GITHUB_EVENT_NAME").contains("schedule")
 
   val Scala213 = "2.13.17" // update even in link-validator.conf
-  val Scala3 = "3.3.7"
+  val Scala3 = "3.3.8"
   val Scala2Versions = Seq(Scala213)
   val ScalaVersions = Dependencies.Scala2Versions :+ Dependencies.Scala3
 
@@ -19,7 +19,7 @@ object Dependencies {
   val InfluxDBJavaVersion = "2.15"
 
   // https://github.com/aws/aws-sdk-java-v2
-  val AwsSdk2Version = "2.46.20"
+  val AwsSdk2Version = "2.46.21"
   val AwsSpiAkkaHttpVersion = "1.0.1"
   // Sync with plugins.sbt
   val AkkaGrpcBinaryVersion = "2.5"
@@ -29,11 +29,11 @@ object Dependencies {
     case Seq(major, minor, _*) => s"$major.$minor"
   }
   val AlpakkaKafkaVersion = "8.0.1"
-  val ScalaTestVersion = "3.2.19"
+  val ScalaTestVersion = "3.2.20"
   val TestContainersScalaTestVersion = "0.40.3" // pulls Testcontainers 1.16.2
 
   // https://github.com/mockito/mockito/releases
-  val mockitoVersion = "5.20.0"
+  val mockitoVersion = "5.23.0"
   val hoverflyVersion = "0.14.1"
 
   val CouchbaseVersion = "3.9.1"
@@ -45,7 +45,7 @@ object Dependencies {
   val JwtScalaVersion = "11.0.3"
 
   // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L16
-  val slf4jVersion = "2.0.17"
+  val slf4jVersion = "2.0.18"
   val log4jOverSlf4jVersion = slf4jVersion
   val jclOverSlf4jVersion = slf4jVersion
 
@@ -81,7 +81,7 @@ object Dependencies {
   // CVE issues https://github.com/FasterXML/jackson-databind/issues?utf8=%E2%9C%93&q=+label%3ACVE
   // This should align with the Jackson minor version used in Akka
   // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L29
-  val JacksonVersion = "2.18.8" // 2.18 is LTS
+  val JacksonVersion = "2.18.9" // 2.18 is LTS
   val JacksonDatabindVersion = JacksonVersion
   val JacksonDatabindDependencies = Seq(
     "com.fasterxml.jackson.core" % "jackson-core" % JacksonVersion,
@@ -90,7 +90,7 @@ object Dependencies {
 
   val Amqp = Seq(
     libraryDependencies ++= Seq(
-        "com.rabbitmq" % "amqp-client" % "5.25.0" // APLv2
+        "com.rabbitmq" % "amqp-client" % "5.34.0" // APLv2
       ) ++ Mockito
   )
 
@@ -116,8 +116,8 @@ object Dependencies {
       )
   )
 
-  val AzureCoreVersion = "1.55.3"
-  val AzureIdentityVersion = "1.15.4"
+  val AzureCoreVersion = "1.55.5"
+  val AzureIdentityVersion = "1.18.4"
 
   val AzureStorage = Seq(
     libraryDependencies ++= Seq(
@@ -126,7 +126,7 @@ object Dependencies {
         "com.azure" % "azure-core" % AzureCoreVersion, // MIT - TokenCredential API
         "com.azure" % "azure-identity" % AzureIdentityVersion % "provided,test", // MIT - optional, needed for DefaultAzureCredential
         // for testing authorization signature
-        "com.azure" % "azure-storage-common" % "12.29.1" % Test,
+        "com.azure" % "azure-storage-common" % "12.34.0" % Test,
         wiremock
       )
   )
@@ -150,7 +150,7 @@ object Dependencies {
         "com.couchbase.client" % "java-client" % CouchbaseVersion, // ApacheV2
         "io.reactivex" % "rxjava-reactive-streams" % "1.2.1", //ApacheV2
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion % Provided, // Apache V2
-        "com.typesafe.play" %% "play-json" % "2.9.4" % Test, // Apache V2
+        "com.typesafe.play" %% "play-json" % "2.10.8" % Test, // Apache V2
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion % Test, // Apache V2
         "com.typesafe.akka" %% "akka-pki" % AkkaVersion
       )
@@ -194,15 +194,15 @@ object Dependencies {
 
   val File = Seq(
     libraryDependencies ++= Seq(
-        "com.google.jimfs" % "jimfs" % "1.3.0" % Test // ApacheV2
+        "com.google.jimfs" % "jimfs" % "1.3.1" % Test // ApacheV2
       )
   )
 
   val AvroParquet = Seq(
     libraryDependencies ++= Seq(
-        "org.apache.parquet" % "parquet-avro" % "1.15.2", //Apache2
+        "org.apache.parquet" % "parquet-avro" % "1.17.1", //Apache2
         // override the version brought in by parquet-avro to fix CVE-2023-39410
-        "org.apache.avro" % "avro" % "1.12.0" //Apache2
+        "org.apache.avro" % "avro" % "1.12.1" //Apache2
       )
   )
 
@@ -211,21 +211,21 @@ object Dependencies {
         "org.apache.hadoop" % "hadoop-client" % "3.3.6" % Test exclude ("log4j", "log4j"), //Apache2
         "org.apache.hadoop" % "hadoop-common" % "3.3.6" % Test exclude ("log4j", "log4j"), //Apache2
         "com.sksamuel.avro4s" %% "avro4s-core" % "4.1.2" % Test,
-        "org.scalacheck" %% "scalacheck" % "1.17.1" % Test,
-        "org.specs2" %% "specs2-core" % "4.21.0" % Test, //MIT like: https://github.com/etorreborre/specs2/blob/master/LICENSE.txt
+        "org.scalacheck" %% "scalacheck" % "1.19.0" % Test,
+        "org.specs2" %% "specs2-core" % "4.23.0" % Test, //MIT like: https://github.com/etorreborre/specs2/blob/master/LICENSE.txt
         "org.slf4j" % "log4j-over-slf4j" % log4jOverSlf4jVersion % Test // MIT like: http://www.slf4j.org/license.html
       )
   )
 
   val Ftp = Seq(
     libraryDependencies ++= Seq(
-        "commons-net" % "commons-net" % "3.11.1",
+        "commons-net" % "commons-net" % "3.13.0",
         "com.hierynomus" % "sshj" % "0.40.0",
-        ("io.github.hakky54" % "ayza-for-pem" % "10.0.0" % Test)
+        ("io.github.hakky54" % "ayza-for-pem" % "10.0.5" % Test)
       )
   )
 
-  val GeodeVersion = "1.15.1"
+  val GeodeVersion = "1.15.4"
   val GeodeVersionForDocs = "115"
 
   val Geode = Seq(
@@ -233,9 +233,9 @@ object Dependencies {
       Seq("geode-core", "geode-cq")
         .map("org.apache.geode" % _ % GeodeVersion) ++
       Seq(
-        "com.chuusai" %% "shapeless" % "2.3.12",
+        "com.chuusai" %% "shapeless" % "2.3.13",
         // https://logging.apache.org/log4j/2.x/release-notes.html
-        "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.25.2" % Test
+        "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.25.5" % Test
       ) ++ JacksonDatabindDependencies
   )
 
@@ -270,11 +270,11 @@ object Dependencies {
     libraryDependencies ++= Seq(
         // https://github.com/googleapis/java-bigquerystorage/tree/master/proto-google-cloud-bigquerystorage-v1
         "com.google.api.grpc" % "proto-google-cloud-bigquerystorage-v1" % "3.15.3" % "protobuf-src", // ApacheV2
-        "org.apache.avro" % "avro" % "1.12.0" % "provided",
-        "org.apache.arrow" % "arrow-vector" % "18.3.0" % "provided",
+        "org.apache.avro" % "avro" % "1.12.1" % "provided",
+        "org.apache.arrow" % "arrow-vector" % "19.0.0" % "provided",
         "io.grpc" % "grpc-auth" % akka.grpc.gen.BuildInfo.grpcVersion, // ApacheV2
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-        "org.apache.arrow" % "arrow-memory-netty" % "18.3.0" % Test,
+        "org.apache.arrow" % "arrow-memory-netty" % "19.0.0" % Test,
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion
       ) ++ Mockito
   )
@@ -316,8 +316,8 @@ object Dependencies {
   )
 
   val HBase = {
-    val hbaseVersion = "2.6.2"
-    val hadoopVersion = "3.4.1"
+    val hbaseVersion = "2.6.6"
+    val hadoopVersion = "3.4.3"
     Seq(
       libraryDependencies ++= Seq(
           "org.apache.hbase" % "hbase-shaded-client" % hbaseVersion exclude ("log4j", "log4j"), // ApacheV2,
@@ -329,7 +329,7 @@ object Dependencies {
     )
   }
 
-  val HadoopVersion = "3.4.1"
+  val HadoopVersion = "3.4.3"
   val Hdfs = Seq(
     libraryDependencies ++= Seq(
         "org.apache.hadoop" % "hadoop-client" % HadoopVersion exclude ("log4j", "log4j"), // ApacheV2
@@ -365,17 +365,17 @@ object Dependencies {
   val JakartaJms = Seq(
     libraryDependencies ++= Seq(
         "jakarta.jms" % "jakarta.jms-api" % "3.1.0", // Eclipse Public License 2.0 + + GPLv2
-        ("org.apache.activemq" % "artemis-jakarta-server" % "2.33.0" % Test),
-        ("org.apache.activemq" % "artemis-jakarta-client" % "2.33.0" % Test)
+        ("org.apache.activemq" % "artemis-jakarta-server" % "2.38.0" % Test),
+        ("org.apache.activemq" % "artemis-jakarta-client" % "2.38.0" % Test)
       ) ++ Mockito
   )
 
   val Jms = Seq(
     libraryDependencies ++= Seq(
-        "javax.jms" % "jms" % "1.1" % Provided, // CDDL + GPLv2
+        "javax.jms" % "javax.jms-api" % "2.0.1" % Provided, // CDDL + GPLv2
         "com.ibm.mq" % "com.ibm.mq.allclient" % "9.4.3.0" % Test, // IBM International Program License Agreement https://public.dhe.ibm.com/ibmdl/export/pub/software/websphere/messaging/mqdev/maven/licenses/L-APIG-AZYF2E/LI_en.html
-        "org.apache.activemq" % "activemq-broker" % "5.16.8" % Test, // ApacheV2
-        "org.apache.activemq" % "activemq-client" % "5.16.8" % Test, // ApacheV2
+        "org.apache.activemq" % "activemq-broker" % "5.19.9" % Test, // ApacheV2
+        "org.apache.activemq" % "activemq-client" % "5.19.9" % Test, // ApacheV2
         "io.github.sullis" %% "jms-testkit" % "1.0.4" % Test // ApacheV2
       ) ++ Mockito,
     // Having JBoss as a first resolver is a workaround for https://github.com/coursier/coursier/issues/200
@@ -398,7 +398,7 @@ object Dependencies {
       ) ++ Seq(
         "software.amazon.awssdk" % "kinesis" % AwsSdk2Version, // ApacheV2
         "software.amazon.awssdk" % "firehose" % AwsSdk2Version, // ApacheV2
-        "software.amazon.kinesis" % "amazon-kinesis-client" % "2.4.0", // ApacheV2
+        "software.amazon.kinesis" % "amazon-kinesis-client" % "2.4.8", // ApacheV2
         "com.google.protobuf" % "protobuf-java" % KinesisProtobufJavaVersion // CVE in older transitive dependency
       ).map(
         _.excludeAll(
@@ -411,7 +411,7 @@ object Dependencies {
   val MongoDb = Seq(
     libraryDependencies ++= Seq(
         // https://github.com/mongodb/mongo-java-driver/releases
-        "org.mongodb.scala" %% "mongo-scala-driver" % "5.6.0" // ApacheV2
+        "org.mongodb.scala" %% "mongo-scala-driver" % "5.6.5" // ApacheV2
       )
   )
 
@@ -462,7 +462,7 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http-xml" % AkkaHttpVersion,
         "software.amazon.awssdk" % "auth" % AwsSdk2Version,
         // in-memory filesystem for file related tests
-        "com.google.jimfs" % "jimfs" % "1.3.0" % Test, // ApacheV2
+        "com.google.jimfs" % "jimfs" % "1.3.1" % Test, // ApacheV2
         wiremock
       )
   )
@@ -487,7 +487,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.slick" %% "slick" % SlickVersion,
         "com.typesafe.slick" %% "slick-hikaricp" % SlickVersion,
-        "com.h2database" % "h2" % "2.3.232" % Test
+        "com.h2database" % "h2" % "2.4.240" % Test
       )
   )
   val Eventbridge = Seq(
@@ -560,14 +560,14 @@ object Dependencies {
 
   val UnixDomainSocket = Seq(
     libraryDependencies ++= Seq(
-        "com.github.jnr" % "jffi" % "1.3.13", // classifier "complete", // Is the classifier needed anymore?
-        "com.github.jnr" % "jnr-unixsocket" % "0.38.23" // BSD/ApacheV2/CPL/MIT as per https://github.com/akka/alpakka/issues/620#issuecomment-348727265
+        "com.github.jnr" % "jffi" % "1.3.15", // classifier "complete", // Is the classifier needed anymore?
+        "com.github.jnr" % "jnr-unixsocket" % "0.38.25" // BSD/ApacheV2/CPL/MIT as per https://github.com/akka/alpakka/issues/620#issuecomment-348727265
       )
   )
 
   val Xml = Seq(
     libraryDependencies ++= Seq(
-        "com.fasterxml" % "aalto-xml" % "1.3.3" // ApacheV2
+        "com.fasterxml" % "aalto-xml" % "1.3.4" // ApacheV2
       )
   )
 
