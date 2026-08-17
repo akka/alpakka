@@ -29,11 +29,11 @@ object Dependencies {
     case Seq(major, minor, _*) => s"$major.$minor"
   }
   val AlpakkaKafkaVersion = "8.0.1"
-  val ScalaTestVersion = "3.2.19"
+  val ScalaTestVersion = "3.2.20"
   val TestContainersScalaTestVersion = "0.40.3" // pulls Testcontainers 1.16.2
 
   // https://github.com/mockito/mockito/releases
-  val mockitoVersion = "5.20.0"
+  val mockitoVersion = "5.23.0"
   val hoverflyVersion = "0.14.1"
 
   val CouchbaseVersion = "3.9.1"
@@ -211,8 +211,8 @@ object Dependencies {
         "org.apache.hadoop" % "hadoop-client" % "3.3.6" % Test exclude ("log4j", "log4j"), //Apache2
         "org.apache.hadoop" % "hadoop-common" % "3.3.6" % Test exclude ("log4j", "log4j"), //Apache2
         "com.sksamuel.avro4s" %% "avro4s-core" % "4.1.2" % Test,
-        "org.scalacheck" %% "scalacheck" % "1.17.1" % Test,
-        "org.specs2" %% "specs2-core" % "4.21.0" % Test, //MIT like: https://github.com/etorreborre/specs2/blob/master/LICENSE.txt
+        "org.scalacheck" %% "scalacheck" % "1.19.0" % Test,
+        "org.specs2" %% "specs2-core" % "4.23.0" % Test, //MIT like: https://github.com/etorreborre/specs2/blob/master/LICENSE.txt
         "org.slf4j" % "log4j-over-slf4j" % log4jOverSlf4jVersion % Test // MIT like: http://www.slf4j.org/license.html
       )
   )
