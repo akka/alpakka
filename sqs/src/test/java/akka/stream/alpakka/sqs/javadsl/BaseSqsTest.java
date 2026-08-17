@@ -10,21 +10,21 @@ import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.testkit.javadsl.TestKit;
 // #init-client
 import com.github.matsluni.akkahttpspi.AkkaHttpClient;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.sqs.SqsAsyncClient;
-
 // #init-client
+import java.net.URI;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
+// #init-client
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.sqs.SqsAsyncClient;
+// #init-client
 import software.amazon.awssdk.services.sqs.model.CreateQueueRequest;
-
-import java.net.URI;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
 
 public abstract class BaseSqsTest {
 

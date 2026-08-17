@@ -39,7 +39,8 @@ interface CommonFtpStageTest extends BaseSupport, AkkaSupport {
       throws Exception;
 
   default <T> T await(CompletionStage<T> result)
-      throws InterruptedException, java.util.concurrent.ExecutionException,
+      throws InterruptedException,
+          java.util.concurrent.ExecutionException,
           java.util.concurrent.TimeoutException {
     return result.toCompletableFuture().get(10, TimeUnit.SECONDS);
   }

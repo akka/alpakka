@@ -4,38 +4,50 @@
 
 package docs.javadsl;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertTrue;
+// #storing
+
+import akka.stream.IOResult;
+// #storing
+import akka.stream.Materializer;
+import akka.stream.alpakka.ftp.BaseFtpSupport;
+// #create-settings
+import akka.stream.alpakka.ftp.FtpSettings;
+// #create-settings
 // #storing
 // #create-settings
 import akka.stream.alpakka.ftp.javadsl.Ftp;
 // #create-settings
-import akka.stream.IOResult;
+// #storing
+// #storing
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Compression;
+// #storing
+// #create-settings
+import akka.stream.javadsl.Source;
+// #create-settings
+// #storing
 import akka.stream.testkit.javadsl.StreamTestKit;
+// #storing
+import akka.testkit.javadsl.TestKit;
+// #storing
 import akka.util.ByteString;
-import java.util.concurrent.CompletionStage;
 // #storing
 import java.io.PrintWriter;
-
 // #create-settings
-import akka.stream.alpakka.ftp.FtpSettings;
-import akka.stream.javadsl.Source;
+import java.net.InetAddress;
+// #create-settings
+// #storing
+import java.util.concurrent.CompletionStage;
+// #storing
+import java.util.concurrent.TimeUnit;
+// #create-settings
 import org.apache.commons.net.PrintCommandListener;
 import org.apache.commons.net.ftp.FTPClient;
-import java.net.InetAddress;
-
 // #create-settings
-import akka.stream.alpakka.ftp.BaseFtpSupport;
-import akka.stream.Materializer;
-import akka.testkit.javadsl.TestKit;
 import org.junit.*;
-
-import static org.junit.Assert.assertTrue;
-
-import java.util.concurrent.TimeUnit;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class FtpWritingTest extends BaseFtpSupport {
 

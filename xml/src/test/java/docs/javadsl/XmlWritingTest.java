@@ -82,9 +82,9 @@ public class XmlWritingTest {
 
     // #writer-usage
     final String doc =
-        "<?xml version='1.0' encoding='UTF-8'?>"
-            + "<bk:book xmlns:bk=\"urn:loc.gov:books\" xmlns:isbn=\"urn:ISBN:0-395-36341-6\">"
-            + "<bk:title>Cheaper by the Dozen</bk:title><isbn:number>1568491379</isbn:number></bk:book>";
+        "<?xml version='1.0' encoding='UTF-8'?><bk:book xmlns:bk=\"urn:loc.gov:books\""
+            + " xmlns:isbn=\"urn:ISBN:0-395-36341-6\"><bk:title>Cheaper by the"
+            + " Dozen</bk:title><isbn:number>1568491379</isbn:number></bk:book>";
     final List<Namespace> nmList = new ArrayList<>();
     nmList.add(Namespace.create("urn:loc.gov:books", Optional.of("bk")));
     nmList.add(Namespace.create("urn:ISBN:0-395-36341-6", Optional.of("isbn")));

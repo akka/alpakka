@@ -4,21 +4,21 @@
 
 package docs.javadsl;
 
-import akka.stream.alpakka.jakartajms.*;
-import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
-import com.typesafe.config.ConfigFactory;
-import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
-import org.junit.Rule;
-import org.junit.Test;
-
-import java.time.Duration;
-
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
+import akka.stream.alpakka.jakartajms.*;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 // #retry-settings #send-retry-settings
 import com.typesafe.config.Config;
+// #retry-settings #send-retry-settings
+import com.typesafe.config.ConfigFactory;
+import java.time.Duration;
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+import org.junit.Rule;
+import org.junit.Test;
+// #retry-settings #send-retry-settings
 import scala.Option;
 
 // #retry-settings #send-retry-settings

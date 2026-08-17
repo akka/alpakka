@@ -4,6 +4,9 @@
 
 package docs.javadsl;
 
+import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+
 import akka.Done;
 // #init-system
 import akka.actor.ActorSystem;
@@ -12,30 +15,26 @@ import akka.stream.alpakka.aws.eventbridge.javadsl.EventBridgePublisher;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
-
 // #init-client
-import java.net.URI;
 import com.github.matsluni.akkahttpspi.AkkaHttpClient;
+import java.net.URI;
+// #init-client
+import java.util.UUID;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+// #init-client
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient;
 // #init-client
-
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import software.amazon.awssdk.services.eventbridge.model.CreateEventBusRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.CoreMatchers.*;
-
-import java.util.UUID;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 public class EventBridgePublisherTest {
 

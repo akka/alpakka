@@ -18,17 +18,17 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 // #init-client
 import com.github.matsluni.akkahttpspi.AkkaHttpClient;
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClient;
 // #init-client
 import software.amazon.awssdk.services.kinesis.model.PutRecordsRequestEntry;
 import software.amazon.awssdk.services.kinesis.model.PutRecordsResultEntry;
 import software.amazon.awssdk.services.kinesis.model.Record;
-// #source-settings
-// #source-settings
 
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.List;
+// #source-settings
+// #source-settings
 
 public class KinesisSnippets {
 

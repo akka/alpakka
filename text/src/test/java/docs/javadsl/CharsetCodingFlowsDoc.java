@@ -4,25 +4,20 @@
 
 package docs.javadsl;
 
-import akka.actor.ActorSystem;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
+import akka.actor.ActorSystem;
 // #encoding
+import akka.stream.IOResult;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.alpakka.text.javadsl.TextFlow;
-import akka.stream.IOResult;
 import akka.stream.javadsl.FileIO;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
-
 import java.nio.charset.StandardCharsets;
-
 // #encoding
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -31,11 +26,9 @@ import java.util.Properties;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.junit.AfterClass;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class CharsetCodingFlowsDoc {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();

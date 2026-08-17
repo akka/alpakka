@@ -33,7 +33,7 @@ object Dependencies {
   val ScalaTestVersion = "3.2.20"
   val TestContainersScalaTestVersion = "0.40.3" // pulls Testcontainers 1.16.2
 
-  // https://github.com/mockito/
+  // https://github.com/mockito
   val mockitoVersion = "5.23.0"
   val hoverflyVersion = "0.20.2"
 

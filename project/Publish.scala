@@ -10,7 +10,6 @@ import sbt.{Def, _}
 import Keys._
 import com.geirsson.CiReleasePlugin
 import com.jsuereth.sbtpgp.PgpKeys.publishSigned
-import xerial.sbt.Sonatype.autoImport.sonatypeProfileName
 
 /**
  * For projects that are not published.
@@ -40,7 +39,6 @@ object Publish extends AutoPlugin {
 
   override def projectSettings: Seq[Def.Setting[_]] =
     Seq(
-      sonatypeProfileName := "com.lightbend",
       beforePublishTask := beforePublish(isSnapshot.value),
       publishSigned := publishSigned.dependsOn(beforePublishTask).value,
       publishTo :=

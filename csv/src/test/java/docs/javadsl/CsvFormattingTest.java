@@ -4,12 +4,14 @@
 
 package docs.javadsl;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+
 import akka.actor.ActorSystem;
 import akka.stream.SystemMaterializer;
 // #import
 import akka.stream.alpakka.csv.javadsl.CsvFormatting;
 import akka.stream.alpakka.csv.javadsl.CsvQuotingStyle;
-
 // #import
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Flow;
@@ -18,8 +20,6 @@ import akka.stream.javadsl.Source;
 import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
-import org.junit.*;
-
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -29,9 +29,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import org.junit.*;
 
 public class CsvFormattingTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();

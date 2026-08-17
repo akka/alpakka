@@ -4,6 +4,8 @@
 
 package docs.javadsl;
 
+import static org.junit.Assert.assertEquals;
+
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
@@ -21,8 +23,6 @@ import akka.testkit.javadsl.TestKit;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.google.common.jimfs.WatchServiceConfiguration;
-import org.junit.*;
-
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -31,8 +31,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assert.assertEquals;
+import org.junit.*;
 
 public class DirectoryChangesSourceTest {
 
@@ -57,8 +56,7 @@ public class DirectoryChangesSourceTest {
   public void setup() throws Exception {
     fs =
         Jimfs.newFileSystem(
-            Configuration.forCurrentPlatform()
-                .toBuilder()
+            Configuration.forCurrentPlatform().toBuilder()
                 .setWatchServiceConfiguration(
                     WatchServiceConfiguration.polling(10, TimeUnit.MILLISECONDS))
                 .build());

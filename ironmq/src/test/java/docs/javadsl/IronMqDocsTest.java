@@ -4,33 +4,33 @@
 
 package docs.javadsl;
 
+import static org.junit.Assert.assertEquals;
+
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.Materializer;
 // #imports
 import akka.stream.alpakka.ironmq.*;
-import akka.stream.alpakka.ironmq.javadsl.*;
-
 // #imports
 import akka.stream.alpakka.ironmq.impl.IronMqClientForJava;
+// #imports
+import akka.stream.alpakka.ironmq.javadsl.*;
+// #imports
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
-import org.junit.AfterClass;
-import org.junit.Rule;
-import org.junit.Test;
-import scala.concurrent.Await;
-
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assert.assertEquals;
+import org.junit.AfterClass;
+import org.junit.Rule;
+import org.junit.Test;
+import scala.concurrent.Await;
 
 public class IronMqDocsTest extends IronMqClientForJava {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();

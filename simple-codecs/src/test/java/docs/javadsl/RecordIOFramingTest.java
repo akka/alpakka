@@ -38,7 +38,8 @@ public class RecordIOFramingTest {
   public void parseStream() throws InterruptedException, ExecutionException, TimeoutException {
     // #run-via-scanner
     String firstRecordData =
-        "{\"type\": \"SUBSCRIBED\",\"subscribed\": {\"framework_id\": {\"value\":\"12220-3440-12532-2345\"},\"heartbeat_interval_seconds\":15.0}";
+        "{\"type\": \"SUBSCRIBED\",\"subscribed\": {\"framework_id\":"
+            + " {\"value\":\"12220-3440-12532-2345\"},\"heartbeat_interval_seconds\":15.0}";
     String secondRecordData = "{\"type\":\"HEARTBEAT\"}";
 
     String firstRecordWithPrefix = "121\n" + firstRecordData;

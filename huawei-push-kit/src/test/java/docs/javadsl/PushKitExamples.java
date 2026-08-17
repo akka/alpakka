@@ -5,7 +5,6 @@
 package docs.javadsl;
 
 import akka.actor.ActorSystem;
-
 // #imports
 import akka.stream.alpakka.huawei.pushkit.*;
 import akka.stream.alpakka.huawei.pushkit.javadsl.HmsPushKit;
@@ -18,14 +17,12 @@ import akka.stream.alpakka.huawei.pushkit.models.PushKitNotification;
 import akka.stream.alpakka.huawei.pushkit.models.PushKitResponse;
 import akka.stream.alpakka.huawei.pushkit.models.Response;
 import akka.stream.alpakka.huawei.pushkit.models.Tokens;
-
 // #imports
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import scala.collection.immutable.Set;
-
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import scala.collection.immutable.Set;
 
 public class PushKitExamples {
 

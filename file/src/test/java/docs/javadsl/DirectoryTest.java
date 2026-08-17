@@ -4,6 +4,9 @@
 
 package docs.javadsl;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
@@ -12,8 +15,6 @@ import akka.japi.Pair;
 import akka.stream.Materializer;
 import akka.stream.alpakka.file.javadsl.Directory;
 // #ls
-import java.nio.file.FileVisitOption;
-// #walk
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.FlowWithContext;
@@ -23,18 +24,16 @@ import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import org.junit.*;
-
 import java.nio.file.FileSystem;
+import java.nio.file.FileVisitOption;
+// #walk
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.junit.*;
 
 public class DirectoryTest {
 

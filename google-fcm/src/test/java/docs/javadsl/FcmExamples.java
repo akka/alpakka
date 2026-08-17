@@ -8,13 +8,11 @@ import akka.actor.ActorSystem;
 import akka.japi.Pair;
 // #imports
 import akka.stream.alpakka.google.firebase.fcm.FcmSettings;
-import akka.stream.alpakka.google.firebase.fcm.v1.models.*;
 import akka.stream.alpakka.google.firebase.fcm.v1.javadsl.GoogleFcm;
-
+import akka.stream.alpakka.google.firebase.fcm.v1.models.*;
 // #imports
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 

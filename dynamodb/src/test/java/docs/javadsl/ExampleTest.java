@@ -4,11 +4,12 @@
 
 package docs.javadsl;
 
+import static org.junit.Assert.assertNotNull;
+
 import akka.NotUsed;
 // #init-client
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
-
 // #init-client
 import akka.stream.alpakka.dynamodb.DynamoDbOp;
 import akka.stream.alpakka.dynamodb.javadsl.DynamoDb;
@@ -18,25 +19,23 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.SourceWithContext;
 import akka.testkit.javadsl.TestKit;
-import org.junit.*;
 // #init-client
 import com.github.matsluni.akkahttpspi.AkkaHttpClient;
-import scala.util.Try;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
-
 // #init-client
-import software.amazon.awssdk.services.dynamodb.model.*;
-
 import java.net.URI;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assert.assertNotNull;
+import org.junit.*;
+// #init-client
+import scala.util.Try;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
+// #init-client
+import software.amazon.awssdk.services.dynamodb.model.*;
 
 public class ExampleTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();

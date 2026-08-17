@@ -402,6 +402,7 @@ public class JmsConnectorsTest {
       }
     };
   }
+
   // #custom-destination
 
   @Test

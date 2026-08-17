@@ -85,6 +85,7 @@ public class HdfsWriterTest {
       this.offset = offset;
     }
   }
+
   // #define-kafka-classes
 
   @Test

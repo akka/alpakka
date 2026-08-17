@@ -4,32 +4,6 @@
 
 package docs.javadsl;
 
-import akka.Done;
-import akka.actor.ActorSystem;
-import akka.stream.Materializer;
-import akka.stream.alpakka.couchbase.*;
-import akka.stream.alpakka.couchbase.javadsl.CouchbaseFlow;
-import akka.stream.alpakka.couchbase.javadsl.CouchbaseSource;
-import akka.stream.alpakka.couchbase.testing.CouchbaseSupportClass;
-import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
-import akka.stream.testkit.javadsl.StreamTestKit;
-import com.couchbase.client.core.error.DocumentNotFoundException;
-import com.couchbase.client.java.Cluster;
-import com.couchbase.client.java.env.ClusterEnvironment;
-
-import com.couchbase.client.java.json.JsonObject;
-import com.couchbase.client.java.json.JsonValue;
-import org.junit.*;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.*;
-import java.util.stream.Collectors;
-import akka.stream.alpakka.couchbase.javadsl.CouchbaseSession;
-
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -37,88 +11,63 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
-// #statement
-import akka.stream.alpakka.couchbase.javadsl.CouchbaseSource;
-import com.couchbase.client.java.json.JsonObject;
-
-// #statement
-
-// #fromId
-import akka.stream.alpakka.couchbase.CouchbaseDocument;
-import akka.stream.alpakka.couchbase.javadsl.CouchbaseFlow;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
-
-// #fromId
-
-// #upsert
-import akka.stream.alpakka.couchbase.CouchbaseWriteResult;
-import akka.stream.alpakka.couchbase.javadsl.CouchbaseFlow;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
-
-// #upsert
-
-// #upsertWithResult
-import akka.stream.alpakka.couchbase.CouchbaseWriteFailure;
-import akka.stream.alpakka.couchbase.CouchbaseWriteResult;
-import akka.stream.alpakka.couchbase.javadsl.CouchbaseFlow;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
-
-// #upsertWithResult
-
-// #replace
-import akka.stream.alpakka.couchbase.CouchbaseWriteResult;
-import akka.stream.alpakka.couchbase.javadsl.CouchbaseFlow;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
-
-// #replace
-// #replaceWithResult
-import akka.stream.alpakka.couchbase.CouchbaseWriteFailure;
-import akka.stream.alpakka.couchbase.CouchbaseWriteResult;
-import akka.stream.alpakka.couchbase.javadsl.CouchbaseFlow;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
-
-// #replaceWithResult
-
-// #delete
-import akka.stream.alpakka.couchbase.javadsl.CouchbaseFlow;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
-
-// #delete
+import akka.Done;
+import akka.actor.ActorSystem;
+import akka.stream.Materializer;
+import akka.stream.alpakka.couchbase.*;
 // #deleteWithResult
 import akka.stream.alpakka.couchbase.CouchbaseDeleteResult;
-import akka.stream.alpakka.couchbase.javadsl.CouchbaseFlow;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
-
 // #deleteWithResult
-
+// #fromId #session #fromCluster
+import akka.stream.alpakka.couchbase.CouchbaseDocument;
+// #fromId #session #fromCluster
 // #registry
 import akka.stream.alpakka.couchbase.CouchbaseSessionRegistry;
-import akka.stream.alpakka.couchbase.CouchbaseSessionSettings;
-import akka.stream.alpakka.couchbase.javadsl.CouchbaseSession;
-import com.couchbase.client.java.env.ClusterEnvironment;
-
 // #registry
-
-// #session
-import akka.stream.alpakka.couchbase.CouchbaseDocument;
+// #registry #session
 import akka.stream.alpakka.couchbase.CouchbaseSessionSettings;
+// #registry #session
+// #upsertWithResult #replaceWithResult
+import akka.stream.alpakka.couchbase.CouchbaseWriteFailure;
+// #upsertWithResult #replaceWithResult
+// #upsert #upsertWithResult #replace #replaceWithResult
+import akka.stream.alpakka.couchbase.CouchbaseWriteResult;
+// #upsert #upsertWithResult #replace #replaceWithResult
+// #fromId #upsert #upsertWithResult #replace #replaceWithResult #delete #deleteWithResult
+import akka.stream.alpakka.couchbase.javadsl.CouchbaseFlow;
+// #fromId #upsert #upsertWithResult #replace #replaceWithResult #delete #deleteWithResult
+// #registry #session #fromCluster
 import akka.stream.alpakka.couchbase.javadsl.CouchbaseSession;
-
-// #session
-
+// #registry #session #fromCluster
+// #statement
+import akka.stream.alpakka.couchbase.javadsl.CouchbaseSource;
+// #statement
+import akka.stream.alpakka.couchbase.testing.CouchbaseSupportClass;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
+// #fromId #upsert #upsertWithResult #replace #replaceWithResult #delete #deleteWithResult
+import akka.stream.javadsl.Sink;
+// #fromId #upsert #upsertWithResult #replace #replaceWithResult #delete #deleteWithResult
+// #fromId #upsert #upsertWithResult #replace #replaceWithResult #delete #deleteWithResult
+import akka.stream.javadsl.Source;
+// #fromId #upsert #upsertWithResult #replace #replaceWithResult #delete #deleteWithResult
+import akka.stream.testkit.javadsl.StreamTestKit;
+import com.couchbase.client.core.error.DocumentNotFoundException;
 // #fromCluster
-import akka.stream.alpakka.couchbase.CouchbaseDocument;
-import akka.stream.alpakka.couchbase.javadsl.CouchbaseSession;
 import com.couchbase.client.java.Cluster;
-
 // #fromCluster
+// #registry
+import com.couchbase.client.java.env.ClusterEnvironment;
+// #registry
+// #statement
+import com.couchbase.client.java.json.JsonObject;
+// #statement
+import com.couchbase.client.java.json.JsonValue;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
+import org.junit.*;
 
 public class CouchbaseExamplesTest {
 
@@ -184,15 +133,20 @@ public class CouchbaseExamplesTest {
     sessionCompletionStage.thenAccept(
         session -> {
           String id = "myId";
-          CompletionStage<CouchbaseDocument<byte[]>> documentCompletionStage = session.collection(support.scopeName(), support.collectionName()).getBytes(id);
-          documentCompletionStage.exceptionally(ex -> {
-            ex.printStackTrace();
-            return null;
-          }).thenAccept(doc -> {
-            if (doc != null) {
-              System.out.println(doc);
-            }
-          });
+          CompletionStage<CouchbaseDocument<byte[]>> documentCompletionStage =
+              session.collection(support.scopeName(), support.collectionName()).getBytes(id);
+          documentCompletionStage
+              .exceptionally(
+                  ex -> {
+                    ex.printStackTrace();
+                    return null;
+                  })
+              .thenAccept(
+                  doc -> {
+                    if (doc != null) {
+                      System.out.println(doc);
+                    }
+                  });
         });
     // #session
   }
@@ -201,26 +155,28 @@ public class CouchbaseExamplesTest {
   public void sessionFromBucket() {
     // #fromCluster
     Cluster cluster = Cluster.connect("localhost", "Administrator", "password");
-    CouchbaseSession.create(cluster.async(), bucketName).thenAccept(session -> {
-      actorSystem.registerOnTermination(
-              () -> {
-                session.close();
-                cluster.close();
-              });
+    CouchbaseSession.create(cluster.async(), bucketName)
+        .thenAccept(
+            session -> {
+              actorSystem.registerOnTermination(
+                  () -> {
+                    session.close();
+                    cluster.close();
+                  });
 
-      String id = "First";
-      CompletionStage<CouchbaseDocument<byte[]>> documentCompletionStage = session.collection(support.scopeName(), support.collectionName()).getBytes(id);
-      documentCompletionStage.thenAccept(
-              opt -> {
-                if (opt != null) {
-                  System.out.println(opt.getDocument());
-                } else {
-                  System.out.println("Document " + id + " wasn't found");
-                }
-              });
-      // #fromCluster
-    });
-
+              String id = "First";
+              CompletionStage<CouchbaseDocument<byte[]>> documentCompletionStage =
+                  session.collection(support.scopeName(), support.collectionName()).getBytes(id);
+              documentCompletionStage.thenAccept(
+                  opt -> {
+                    if (opt != null) {
+                      System.out.println(opt.getDocument());
+                    } else {
+                      System.out.println("Document " + id + " wasn't found");
+                    }
+                  });
+              // #fromCluster
+            });
   }
 
   @Test
@@ -230,7 +186,15 @@ public class CouchbaseExamplesTest {
 
     CompletionStage<List<JsonObject>> resultCompletionStage =
         CouchbaseSource.fromQuery(
-                sessionSettings, bucketName, "SELECT * FROM `" + support.bucketName() + "`.`" + support.scopeName() + "`.`" + support.collectionName() + "` LIMIT 10")
+                sessionSettings,
+                bucketName,
+                "SELECT * FROM `"
+                    + support.bucketName()
+                    + "`.`"
+                    + support.scopeName()
+                    + "`.`"
+                    + support.collectionName()
+                    + "` LIMIT 10")
             .runWith(Sink.seq(), actorSystem);
     // #statement
     List<JsonObject> jsonObjects =
@@ -240,20 +204,25 @@ public class CouchbaseExamplesTest {
 
   @Test
   public void fromId() throws Exception {
-      support.upsertSampleData(queryBucketName, support.scopeName(), support.collectionName());
-      // #fromId
-      List<String> ids = Arrays.asList("First", "Second", "Third", "Fourth");
-      List<String> idsJson = Arrays.asList("FirstJson", "SecondJson", "ThirdJson", "FourthJson");
+    support.upsertSampleData(queryBucketName, support.scopeName(), support.collectionName());
+    // #fromId
+    List<String> ids = Arrays.asList("First", "Second", "Third", "Fourth");
+    List<String> idsJson = Arrays.asList("FirstJson", "SecondJson", "ThirdJson", "FourthJson");
 
-      CompletionStage<List<CouchbaseDocument<byte[]>>> result =
-              Source.from(ids)
-                      .via(CouchbaseFlow.bytesFromId(sessionSettings, queryBucketName, support.scopeName(), support.collectionName()))
-                      .runWith(Sink.seq(), actorSystem);
+    CompletionStage<List<CouchbaseDocument<byte[]>>> result =
+        Source.from(ids)
+            .via(
+                CouchbaseFlow.bytesFromId(
+                    sessionSettings,
+                    queryBucketName,
+                    support.scopeName(),
+                    support.collectionName()))
+            .runWith(Sink.seq(), actorSystem);
 
-      // #fromId
+    // #fromId
 
-      List<CouchbaseDocument<byte[]>> docs = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
-      assertEquals(4, docs.size());
+    List<CouchbaseDocument<byte[]>> docs = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    assertEquals(4, docs.size());
   }
 
   public void fromIdJson() throws Exception {
@@ -261,12 +230,18 @@ public class CouchbaseExamplesTest {
     // #fromId
     List<String> idsJson = Arrays.asList("FirstJson", "SecondJson", "ThirdJson", "FourthJson");
     CompletionStage<List<CouchbaseDocument<JsonValue>>> jsonResult =
-              Source.from(idsJson)
-                      .via(CouchbaseFlow.fromId(sessionSettings, queryBucketName, support.scopeName(), support.collectionName()))
-                      .runWith(Sink.seq(), actorSystem);
+        Source.from(idsJson)
+            .via(
+                CouchbaseFlow.fromId(
+                    sessionSettings,
+                    queryBucketName,
+                    support.scopeName(),
+                    support.collectionName()))
+            .runWith(Sink.seq(), actorSystem);
     // #fromId
 
-    List<CouchbaseDocument<JsonValue>> jsonDocs = jsonResult.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    List<CouchbaseDocument<JsonValue>> jsonDocs =
+        jsonResult.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(4, jsonDocs.size());
   }
 
@@ -278,7 +253,9 @@ public class CouchbaseExamplesTest {
     // #upsert
     CompletionStage<Done> jsonDocumentUpsert =
         Source.single(obj)
-            .via(CouchbaseFlow.upsert(sessionSettings, bucketName, support.scopeName(), support.collectionName()))
+            .via(
+                CouchbaseFlow.upsert(
+                    sessionSettings, bucketName, support.scopeName(), support.collectionName()))
             .runWith(Sink.head(), actorSystem);
     // #upsert
 
@@ -291,7 +268,9 @@ public class CouchbaseExamplesTest {
     // #upsertWithResult
     CompletionStage<List<CouchbaseWriteResult>> upsertResults =
         Source.from(sampleSequence)
-            .via(CouchbaseFlow.upsertWithResult(sessionSettings, bucketName, support.scopeName(), support.collectionName()))
+            .via(
+                CouchbaseFlow.upsertWithResult(
+                    sessionSettings, bucketName, support.scopeName(), support.collectionName()))
             .runWith(Sink.seq(), actorSystem);
 
     List<CouchbaseWriteResult> writeResults =
@@ -317,11 +296,14 @@ public class CouchbaseExamplesTest {
     // #replace
     CompletionStage<CouchbaseWriteResult> jsonDocumentReplace =
         Source.single(obj)
-            .via(CouchbaseFlow.replaceWithResult(sessionSettings, bucketName, support.scopeName(), support.collectionName()))
+            .via(
+                CouchbaseFlow.replaceWithResult(
+                    sessionSettings, bucketName, support.scopeName(), support.collectionName()))
             .runWith(Sink.head(), actorSystem);
     // #replace
 
-    CouchbaseWriteResult result = jsonDocumentReplace.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    CouchbaseWriteResult result =
+        jsonDocumentReplace.toCompletableFuture().get(3, TimeUnit.SECONDS);
 
     assertTrue(result.isSuccess());
   }
@@ -333,11 +315,12 @@ public class CouchbaseExamplesTest {
 
     CouchbaseDocument<String> obj = new CouchbaseDocument<>("First", "FirstReplace");
 
-
     // #replace
     CompletionStage<Done> jsonDocumentReplace =
         Source.single(obj)
-            .via(CouchbaseFlow.replace(sessionSettings, bucketName, support.scopeName(), support.collectionName()))
+            .via(
+                CouchbaseFlow.replace(
+                    sessionSettings, bucketName, support.scopeName(), support.collectionName()))
             .runWith(Sink.head(), actorSystem);
     // #replace
 
@@ -363,7 +346,9 @@ public class CouchbaseExamplesTest {
     // #replaceWithResult
     CompletionStage<List<CouchbaseWriteResult>> replaceResults =
         Source.from(list)
-            .via(CouchbaseFlow.replaceWithResult(sessionSettings, bucketName, support.scopeName(), support.collectionName()))
+            .via(
+                CouchbaseFlow.replaceWithResult(
+                    sessionSettings, bucketName, support.scopeName(), support.collectionName()))
             .runWith(Sink.seq(), actorSystem);
 
     List<CouchbaseWriteResult> writeResults =
@@ -384,7 +369,9 @@ public class CouchbaseExamplesTest {
     // #delete
     CompletionStage<String> result =
         Source.single(sampleData.getId())
-            .via(CouchbaseFlow.delete(sessionSettings, bucketName, support.scopeName(), support.collectionName()))
+            .via(
+                CouchbaseFlow.delete(
+                    sessionSettings, bucketName, support.scopeName(), support.collectionName()))
             .runWith(Sink.head(), actorSystem);
     // #delete
 
@@ -398,7 +385,9 @@ public class CouchbaseExamplesTest {
     // #deleteWithResult
     CompletionStage<CouchbaseDeleteResult> result =
         Source.single("non-existent")
-            .via(CouchbaseFlow.deleteWithResult(sessionSettings, bucketName, support.scopeName(), support.collectionName()))
+            .via(
+                CouchbaseFlow.deleteWithResult(
+                    sessionSettings, bucketName, support.scopeName(), support.collectionName()))
             .runWith(Sink.head(), actorSystem);
     CouchbaseDeleteResult deleteResult = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
     // #deleteWithResult
