@@ -4,6 +4,8 @@
 
 package jakartajmstestkit
 
+import org.apache.activemq.artemis.api.core.management.QueueControl
+import org.apache.activemq.artemis.api.core.management.ResourceNames
 import org.apache.activemq.artemis.core.config.impl.ConfigurationImpl
 import org.apache.activemq.artemis.core.server.embedded.EmbeddedActiveMQ
 import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory
@@ -46,7 +48,8 @@ class JmsBroker(val broker: EmbeddedActiveMQ) {
   def getQueueSize(queueName: String): Long = {
     val queueControl =
       broker.getActiveMQServer.getManagementService
-        .getQueueControl(queueName)
+        .getResource(ResourceNames.QUEUE + queueName)
+        .asInstanceOf[QueueControl]
     queueControl.getMessageCount
   }
 
