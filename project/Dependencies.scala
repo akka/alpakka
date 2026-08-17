@@ -28,7 +28,8 @@ object Dependencies {
   val AkkaHttpBinaryVersion = VersionNumber(AkkaHttpVersion).numbers match {
     case Seq(major, minor, _*) => s"$major.$minor"
   }
-  val AlpakkaKafkaVersion = "8.0.1"
+
+  val AlpakkaKafkaVersion = "8.0.2"
   val ScalaTestVersion = "3.2.20"
   val TestContainersScalaTestVersion = "0.40.3" // pulls Testcontainers 1.16.2
 
