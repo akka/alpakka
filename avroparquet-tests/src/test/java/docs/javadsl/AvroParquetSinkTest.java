@@ -4,6 +4,8 @@
 
 package docs.javadsl;
 
+import static junit.framework.TestCase.assertEquals;
+
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.stream.Materializer;
@@ -14,16 +16,6 @@ import akka.stream.javadsl.Source;
 import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
 import com.google.common.collect.Lists;
-import org.apache.parquet.avro.AvroParquetReader;
-import org.apache.parquet.avro.AvroParquetWriter;
-import org.apache.parquet.avro.AvroReadSupport;
-import org.apache.parquet.hadoop.ParquetFileWriter;
-import org.apache.parquet.hadoop.ParquetReader;
-import org.apache.parquet.hadoop.util.HadoopOutputFile;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,18 +24,29 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import static junit.framework.TestCase.assertEquals;
-
 // #init-writer
-import org.apache.parquet.hadoop.ParquetWriter;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.GenericRecordBuilder;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+// #init-writer
+import org.apache.parquet.avro.AvroParquetReader;
+import org.apache.parquet.avro.AvroParquetWriter;
+import org.apache.parquet.avro.AvroReadSupport;
+import org.apache.parquet.hadoop.ParquetFileWriter;
+import org.apache.parquet.hadoop.ParquetReader;
+// #init-writer
+import org.apache.parquet.hadoop.ParquetWriter;
+// #init-writer
+// #init-writer
 import org.apache.parquet.hadoop.util.HadoopInputFile;
 // #init-writer
+import org.apache.parquet.hadoop.util.HadoopOutputFile;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class AvroParquetSinkTest {
 
