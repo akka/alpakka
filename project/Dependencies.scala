@@ -200,9 +200,9 @@ object Dependencies {
 
   val AvroParquet = Seq(
     libraryDependencies ++= Seq(
-        "org.apache.parquet" % "parquet-avro" % "1.15.2", //Apache2
+        "org.apache.parquet" % "parquet-avro" % "1.17.1", //Apache2
         // override the version brought in by parquet-avro to fix CVE-2023-39410
-        "org.apache.avro" % "avro" % "1.12.0" //Apache2
+        "org.apache.avro" % "avro" % "1.12.1" //Apache2
       )
   )
 
@@ -270,11 +270,11 @@ object Dependencies {
     libraryDependencies ++= Seq(
         // https://github.com/googleapis/java-bigquerystorage/tree/master/proto-google-cloud-bigquerystorage-v1
         "com.google.api.grpc" % "proto-google-cloud-bigquerystorage-v1" % "3.15.2" % "protobuf-src", // ApacheV2
-        "org.apache.avro" % "avro" % "1.12.0" % "provided",
-        "org.apache.arrow" % "arrow-vector" % "18.3.0" % "provided",
+        "org.apache.avro" % "avro" % "1.12.1" % "provided",
+        "org.apache.arrow" % "arrow-vector" % "19.0.0" % "provided",
         "io.grpc" % "grpc-auth" % akka.grpc.gen.BuildInfo.grpcVersion, // ApacheV2
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-        "org.apache.arrow" % "arrow-memory-netty" % "18.3.0" % Test,
+        "org.apache.arrow" % "arrow-memory-netty" % "19.0.0" % Test,
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion
       ) ++ Mockito
   )
@@ -316,8 +316,8 @@ object Dependencies {
   )
 
   val HBase = {
-    val hbaseVersion = "2.6.2"
-    val hadoopVersion = "3.4.1"
+    val hbaseVersion = "2.6.6"
+    val hadoopVersion = "3.4.3"
     Seq(
       libraryDependencies ++= Seq(
           "org.apache.hbase" % "hbase-shaded-client" % hbaseVersion exclude ("log4j", "log4j"), // ApacheV2,
@@ -329,7 +329,7 @@ object Dependencies {
     )
   }
 
-  val HadoopVersion = "3.4.1"
+  val HadoopVersion = "3.4.3"
   val Hdfs = Seq(
     libraryDependencies ++= Seq(
         "org.apache.hadoop" % "hadoop-client" % HadoopVersion exclude ("log4j", "log4j"), // ApacheV2
