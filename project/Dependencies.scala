@@ -9,7 +9,7 @@ object Dependencies {
   val CronBuild = sys.env.get("GITHUB_EVENT_NAME").contains("schedule")
 
   val Scala213 = "2.13.17" // update even in link-validator.conf
-  val Scala3 = "3.3.7"
+  val Scala3 = "3.3.8"
   val Scala2Versions = Seq(Scala213)
   val ScalaVersions = Dependencies.Scala2Versions :+ Dependencies.Scala3
 
@@ -90,7 +90,7 @@ object Dependencies {
 
   val Amqp = Seq(
     libraryDependencies ++= Seq(
-        "com.rabbitmq" % "amqp-client" % "5.25.0" // APLv2
+        "com.rabbitmq" % "amqp-client" % "5.34.0" // APLv2
       ) ++ Mockito
   )
 
@@ -150,7 +150,7 @@ object Dependencies {
         "com.couchbase.client" % "java-client" % CouchbaseVersion, // ApacheV2
         "io.reactivex" % "rxjava-reactive-streams" % "1.2.1", //ApacheV2
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion % Provided, // Apache V2
-        "com.typesafe.play" %% "play-json" % "2.9.4" % Test, // Apache V2
+        "com.typesafe.play" %% "play-json" % "2.10.8" % Test, // Apache V2
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion % Test, // Apache V2
         "com.typesafe.akka" %% "akka-pki" % AkkaVersion
       )
@@ -194,7 +194,7 @@ object Dependencies {
 
   val File = Seq(
     libraryDependencies ++= Seq(
-        "com.google.jimfs" % "jimfs" % "1.3.0" % Test // ApacheV2
+        "com.google.jimfs" % "jimfs" % "1.3.1" % Test // ApacheV2
       )
   )
 
@@ -219,13 +219,13 @@ object Dependencies {
 
   val Ftp = Seq(
     libraryDependencies ++= Seq(
-        "commons-net" % "commons-net" % "3.11.1",
+        "commons-net" % "commons-net" % "3.13.0",
         "com.hierynomus" % "sshj" % "0.40.0",
-        ("io.github.hakky54" % "ayza-for-pem" % "10.0.0" % Test)
+        ("io.github.hakky54" % "ayza-for-pem" % "10.0.5" % Test)
       )
   )
 
-  val GeodeVersion = "1.15.1"
+  val GeodeVersion = "1.15.4"
   val GeodeVersionForDocs = "115"
 
   val Geode = Seq(
@@ -233,9 +233,9 @@ object Dependencies {
       Seq("geode-core", "geode-cq")
         .map("org.apache.geode" % _ % GeodeVersion) ++
       Seq(
-        "com.chuusai" %% "shapeless" % "2.3.12",
+        "com.chuusai" %% "shapeless" % "2.3.13",
         // https://logging.apache.org/log4j/2.x/release-notes.html
-        "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.25.2" % Test
+        "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.25.5" % Test
       ) ++ JacksonDatabindDependencies
   )
 
@@ -365,17 +365,17 @@ object Dependencies {
   val JakartaJms = Seq(
     libraryDependencies ++= Seq(
         "jakarta.jms" % "jakarta.jms-api" % "3.1.0", // Eclipse Public License 2.0 + + GPLv2
-        ("org.apache.activemq" % "artemis-jakarta-server" % "2.33.0" % Test),
-        ("org.apache.activemq" % "artemis-jakarta-client" % "2.33.0" % Test)
+        ("org.apache.activemq" % "artemis-jakarta-server" % "2.38.0" % Test),
+        ("org.apache.activemq" % "artemis-jakarta-client" % "2.38.0" % Test)
       ) ++ Mockito
   )
 
   val Jms = Seq(
     libraryDependencies ++= Seq(
-        "javax.jms" % "jms" % "1.1" % Provided, // CDDL + GPLv2
+        "javax.jms" % "javax.jms-api" % "2.0.1" % Provided, // CDDL + GPLv2
         "com.ibm.mq" % "com.ibm.mq.allclient" % "9.4.3.0" % Test, // IBM International Program License Agreement https://public.dhe.ibm.com/ibmdl/export/pub/software/websphere/messaging/mqdev/maven/licenses/L-APIG-AZYF2E/LI_en.html
-        "org.apache.activemq" % "activemq-broker" % "5.16.8" % Test, // ApacheV2
-        "org.apache.activemq" % "activemq-client" % "5.16.8" % Test, // ApacheV2
+        "org.apache.activemq" % "activemq-broker" % "5.19.9" % Test, // ApacheV2
+        "org.apache.activemq" % "activemq-client" % "5.19.9" % Test, // ApacheV2
         "io.github.sullis" %% "jms-testkit" % "1.0.4" % Test // ApacheV2
       ) ++ Mockito,
     // Having JBoss as a first resolver is a workaround for https://github.com/coursier/coursier/issues/200
@@ -398,7 +398,7 @@ object Dependencies {
       ) ++ Seq(
         "software.amazon.awssdk" % "kinesis" % AwsSdk2Version, // ApacheV2
         "software.amazon.awssdk" % "firehose" % AwsSdk2Version, // ApacheV2
-        "software.amazon.kinesis" % "amazon-kinesis-client" % "2.4.0", // ApacheV2
+        "software.amazon.kinesis" % "amazon-kinesis-client" % "2.4.8", // ApacheV2
         "com.google.protobuf" % "protobuf-java" % KinesisProtobufJavaVersion // CVE in older transitive dependency
       ).map(
         _.excludeAll(
@@ -411,7 +411,7 @@ object Dependencies {
   val MongoDb = Seq(
     libraryDependencies ++= Seq(
         // https://github.com/mongodb/mongo-java-driver/releases
-        "org.mongodb.scala" %% "mongo-scala-driver" % "5.6.0" // ApacheV2
+        "org.mongodb.scala" %% "mongo-scala-driver" % "5.6.5" // ApacheV2
       )
   )
 
@@ -462,7 +462,7 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http-xml" % AkkaHttpVersion,
         "software.amazon.awssdk" % "auth" % AwsSdk2Version,
         // in-memory filesystem for file related tests
-        "com.google.jimfs" % "jimfs" % "1.3.0" % Test, // ApacheV2
+        "com.google.jimfs" % "jimfs" % "1.3.1" % Test, // ApacheV2
         wiremock
       )
   )
@@ -560,14 +560,14 @@ object Dependencies {
 
   val UnixDomainSocket = Seq(
     libraryDependencies ++= Seq(
-        "com.github.jnr" % "jffi" % "1.3.13", // classifier "complete", // Is the classifier needed anymore?
-        "com.github.jnr" % "jnr-unixsocket" % "0.38.23" // BSD/ApacheV2/CPL/MIT as per https://github.com/akka/alpakka/issues/620#issuecomment-348727265
+        "com.github.jnr" % "jffi" % "1.3.15", // classifier "complete", // Is the classifier needed anymore?
+        "com.github.jnr" % "jnr-unixsocket" % "0.38.25" // BSD/ApacheV2/CPL/MIT as per https://github.com/akka/alpakka/issues/620#issuecomment-348727265
       )
   )
 
   val Xml = Seq(
     libraryDependencies ++= Seq(
-        "com.fasterxml" % "aalto-xml" % "1.3.3" // ApacheV2
+        "com.fasterxml" % "aalto-xml" % "1.3.4" // ApacheV2
       )
   )
 
