@@ -16,9 +16,11 @@ import akka.stream.alpakka.ftp.BaseFtpSupport;
 // #create-settings
 import akka.stream.alpakka.ftp.FtpSettings;
 // #create-settings
-// #storing #create-settings
+// #storing
+// #create-settings
 import akka.stream.alpakka.ftp.javadsl.Ftp;
-// #storing #create-settings
+// #create-settings
+// #storing
 // #storing
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Compression;
