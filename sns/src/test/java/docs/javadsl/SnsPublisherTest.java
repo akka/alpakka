@@ -4,6 +4,9 @@
 
 package docs.javadsl;
 
+import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.MatcherAssert.*;
+
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.Http;
@@ -12,29 +15,25 @@ import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
-
 // #init-client
-import java.net.URI;
 import com.github.matsluni.akkahttpspi.AkkaHttpClient;
+import java.net.URI;
+// #init-client
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+// #init-client
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sns.SnsAsyncClient;
 // #init-client
-
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
 import software.amazon.awssdk.services.sns.model.CreateTopicRequest;
 import software.amazon.awssdk.services.sns.model.PublishRequest;
-
-import static org.hamcrest.MatcherAssert.*;
-import static org.hamcrest.CoreMatchers.*;
-
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 public class SnsPublisherTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();

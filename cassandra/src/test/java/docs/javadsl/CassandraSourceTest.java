@@ -6,8 +6,11 @@ package docs.javadsl;
 
 // #init-session
 
+import static docs.javadsl.CassandraTestHelper.await;
+import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+
 import akka.actor.ActorSystem;
-import akka.stream.Materializer;
 import akka.stream.alpakka.cassandra.CassandraSessionSettings;
 import akka.stream.alpakka.cassandra.javadsl.CassandraSession;
 import akka.stream.alpakka.cassandra.javadsl.CassandraSessionRegistry;
@@ -22,11 +25,6 @@ import akka.stream.javadsl.Sink;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.cql.Statement;
 // #statement
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -34,10 +32,10 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-
-import static docs.javadsl.CassandraTestHelper.await;
-import static org.hamcrest.CoreMatchers.*;
-import static org.hamcrest.MatcherAssert.assertThat;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class CassandraSourceTest {
   static final String TEST_NAME = "CassandraSourceTest";

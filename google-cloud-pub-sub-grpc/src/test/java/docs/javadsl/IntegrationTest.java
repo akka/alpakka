@@ -4,12 +4,13 @@
 
 package docs.javadsl;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import akka.Done;
 import akka.NotUsed;
-import akka.actor.Cancellable;
-
 import akka.actor.ActorSystem;
-
+import akka.actor.Cancellable;
 // #publish-single
 import akka.stream.alpakka.googlecloud.pubsub.grpc.PubSubSettings;
 import akka.stream.alpakka.googlecloud.pubsub.grpc.javadsl.GooglePubSub;
@@ -19,23 +20,17 @@ import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.*;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.*;
-
 // #publish-single
-
+import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.junit.AfterClass;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.time.Duration;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class IntegrationTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();

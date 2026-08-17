@@ -4,11 +4,9 @@
 
 package docs.javadsl;
 
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-
 import akka.NotUsed;
 import akka.actor.ActorSystem;
+import akka.http.javadsl.unmarshalling.Unmarshaller;
 import akka.stream.ActorMaterializer;
 // #read-all
 import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryRecord;
@@ -20,11 +18,12 @@ import akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl.BigQueryStorage
 import akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl.GrpcBigQueryStorageReader;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
-import scala.Tuple2;
 import com.google.cloud.bigquery.storage.v1.DataFormat;
 import com.google.cloud.bigquery.storage.v1.ReadSession;
 import com.google.cloud.bigquery.storage.v1.storage.ReadRowsResponse;
-import akka.http.javadsl.unmarshalling.Unmarshaller;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+import scala.Tuple2;
 
 // #read-all
 

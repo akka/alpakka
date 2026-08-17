@@ -789,7 +789,8 @@ public class GCStorageTest extends GCStorageWiremockBase {
       source.runWith(sink, system()).toCompletableFuture().get(5, TimeUnit.SECONDS);
     } catch (Exception e) {
       assertEquals(
-          "akka.stream.alpakka.googlecloud.storage.FailedUpload: Uploading part failed with status 400 Bad Request: Chunk upload failed",
+          "akka.stream.alpakka.googlecloud.storage.FailedUpload: Uploading part failed with status"
+              + " 400 Bad Request: Chunk upload failed",
           e.getMessage());
     }
   }

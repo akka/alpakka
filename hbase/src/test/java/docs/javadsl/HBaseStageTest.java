@@ -137,6 +137,7 @@ public class HBaseStageTest {
           return Collections.emptyList();
         }
       };
+
   // #create-converter-complex
 
   @Test
@@ -187,7 +188,9 @@ public class HBaseStageTest {
 
   @Test
   public void readFromSource()
-      throws InterruptedException, TimeoutException, ExecutionException,
+      throws InterruptedException,
+          TimeoutException,
+          ExecutionException,
           UnsupportedEncodingException {
 
     HTableSettings<Person> tableSettings =

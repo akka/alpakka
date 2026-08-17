@@ -14,24 +14,24 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 // #init-client
 import com.github.matsluni.akkahttpspi.AkkaHttpClient;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.SdkBytes;
+// #run
 import software.amazon.awssdk.services.lambda.LambdaAsyncClient;
 // #init-client
 // #run
 import software.amazon.awssdk.services.lambda.model.InvokeRequest;
 import software.amazon.awssdk.services.lambda.model.InvokeResponse;
-import software.amazon.awssdk.core.SdkBytes;
-// #run
-
-import java.util.List;
-import java.util.concurrent.CompletionStage;
 
 public class Examples {
 
   // #init-sys
 
   ActorSystem system = ActorSystem.create();
+
   // #init-sys
 
   public void initClient() {

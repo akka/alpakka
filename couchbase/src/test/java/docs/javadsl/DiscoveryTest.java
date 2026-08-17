@@ -4,6 +4,10 @@
 
 package docs.javadsl;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+
 import akka.actor.ActorSystem;
 // #registry
 import akka.stream.alpakka.couchbase.CouchbaseSessionRegistry;
@@ -15,17 +19,12 @@ import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.testkit.javadsl.TestKit;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
-
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DiscoveryTest {
 
@@ -59,9 +58,7 @@ public class DiscoveryTest {
     try {
       CouchbaseSession couchbaseSession = session.toCompletableFuture().get(5, TimeUnit.SECONDS);
     } catch (java.util.concurrent.ExecutionException e) {
-      assertThat(
-          e.getCause(),
-          is(instanceOf(RuntimeException.class)));
+      assertThat(e.getCause(), is(instanceOf(RuntimeException.class)));
     }
   }
 }

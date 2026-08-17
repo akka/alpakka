@@ -4,8 +4,10 @@
 
 package akka.stream.alpakka.spring.web;
 
+// #configure
+import akka.actor.ActorSystem;
+// #configure
 import java.util.Objects;
-
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -14,9 +16,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.ReactiveAdapterRegistry;
 
 // #configure
-
-import akka.actor.ActorSystem;
-
 @Configuration
 @ConditionalOnClass(akka.stream.javadsl.Source.class)
 @EnableConfigurationProperties(SpringWebAkkaStreamsProperties.class)

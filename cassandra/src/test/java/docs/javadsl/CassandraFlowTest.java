@@ -4,6 +4,10 @@
 
 package docs.javadsl;
 
+import static docs.javadsl.CassandraTestHelper.await;
+import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+
 import akka.Done;
 // #prepared
 import akka.NotUsed;
@@ -12,31 +16,25 @@ import akka.japi.Function2;
 import akka.japi.Pair;
 import akka.stream.alpakka.cassandra.CassandraWriteSettings;
 import akka.stream.alpakka.cassandra.javadsl.CassandraFlow;
+import akka.stream.alpakka.cassandra.javadsl.CassandraSession;
+import akka.stream.alpakka.cassandra.javadsl.CassandraSource;
+import akka.stream.alpakka.cassandra.scaladsl.CassandraAccess;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
+import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
 import akka.stream.javadsl.SourceWithContext;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 // #prepared
-import akka.stream.alpakka.cassandra.javadsl.CassandraSession;
-import akka.stream.alpakka.cassandra.javadsl.CassandraSource;
-import akka.stream.alpakka.cassandra.scaladsl.CassandraAccess;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.*;
-
-import static org.hamcrest.CoreMatchers.*;
-import static org.hamcrest.MatcherAssert.assertThat;
-
-import static docs.javadsl.CassandraTestHelper.await;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class CassandraFlowTest {
   static final String TEST_NAME = "CassandraFlowTest";

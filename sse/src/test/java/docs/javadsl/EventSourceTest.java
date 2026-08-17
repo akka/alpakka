@@ -6,22 +6,23 @@ package docs.javadsl;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-
-import akka.stream.ThrottleMode;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
-
-import java.time.Duration;
-import java.util.Optional;
-
 // #event-source
-import java.util.function.Function;
-import java.util.concurrent.CompletionStage;
-
 import akka.http.javadsl.Http;
 import akka.http.javadsl.model.*;
 import akka.http.javadsl.model.sse.ServerSentEvent;
+// #event-source
+import akka.stream.ThrottleMode;
+// #event-source
 import akka.stream.alpakka.sse.javadsl.EventSource;
+// #event-source
+import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
+import java.time.Duration;
+import java.util.Optional;
+// #event-source
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
+
 // #event-source
 
 public class EventSourceTest {

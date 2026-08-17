@@ -52,6 +52,7 @@ public class PravegaTable {
     return Source.fromGraph(new PravegaTableSource<K, V>(scope, tableName, tableReaderSettings))
         .mapMaterializedValue(FutureConverters::asJava);
   }
+
   /** A flow from key to and Option[value]. */
   public static <K, V> Flow<K, Optional<V>, NotUsed> readFlow(
       String scope, String tableName, TableSettings<K, V> tableSettings) {

@@ -40,6 +40,7 @@ public class ElasticsearchTestBase {
       this.title = title;
     }
   }
+
   // #define-class
 
   @BeforeClass
@@ -110,6 +111,7 @@ public class ElasticsearchTestBase {
     }
     // #custom-search-params
   }
+
   // #custom-search-params
 
   static class KafkaCommitter {

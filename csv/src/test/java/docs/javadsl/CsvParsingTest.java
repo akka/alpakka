@@ -4,10 +4,19 @@
 
 package docs.javadsl;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.fail;
+
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.SystemMaterializer;
 import akka.stream.alpakka.csv.MalformedCsvException;
+// #import
+import akka.stream.alpakka.csv.javadsl.CsvParsing;
+// #import
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
@@ -15,24 +24,13 @@ import akka.stream.javadsl.Source;
 import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
-import org.junit.*;
-
-// #import
-import akka.stream.alpakka.csv.javadsl.CsvParsing;
-
-// #import
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.fail;
+import org.junit.*;
 
 public class CsvParsingTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();

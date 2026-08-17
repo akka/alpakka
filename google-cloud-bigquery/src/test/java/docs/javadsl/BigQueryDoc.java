@@ -137,6 +137,7 @@ public class BigQueryDoc {
       }
     }
   }
+
   // #setup
 
   String datasetId;

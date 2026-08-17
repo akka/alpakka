@@ -5,14 +5,12 @@
 package docs.javadsl;
 
 // #important-imports
-import akka.stream.javadsl.*;
-import akka.stream.alpakka.slick.javadsl.*;
-// #important-imports
-
-import java.util.concurrent.CompletionStage;
-
 import akka.Done;
 import akka.actor.ActorSystem;
+import akka.stream.alpakka.slick.javadsl.*;
+// #important-imports
+import akka.stream.javadsl.*;
+import java.util.concurrent.CompletionStage;
 
 public class DocSnippetSource {
   public static void main(String[] args) throws Exception {
