@@ -269,7 +269,7 @@ object Dependencies {
     // see Akka gRPC version in plugins.sbt
     libraryDependencies ++= Seq(
         // https://github.com/googleapis/java-bigquerystorage/tree/master/proto-google-cloud-bigquerystorage-v1
-        "com.google.api.grpc" % "proto-google-cloud-bigquerystorage-v1" % "3.15.2" % "protobuf-src", // ApacheV2
+        "com.google.api.grpc" % "proto-google-cloud-bigquerystorage-v1" % "3.15.3" % "protobuf-src", // ApacheV2
         "org.apache.avro" % "avro" % "1.12.1" % "provided",
         "org.apache.arrow" % "arrow-vector" % "19.0.0" % "provided",
         "io.grpc" % "grpc-auth" % akka.grpc.gen.BuildInfo.grpcVersion, // ApacheV2
@@ -388,7 +388,7 @@ object Dependencies {
       ) ++ JacksonDatabindDependencies
   )
 
-  val KinesisProtobufJavaVersion = "3.24.0" // sync with Akka gRPC
+  val KinesisProtobufJavaVersion = "3.24.4" // sync with Akka gRPC
   val Kinesis = Seq(
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
