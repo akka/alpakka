@@ -372,7 +372,7 @@ object Dependencies {
 
   val Jms = Seq(
     libraryDependencies ++= Seq(
-        "javax.jms" % "jms" % "1.1" % Provided, // CDDL + GPLv2
+        "javax.jms" % "javax.jms-api" % "2.0.1" % Provided, // CDDL + GPLv2
         "com.ibm.mq" % "com.ibm.mq.allclient" % "9.4.3.0" % Test, // IBM International Program License Agreement https://public.dhe.ibm.com/ibmdl/export/pub/software/websphere/messaging/mqdev/maven/licenses/L-APIG-AZYF2E/LI_en.html
         "org.apache.activemq" % "activemq-broker" % "5.19.9" % Test, // ApacheV2
         "org.apache.activemq" % "activemq-client" % "5.19.9" % Test, // ApacheV2
