@@ -30,6 +30,8 @@ private[alpakka] object ResumableUpload {
   final case class UploadFailedException() extends Exception
   private final case class Chunk(bytes: ByteString, position: Long)
 
+  private val maxErrorBodyLength = 512
+
   /**
    * Initializes and runs a resumable upload to a media endpoint.
    *
@@ -92,8 +94,20 @@ private[alpakka] object ResumableUpload {
 
     implicit val um: FromResponseUnmarshaller[Uri] = Unmarshaller.withMaterializer {
       implicit ec => implicit mat => (response: HttpResponse) =>
-        response.discardEntityBytes().future.map { _ =>
-          response.header[Location].fold(throw InvalidResponseException(ErrorInfo("No Location header")))(_.uri)
+        response.header[Location] match {
+          case Some(location) =>
+            response.discardEntityBytes().future.map(_ => location.uri)
+          case None =>
+            // Report the status and whatever the response said, rather than only the missing header: the header is
+            // absent for every failed response, and the entity is where the API (or an intercepting proxy) explains why
+            Unmarshal(response.entity).to[String].recover { case _ => "<unavailable>" }.map { body =>
+              throw InvalidResponseException(
+                ErrorInfo(
+                  s"Resumable upload could not be initiated, no Location header in ${response.status.value} response",
+                  s"Response body: [${body.take(maxErrorBodyLength)}]"
+                )
+              )
+            }
         }
     }.withDefaultRetry
 

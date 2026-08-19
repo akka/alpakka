@@ -15,7 +15,7 @@ import akka.testkit.TestKit
 import akka.util.ByteString
 import io.specto.hoverfly.junit.core.SimulationSource.dsl
 import io.specto.hoverfly.junit.dsl.HoverflyDsl.service
-import io.specto.hoverfly.junit.dsl.ResponseCreators.{created, serverError, success}
+import io.specto.hoverfly.junit.dsl.ResponseCreators.{created, forbidden, serverError, success}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
@@ -85,6 +85,44 @@ class ResumableUploadSpec
         )
 
       result.futureValue shouldEqual JsObject.empty
+    }
+
+    "report the status and body of a failed session initiation" in {
+
+      hoverfly.simulate(
+        dsl(
+          service("example.com")
+            .post("/")
+            .queryParam("uploadType", "resumable")
+            .queryParam("prettyPrint", "false")
+            .header("Authorization", "Bearer yyyy.c.an-access-token")
+            .header("X-Upload-Content-Type", "application/octet-stream")
+            .willReturn(
+              forbidden()
+                .header("Content-Type", "application/json")
+                .body("""{"error":{"message":"Caller does not have permission"}}""")
+            )
+        )
+      )
+
+      import implicits._
+      implicit val um: FromResponseUnmarshaller[JsValue] =
+        Unmarshaller.messageUnmarshallerFromEntityUnmarshaller(sprayJsValueUnmarshaller).withDefaultRetry
+
+      val result = Source
+        .single(ByteString("helloworld"))
+        .runWith(
+          ResumableUpload[JsValue](
+            HttpRequest(POST,
+                        Uri("https://example.com?uploadType=resumable"),
+                        List(`X-Upload-Content-Type`(ContentTypes.`application/octet-stream`)))
+          )
+        )
+
+      val ex = result.failed.futureValue
+      ex shouldBe a[ResumableUpload.InvalidResponseException]
+      ex.getMessage should include("403 Forbidden")
+      ex.getMessage should include("Caller does not have permission")
     }
 
   }

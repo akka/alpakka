@@ -11,7 +11,6 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.HttpMethods.POST
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{FormData, HttpRequest}
-import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 
 import java.time.Clock
@@ -41,7 +40,7 @@ private[auth] object UserAccessMetadata {
     implicit val system: ActorSystem = mat.system
     for {
       response <- Http().singleRequest(tokenRequest(clientId, clientSecret, refreshToken))
-      token <- Unmarshal(response.entity).to[AccessToken]
+      token <- GoogleOAuth2Exception.unmarshalOrFail[AccessToken](tokenUrl, response)
     } yield token
   }
 }

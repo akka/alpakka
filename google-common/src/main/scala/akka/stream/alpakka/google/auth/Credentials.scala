@@ -13,6 +13,7 @@ import com.google.auth.{Credentials => GoogleCredentials}
 import com.typesafe.config.Config
 
 import java.util.concurrent.Executor
+import scala.annotation.tailrec
 import scala.collection.immutable.ListMap
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
@@ -40,9 +41,20 @@ object Credentials {
             creds
           } catch {
             case NonFatal(ex2) =>
-              log.warning("Unable to find Application Default Credentials for Google APIs")
-              log.warning("Application default: {}", ex1.getMessage)
-              log.warning("Compute Engine: {}", ex2.getMessage)
+              log.warning(
+                "Unable to find Application Default Credentials for Google APIs. Falling back to the `none` " +
+                "credentials provider: requests to Google APIs will be made without valid credentials and will be " +
+                "rejected (typically with 401 or 403) unless the resource is publicly accessible. Configure " +
+                "`alpakka.google.credentials.provider` explicitly if this fallback is not intended. " +
+                "Application default credentials failed with [{}]. " +
+                "Compute Engine credentials failed with [{}]; a timeout here means the metadata server at [{}] " +
+                "did not respond within `alpakka.google.credentials.compute-engine.timeout`, which indicates a " +
+                "connectivity problem (not running on Google Cloud, or the request being intercepted or blocked by " +
+                "a proxy or service mesh) rather than a problem with the credentials themselves.",
+                describe(ex1),
+                describe(ex2),
+                GoogleComputeMetadata.metadataUrl
+              )
               parseNone(c) // TODO Once credentials are guaranteed to be managed centrally we can throw an error instead
           }
       }
@@ -67,6 +79,17 @@ object Credentials {
   }
 
   private def parseNone(c: Config) = NoCredentials(c.getConfig("none"))
+
+  /**
+   * Renders the message of `ex` together with the messages of its causes, since the cause chain often carries the
+   * actual reason (e.g. a connection timeout) while the outermost message is generic.
+   */
+  private def describe(ex: Throwable): String = {
+    @tailrec def loop(ex: Throwable, depth: Int, acc: List[String]): List[String] =
+      if ((ex eq null) || depth == 0) acc
+      else loop(ex.getCause, depth - 1, s"${ex.getClass.getName}: ${ex.getMessage}" :: acc)
+    loop(ex, 5, Nil).reverse.mkString(", caused by ")
+  }
 
   private var _cache: Map[Any, Credentials] = ListMap.empty
   @deprecated("Intended only to help with migration", "3.0.0")
