@@ -11,7 +11,6 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.HttpMethods.GET
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 
 import java.time.Clock
@@ -20,7 +19,7 @@ import scala.concurrent.Future
 @InternalApi
 private[auth] object GoogleComputeMetadata {
 
-  private val metadataUrl = "http://metadata.google.internal/computeMetadata/v1"
+  private[auth] val metadataUrl = "http://metadata.google.internal/computeMetadata/v1"
   private val tokenUrl = s"$metadataUrl/instance/service-accounts/default/token"
   private val projectIdUrl = s"$metadataUrl/project/project-id"
   private val `Metadata-Flavor` = RawHeader("Metadata-Flavor", "Google")
@@ -37,7 +36,7 @@ private[auth] object GoogleComputeMetadata {
     implicit val system: ActorSystem = mat.system
     for {
       response <- Http().singleRequest(tokenRequest)
-      token <- Unmarshal(response.entity).to[AccessToken]
+      token <- GoogleOAuth2Exception.unmarshalOrFail[AccessToken](tokenUrl, response)
     } yield token
   }
 
@@ -48,7 +47,7 @@ private[auth] object GoogleComputeMetadata {
     implicit val system: ActorSystem = mat.system
     for {
       response <- Http().singleRequest(projectIdRequest)
-      projectId <- Unmarshal(response.entity).to[String]
+      projectId <- GoogleOAuth2Exception.unmarshalOrFail[String](projectIdUrl, response)
     } yield projectId
   }
 }

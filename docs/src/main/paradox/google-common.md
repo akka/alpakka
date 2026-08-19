@@ -35,12 +35,37 @@ If you use a non-standard configuration path or need multiple different configur
 
 ## Credentials
 
-Credentials will be loaded automatically:
+The `alpakka.google.credentials.provider` setting selects where credentials come from:
+
+| `provider`                      | Credentials |
+|---------------------------------|-------------|
+| `application-default` (default) | Tries `service-account`, then `compute-engine` |
+| `service-account`               | A service account key, from your configuration file or a credentials file |
+| `compute-engine`                | The service account of the [Compute Engine](https://cloud.google.com/compute) instance, read from the metadata server |
+| `user-access`                   | A user refresh token, from your configuration file or a credentials file |
+| `none`                          | No credentials; requests are sent unauthenticated |
+
+With the default `application-default` provider, credentials will be loaded automatically:
 
 1. From the file path specified by the `GOOGLE_APPLICATION_CREDENTIALS` environment variable or another [“well-known” location](https://medium.com/google-cloud/use-google-cloud-user-credentials-when-testing-containers-locally-acb57cd4e4da); or
-2. When running in a [Compute Engine](https://cloud.google.com/compute) instance.
+2. When running in a [Compute Engine](https://cloud.google.com/compute) instance, from the metadata server at `metadata.google.internal`.
 
 Credentials can also be specified manually in your configuration file.
+
+@@@ warning
+
+If neither source yields credentials, `application-default` does not fail: it logs a warning and falls back to
+the `none` provider. Requests are then sent without valid credentials and are rejected by Google APIs, typically
+with `401 Unauthorized` or `403 Forbidden`, which looks like a permissions problem rather than a configuration
+problem. Set `provider` explicitly if this fallback is not what you want.
+
+Reading credentials from the Compute Engine metadata server blocks during settings initialization for at most
+`alpakka.google.credentials.compute-engine.timeout`. A timeout means the metadata server
+could not be reached — because the application is not running on Google Cloud, or because the request was
+intercepted or blocked by a proxy or service mesh — and leads to the same fallback. The warning names both the
+service account and the Compute Engine failure, so check it before investigating IAM.
+
+@@@
 
 ## Accessing settings
 
