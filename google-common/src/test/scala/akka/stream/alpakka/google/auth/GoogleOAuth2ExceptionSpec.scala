@@ -64,5 +64,13 @@ class GoogleOAuth2ExceptionSpec
       ex.getMessage should include("403 Forbidden")
       ex.getMessage should include("service account not enabled")
     }
+
+    "mark a truncated error body" in {
+      val response = HttpResponse(StatusCodes.BadGateway, entity = HttpEntity("x" * 1000))
+
+      val ex = GoogleOAuth2Exception.unmarshalOrFail[AccessToken](uri, response).failed.futureValue
+      ex.getMessage should include("x" * 512 + "...")
+      ex.getMessage should not include ("x" * 513)
+    }
   }
 }

@@ -12,13 +12,14 @@ import akka.stream.alpakka.google.RequestSettings
 import com.google.auth.{Credentials => GoogleCredentials}
 import com.typesafe.config.Config
 
-import java.util.concurrent.Executor
+import java.util.concurrent.{Executor, TimeoutException}
 import scala.annotation.tailrec
 import scala.collection.immutable.ListMap
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
 import scala.jdk.DurationConverters._
 import scala.util.control.NonFatal
+import scala.util.{Failure, Success}
 
 object Credentials {
 
@@ -28,7 +29,6 @@ object Credentials {
    */
   def apply(c: Config)(implicit system: ClassicActorSystemProvider): Credentials = c.getString("provider") match {
     case "application-default" =>
-      val log = Logging(system.classicSystem, classOf[Credentials])
       try {
         val creds = parseApplicationDefault(c)
         log.info("Using service account credentials")
@@ -67,8 +67,26 @@ object Credentials {
   private def parseServiceAccount(c: Config)(implicit system: ClassicActorSystemProvider) =
     ServiceAccountCredentials(c.getConfig("service-account"))
 
-  private def parseComputeEngine(c: Config)(implicit system: ClassicActorSystemProvider) =
-    Await.result(ComputeEngineCredentials(), c.getDuration("compute-engine.timeout").toScala)
+  private def parseComputeEngine(c: Config)(implicit system: ClassicActorSystemProvider) = {
+    val credentials = ComputeEngineCredentials()
+    val timeout = c.getDuration("compute-engine.timeout").toScala
+    try Await.result(credentials, timeout)
+    catch {
+      case ex: TimeoutException =>
+        // The request can fail long after we have stopped waiting for it, for example when connecting to the metadata
+        // server times out. That failure is the actual reason, so log it once it arrives instead of discarding it.
+        credentials.onComplete {
+          case Failure(cause) =>
+            log.warning("Compute Engine credentials request failed after the [{}] timeout had elapsed: {}",
+                        timeout,
+                        describe(cause))
+          case Success(late) =>
+            // Nothing can reach these credentials any more, so release the resources they hold
+            late.close()
+        }(system.classicSystem.dispatcher)
+        throw ex
+    }
+  }
 
   private def parseUserAccess(c: Config)(implicit system: ClassicActorSystemProvider) =
     UserAccessCredentials(c.getConfig("user-access"))
@@ -80,15 +98,20 @@ object Credentials {
 
   private def parseNone(c: Config) = NoCredentials(c.getConfig("none"))
 
+  private def log(implicit system: ClassicActorSystemProvider) = Logging(system.classicSystem, classOf[Credentials])
+
+  private val MaxCauseDepth = 5
+
   /**
    * Renders the message of `ex` together with the messages of its causes, since the cause chain often carries the
    * actual reason (e.g. a connection timeout) while the outermost message is generic.
    */
   private def describe(ex: Throwable): String = {
     @tailrec def loop(ex: Throwable, depth: Int, acc: List[String]): List[String] =
-      if ((ex eq null) || depth == 0) acc
+      if (ex eq null) acc
+      else if (depth == 0) "..." :: acc
       else loop(ex.getCause, depth - 1, s"${ex.getClass.getName}: ${ex.getMessage}" :: acc)
-    loop(ex, 5, Nil).reverse.mkString(", caused by ")
+    loop(ex, MaxCauseDepth, Nil).reverse.mkString(", caused by ")
   }
 
   private var _cache: Map[Any, Credentials] = ListMap.empty

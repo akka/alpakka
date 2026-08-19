@@ -55,7 +55,10 @@ private[google] object GoogleOAuth2Exception {
       }
       .withDefaultRetry
 
-  private val maxErrorBodyLength = 512
+  private val MaxErrorBodyLength = 512
+
+  private def truncate(body: String) =
+    if (body.length > MaxErrorBodyLength) body.take(MaxErrorBodyLength) + "..." else body
 
   /**
    * Unmarshals a successful response, or fails with a [[GoogleOAuth2Exception]] describing the status and body of an
@@ -80,7 +83,7 @@ private[google] object GoogleOAuth2Exception {
             GoogleOAuth2Exception(
               ErrorInfo(
                 s"Unexpected ${response.status.value} response from [$uri]",
-                s"Response body: [${body.take(maxErrorBodyLength)}]"
+                s"Response body: [${truncate(body)}]"
               )
             )
           )

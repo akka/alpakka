@@ -30,7 +30,10 @@ private[alpakka] object ResumableUpload {
   final case class UploadFailedException() extends Exception
   private final case class Chunk(bytes: ByteString, position: Long)
 
-  private val maxErrorBodyLength = 512
+  private val MaxErrorBodyLength = 512
+
+  private def truncate(body: String) =
+    if (body.length > MaxErrorBodyLength) body.take(MaxErrorBodyLength) + "..." else body
 
   /**
    * Initializes and runs a resumable upload to a media endpoint.
@@ -104,7 +107,7 @@ private[alpakka] object ResumableUpload {
               throw InvalidResponseException(
                 ErrorInfo(
                   s"Resumable upload could not be initiated, no Location header in ${response.status.value} response",
-                  s"Response body: [${body.take(maxErrorBodyLength)}]"
+                  s"Response body: [${truncate(body)}]"
                 )
               )
             }
