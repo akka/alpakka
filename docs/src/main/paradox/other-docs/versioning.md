@@ -12,7 +12,7 @@ Alpakka publishes
 
 * regular releases to the Akka repository (access via token from https://account.akka.io/token)
 * milestone and release candidates (of major versions) to the Akka repository
-* @ref:[snapshots](snapshots.md) to https://repo.akka.io/snapshots
+* @ref:[snapshots](snapshots.md) to https://repo.akka.io/TOKEN/secure/snapshots
 
 ### Compatibility
 
