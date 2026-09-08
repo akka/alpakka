@@ -32,7 +32,8 @@ object CouchbaseSession {
    */
   def create(settings: CouchbaseSessionSettings,
              bucketName: String,
-             executor: Executor): CompletionStage[CouchbaseSession] =
+             executor: Executor
+  ): CompletionStage[CouchbaseSession] =
     ScalaDslCouchbaseSession
       .apply(settings, bucketName)(executionContext(executor))
       .map(new CouchbaseSessionJavaAdapter(_): CouchbaseSession)(

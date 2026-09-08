@@ -93,7 +93,7 @@ class DirectorySpec
           .runWith(Sink.seq)
       // #mkdirs
 
-      created.futureValue should have size (2)
+      created.futureValue should have size 2
       Files.isDirectory(dir.resolve("dirA")) shouldBe true
       Files.isDirectory(dir.resolve("dirB")) shouldBe true
     }
@@ -114,7 +114,7 @@ class DirectorySpec
           .via(flowWithContext)
           .runWith(Sink.seq)
 
-      created.futureValue should have size (2)
+      created.futureValue should have size 2
       Files.isDirectory(dir.resolve("dirA")) shouldBe true
       Files.isDirectory(dir.resolve("dirB")) shouldBe true
     }

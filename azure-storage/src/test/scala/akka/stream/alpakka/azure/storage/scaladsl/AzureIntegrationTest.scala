@@ -55,7 +55,8 @@ class AzureIntegrationTest extends StorageIntegrationSpec {
     "create file" in {
       val maybeObjectMetadata = FileService
         .createFile(objectPath = fileObjectPath,
-                    requestBuilder = CreateFile(contentLength, ContentTypes.`text/plain(UTF-8)`))
+                    requestBuilder = CreateFile(contentLength, ContentTypes.`text/plain(UTF-8)`)
+        )
         .withAttributes(getDefaultAttributes)
         .runWith(Sink.head)
         .futureValue

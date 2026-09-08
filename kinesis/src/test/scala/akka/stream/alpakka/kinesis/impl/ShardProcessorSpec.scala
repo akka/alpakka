@@ -68,12 +68,10 @@ class ShardProcessorSpec extends AnyWordSpec with Matchers with LogCapturing {
       processor.processRecords(mockProcessRecordsInput(records, checkpointer, isAtShardEnd = true))
 
       val shardEndedDone = new java.util.concurrent.atomic.AtomicBoolean(false)
-      val shardEndedThread = new Thread(
-        () => {
-          processor.shardEnded(mockShardEndedInput(checkpointer))
-          shardEndedDone.set(true)
-        }
-      )
+      val shardEndedThread = new Thread(() => {
+        processor.shardEnded(mockShardEndedInput(checkpointer))
+        shardEndedDone.set(true)
+      })
       shardEndedThread.start()
 
       // shardEnded should block because the record has not been checkpointed yet
@@ -105,12 +103,10 @@ class ShardProcessorSpec extends AnyWordSpec with Matchers with LogCapturing {
       processor.processRecords(mockProcessRecordsInput(Collections.emptyList(), checkpointer, isAtShardEnd = true))
 
       val shardEndedDone = new java.util.concurrent.atomic.AtomicBoolean(false)
-      val shardEndedThread = new Thread(
-        () => {
-          processor.shardEnded(mockShardEndedInput(checkpointer))
-          shardEndedDone.set(true)
-        }
-      )
+      val shardEndedThread = new Thread(() => {
+        processor.shardEnded(mockShardEndedInput(checkpointer))
+        shardEndedDone.set(true)
+      })
       shardEndedThread.start()
 
       // shardEnded must wait for the previous batch's last record, not complete immediately

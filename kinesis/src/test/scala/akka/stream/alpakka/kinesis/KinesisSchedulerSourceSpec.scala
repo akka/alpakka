@@ -254,7 +254,8 @@ class KinesisSchedulerSourceSpec
   private abstract class KinesisSchedulerContext(schedulerFailure: Option[Throwable] = None,
                                                  bufferSize: Int = 100,
                                                  backpressureTimeout: FiniteDuration = 1.minute,
-                                                 switchMode: SwitchMode = Open) {
+                                                 switchMode: SwitchMode = Open
+  ) {
     val scheduler: Scheduler = org.mockito.Mockito.mock(classOf[Scheduler])
 
     val lock = new Semaphore(0)
@@ -276,7 +277,9 @@ class KinesisSchedulerSourceSpec
     val (((valve, killSwitch), watch), sinkProbe) =
       KinesisSchedulerSource(schedulerBuilder,
                              KinesisSchedulerSourceSettings(bufferSize = bufferSize,
-                                                            backpressureTimeout = backpressureTimeout))
+                                                            backpressureTimeout = backpressureTimeout
+                             )
+      )
         .viaMat(Valve(switchMode))(Keep.right)
         .viaMat(KillSwitches.single)(Keep.both)
         .watchTermination()(Keep.both)
@@ -315,7 +318,8 @@ class KinesisSchedulerSourceSpec
       )
 
     def sampleRecordsInput(records: Seq[KinesisClientRecord] = sampleRecord :: Nil,
-                           isShardEnd: Boolean = false): ProcessRecordsInput =
+                           isShardEnd: Boolean = false
+    ): ProcessRecordsInput =
       ProcessRecordsInput
         .builder()
         .checkpointer(checkpointer)

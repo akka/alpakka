@@ -128,7 +128,8 @@ private[ftp] trait SftpOperations { ftpLike: FtpLike[SSHClient, SftpSettings] =>
   def retrieveFileInputStream(name: String,
                               handler: Handler,
                               offset: Long,
-                              maxUnconfirmedReads: Int): Try[InputStream] =
+                              maxUnconfirmedReads: Int
+  ): Try[InputStream] =
     Try {
       val remoteFile = handler.open(name, java.util.EnumSet.of(OpenMode.READ))
       val is = maxUnconfirmedReads match {

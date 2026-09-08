@@ -112,7 +112,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings, system: Classi
     ScalaActorMqttServerSession(settings)(system)
 
   override def watchClientSessions: Source[ClientSessionTerminated, NotUsed] =
-    underlying.watchClientSessions.map {
-      case ScalaMqttServerSession.ClientSessionTerminated(clientId) => ClientSessionTerminated(clientId)
+    underlying.watchClientSessions.map { case ScalaMqttServerSession.ClientSessionTerminated(clientId) =>
+      ClientSessionTerminated(clientId)
     }.asJava
 }

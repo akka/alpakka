@@ -41,7 +41,8 @@ class CassandraFlowSpec extends CassandraSpecBase(ActorSystem("CassandraFlowSpec
         .via(
           CassandraFlow.create(CassandraWriteSettings.defaults,
                                s"INSERT INTO $table(id) VALUES (?)",
-                               (element, preparedStatement) => preparedStatement.bind(Int.box(element)))
+                               (element, preparedStatement) => preparedStatement.bind(Int.box(element))
+          )
         )
         .runWith(Sink.ignore)
 
@@ -79,7 +80,8 @@ class CassandraFlowSpec extends CassandraSpecBase(ActorSystem("CassandraFlowSpec
         .via(
           CassandraFlow.create(CassandraWriteSettings.defaults,
                                s"INSERT INTO $table(id, name, city) VALUES (?, ?, ?)",
-                               statementBinder)
+                               statementBinder
+          )
         )
         .runWith(Sink.seq)
       // #prepared
@@ -113,7 +115,8 @@ class CassandraFlowSpec extends CassandraSpecBase(ActorSystem("CassandraFlowSpec
       val persons =
         immutable.Seq(Person(12, "John", "London") -> AckHandle(12),
                       Person(43, "Umberto", "Roma") -> AckHandle(43),
-                      Person(56, "James", "Chicago") -> AckHandle(56))
+                      Person(56, "James", "Chicago") -> AckHandle(56)
+        )
 
       // #withContext
       val personsAndHandles: SourceWithContext[Person, AckHandle, NotUsed] = // ???
@@ -130,8 +133,8 @@ class CassandraFlowSpec extends CassandraSpecBase(ActorSystem("CassandraFlowSpec
           )
         )
         .asSource
-        .mapAsync(1) {
-          case (_, handle) => handle.ack()
+        .mapAsync(1) { case (_, handle) =>
+          handle.ack()
         }
         .runWith(Sink.ignore)
       // #withContext

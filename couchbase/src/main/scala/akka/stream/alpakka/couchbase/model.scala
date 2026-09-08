@@ -34,7 +34,8 @@ object CouchbaseSessionSettings {
                                  nodes,
                                  parallelism,
                                  environment = None,
-                                 enrichAsync = Future.successful)
+                                 enrichAsync = Future.successful
+    )
   }
 
   /**
@@ -114,13 +115,15 @@ final class CouchbaseSessionSettings private (
   def withNodes(nodes: java.util.List[String]): CouchbaseSessionSettings =
     copy(nodes = nodes.asScala.toList)
 
-  /** Scala API:
+  /**
+   * Scala API:
    * Allows to provide an asynchronous method to update the settings.
    */
   def withEnrichAsync(value: CouchbaseSessionSettings => Future[CouchbaseSessionSettings]): CouchbaseSessionSettings =
     copy(enrichAsync = value)
 
-  /** Java API:
+  /**
+   * Java API:
    * Allows to provide an asynchronous method to update the settings.
    */
   def withEnrichAsyncCs(
@@ -151,9 +154,9 @@ final class CouchbaseSessionSettings private (
   override def equals(other: Any): Boolean = other match {
     case that: CouchbaseSessionSettings =>
       username == that.username &&
-      password == that.password &&
-      nodes == that.nodes &&
-      environment == that.environment
+        password == that.password &&
+        nodes == that.nodes &&
+        environment == that.environment
     case _ => false
   }
 

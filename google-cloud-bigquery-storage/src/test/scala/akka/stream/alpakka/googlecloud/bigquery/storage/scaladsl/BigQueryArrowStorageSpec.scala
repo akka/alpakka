@@ -52,7 +52,8 @@ class BigQueryArrowStorageSpec
         .runWith(Sink.seq)
         .futureValue shouldBe Vector.fill(DefaultNumStreams * ResponsesPerStream)(
         (ArrowSchema(serializedSchema = GCPSerializedArrowSchema),
-         ArrowRecordBatch(GCPSerializedArrowTenRecordBatch, 10))
+         ArrowRecordBatch(GCPSerializedArrowTenRecordBatch, 10)
+        )
       )
     }
 

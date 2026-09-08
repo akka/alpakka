@@ -30,8 +30,9 @@ object CouchbaseSession {
    * Create a session against the given bucket. The couchbase client used to connect will be created and then closed when
    * the session is closed.
    */
-  def apply(settings: CouchbaseSessionSettings,
-            bucketName: String)(implicit ec: ExecutionContext): Future[CouchbaseSession] =
+  def apply(settings: CouchbaseSessionSettings, bucketName: String)(implicit
+      ec: ExecutionContext
+  ): Future[CouchbaseSession] =
     createClusterClient(settings)
       .flatMap(c => apply(c, bucketName))
 
@@ -69,8 +70,8 @@ object CouchbaseSession {
               enrichedSettings.nodes.mkString(","),
               clusterOptions
             )
-        }).andThen {
-          case Success(_) => log.debug("created couchbase cluster client for {}", enrichedSettings.username)
+        }).andThen { case Success(_) =>
+          log.debug("created couchbase cluster client for {}", enrichedSettings.username)
         }
       }
 

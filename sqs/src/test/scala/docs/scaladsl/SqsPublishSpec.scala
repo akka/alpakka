@@ -270,10 +270,9 @@ class SqsPublishSpec extends AnyFlatSpec with Matchers with DefaultTestContext w
         .via(SqsPublishFlow.batch(queueUrl))
         .runWith(Sink.seq)
 
-    future.futureValue.flatten.zipWithIndex.foreach {
-      case (result, i) =>
-        result.result.md5OfMessageBody() shouldBe md5HashString(s"Message $i")
-        result.result.sequenceNumber() should not be empty
+    future.futureValue.flatten.zipWithIndex.foreach { case (result, i) =>
+      result.result.md5OfMessageBody() shouldBe md5HashString(s"Message $i")
+      result.result.sequenceNumber() should not be empty
     }
 
     receiveMessages(10) should have size 10

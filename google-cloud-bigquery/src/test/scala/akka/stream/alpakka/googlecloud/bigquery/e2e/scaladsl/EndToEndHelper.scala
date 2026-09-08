@@ -28,11 +28,11 @@ trait EndToEndHelper {
 
   private def randomB(): B = B(
     if (rng.nextBoolean()) Some(rng.nextString(rng.nextInt(64))) else None,
-    ByteString({
+    ByteString {
       val bytes = new Array[Byte](rng.nextInt(64))
       rng.nextBytes(bytes)
       bytes
-    }),
+    },
     Seq.fill(rng.nextInt(16))(randomC())
   )
 

@@ -29,8 +29,8 @@ private[fcm] class FcmSender {
   /** Use akka.stream.alpakka.google.firebase.fcm.v1.impl.FcmSender */
   @deprecated("Use akka.stream.alpakka.google.firebase.fcm.v1.impl.FcmSender", "3.0.2")
   @Deprecated
-  def send(http: HttpExt, fcmSend: FcmSend)(
-      implicit mat: Materializer,
+  def send(http: HttpExt, fcmSend: FcmSend)(implicit
+      mat: Materializer,
       settings: GoogleSettings
   ): Future[FcmResponse] = {
     import mat.executionContext
@@ -40,8 +40,8 @@ private[fcm] class FcmSender {
     Marshal(fcmSend).to[RequestEntity].flatMap { entity =>
       GoogleHttp(http)
         .singleAuthenticatedRequest[FcmSuccessResponse](HttpRequest(HttpMethods.POST, url, entity = entity))
-    } recover {
-      case FcmErrorException(error) => error
+    } recover { case FcmErrorException(error) =>
+      error
     }
   }
 

@@ -139,11 +139,10 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
           val completeParams = searchParams ++ extraParams.flatten - "routing"
 
           val searchBody = "{" + completeParams
-              .map {
-                case (name, json) =>
-                  "\"" + name + "\":" + json
-              }
-              .mkString(",") + "}"
+            .map { case (name, json) =>
+              "\"" + name + "\":" + json
+            }
+            .mkString(",") + "}"
 
           val endpoint: String = settings.apiVersion match {
             case ApiVersion.V5 => s"/${elasticsearchParams.indexName}/${elasticsearchParams.typeName.get}/_search"
@@ -180,8 +179,8 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
                     )
                 }
             }
-            .recover {
-              case cause: Throwable => failureHandler.invoke(cause)
+            .recover { case cause: Throwable =>
+              failureHandler.invoke(cause)
             }
         }
 
@@ -194,7 +193,8 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
             .withUri(uri)
             .withEntity(
               HttpEntity(ContentTypes.`application/json`,
-                         Map("scroll" -> settings.scroll, "scroll_id" -> actualScrollId).toJson.compactPrint)
+                         Map("scroll" -> settings.scroll, "scroll_id" -> actualScrollId).toJson.compactPrint
+              )
             )
             .withHeaders(settings.connection.headers)
 
@@ -217,8 +217,8 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
                     )
                   }
             }
-            .recover {
-              case cause: Throwable => failureHandler.invoke(cause)
+            .recover { case cause: Throwable =>
+              failureHandler.invoke(cause)
             }
         }
       }
@@ -348,19 +348,19 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
                   )
               }
           }
-          .recover {
-            case cause: Throwable => failureHandler.invoke(cause)
+          .recover { case cause: Throwable =>
+            failureHandler.invoke(cause)
           }
       }
     }
   }
 
-  private val clearScrollAsyncHandler = getAsyncCallback[Try[String]]({ result =>
+  private val clearScrollAsyncHandler = getAsyncCallback[Try[String]] { result =>
     {
       // Note: the scroll will expire, so there is no reason to consider a failed
       // clear as a reason to fail the stream.
       log.debug("Result of clearing the scroll: {}", result)
       completeStage()
     }
-  })
+  }
 }
