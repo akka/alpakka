@@ -330,7 +330,7 @@ object Dependencies {
     )
   }
 
-  val HadoopVersion = "3.4.3"
+  val HadoopVersion = "3.5.0"
   val Hdfs = Seq(
     libraryDependencies ++= Seq(
         "org.apache.hadoop" % "hadoop-client" % HadoopVersion exclude ("log4j", "log4j"), // ApacheV2
