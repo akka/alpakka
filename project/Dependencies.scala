@@ -317,7 +317,7 @@ object Dependencies {
   )
 
   val HBase = {
-    val hbaseVersion = "2.6.6"
+    val hbaseVersion = "3.0.0"
     val hadoopVersion = "3.5.0"
     Seq(
       libraryDependencies ++= Seq(
