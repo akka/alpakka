@@ -17,4 +17,4 @@ addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "2.5.8")
 // templating
 addSbtPlugin("com.github.sbt" % "sbt-boilerplate" % "0.8.1")
 // create pom.xml for scanning tools
-addSbtPlugin("io.akka.sbt" % "sbt-artifact-bom" % "0.2.0")
+addSbtPlugin("io.akka.sbt" % "sbt-artifact-bom" % "0.3.0")
