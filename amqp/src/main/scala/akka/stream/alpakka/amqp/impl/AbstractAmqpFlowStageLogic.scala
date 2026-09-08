@@ -52,10 +52,12 @@ import scala.concurrent.Promise
 
   protected def publish(message: WriteMessage, passThrough: T): Unit
 
-  setHandler(out, new OutHandler {
-    override def onPull(): Unit =
-      if (!hasBeenPulled(in)) tryPull(in)
-  })
+  setHandler(out,
+             new OutHandler {
+               override def onPull(): Unit =
+                 if (!hasBeenPulled(in)) tryPull(in)
+             }
+  )
 
   override def postStop(): Unit = {
     streamCompletion.tryFailure(new RuntimeException("Stage stopped unexpectedly."))

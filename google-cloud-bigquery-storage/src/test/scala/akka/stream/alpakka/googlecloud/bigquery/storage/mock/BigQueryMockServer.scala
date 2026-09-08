@@ -106,7 +106,8 @@ class BigQueryMockServer(port: Int) extends BigQueryMockData {
 
         private def avroResponse(record: GenericRecord) =
           ReadRowsResponse(rowCount = RecordsPerReadRowsResponse,
-                           rows = ReadRowsResponse.Rows.AvroRows(recordsAsRows(record)))
+                           rows = ReadRowsResponse.Rows.AvroRows(recordsAsRows(record))
+          )
 
         private def arrowResponse(arrowBatch: ArrowRecordBatch) =
           ReadRowsResponse(rowCount = 10, rows = ReadRowsResponse.Rows.ArrowRecordBatch(arrowBatch))

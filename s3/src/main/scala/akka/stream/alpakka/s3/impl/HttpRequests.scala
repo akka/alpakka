@@ -159,7 +159,8 @@ import scala.concurrent.{ExecutionContext, Future}
   def getDownloadRequest(s3Location: S3Location,
                          method: HttpMethod = HttpMethods.GET,
                          s3Headers: Seq[HttpHeader] = Seq.empty,
-                         versionId: Option[String] = None)(implicit conf: S3Settings): HttpRequest = {
+                         versionId: Option[String] = None
+  )(implicit conf: S3Settings): HttpRequest = {
     val query = versionId
       .map(vId => Query("versionId" -> URLDecoder.decode(vId, StandardCharsets.UTF_8.toString)))
       .getOrElse(Query())
@@ -189,15 +190,17 @@ import scala.concurrent.{ExecutionContext, Future}
                     "uploadId" -> uploadId
                   )
                 )
-              ))
+              )
+    )
       .withDefaultHeaders(headers)
 
   def uploadRequest(s3Location: S3Location,
                     payload: Source[ByteString, _],
                     contentLength: Long,
                     contentType: ContentType,
-                    s3Headers: Seq[HttpHeader])(
-      implicit conf: S3Settings
+                    s3Headers: Seq[HttpHeader]
+  )(implicit
+      conf: S3Settings
   ): HttpRequest =
     s3Request(
       s3Location,
@@ -215,7 +218,8 @@ import scala.concurrent.{ExecutionContext, Future}
   def uploadPartRequest(upload: MultipartUpload,
                         partNumber: Int,
                         payload: Chunk,
-                        s3Headers: Seq[HttpHeader] = Seq.empty)(implicit conf: S3Settings): HttpRequest =
+                        s3Headers: Seq[HttpHeader] = Seq.empty
+  )(implicit conf: S3Settings): HttpRequest =
     s3Request(
       S3Location(upload.bucket, upload.key),
       HttpMethods.PUT,
@@ -224,7 +228,8 @@ import scala.concurrent.{ExecutionContext, Future}
       .withEntity(payload.asEntity())
 
   def completeMultipartUploadRequest(upload: MultipartUpload, parts: Seq[(Int, String)], headers: Seq[HttpHeader])(
-      implicit ec: ExecutionContext,
+      implicit
+      ec: ExecutionContext,
       conf: S3Settings
   ): Future[HttpRequest] = {
 
@@ -261,7 +266,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
   def uploadCopyPartRequest(multipartCopy: MultipartCopy,
                             sourceVersionId: Option[String] = None,
-                            s3Headers: Seq[HttpHeader] = Seq.empty)(implicit conf: S3Settings): HttpRequest = {
+                            s3Headers: Seq[HttpHeader] = Seq.empty
+  )(implicit conf: S3Settings): HttpRequest = {
     val upload = multipartCopy.multipartUpload
     val copyPartition = multipartCopy.copyPartition
     val range = copyPartition.range
@@ -280,12 +286,13 @@ import scala.concurrent.{ExecutionContext, Future}
 
     s3Request(S3Location(upload.bucket, upload.key),
               HttpMethods.PUT,
-              _.withQuery(Query("partNumber" -> copyPartition.partNumber.toString, "uploadId" -> upload.uploadId)))
+              _.withQuery(Query("partNumber" -> copyPartition.partNumber.toString, "uploadId" -> upload.uploadId))
+    )
       .withDefaultHeaders(allHeaders)
   }
 
-  private[this] def s3Request(s3Location: S3Location, method: HttpMethod, uriFn: Uri => Uri = identity)(
-      implicit conf: S3Settings
+  private[this] def s3Request(s3Location: S3Location, method: HttpMethod, uriFn: Uri => Uri = identity)(implicit
+      conf: S3Settings
   ): HttpRequest = {
     val loc = s3Location.validate(conf)
     val s3RequestUri = uriFn(requestUri(loc.bucket, Some(loc.key)))

@@ -52,8 +52,8 @@ private[alpakka] final class GoogleHttp private (val http: HttpExt) extends AnyV
    * Sends a single [[HttpRequest]] and returns the [[Unmarshal]]led response.
    * Retries the request if the [[FromResponseUnmarshaller]] throws a [[akka.stream.alpakka.google.util.Retry]].
    */
-  def singleRequest[T](request: HttpRequest)(
-      implicit settings: RequestSettings,
+  def singleRequest[T](request: HttpRequest)(implicit
+      settings: RequestSettings,
       um: FromResponseUnmarshaller[T]
   ): Future[T] = Retry(settings.retrySettings) {
     singleRawRequest(request).flatMap(Unmarshal(_).to[T])(ExecutionContext.parasitic)
@@ -63,8 +63,8 @@ private[alpakka] final class GoogleHttp private (val http: HttpExt) extends AnyV
    * Adds an Authorization header and sends a single [[HttpRequest]] and returns the [[Unmarshal]]led response.
    * Retries the request if the [[FromResponseUnmarshaller]] throws a [[akka.stream.alpakka.google.util.Retry]].
    */
-  def singleAuthenticatedRequest[T](request: HttpRequest)(
-      implicit settings: GoogleSettings,
+  def singleAuthenticatedRequest[T](request: HttpRequest)(implicit
+      settings: GoogleSettings,
       um: FromResponseUnmarshaller[T]
   ): Future[T] = Retry(settings.requestSettings.retrySettings) {
     implicit val requestSettings: RequestSettings = settings.requestSettings
@@ -126,13 +126,12 @@ private[alpakka] final class GoogleHttp private (val http: HttpExt) extends AnyV
         case _ => throw new RuntimeException(s"illegal proxy settings with https=$https")
       }
 
-      val unmarshalFlow = Flow[(Try[HttpResponse], Ctx)].mapAsyncUnordered(parallelism) {
-        case (res, ctx) =>
-          Future
-            .fromTry(res)
-            .flatMap(Unmarshal(_).to[T])(ExecutionContext.parasitic)
-            .transform(Success(_))(ExecutionContext.parasitic)
-            .zip(Future.successful(ctx))
+      val unmarshalFlow = Flow[(Try[HttpResponse], Ctx)].mapAsyncUnordered(parallelism) { case (res, ctx) =>
+        Future
+          .fromTry(res)
+          .flatMap(Unmarshal(_).to[T])(ExecutionContext.parasitic)
+          .transform(Success(_))(ExecutionContext.parasitic)
+          .zip(Future.successful(ctx))
       }
 
       val flow = uriFlow.via(authFlow).viaMat(requestFlow)(Keep.right).via(unmarshalFlow).asFlow

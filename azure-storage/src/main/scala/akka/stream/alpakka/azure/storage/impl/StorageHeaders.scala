@@ -24,7 +24,8 @@ private[storage] class StorageHeaders private (val contentLengthHeader: Option[H
                                                val fileMaxContentLengthHeader: Option[HttpHeader] = None,
                                                val pageBlobContentLengthHeader: Option[HttpHeader] = None,
                                                val pageBlobSequenceNumberHeader: Option[HttpHeader] = None,
-                                               val additionalHeaders: Seq[HttpHeader] = Seq.empty) {
+                                               val additionalHeaders: Seq[HttpHeader] = Seq.empty
+) {
 
   private[storage] def headers: Seq[HttpHeader] =
     (contentLengthHeader ++
@@ -94,7 +95,8 @@ private[storage] class StorageHeaders private (val contentLengthHeader: Option[H
                    fileMaxContentLengthHeader: Option[HttpHeader] = fileMaxContentLengthHeader,
                    pageBlobContentLengthHeader: Option[HttpHeader] = pageBlobContentLengthHeader,
                    pageBlobSequenceNumberHeader: Option[HttpHeader] = pageBlobSequenceNumberHeader,
-                   additionalHeaders: Seq[HttpHeader] = additionalHeaders) =
+                   additionalHeaders: Seq[HttpHeader] = additionalHeaders
+  ) =
     new StorageHeaders(
       contentLengthHeader = contentLengthHeader,
       contentTypeHeader = contentTypeHeader,
@@ -130,17 +132,17 @@ private[storage] class StorageHeaders private (val contentLengthHeader: Option[H
     obj match {
       case other: StorageHeaders =>
         Objects.equals(contentLengthHeader, other.contentLengthHeader) &&
-        Objects.equals(contentTypeHeader, other.contentTypeHeader) &&
-        Objects.equals(sse, other.sse) &&
-        Objects.equals(rangeHeader, other.rangeHeader) &&
-        Objects.equals(blobTypeHeader, other.blobTypeHeader) &&
-        Objects.equals(leaseIdHeader, other.leaseIdHeader) &&
-        Objects.equals(rangeWriteTypeHeader, other.rangeWriteTypeHeader) &&
-        Objects.equals(fileTypeHeader, other.fileTypeHeader) &&
-        Objects.equals(fileMaxContentLengthHeader, other.fileMaxContentLengthHeader) &&
-        Objects.equals(pageBlobContentLengthHeader, other.pageBlobContentLengthHeader) &&
-        Objects.equals(pageBlobSequenceNumberHeader, other.pageBlobSequenceNumberHeader) &&
-        Objects.equals(additionalHeaders, other.additionalHeaders)
+          Objects.equals(contentTypeHeader, other.contentTypeHeader) &&
+          Objects.equals(sse, other.sse) &&
+          Objects.equals(rangeHeader, other.rangeHeader) &&
+          Objects.equals(blobTypeHeader, other.blobTypeHeader) &&
+          Objects.equals(leaseIdHeader, other.leaseIdHeader) &&
+          Objects.equals(rangeWriteTypeHeader, other.rangeWriteTypeHeader) &&
+          Objects.equals(fileTypeHeader, other.fileTypeHeader) &&
+          Objects.equals(fileMaxContentLengthHeader, other.fileMaxContentLengthHeader) &&
+          Objects.equals(pageBlobContentLengthHeader, other.pageBlobContentLengthHeader) &&
+          Objects.equals(pageBlobSequenceNumberHeader, other.pageBlobSequenceNumberHeader) &&
+          Objects.equals(additionalHeaders, other.additionalHeaders)
       case _ => false
     }
 

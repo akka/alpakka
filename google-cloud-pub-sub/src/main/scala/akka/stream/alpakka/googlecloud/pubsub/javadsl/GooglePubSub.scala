@@ -29,7 +29,8 @@ object GooglePubSub {
   def publish(topic: String,
               config: PubSubConfig,
               overrideHost: String,
-              parallelism: Int): Flow[PublishRequest, java.util.List[String], NotUsed] =
+              parallelism: Int
+  ): Flow[PublishRequest, java.util.List[String], NotUsed] =
     GPubSub
       .publish(topic, config, overrideHost, parallelism)
       .map(response => response.asJava)
@@ -40,7 +41,8 @@ object GooglePubSub {
    */
   def publish(topic: String,
               config: PubSubConfig,
-              parallelism: Int): Flow[PublishRequest, java.util.List[String], NotUsed] =
+              parallelism: Int
+  ): Flow[PublishRequest, java.util.List[String], NotUsed] =
     GPubSub
       .publish(topic, config, parallelism)
       .map(response => response.asJava)
@@ -56,7 +58,8 @@ object GooglePubSub {
   def publishWithContext[C](topic: String,
                             config: PubSubConfig,
                             overrideHost: String,
-                            parallelism: Int): FlowWithContext[PublishRequest, C, java.util.List[String], C, NotUsed] =
+                            parallelism: Int
+  ): FlowWithContext[PublishRequest, C, java.util.List[String], C, NotUsed] =
     GPubSub
       .publishWithContext[C](topic, config, overrideHost, parallelism)
       .map(response => response.asJava)
@@ -68,7 +71,8 @@ object GooglePubSub {
    */
   def publishWithContext[C](topic: String,
                             config: PubSubConfig,
-                            parallelism: Int): FlowWithContext[PublishRequest, C, java.util.List[String], C, NotUsed] =
+                            parallelism: Int
+  ): FlowWithContext[PublishRequest, C, java.util.List[String], C, NotUsed] =
     GPubSub
       .publishWithContext[C](topic, config, parallelism)
       .map(response => response.asJava)

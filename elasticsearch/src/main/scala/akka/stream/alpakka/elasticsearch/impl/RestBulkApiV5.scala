@@ -22,8 +22,8 @@ private[impl] final class RestBulkApiV5[T, C](indexName: String,
                                               typeName: String,
                                               versionType: Option[String],
                                               allowExplicitIndex: Boolean,
-                                              messageWriter: MessageWriter[T])
-    extends RestBulkApi[T, C] {
+                                              messageWriter: MessageWriter[T]
+) extends RestBulkApi[T, C] {
 
   private lazy val typeNameTuple = "_type" -> JsString(typeName)
 

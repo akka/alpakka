@@ -234,7 +234,8 @@ object HdfsFlow {
                          classK,
                          classV,
                          settings.pathGenerator,
-                         settings.overwrite)
+                         settings.overwrite
+          )
         )
       )
 }

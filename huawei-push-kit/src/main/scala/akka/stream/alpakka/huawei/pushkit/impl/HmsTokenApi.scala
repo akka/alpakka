@@ -30,8 +30,8 @@ private[pushkit] class HmsTokenApi(http: => HttpExt, system: ActorSystem, forwar
 
   def now: Long = JwtTime.nowSeconds(Clock.systemUTC())
 
-  def getAccessToken(clientId: String, privateKey: String)(
-      implicit materializer: Materializer
+  def getAccessToken(clientId: String, privateKey: String)(implicit
+      materializer: Materializer
   ): Future[AccessTokenExpiry] = {
     import materializer.executionContext
     val expiresAt = now + 3600
@@ -47,7 +47,8 @@ private[pushkit] class HmsTokenApi(http: => HttpExt, system: ActorSystem, forwar
         case Some(fp) =>
           http.singleRequest(HttpRequest(HttpMethods.POST, authUrl, entity = requestEntity),
                              connectionContext = fp.httpsContext(system),
-                             settings = fp.poolSettings(system))
+                             settings = fp.poolSettings(system)
+          )
         case None => http.singleRequest(HttpRequest(HttpMethods.POST, authUrl, entity = requestEntity))
       }
       result <- Unmarshal(response.entity).to[OAuthResponse]

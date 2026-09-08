@@ -26,57 +26,66 @@ object BigQueryArrowStorage {
                         datasetId: String,
                         tableId: String,
                         readOptions: Option[TableReadOptions] = None,
-                        maxNumStreams: Int = 0): Source[Seq[BigQueryRecord], Future[NotUsed]] =
+                        maxNumStreams: Int = 0
+  ): Source[Seq[BigQueryRecord], Future[NotUsed]] =
     readAndMapTo(projectId,
                  datasetId,
                  tableId,
                  readOptions,
                  maxNumStreams,
-                 (_, client, session) => ArrowSource.readRecordsMerged(client, session))
+                 (_, client, session) => ArrowSource.readRecordsMerged(client, session)
+    )
       .flatMapConcat(a => a)
 
   def readRecords(projectId: String,
                   datasetId: String,
                   tableId: String,
                   readOptions: Option[TableReadOptions] = None,
-                  maxNumStreams: Int = 0): Source[Seq[Source[BigQueryRecord, NotUsed]], Future[NotUsed]] =
+                  maxNumStreams: Int = 0
+  ): Source[Seq[Source[BigQueryRecord, NotUsed]], Future[NotUsed]] =
     readAndMapTo(projectId,
                  datasetId,
                  tableId,
                  readOptions,
                  maxNumStreams,
-                 (_, client, session) => ArrowSource.readRecords(client, session))
+                 (_, client, session) => ArrowSource.readRecords(client, session)
+    )
 
   def readMerged(projectId: String,
                  datasetId: String,
                  tableId: String,
                  readOptions: Option[TableReadOptions] = None,
-                 maxNumStreams: Int = 0): Source[(ArrowSchema, Source[ArrowRecordBatch, NotUsed]), Future[NotUsed]] =
+                 maxNumStreams: Int = 0
+  ): Source[(ArrowSchema, Source[ArrowRecordBatch, NotUsed]), Future[NotUsed]] =
     readAndMapTo(projectId,
                  datasetId,
                  tableId,
                  readOptions,
                  maxNumStreams,
-                 (schema, client, session) => (schema, ArrowSource.readMerged(client, session)))
+                 (schema, client, session) => (schema, ArrowSource.readMerged(client, session))
+    )
 
   def read(projectId: String,
            datasetId: String,
            tableId: String,
            readOptions: Option[TableReadOptions] = None,
-           maxNumStreams: Int = 0): Source[(ArrowSchema, Seq[Source[ArrowRecordBatch, NotUsed]]), Future[NotUsed]] =
+           maxNumStreams: Int = 0
+  ): Source[(ArrowSchema, Seq[Source[ArrowRecordBatch, NotUsed]]), Future[NotUsed]] =
     readAndMapTo(projectId,
                  datasetId,
                  tableId,
                  readOptions,
                  maxNumStreams,
-                 (schema, client, session) => (schema, ArrowSource.read(client, session)))
+                 (schema, client, session) => (schema, ArrowSource.read(client, session))
+    )
 
   private def readAndMapTo[T](projectId: String,
                               datasetId: String,
                               tableId: String,
                               readOptions: Option[TableReadOptions],
                               maxNumStreams: Int,
-                              fx: (ArrowSchema, BigQueryReadClient, ReadSession) => T): Source[T, Future[NotUsed]] =
+                              fx: (ArrowSchema, BigQueryReadClient, ReadSession) => T
+  ): Source[T, Future[NotUsed]] =
     Source.fromMaterializer { (mat, attr) =>
       val client = reader(mat.system, attr).client
       readSession(client, projectId, datasetId, tableId, DataFormat.ARROW, readOptions, maxNumStreams)

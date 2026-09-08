@@ -38,5 +38,6 @@ abstract class WriteSettingsBase[Version <: ApiVersionBase, W <: WriteSettingsBa
                      retryLogic: RetryLogic = retryLogic,
                      versionType: Option[String] = versionType,
                      apiVersion: Version = apiVersion,
-                     allowExplicitIndex: Boolean = allowExplicitIndex): W;
+                     allowExplicitIndex: Boolean = allowExplicitIndex
+  ): W;
 }

@@ -27,7 +27,8 @@ object InfluxDbSink {
     InfluxDbFlow
       .create(influxDB)
       .toMat(Sink.ignore[java.util.List[InfluxDbWriteResult[Point, NotUsed]]](),
-             Keep.right[NotUsed, CompletionStage[Done]])
+             Keep.right[NotUsed, CompletionStage[Done]]
+      )
 
   def typed[T](
       clazz: Class[T],

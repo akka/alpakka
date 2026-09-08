@@ -131,7 +131,8 @@ object BigQueryStorage {
                              datasetId: String,
                              tableId: String,
                              dataFormat: DataFormat,
-                             um: Unmarshaller[ByteString, A]): Source[A, CompletionStage[NotUsed]] =
+                             um: Unmarshaller[ByteString, A]
+  ): Source[A, CompletionStage[NotUsed]] =
     createMergedStreams(projectId, datasetId, tableId, dataFormat, None, 1, um.asScala)
 
   /**
@@ -149,7 +150,8 @@ object BigQueryStorage {
                              tableId: String,
                              dataFormat: DataFormat,
                              readOptions: TableReadOptions,
-                             um: Unmarshaller[ByteString, A]): Source[A, CompletionStage[NotUsed]] =
+                             um: Unmarshaller[ByteString, A]
+  ): Source[A, CompletionStage[NotUsed]] =
     createMergedStreams(projectId, datasetId, tableId, dataFormat, Some(readOptions), 0, um.asScala)
 
   /**
@@ -171,7 +173,8 @@ object BigQueryStorage {
                              dataFormat: DataFormat,
                              readOptions: TableReadOptions,
                              maxNumStreams: Int,
-                             um: Unmarshaller[ByteString, A]): Source[A, CompletionStage[NotUsed]] =
+                             um: Unmarshaller[ByteString, A]
+  ): Source[A, CompletionStage[NotUsed]] =
     createMergedStreams(projectId, datasetId, tableId, dataFormat, Some(readOptions), maxNumStreams, um.asScala)
 
   /**
@@ -192,7 +195,8 @@ object BigQueryStorage {
                              tableId: String,
                              dataFormat: DataFormat,
                              maxNumStreams: Int,
-                             um: Unmarshaller[ByteString, A]): Source[A, CompletionStage[NotUsed]] =
+                             um: Unmarshaller[ByteString, A]
+  ): Source[A, CompletionStage[NotUsed]] =
     createMergedStreams(projectId, datasetId, tableId, dataFormat, None, maxNumStreams, um.asScala)
 
   private[this] def createMergedStreams[A](

@@ -79,7 +79,8 @@ object Credentials {
           case Failure(cause) =>
             log.warning("Compute Engine credentials request failed after the [{}] timeout had elapsed: {}",
                         timeout,
-                        describe(cause))
+                        describe(cause)
+            )
           case Success(late) =>
             // Nothing can reach these credentials any more, so release the resources they hold
             late.close()
@@ -118,10 +119,11 @@ object Credentials {
   @deprecated("Intended only to help with migration", "3.0.0")
   private[alpakka] def cache(key: Any)(default: => Credentials) =
     _cache.getOrElse(key, {
-      val credentials = default
-      _cache += (key -> credentials)
-      credentials
-    })
+                       val credentials = default
+                       _cache += (key -> credentials)
+                       credentials
+                     }
+    )
 
 }
 

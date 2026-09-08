@@ -17,7 +17,8 @@ object CouchbaseSource {
   def fromQuery(sessionSettings: CouchbaseSessionSettings,
                 bucketName: String,
                 query: String,
-                queryOptions: QueryOptions = QueryOptions.queryOptions()): Source[JsonObject, NotUsed] =
+                queryOptions: QueryOptions = QueryOptions.queryOptions()
+  ): Source[JsonObject, NotUsed] =
     Source
       .fromMaterializer { (materializer, _) =>
         Source

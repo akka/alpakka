@@ -17,8 +17,8 @@ final class UpdateFileRange(val range: ByteRange.Slice,
                             val contentType: ContentType,
                             val leaseId: Option[String] = None,
                             override val sse: Option[ServerSideEncryption] = None,
-                            override val additionalHeaders: Seq[HttpHeader] = Seq.empty)
-    extends RequestBuilder {
+                            override val additionalHeaders: Seq[HttpHeader] = Seq.empty
+) extends RequestBuilder {
 
   override protected val method: HttpMethod = HttpMethods.PUT
 
@@ -33,12 +33,14 @@ final class UpdateFileRange(val range: ByteRange.Slice,
 
   private def copy(leaseId: Option[String] = leaseId,
                    sse: Option[ServerSideEncryption] = sse,
-                   additionalHeaders: Seq[HttpHeader] = additionalHeaders) =
+                   additionalHeaders: Seq[HttpHeader] = additionalHeaders
+  ) =
     new UpdateFileRange(contentType = contentType,
                         range = range,
                         leaseId = leaseId,
                         sse = sse,
-                        additionalHeaders = additionalHeaders)
+                        additionalHeaders = additionalHeaders
+    )
 
   override protected def getHeaders: Seq[HttpHeader] =
     StorageHeaders()

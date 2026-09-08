@@ -32,7 +32,7 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
  * Progress (including termination) is controlled by the connected flow or sink, e.g. a retry delay can be implemented
  * by streaming the materialized values of the handler via a throttle.
  *
- *{{{
+ * {{{
  * + - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +
  *                                               +---------------------+
  * |                                             |       trigger       | |
@@ -63,7 +63,7 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
  *                     ServerSentEvent|          +---------------------+
  * |                                  v                                  |
  *  - - - - - - - - - - - - - - - - - o - - - - - - - - - - - - - - - - -
- *}}}
+ * }}}
  */
 object EventSource {
 
@@ -84,8 +84,9 @@ object EventSource {
   def apply(uri: Uri,
             send: HttpRequest => Future[HttpResponse],
             initialLastEventId: Option[String] = None,
-            retryDelay: FiniteDuration = Duration.Zero)(
-      implicit system: ClassicActorSystemProvider
+            retryDelay: FiniteDuration = Duration.Zero
+  )(implicit
+      system: ClassicActorSystemProvider
   ): EventSource = {
     import EventStreamUnmarshalling.fromEventsStream
     implicit val actorSystem: ActorSystem = system.classicSystem

@@ -45,7 +45,8 @@ final class ObjectAccessControls private (
                    entityId: String = entityId,
                    domain: String = domain,
                    projectTeam: ProjectTeam = projectTeam,
-                   etag: String = etag): ObjectAccessControls =
+                   etag: String = etag
+  ): ObjectAccessControls =
     new ObjectAccessControls(kind,
                              id,
                              selfLink,
@@ -58,7 +59,8 @@ final class ObjectAccessControls private (
                              entityId,
                              domain,
                              projectTeam,
-                             etag)
+                             etag
+    )
 
   override def toString: String =
     s"CustomerEncryption(" +
@@ -90,7 +92,8 @@ object ObjectAccessControls {
             entityId: String,
             domain: String,
             projectTeam: ProjectTeam,
-            etag: String): ObjectAccessControls =
+            etag: String
+  ): ObjectAccessControls =
     new ObjectAccessControls(kind,
                              id,
                              selfLink,
@@ -103,7 +106,8 @@ object ObjectAccessControls {
                              entityId,
                              domain,
                              projectTeam,
-                             etag)
+                             etag
+    )
 
   def create(kind: String,
              id: String,
@@ -117,7 +121,8 @@ object ObjectAccessControls {
              entityId: String,
              domain: String,
              projectTeam: ProjectTeam,
-             etag: String): ObjectAccessControls =
+             etag: String
+  ): ObjectAccessControls =
     new ObjectAccessControls(kind,
                              id,
                              selfLink,
@@ -130,5 +135,6 @@ object ObjectAccessControls {
                              entityId,
                              domain,
                              projectTeam,
-                             etag)
+                             etag
+    )
 }

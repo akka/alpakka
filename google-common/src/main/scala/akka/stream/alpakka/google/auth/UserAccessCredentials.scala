@@ -20,8 +20,8 @@ import scala.io.Source
 @InternalApi
 private[alpakka] object UserAccessCredentials {
 
-  def apply(clientId: String, clientSecret: String, refreshToken: String, projectId: Option[String])(
-      implicit system: ClassicActorSystemProvider
+  def apply(clientId: String, clientSecret: String, refreshToken: String, projectId: Option[String])(implicit
+      system: ClassicActorSystemProvider
   ): Credentials = {
     require(
       clientId.nonEmpty && clientSecret.nonEmpty && refreshToken.nonEmpty,
@@ -61,7 +61,8 @@ private[alpakka] object UserAccessCredentials {
   final case class UserAccessCredentialsFile(client_id: String,
                                              client_secret: String,
                                              refresh_token: String,
-                                             quota_project_id: Option[String])
+                                             quota_project_id: Option[String]
+  )
   implicit val userAccessCredentialsFormat: RootJsonFormat[UserAccessCredentialsFile] = jsonFormat4(
     UserAccessCredentialsFile
   )
@@ -71,13 +72,16 @@ private[alpakka] object UserAccessCredentials {
 private final class UserAccessCredentials(clientId: String,
                                           clientSecret: String,
                                           refreshToken: String,
-                                          projectId: Option[String])(
-    implicit mat: Materializer
+                                          projectId: Option[String]
+)(implicit
+    mat: Materializer
 ) extends OAuth2Credentials(projectId) {
 
-  override protected def getAccessToken()(implicit mat: Materializer,
-                                          @unused settings: RequestSettings,
-                                          clock: Clock): Future[AccessToken] = {
+  override protected def getAccessToken()(implicit
+      mat: Materializer,
+      @unused settings: RequestSettings,
+      clock: Clock
+  ): Future[AccessToken] = {
     UserAccessMetadata.getAccessToken(clientId, clientSecret, refreshToken)
   }
 }

@@ -54,16 +54,15 @@ private[amqp] final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSi
         channel.basicQos(bufferSize)
         val consumerCallback = getAsyncCallback(handleDelivery)
 
-        val ackCallback = getAsyncCallback[AckArguments] {
-          case AckArguments(deliveryTag, multiple, promise) =>
-            try {
-              channel.basicAck(deliveryTag, multiple)
-              unackedMessages -= 1
-              if (unackedMessages == 0 && isClosed(out)) completeStage()
-              promise.complete(Success(Done))
-            } catch {
-              case e: Throwable => promise.failure(e)
-            }
+        val ackCallback = getAsyncCallback[AckArguments] { case AckArguments(deliveryTag, multiple, promise) =>
+          try {
+            channel.basicAck(deliveryTag, multiple)
+            unackedMessages -= 1
+            if (unackedMessages == 0 && isClosed(out)) completeStage()
+            promise.complete(Success(Done))
+          } catch {
+            case e: Throwable => promise.failure(e)
+          }
         }
 
         val nackCallback = getAsyncCallback[NackArguments] {
@@ -82,7 +81,8 @@ private[amqp] final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSi
           override def handleDelivery(consumerTag: String,
                                       envelope: Envelope,
                                       properties: BasicProperties,
-                                      body: Array[Byte]): Unit = {
+                                      body: Array[Byte]
+          ): Unit = {
             val message = if (ackRequired) {
 
               new CommittableReadResult {

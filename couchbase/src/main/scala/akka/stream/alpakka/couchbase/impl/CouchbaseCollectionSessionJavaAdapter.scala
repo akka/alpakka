@@ -112,7 +112,8 @@ private[couchbase] final class CouchbaseCollectionSessionJavaAdapter(delegate: s
   override def upsert[T](id: String,
                          document: T,
                          upsertOptions: UpsertOptions,
-                         timeout: Duration): CompletionStage[Done] =
+                         timeout: Duration
+  ): CompletionStage[Done] =
     delegate.upsert(id, document, upsertOptions, timeout.toScala).asJava
 
   /**
@@ -147,7 +148,8 @@ private[couchbase] final class CouchbaseCollectionSessionJavaAdapter(delegate: s
   override def replace[T](id: String,
                           document: T,
                           replaceOptions: ReplaceOptions,
-                          timeout: Duration): CompletionStage[Done] =
+                          timeout: Duration
+  ): CompletionStage[Done] =
     delegate.replace(id, document, replaceOptions, timeout.toScala).asJava
 
   /**
@@ -191,7 +193,8 @@ private[couchbase] final class CouchbaseCollectionSessionJavaAdapter(delegate: s
    */
   override def createIndex(indexName: String,
                            createQueryIndexOptions: CreateQueryIndexOptions,
-                           fields: String*): CompletionStage[Done] =
+                           fields: String*
+  ): CompletionStage[Done] =
     delegate.createIndex(indexName, createQueryIndexOptions, fields: _*).asJava
 
   /**

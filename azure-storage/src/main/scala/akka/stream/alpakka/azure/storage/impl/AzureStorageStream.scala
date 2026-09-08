@@ -57,7 +57,8 @@ object AzureStorageStream {
 
   private[storage] def getObject(storageType: String,
                                  objectPath: String,
-                                 requestBuilder: RequestBuilder): Source[ByteString, Future[ObjectMetadata]] =
+                                 requestBuilder: RequestBuilder
+  ): Source[ByteString, Future[ObjectMetadata]] =
     Source
       .fromMaterializer { (mat, attr) =>
         implicit val system: ActorSystem = mat.system
@@ -67,50 +68,56 @@ object AzureStorageStream {
         signAndRequest(request, settings)(mat.system)
           .map(response => response.withEntity(response.entity.withoutSizeLimit))
           .mapAsync(parallelism = 1)(entityForSuccess)
-          .flatMapConcat {
-            case (entity, headers) =>
-              objectMetadataMat.success(computeMetaData(headers, entity))
-              entity.dataBytes
+          .flatMapConcat { case (entity, headers) =>
+            objectMetadataMat.success(computeMetaData(headers, entity))
+            entity.dataBytes
           }
-          .mapError {
-            case e: Throwable =>
-              objectMetadataMat.tryFailure(e)
-              e
+          .mapError { case e: Throwable =>
+            objectMetadataMat.tryFailure(e)
+            e
           }
           .mapMaterializedValue(_ => objectMetadataMat.future)
       }
       .mapMaterializedValue(_.flatMap(identity)(ExecutionContext.parasitic))
 
   private[storage] def getBlobProperties(objectPath: String,
-                                         requestBuilder: GetProperties): Source[Option[ObjectMetadata], NotUsed] =
+                                         requestBuilder: GetProperties
+  ): Source[Option[ObjectMetadata], NotUsed] =
     handleRequest(successCode = OK, storageType = BlobType, objectPath = objectPath, requestBuilder = requestBuilder)
 
   private[storage] def getFileProperties(objectPath: String,
-                                         requestBuilder: GetProperties): Source[Option[ObjectMetadata], NotUsed] =
+                                         requestBuilder: GetProperties
+  ): Source[Option[ObjectMetadata], NotUsed] =
     handleRequest(successCode = OK, storageType = FileType, objectPath = objectPath, requestBuilder = requestBuilder)
 
   private[storage] def deleteBlob(objectPath: String,
-                                  requestBuilder: RequestBuilder): Source[Option[ObjectMetadata], NotUsed] =
+                                  requestBuilder: RequestBuilder
+  ): Source[Option[ObjectMetadata], NotUsed] =
     handleRequest(successCode = Accepted,
                   storageType = BlobType,
                   objectPath = objectPath,
-                  requestBuilder = requestBuilder)
+                  requestBuilder = requestBuilder
+    )
 
   private[storage] def deleteFile(objectPath: String,
-                                  requestBuilder: RequestBuilder): Source[Option[ObjectMetadata], NotUsed] =
+                                  requestBuilder: RequestBuilder
+  ): Source[Option[ObjectMetadata], NotUsed] =
     handleRequest(successCode = Accepted,
                   storageType = FileType,
                   objectPath = objectPath,
-                  requestBuilder = requestBuilder)
+                  requestBuilder = requestBuilder
+    )
 
   private[storage] def putBlob(objectPath: String,
                                requestBuilder: RequestBuilder,
-                               maybeHttpEntity: Option[MessageEntity]): Source[Option[ObjectMetadata], NotUsed] =
+                               maybeHttpEntity: Option[MessageEntity]
+  ): Source[Option[ObjectMetadata], NotUsed] =
     handleRequest(successCode = Created,
                   storageType = BlobType,
                   objectPath = objectPath,
                   requestBuilder = requestBuilder,
-                  maybeHttpEntity = maybeHttpEntity)
+                  maybeHttpEntity = maybeHttpEntity
+    )
 
   /**
    * Uploads a block blob using streaming Put Block / Put Block List operations.
@@ -136,24 +143,24 @@ object AzureStorageStream {
             },
             _ => None
           )
-          .mapAsync(1) {
-            case (blockId, block) =>
-              val putBlock = new PutBlock(blockId,
-                                          block.length.toLong,
-                                          requestBuilder.contentType,
-                                          leaseId = requestBuilder.leaseId,
-                                          sse = requestBuilder.sse,
-                                          additionalHeaders = requestBuilder.additionalHeaders)
-              val entity = HttpEntity.Strict(requestBuilder.contentType, block)
-              val request = putBlock.createRequest(settings, BlobType, objectPath).withEntity(entity)
-              signAndRequest(request, settings)
-                .flatMapConcat {
-                  case HttpResponse(Created, _, responseEntity, _) =>
-                    Source.future(responseEntity.discardBytes().future().map(_ => blockId))
-                  case response: HttpResponse =>
-                    Source.future(unmarshalError(response.status, response.entity))
-                }
-                .runWith(Sink.head)
+          .mapAsync(1) { case (blockId, block) =>
+            val putBlock = new PutBlock(blockId,
+                                        block.length.toLong,
+                                        requestBuilder.contentType,
+                                        leaseId = requestBuilder.leaseId,
+                                        sse = requestBuilder.sse,
+                                        additionalHeaders = requestBuilder.additionalHeaders
+            )
+            val entity = HttpEntity.Strict(requestBuilder.contentType, block)
+            val request = putBlock.createRequest(settings, BlobType, objectPath).withEntity(entity)
+            signAndRequest(request, settings)
+              .flatMapConcat {
+                case HttpResponse(Created, _, responseEntity, _) =>
+                  Source.future(responseEntity.discardBytes().future().map(_ => blockId))
+                case response: HttpResponse =>
+                  Source.future(unmarshalError(response.status, response.entity))
+              }
+              .runWith(Sink.head)
           }
           .fold(Vector.empty[String])(_ :+ _)
           .mapAsync(1) { blockIds =>
@@ -162,7 +169,8 @@ object AzureStorageStream {
             val putBlockList = new PutBlockList(xmlBytes.length.toLong,
                                                 leaseId = requestBuilder.leaseId,
                                                 sse = requestBuilder.sse,
-                                                additionalHeaders = requestBuilder.additionalHeaders)
+                                                additionalHeaders = requestBuilder.additionalHeaders
+            )
             val entity = HttpEntity(ContentTypes.`text/xml(UTF-8)`, xmlBytes)
             val request = putBlockList.createRequest(settings, BlobType, objectPath).withEntity(entity)
             signAndRequest(request, settings)
@@ -216,15 +224,18 @@ object AzureStorageStream {
   }
 
   private[storage] def createFile(objectPath: String,
-                                  requestBuilder: CreateFile): Source[Option[ObjectMetadata], NotUsed] =
+                                  requestBuilder: CreateFile
+  ): Source[Option[ObjectMetadata], NotUsed] =
     handleRequest(successCode = Created,
                   storageType = FileType,
                   objectPath = objectPath,
-                  requestBuilder = requestBuilder)
+                  requestBuilder = requestBuilder
+    )
 
   private[storage] def updateRange(objectPath: String,
                                    httpEntity: MessageEntity,
-                                   requestBuilder: UpdateFileRange): Source[Option[ObjectMetadata], NotUsed] =
+                                   requestBuilder: UpdateFileRange
+  ): Source[Option[ObjectMetadata], NotUsed] =
     handleRequest(
       successCode = Created,
       storageType = FileType,
@@ -234,39 +245,49 @@ object AzureStorageStream {
     )
 
   private[storage] def clearRange(objectPath: String,
-                                  requestBuilder: ClearFileRange): Source[Option[ObjectMetadata], NotUsed] =
+                                  requestBuilder: ClearFileRange
+  ): Source[Option[ObjectMetadata], NotUsed] =
     handleRequest(successCode = Created,
                   storageType = FileType,
                   objectPath = objectPath,
-                  requestBuilder = requestBuilder)
+                  requestBuilder = requestBuilder
+    )
 
   private[storage] def createContainer(objectPath: String,
-                                       requestBuilder: CreateContainer): Source[Option[ObjectMetadata], NotUsed] =
+                                       requestBuilder: CreateContainer
+  ): Source[Option[ObjectMetadata], NotUsed] =
     handleRequest(successCode = Created,
                   storageType = BlobType,
                   objectPath = objectPath,
-                  requestBuilder = requestBuilder)
+                  requestBuilder = requestBuilder
+    )
 
   private[storage] def deleteContainer(objectPath: String,
-                                       requestBuilder: DeleteContainer): Source[Option[ObjectMetadata], NotUsed] =
+                                       requestBuilder: DeleteContainer
+  ): Source[Option[ObjectMetadata], NotUsed] =
     handleRequest(successCode = Accepted,
                   storageType = BlobType,
                   objectPath = objectPath,
-                  requestBuilder = requestBuilder)
+                  requestBuilder = requestBuilder
+    )
 
   private[storage] def createDirectory(directoryPath: String,
-                                       requestBuilder: CreateDirectory): Source[Option[ObjectMetadata], NotUsed] =
+                                       requestBuilder: CreateDirectory
+  ): Source[Option[ObjectMetadata], NotUsed] =
     handleRequest(successCode = Created,
                   storageType = FileType,
                   objectPath = directoryPath,
-                  requestBuilder = requestBuilder)
+                  requestBuilder = requestBuilder
+    )
 
   private[storage] def deleteDirectory(directoryPath: String,
-                                       requestBuilder: DeleteDirectory): Source[Option[ObjectMetadata], NotUsed] =
+                                       requestBuilder: DeleteDirectory
+  ): Source[Option[ObjectMetadata], NotUsed] =
     handleRequest(successCode = Accepted,
                   storageType = FileType,
                   objectPath = directoryPath,
-                  requestBuilder = requestBuilder)
+                  requestBuilder = requestBuilder
+    )
 
   /**
    * Lists blobs in a container, automatically following pagination markers.
@@ -387,20 +408,17 @@ object AzureStorageStream {
   private def signAndRequest(
       request: HttpRequest,
       settings: StorageSettings
-  )(implicit
-    system: ActorSystem): Source[HttpResponse, NotUsed] = {
+  )(implicit system: ActorSystem): Source[HttpResponse, NotUsed] = {
     import system.dispatcher
 
     val retriableFlow = Flow[HttpRequest]
-      .mapAsync(parallelism = 1)(
-        req =>
-          Http()
-            .singleRequest(req)
-            .map(Success.apply)
-            .recover[Try[HttpResponse]] {
-              case t =>
-                Failure(t)
-            }
+      .mapAsync(parallelism = 1)(req =>
+        Http()
+          .singleRequest(req)
+          .map(Success.apply)
+          .recover[Try[HttpResponse]] { case t =>
+            Failure(t)
+          }
       )
 
     import settings.retrySettings._

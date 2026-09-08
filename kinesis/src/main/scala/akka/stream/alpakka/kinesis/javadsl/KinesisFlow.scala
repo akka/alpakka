@@ -14,12 +14,14 @@ import akka.stream.javadsl.FlowWithContext
 object KinesisFlow {
 
   def create(streamName: String,
-             kinesisClient: KinesisAsyncClient): Flow[PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed] =
+             kinesisClient: KinesisAsyncClient
+  ): Flow[PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed] =
     create(streamName, KinesisFlowSettings.Defaults, kinesisClient)
 
   def create(streamName: String,
              settings: KinesisFlowSettings,
-             kinesisClient: KinesisAsyncClient): Flow[PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed] =
+             kinesisClient: KinesisAsyncClient
+  ): Flow[PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed] =
     scaladsl.KinesisFlow
       .apply(streamName, settings)(kinesisClient)
       .asJava

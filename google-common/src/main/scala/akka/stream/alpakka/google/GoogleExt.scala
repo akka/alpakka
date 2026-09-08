@@ -26,10 +26,11 @@ private[google] final class GoogleExt private (sys: ExtendedActorSystem) extends
 
   def settings(path: String): GoogleSettings =
     cachedSettings.getOrElse(path, {
-      val settings = GoogleSettings(sys.settings.config.getConfig(path))(sys)
-      cachedSettings += path -> settings
-      settings
-    })
+                               val settings = GoogleSettings(sys.settings.config.getConfig(path))(sys)
+                               cachedSettings += path -> settings
+                               settings
+                             }
+    )
 }
 
 @InternalApi

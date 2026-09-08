@@ -40,7 +40,8 @@ private[jms] final class JmsConsumerStage(settings: JmsConsumerSettings, destina
     private val backpressure = new Semaphore(bufferSize)
 
     protected def createSession(connection: jms.Connection,
-                                createDestination: jms.Session => javax.jms.Destination): JmsConsumerSession = {
+                                createDestination: jms.Session => javax.jms.Destination
+    ): JmsConsumerSession = {
       val session =
         connection.createSession(false, settings.acknowledgeMode.getOrElse(AcknowledgeMode.AutoAcknowledge).mode)
       new JmsConsumerSession(connection, session, createDestination(session), self.destination)

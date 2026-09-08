@@ -16,8 +16,8 @@ final case class StorageException(statusCode: StatusCode,
                                   errorMessage: String,
                                   resourceName: Option[String],
                                   resourceValue: Option[String],
-                                  reason: Option[String])
-    extends RuntimeException(errorMessage) {
+                                  reason: Option[String]
+) extends RuntimeException(errorMessage) {
 
   override def toString: String =
     s"""StorageException(
@@ -36,7 +36,8 @@ object StorageException {
             errorMessage: String,
             resourceName: Option[String],
             resourceValue: Option[String],
-            reason: Option[String]): StorageException =
+            reason: Option[String]
+  ): StorageException =
     new StorageException(statusCode, errorCode, errorMessage, resourceName, resourceValue, reason)
 
   def apply(response: String, statusCode: StatusCode): StorageException = {

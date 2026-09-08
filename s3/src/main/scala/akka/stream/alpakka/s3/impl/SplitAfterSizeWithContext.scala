@@ -20,7 +20,6 @@ import akka.util.ByteString
  * This also means that `SplitAfterSizeContext` currently doesn't support buffering since that would require a way to
  * serialize the Context in the case of a disk buffer which is currently unsupported (we would have to add in a
  * C => ByteString serializer in the public API)
- *
  */
 @InternalApi private[impl] object SplitAfterSizeWithContext {
   def apply[I, M, C](minChunkSize: Int)(

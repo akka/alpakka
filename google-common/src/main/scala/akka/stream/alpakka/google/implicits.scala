@@ -26,9 +26,8 @@ private[alpakka] object implicits {
      */
     def withDefaultRetry: FromResponseUnmarshaller[T] =
       Unmarshaller.withMaterializer { implicit ec => implicit mat => response =>
-        um(response).recoverWith {
-          case ex =>
-            Unmarshaller.strict((_: HttpResponse) => ex).withDefaultRetry.apply(response).fast.map(throw _)
+        um(response).recoverWith { case ex =>
+          Unmarshaller.strict((_: HttpResponse) => ex).withDefaultRetry.apply(response).fast.map(throw _)
         }
       }
 
@@ -36,8 +35,8 @@ private[alpakka] object implicits {
      * Disables all retries
      */
     def withoutRetries: FromResponseUnmarshaller[T] = um.recover { _ => _ =>
-      {
-        case Retry(ex) => throw ex
+      { case Retry(ex) =>
+        throw ex
       }
     }
   }
@@ -49,12 +48,11 @@ private[alpakka] object implicits {
      */
     def withDefaultRetry: FromResponseUnmarshaller[Throwable] =
       Unmarshaller.withMaterializer { implicit ec => implicit mat => response =>
-        um(response).map {
-          case ex =>
-            response.status match {
-              case TooManyRequests | InternalServerError | BadGateway | ServiceUnavailable | GatewayTimeout => Retry(ex)
-              case _ => ex
-            }
+        um(response).map { case ex =>
+          response.status match {
+            case TooManyRequests | InternalServerError | BadGateway | ServiceUnavailable | GatewayTimeout => Retry(ex)
+            case _ => ex
+          }
         }
       }
   }
@@ -62,8 +60,8 @@ private[alpakka] object implicits {
   /**
    * Merges a success and failure unmarshaller into a single unmarshaller
    */
-  implicit def responseUnmarshallerWithExceptions[T](
-      implicit um: FromEntityUnmarshaller[T],
+  implicit def responseUnmarshallerWithExceptions[T](implicit
+      um: FromEntityUnmarshaller[T],
       exUm: FromResponseUnmarshaller[Throwable]
   ): FromResponseUnmarshaller[T] =
     Unmarshaller.withMaterializer { implicit ec => implicit mat => response =>

@@ -45,7 +45,8 @@ package object storage {
   private[storage] def getFormattedDate(implicit clock: Clock): String =
     ImfFixdateFormatter.format(clock.instant().atOffset(ZoneOffset.UTC))
 
-  /** Removes ETag quotes in the same way the official AWS tooling does. See
+  /**
+   * Removes ETag quotes in the same way the official AWS tooling does. See
    */
   private[storage] def removeQuotes(string: String): String = {
     val trimmed = string.trim()
@@ -53,7 +54,8 @@ package object storage {
     if (tail.endsWith("\"")) tail.dropRight(1) else tail
   }
 
-  /** This method returns `None` if given an empty `String`. This is typically used when parsing XML since its common to
+  /**
+   * This method returns `None` if given an empty `String`. This is typically used when parsing XML since its common to
    * have XML elements with an empty text value inside.
    */
   private[storage] def emptyStringToOption(value: String): Option[String] = if (value == "") None else Option(value)

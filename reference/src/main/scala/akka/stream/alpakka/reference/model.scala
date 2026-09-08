@@ -105,8 +105,8 @@ final class ReferenceWriteMessage private (
    * Java getter needs to return Java Long classes which is converted from Scala Long.
    */
   def getMetrics(): java.util.Map[String, java.lang.Long] =
-    metrics.map {
-      case (key, value) => key -> java.lang.Long.valueOf(value)
+    metrics.map { case (key, value) =>
+      key -> java.lang.Long.valueOf(value)
     }.asJava
 
   private def copy(data: immutable.Seq[ByteString] = data, metrics: Map[String, Long] = metrics) =
@@ -133,7 +133,8 @@ object ReferenceWriteMessage {
  */
 final class ReferenceWriteResult @InternalApi private[reference] (val message: ReferenceWriteMessage,
                                                                   val metrics: Map[String, Long],
-                                                                  val status: Int) {
+                                                                  val status: Int
+) {
 
   /** Java API */
   def getMessage: ReferenceWriteMessage = message
@@ -144,8 +145,8 @@ final class ReferenceWriteResult @InternalApi private[reference] (val message: R
    * Java getter needs to return Java Long classes which is converted from Scala Long.
    */
   def getMetrics(): java.util.Map[String, java.lang.Long] =
-    metrics.map {
-      case (key, value) => key -> java.lang.Long.valueOf(value)
+    metrics.map { case (key, value) =>
+      key -> java.lang.Long.valueOf(value)
     }.asJava
 
   /** Java API */
@@ -157,7 +158,7 @@ final class ReferenceWriteResult @InternalApi private[reference] (val message: R
   override def equals(other: Any): Boolean = other match {
     case that: ReferenceWriteResult =>
       java.util.Objects.equals(this.message, that.message) &&
-      java.util.Objects.equals(this.status, that.status)
+        java.util.Objects.equals(this.status, that.status)
     case _ => false
   }
 

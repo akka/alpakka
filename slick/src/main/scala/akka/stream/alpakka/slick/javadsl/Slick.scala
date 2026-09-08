@@ -209,11 +209,13 @@ object Slick {
       mapper: JBiFunction[T, java.lang.Integer, R]
   ): Flow[T, R, NotUsed] =
     ScalaSlick
-      .flowWithPassThrough[T, R](parallelism, (t: T) => {
-        toDBIO(toStatement)
-          .apply(t)
-          .map(count => mapper.apply(t, count))(executionContext)
-      })(session)
+      .flowWithPassThrough[T, R](parallelism,
+                                 (t: T) => {
+                                   toDBIO(toStatement)
+                                     .apply(t)
+                                     .map(count => mapper.apply(t, count))(executionContext)
+                                 }
+      )(session)
       .asJava
 
   /**
@@ -243,11 +245,13 @@ object Slick {
       mapper: Function2[T, java.lang.Integer, R]
   ): Flow[T, R, NotUsed] =
     ScalaSlick
-      .flowWithPassThrough[T, R](parallelism, (t: T) => {
-        toDBIO(toStatement)
-          .apply(t)
-          .map(count => mapper.apply(t, count))(executionContext)
-      })(session)
+      .flowWithPassThrough[T, R](parallelism,
+                                 (t: T) => {
+                                   toDBIO(toStatement)
+                                     .apply(t)
+                                     .map(count => mapper.apply(t, count))(executionContext)
+                                 }
+      )(session)
       .asJava
 
   /**

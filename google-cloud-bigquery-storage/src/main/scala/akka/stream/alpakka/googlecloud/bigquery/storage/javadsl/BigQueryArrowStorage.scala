@@ -22,13 +22,15 @@ object BigQueryArrowStorage {
 
   def readRecordsMerged(projectId: String,
                         datasetId: String,
-                        tableId: String): Source[java.util.List[BigQueryRecord], CompletionStage[NotUsed]] =
+                        tableId: String
+  ): Source[java.util.List[BigQueryRecord], CompletionStage[NotUsed]] =
     readRecordsMerged(projectId, datasetId, tableId)
 
   def readRecordsMerged(projectId: String,
                         datasetId: String,
                         tableId: String,
-                        maxNumStreams: Int): Source[java.util.List[BigQueryRecord], CompletionStage[NotUsed]] =
+                        maxNumStreams: Int
+  ): Source[java.util.List[BigQueryRecord], CompletionStage[NotUsed]] =
     readRecordsMerged(projectId, datasetId, tableId, None, maxNumStreams)
 
   def readRecordsMerged(
@@ -43,7 +45,8 @@ object BigQueryArrowStorage {
                         datasetId: String,
                         tableId: String,
                         readOptions: TableReadOptions,
-                        maxNumStreams: Int): Source[java.util.List[BigQueryRecord], CompletionStage[NotUsed]] =
+                        maxNumStreams: Int
+  ): Source[java.util.List[BigQueryRecord], CompletionStage[NotUsed]] =
     readRecordsMerged(projectId, datasetId, tableId, Some(readOptions), maxNumStreams)
 
   private def readRecordsMerged(
@@ -63,7 +66,8 @@ object BigQueryArrowStorage {
 
   def readRecords(projectId: String,
                   datasetId: String,
-                  tableId: String): Source[java.util.List[Source[BigQueryRecord, NotUsed]], CompletionStage[NotUsed]] =
+                  tableId: String
+  ): Source[java.util.List[Source[BigQueryRecord, NotUsed]], CompletionStage[NotUsed]] =
     readRecords(projectId, datasetId, tableId)
 
   def readRecords(
@@ -108,7 +112,8 @@ object BigQueryArrowStorage {
 
   def readMerged(projectId: String,
                  datasetId: String,
-                 tableId: String): Source[(ArrowSchema, Source[ArrowRecordBatch, NotUsed]), CompletionStage[NotUsed]] =
+                 tableId: String
+  ): Source[(ArrowSchema, Source[ArrowRecordBatch, NotUsed]), CompletionStage[NotUsed]] =
     readMerged(projectId, datasetId, tableId)
 
   def readMerged(

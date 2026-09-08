@@ -23,8 +23,8 @@ private[storage] final class PutBlock(val blockId: String,
                                       val contentType: ContentType,
                                       val leaseId: Option[String] = None,
                                       override val sse: Option[ServerSideEncryption] = None,
-                                      override val additionalHeaders: Seq[HttpHeader] = Seq.empty)
-    extends RequestBuilder {
+                                      override val additionalHeaders: Seq[HttpHeader] = Seq.empty
+) extends RequestBuilder {
 
   override protected val method: HttpMethod = HttpMethods.PUT
 
@@ -51,7 +51,8 @@ private[storage] final class PutBlock(val blockId: String,
                  contentType = contentType,
                  leaseId = leaseId,
                  sse = sse,
-                 additionalHeaders = additionalHeaders)
+                 additionalHeaders = additionalHeaders
+    )
 }
 
 /** INTERNAL API */

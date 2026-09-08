@@ -21,7 +21,8 @@ object SqsAckFlow {
    */
   def create(queueUrl: String,
              settings: SqsAckSettings,
-             sqsClient: SqsAsyncClient): Flow[MessageAction, SqsAckResult, NotUsed] =
+             sqsClient: SqsAsyncClient
+  ): Flow[MessageAction, SqsAckResult, NotUsed] =
     akka.stream.alpakka.sqs.scaladsl.SqsAckFlow.apply(queueUrl, settings)(sqsClient).asJava
 
   /**
@@ -29,6 +30,7 @@ object SqsAckFlow {
    */
   def grouped(queueUrl: String,
               settings: SqsAckGroupedSettings,
-              sqsClient: SqsAsyncClient): Flow[MessageAction, SqsAckResultEntry, NotUsed] =
+              sqsClient: SqsAsyncClient
+  ): Flow[MessageAction, SqsAckResultEntry, NotUsed] =
     akka.stream.alpakka.sqs.scaladsl.SqsAckFlow.grouped(queueUrl, settings)(sqsClient).asJava
 }

@@ -30,7 +30,7 @@ final class Credentials private (
   override def equals(other: Any): Boolean = other match {
     case that: Credentials =>
       java.util.Objects.equals(this.username, that.username) &&
-      java.util.Objects.equals(this.password, that.password)
+        java.util.Objects.equals(this.password, that.password)
     case _ => false
   }
 

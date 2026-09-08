@@ -31,7 +31,8 @@ object Directory {
    */
   def walk(directory: Path,
            maxDepth: Option[Int] = None,
-           fileVisitOptions: immutable.Seq[FileVisitOption] = Nil): Source[Path, NotUsed] = {
+           fileVisitOptions: immutable.Seq[FileVisitOption] = Nil
+  ): Source[Path, NotUsed] = {
     require(Files.isDirectory(directory), s"Path must be a directory, $directory isn't")
     val factory = maxDepth match {
       case None =>

@@ -32,7 +32,8 @@ object IronMqProducer {
    * commit the associated [[Committable]].
    */
   def atLeastOnceFlow(queueName: String,
-                      settings: IronMqSettings): Flow[(PushMessage, Committable), Message.Id, NotUsed] =
+                      settings: IronMqSettings
+  ): Flow[(PushMessage, Committable), Message.Id, NotUsed] =
     // TODO Not sure about parallelism, as the commits should not be in-order, maybe add it as parameter?
     atLeastOnceFlow(queueName, settings, Flow[Committable].mapAsync(1)(_.commit())).map(_._1)
 

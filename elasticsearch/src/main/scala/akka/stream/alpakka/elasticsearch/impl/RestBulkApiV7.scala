@@ -21,8 +21,8 @@ import scala.collection.immutable
 private[impl] final class RestBulkApiV7[T, C](indexName: String,
                                               versionType: Option[String],
                                               allowExplicitIndex: Boolean,
-                                              messageWriter: MessageWriter[T])
-    extends RestBulkApi[T, C] {
+                                              messageWriter: MessageWriter[T]
+) extends RestBulkApi[T, C] {
 
   def toJson(messages: immutable.Seq[WriteMessage[T, C]]): String =
     messages

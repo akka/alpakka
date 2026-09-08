@@ -14,7 +14,8 @@ case class AndroidConfig(collapse_key: Option[Int] = None,
                          receipt_id: Option[String] = None,
                          fast_app_target: Option[Int] = None,
                          data: Option[String] = None,
-                         notification: Option[AndroidNotification] = None) {
+                         notification: Option[AndroidNotification] = None
+) {
   def withCollapseKey(value: Int): AndroidConfig = this.copy(collapse_key = Option(value))
 
   def withTtl(value: String): AndroidConfig = this.copy(ttl = Option(value))
@@ -76,7 +77,8 @@ case class AndroidNotification(title: Option[String] = None,
                                foreground_show: Option[Boolean] = None,
                                profile_id: Option[String] = None,
                                inbox_content: Option[Seq[String]] = None,
-                               buttons: Option[Seq[Button]] = None) {
+                               buttons: Option[Seq[Button]] = None
+) {
   def withTitle(value: String): AndroidNotification = this.copy(title = Option(value))
   def withBody(value: String): AndroidNotification = this.copy(body = Option(value))
   def withIcon(value: String): AndroidNotification = this.copy(icon = Option(value))
@@ -125,7 +127,8 @@ object AndroidNotification {
  */
 case class LightSettings(color: Option[Color] = None,
                          light_on_duration: Option[String] = None,
-                         light_off_duration: Option[String] = None) {
+                         light_off_duration: Option[String] = None
+) {
   def withColor(color: Color): LightSettings = this.copy(color = Option(color))
 
   def withLightOnDuration(value: String): LightSettings = this.copy(light_on_duration = Option(value))
@@ -145,7 +148,8 @@ object LightSettings {
 case class Color(alpha: Option[Float] = None,
                  red: Option[Float] = None,
                  green: Option[Float] = None,
-                 blue: Option[Float] = None) {
+                 blue: Option[Float] = None
+) {
   def withAlpha(value: Float): Color = this.copy(alpha = Option(value))
 
   def withRed(value: Float): Color = this.copy(red = Option(value))
@@ -167,7 +171,8 @@ object Color {
 case class ClickAction(`type`: Option[Int] = None,
                        intent: Option[String] = None,
                        url: Option[String] = None,
-                       action: Option[String] = None) {
+                       action: Option[String] = None
+) {
   def withType(value: Int): ClickAction = this.copy(`type` = Option(value))
 
   def withIntent(value: String): ClickAction = this.copy(intent = Option(value))
@@ -204,7 +209,8 @@ case class Button(name: Option[String] = None,
                   action_type: Option[Int] = None,
                   intent_type: Option[Int] = None,
                   intent: Option[String] = None,
-                  data: Option[String] = None) {
+                  data: Option[String] = None
+) {
   def withName(value: String): Button = this.copy(name = Option(value))
   def withActionType(value: Int): Button = this.copy(action_type = Option(value))
   def withIntentType(value: Int): Button = this.copy(intent_type = Option(value))

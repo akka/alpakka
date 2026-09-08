@@ -37,7 +37,8 @@ object GrpcSubscriber {
    */
   def create(settings: PubSubSettings,
              googleSettings: GoogleSettings,
-             sys: ClassicActorSystemProvider): GrpcSubscriber =
+             sys: ClassicActorSystemProvider
+  ): GrpcSubscriber =
     create(settings, googleSettings, sys.classicSystem)
 
   def create(settings: PubSubSettings, googleSettings: GoogleSettings, sys: ActorSystem): GrpcSubscriber =
