@@ -236,7 +236,7 @@ object Dependencies {
       Seq(
         "com.chuusai" %% "shapeless" % "2.3.13",
         // https://logging.apache.org/log4j/2.x/release-notes.html
-        "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.25.5" % Test
+        "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.26.1" % Test
       ) ++ JacksonDatabindDependencies
   )
 
