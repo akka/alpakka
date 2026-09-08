@@ -131,7 +131,10 @@ class SqsModelSpec extends AnyFlatSpec with Matchers with LogCapturing {
     val reference = new SqsChangeMessageVisibilityResultEntry(messageAction, result, responseMetadata)
 
     new SqsChangeMessageVisibilityResultEntry(messageAction, result, responseMetadata) shouldBe reference
-    new SqsChangeMessageVisibilityResultEntry(messageAction, result, otherResponseMetadata) shouldBe reference // responseMetadata does not count in equality
+    new SqsChangeMessageVisibilityResultEntry(messageAction,
+                                              result,
+                                              otherResponseMetadata
+    ) shouldBe reference // responseMetadata does not count in equality
     new SqsChangeMessageVisibilityResultEntry(otherMessageAction, result, responseMetadata) should not be reference
     new SqsChangeMessageVisibilityResultEntry(messageAction, otherResult, responseMetadata) should not be reference
   }

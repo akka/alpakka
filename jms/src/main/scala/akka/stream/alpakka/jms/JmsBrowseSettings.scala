@@ -129,7 +129,8 @@ object JmsBrowseSettings {
    * @param connectionFactory Factory to use for creating JMS connections.
    */
   def apply(actorSystem: ClassicActorSystemProvider,
-            connectionFactory: javax.jms.ConnectionFactory): JmsBrowseSettings =
+            connectionFactory: javax.jms.ConnectionFactory
+  ): JmsBrowseSettings =
     apply(actorSystem.classicSystem, connectionFactory)
 
   /**
@@ -148,7 +149,8 @@ object JmsBrowseSettings {
    * @param connectionFactory Factory to use for creating JMS connections.
    */
   def create(actorSystem: ClassicActorSystemProvider,
-             connectionFactory: javax.jms.ConnectionFactory): JmsBrowseSettings =
+             connectionFactory: javax.jms.ConnectionFactory
+  ): JmsBrowseSettings =
     apply(actorSystem.classicSystem, connectionFactory)
 
 }

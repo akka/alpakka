@@ -43,7 +43,8 @@ object XmlWriting {
    * @param xmlOutputFactory factory from which to get an XMLStreamWriter
    */
   def writer(charset: Charset,
-             xmlOutputFactory: XMLOutputFactory): akka.stream.javadsl.Flow[ParseEvent, ByteString, NotUsed] =
+             xmlOutputFactory: XMLOutputFactory
+  ): akka.stream.javadsl.Flow[ParseEvent, ByteString, NotUsed] =
     Flow.fromGraph(new impl.StreamingXmlWriter(charset, xmlOutputFactory)).asJava
 
 }

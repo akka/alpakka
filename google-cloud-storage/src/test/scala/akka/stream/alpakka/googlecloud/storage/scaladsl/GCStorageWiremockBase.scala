@@ -24,8 +24,10 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Hove
 
   def this(mock: Hoverfly) =
     this(ActorSystem(getCallerName(classOf[GCStorageWiremockBase]),
-                     config(mock.getHoverflyConfig.getProxyPort).withFallback(ConfigFactory.load())),
-         mock)
+                     config(mock.getHoverflyConfig.getProxyPort).withFallback(ConfigFactory.load())
+         ),
+         mock
+    )
 
   def this() = this(initServer())
 
@@ -378,7 +380,8 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Hove
   def mockBucketListing(firstFileName: String,
                         secondFileName: String,
                         folder: Option[String] = None,
-                        versions: Boolean = false) = {
+                        versions: Boolean = false
+  ) = {
     val nextPageToken = "CiAyMDA1MDEwMy8wMDAwOTUwMTQyLTA1LTAwMDAwNi5uYw"
 
     val firstFile =
@@ -528,7 +531,8 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Hove
 
   def mockGetExistingStorageObject(generation: Option[Long] = None,
                                    maybeMd5Hash: Option[String] = Some("emjwm9mSZxuzsZpecLeCfg=="),
-                                   maybeCrc32c: Option[String] = Some("AtvFhg==")) =
+                                   maybeCrc32c: Option[String] = Some("AtvFhg==")
+  ) =
     dsl(
       storageService
         .get(s"/storage/v1/b/$bucketName/o/$fileName")
@@ -539,7 +543,9 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Hove
             .status(200)
             .body(
               generation
-                .map(storageObjectJson(_, maybeMd5Hash = maybeMd5Hash, maybeCrc32c = maybeCrc32c)) getOrElse storageObjectJson(
+                .map(
+                  storageObjectJson(_, maybeMd5Hash = maybeMd5Hash, maybeCrc32c = maybeCrc32c)
+                ) getOrElse storageObjectJson(
                 maybeMd5Hash = maybeMd5Hash,
                 maybeCrc32c = maybeCrc32c
               )
@@ -676,7 +682,8 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Hove
   def mockLargeFileUpload(firstChunkContent: String,
                           secondChunkContent: String,
                           chunkSize: Int,
-                          metadata: Option[Map[String, String]] = None) = {
+                          metadata: Option[Map[String, String]] = None
+  ) = {
     val uploadId = "uploadId"
 
     val noMeta = storageService

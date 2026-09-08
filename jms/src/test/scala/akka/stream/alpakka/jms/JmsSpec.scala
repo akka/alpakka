@@ -58,7 +58,8 @@ abstract class JmsSpec
                           connection: Connection = mock(classOf[Connection]),
                           session: Session = mock(classOf[Session]),
                           producer: MessageProducer = mock(classOf[MessageProducer]),
-                          queue: javax.jms.Queue = mock(classOf[javax.jms.Queue])) {
+                          queue: javax.jms.Queue = mock(classOf[javax.jms.Queue])
+  ) {
     when(factory.createConnection()).thenReturn(connection)
     when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)
     when(session.createProducer(any[javax.jms.Destination])).thenReturn(producer)
@@ -69,7 +70,8 @@ abstract class JmsSpec
                           connection: Connection = mock(classOf[Connection]),
                           session: Session = mock(classOf[Session]),
                           consumer: MessageConsumer = mock(classOf[MessageConsumer]),
-                          queue: javax.jms.Queue = mock(classOf[javax.jms.Queue])) {
+                          queue: javax.jms.Queue = mock(classOf[javax.jms.Queue])
+  ) {
     when(factory.createConnection()).thenReturn(connection)
     when(connection.createSession(anyBoolean(), anyInt())).thenReturn(session)
     when(session.createConsumer(any[javax.jms.Destination])).thenReturn(consumer)

@@ -22,8 +22,8 @@ private[pushkit] object ForwardProxyPoolSettings {
 
     def poolSettings(system: ActorSystem) = {
       val address = InetSocketAddress.createUnresolved(forwardProxy.host, forwardProxy.port)
-      val transport = forwardProxy.credentials.fold(ClientTransport.httpsProxy(address))(
-        c => ClientTransport.httpsProxy(address, BasicHttpCredentials(c.username, c.password))
+      val transport = forwardProxy.credentials.fold(ClientTransport.httpsProxy(address))(c =>
+        ClientTransport.httpsProxy(address, BasicHttpCredentials(c.username, c.password))
       )
 
       ConnectionPoolSettings(system)

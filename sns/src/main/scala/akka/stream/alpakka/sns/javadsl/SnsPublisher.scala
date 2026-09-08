@@ -23,7 +23,8 @@ object SnsPublisher {
    */
   def createFlow(topicArn: String,
                  settings: SnsPublishSettings,
-                 snsClient: SnsAsyncClient): Flow[String, PublishResponse, NotUsed] =
+                 snsClient: SnsAsyncClient
+  ): Flow[String, PublishResponse, NotUsed] =
     akka.stream.alpakka.sns.scaladsl.SnsPublisher.flow(topicArn, settings)(snsClient).asJava
 
   /**
@@ -37,7 +38,8 @@ object SnsPublisher {
    */
   def createPublishFlow(topicArn: String,
                         settings: SnsPublishSettings,
-                        snsClient: SnsAsyncClient): Flow[PublishRequest, PublishResponse, NotUsed] =
+                        snsClient: SnsAsyncClient
+  ): Flow[PublishRequest, PublishResponse, NotUsed] =
     akka.stream.alpakka.sns.scaladsl.SnsPublisher.publishFlow(topicArn, settings)(snsClient).asJava
 
   /**
@@ -50,7 +52,8 @@ object SnsPublisher {
    * creates a [[akka.stream.javadsl.Flow Flow]] to publish messages to a SNS topics based on the message topic arn using an [[software.amazon.awssdk.services.sns.SnsAsyncClient SnsAsyncClient]]
    */
   def createPublishFlow(settings: SnsPublishSettings,
-                        snsClient: SnsAsyncClient): Flow[PublishRequest, PublishResponse, NotUsed] =
+                        snsClient: SnsAsyncClient
+  ): Flow[PublishRequest, PublishResponse, NotUsed] =
     akka.stream.alpakka.sns.scaladsl.SnsPublisher.publishFlow(settings)(snsClient).asJava
 
   /**
@@ -64,7 +67,8 @@ object SnsPublisher {
    */
   def createSink(topicArn: String,
                  settings: SnsPublishSettings,
-                 snsClient: SnsAsyncClient): Sink[String, CompletionStage[Done]] =
+                 snsClient: SnsAsyncClient
+  ): Sink[String, CompletionStage[Done]] =
     createFlow(topicArn, settings, snsClient)
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
 
@@ -80,7 +84,8 @@ object SnsPublisher {
    */
   def createPublishSink(topicArn: String,
                         settings: SnsPublishSettings,
-                        snsClient: SnsAsyncClient): Sink[PublishRequest, CompletionStage[Done]] =
+                        snsClient: SnsAsyncClient
+  ): Sink[PublishRequest, CompletionStage[Done]] =
     createPublishFlow(topicArn, settings, snsClient)
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
 
@@ -95,7 +100,8 @@ object SnsPublisher {
    * creates a [[akka.stream.javadsl.Sink Sink]] to publish messages to a SNS topics based on the message topic arn using an [[software.amazon.awssdk.services.sns.SnsAsyncClient SnsAsyncClient]]
    */
   def createPublishSink(settings: SnsPublishSettings,
-                        snsClient: SnsAsyncClient): Sink[PublishRequest, CompletionStage[Done]] =
+                        snsClient: SnsAsyncClient
+  ): Sink[PublishRequest, CompletionStage[Done]] =
     createPublishFlow(settings, snsClient)
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
 

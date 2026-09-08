@@ -22,8 +22,8 @@ object SnsPublisher {
   /**
    * creates a [[akka.stream.scaladsl.Flow Flow]] to publish messages to a SNS topic using an [[software.amazon.awssdk.services.sns.SnsAsyncClient SnsAsyncClient]]
    */
-  def flow(topicArn: String, settings: SnsPublishSettings = SnsPublishSettings())(
-      implicit snsClient: SnsAsyncClient
+  def flow(topicArn: String, settings: SnsPublishSettings = SnsPublishSettings())(implicit
+      snsClient: SnsAsyncClient
   ): Flow[String, PublishResponse, NotUsed] =
     Flow
       .fromFunction((message: String) => PublishRequest.builder().message(message).topicArn(topicArn).build())
@@ -32,8 +32,8 @@ object SnsPublisher {
   /**
    * creates a [[akka.stream.scaladsl.Flow Flow]] to publish messages to a SNS topic using an [[software.amazon.awssdk.services.sns.SnsAsyncClient SnsAsyncClient]]
    */
-  def publishFlow(topicArn: String, settings: SnsPublishSettings = SnsPublishSettings())(
-      implicit snsClient: SnsAsyncClient
+  def publishFlow(topicArn: String, settings: SnsPublishSettings = SnsPublishSettings())(implicit
+      snsClient: SnsAsyncClient
   ): Flow[PublishRequest, PublishResponse, NotUsed] =
     Flow
       .fromFunction((request: PublishRequest) => request.toBuilder.topicArn(topicArn).build())
@@ -59,16 +59,16 @@ object SnsPublisher {
   /**
    * creates a [[akka.stream.scaladsl.Sink Sink]] to publish messages to a SNS topic using an [[software.amazon.awssdk.services.sns.SnsAsyncClient SnsAsyncClient]]
    */
-  def sink(topicArn: String, settings: SnsPublishSettings = SnsPublishSettings())(
-      implicit snsClient: SnsAsyncClient
+  def sink(topicArn: String, settings: SnsPublishSettings = SnsPublishSettings())(implicit
+      snsClient: SnsAsyncClient
   ): Sink[String, Future[Done]] =
     flow(topicArn, settings).toMat(Sink.ignore)(Keep.right)
 
   /**
    * creates a [[akka.stream.scaladsl.Sink Sink]] to publish messages to a SNS topic using an [[software.amazon.awssdk.services.sns.SnsAsyncClient SnsAsyncClient]]
    */
-  def publishSink(topicArn: String, settings: SnsPublishSettings = SnsPublishSettings())(
-      implicit snsClient: SnsAsyncClient
+  def publishSink(topicArn: String, settings: SnsPublishSettings = SnsPublishSettings())(implicit
+      snsClient: SnsAsyncClient
   ): Sink[PublishRequest, Future[Done]] =
     publishFlow(topicArn, settings).toMat(Sink.ignore)(Keep.right)
 

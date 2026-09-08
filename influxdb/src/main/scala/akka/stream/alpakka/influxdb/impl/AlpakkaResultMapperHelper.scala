@@ -149,7 +149,8 @@ private[impl] class AlpakkaResultMapperHelper {
   private def parseRowAs[T](clazz: Class[T],
                             columns: java.util.List[String],
                             values: java.util.List[AnyRef],
-                            precision: TimeUnit): T =
+                            precision: TimeUnit
+  ): T =
     try {
       val fieldMap = CLASS_FIELD_CACHE.get(clazz.getName)
 
@@ -174,12 +175,14 @@ private[impl] class AlpakkaResultMapperHelper {
     try {
       val isAccessible = field.isAccessible() // deprecated in JDK 11+
       if (!isAccessible) field.setAccessible(true)
-      if (fieldValueModified(fieldType, field, obj, value, precision) || fieldValueForPrimitivesModified(
-            fieldType,
-            field,
-            obj,
-            value
-          ) || fieldValueForPrimitiveWrappersModified(fieldType, field, obj, value)) return
+      if (
+        fieldValueModified(fieldType, field, obj, value, precision) || fieldValueForPrimitivesModified(
+          fieldType,
+          field,
+          obj,
+          value
+        ) || fieldValueForPrimitiveWrappersModified(fieldType, field, obj, value)
+      ) return
       val msg =
         s"""Class '${obj.getClass.getName}' field '${field.getName}' is from an unsupported type '${field.getType}'."""
       throw new InfluxDBMapperException(msg)
@@ -216,7 +219,8 @@ private[impl] class AlpakkaResultMapperHelper {
   private def fieldValueForPrimitiveWrappersModified[T](fieldType: Class[_],
                                                         field: Field,
                                                         obj: T,
-                                                        value: Any): Boolean =
+                                                        value: Any
+  ): Boolean =
     if (classOf[java.lang.Double].isAssignableFrom(fieldType)) {
       field.set(obj, value)
       true
@@ -239,7 +243,8 @@ private[impl] class AlpakkaResultMapperHelper {
                                     field: Field,
                                     obj: T,
                                     value: Any,
-                                    precision: TimeUnit): Boolean =
+                                    precision: TimeUnit
+  ): Boolean =
     if (classOf[String].isAssignableFrom(fieldType)) {
       field.set(obj, String.valueOf(value))
       true

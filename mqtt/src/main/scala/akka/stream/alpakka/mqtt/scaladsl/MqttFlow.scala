@@ -29,7 +29,8 @@ object MqttFlow {
   def atMostOnce(connectionSettings: MqttConnectionSettings,
                  subscriptions: MqttSubscriptions,
                  bufferSize: Int,
-                 defaultQos: MqttQoS): Flow[MqttMessage, MqttMessage, Future[Done]] =
+                 defaultQos: MqttQoS
+  ): Flow[MqttMessage, MqttMessage, Future[Done]] =
     Flow
       .fromGraph(
         new MqttFlowStage(connectionSettings, subscriptions.subscriptions, bufferSize, defaultQos)
@@ -47,7 +48,8 @@ object MqttFlow {
   def atLeastOnce(connectionSettings: MqttConnectionSettings,
                   subscriptions: MqttSubscriptions,
                   bufferSize: Int,
-                  defaultQos: MqttQoS): Flow[MqttMessage, MqttMessageWithAck, Future[Done]] =
+                  defaultQos: MqttQoS
+  ): Flow[MqttMessage, MqttMessageWithAck, Future[Done]] =
     Flow.fromGraph(
       new MqttFlowStage(connectionSettings, subscriptions.subscriptions, bufferSize, defaultQos, manualAcks = true)
     )
@@ -63,13 +65,15 @@ object MqttFlow {
   def atLeastOnceWithAck(connectionSettings: MqttConnectionSettings,
                          subscriptions: MqttSubscriptions,
                          bufferSize: Int,
-                         defaultQos: MqttQoS): Flow[MqttMessageWithAck, MqttMessageWithAck, Future[Done]] =
+                         defaultQos: MqttQoS
+  ): Flow[MqttMessageWithAck, MqttMessageWithAck, Future[Done]] =
     Flow.fromGraph(
       new MqttFlowStageWithAck(connectionSettings,
                                subscriptions.subscriptions,
                                bufferSize,
                                defaultQos,
-                               manualAcks = true)
+                               manualAcks = true
+      )
     )
 
   def atLeastOnceWithAckForJava(

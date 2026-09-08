@@ -26,7 +26,8 @@ final class PutBlockBlobStreaming(val contentType: ContentType,
                                   val blockSize: Int = 4 * 1024 * 1024,
                                   val leaseId: Option[String] = None,
                                   val sse: Option[ServerSideEncryption] = None,
-                                  val additionalHeaders: Seq[HttpHeader] = Seq.empty) {
+                                  val additionalHeaders: Seq[HttpHeader] = Seq.empty
+) {
 
   def withBlockSize(blockSize: Int): PutBlockBlobStreaming = copy(blockSize = blockSize)
 
@@ -40,12 +41,14 @@ final class PutBlockBlobStreaming(val contentType: ContentType,
   private def copy(blockSize: Int = blockSize,
                    leaseId: Option[String] = leaseId,
                    sse: Option[ServerSideEncryption] = sse,
-                   additionalHeaders: Seq[HttpHeader] = additionalHeaders) =
+                   additionalHeaders: Seq[HttpHeader] = additionalHeaders
+  ) =
     new PutBlockBlobStreaming(contentType = contentType,
                               blockSize = blockSize,
                               leaseId = leaseId,
                               sse = sse,
-                              additionalHeaders = additionalHeaders)
+                              additionalHeaders = additionalHeaders
+    )
 }
 
 object PutBlockBlobStreaming {

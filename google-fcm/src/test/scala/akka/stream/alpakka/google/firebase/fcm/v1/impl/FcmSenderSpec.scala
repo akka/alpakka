@@ -57,7 +57,8 @@ class FcmSenderSpec
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),
                            any[ConnectionPoolSettings](),
-                           any[LoggingAdapter]())
+                           any[LoggingAdapter]()
+        )
       ).thenReturn(
         Future.successful(HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, """{"name": ""}""")))
       )
@@ -69,7 +70,8 @@ class FcmSenderSpec
       verify(http).singleRequest(captor.capture(),
                                  any[HttpsConnectionContext](),
                                  any[ConnectionPoolSettings](),
-                                 any[LoggingAdapter]())
+                                 any[LoggingAdapter]()
+      )
       val request: HttpRequest = captor.getValue
       Unmarshal(request.entity).to[FcmSend].futureValue shouldBe FcmSend(false, FcmNotification.empty)
       request.uri.toString should startWith("https://fcm.googleapis.com/v1/projects/projectId/messages:send")
@@ -84,7 +86,8 @@ class FcmSenderSpec
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),
                            any[ConnectionPoolSettings](),
-                           any[LoggingAdapter]())
+                           any[LoggingAdapter]()
+        )
       ).thenReturn(
         Future.successful(HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, """{"name": "test"}""")))
       )
@@ -102,11 +105,13 @@ class FcmSenderSpec
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),
                            any[ConnectionPoolSettings](),
-                           any[LoggingAdapter]())
+                           any[LoggingAdapter]()
+        )
       ).thenReturn(
         Future.successful(
           HttpResponse(status = StatusCodes.BadRequest,
-                       entity = HttpEntity(ContentTypes.`application/json`, """{"name":"test"}"""))
+                       entity = HttpEntity(ContentTypes.`application/json`, """{"name":"test"}""")
+          )
         )
       )
       doReturn(system, Nil: _*).when(http).system: @nowarn("msg=dead code")

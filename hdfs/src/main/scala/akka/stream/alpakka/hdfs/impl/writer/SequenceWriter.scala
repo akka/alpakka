@@ -73,7 +73,8 @@ private[hdfs] object SequenceWriter {
                              options(compressionType, compressionCodec, classK, classV),
                              pathGenerator,
                              overwrite,
-                             None)
+                             None
+    )
 
   private def options[K <: Writable, V <: Writable](
       classK: Class[K],

@@ -36,7 +36,8 @@ object BigQueryMarshallers {
    * @tparam T the data model for each row
    */
   def tableDataListResponseUnmarshaller[T](mapper: ObjectMapper,
-                                           `type`: Class[T]): Unmarshaller[HttpEntity, TableDataListResponse[T]] =
+                                           `type`: Class[T]
+  ): Unmarshaller[HttpEntity, TableDataListResponse[T]] =
     unmarshaller(mapper, mapper.getTypeFactory.constructParametricType(classOf[TableDataListResponse[T]], `type`))
 
   /**

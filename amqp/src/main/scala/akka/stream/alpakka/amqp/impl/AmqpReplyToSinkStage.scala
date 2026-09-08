@@ -31,58 +31,60 @@ private[amqp] final class AmqpReplyToSinkStage(replyToSettings: AmqpReplyToSinkS
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
     val streamCompletion = Promise[Done]()
     (new GraphStageLogic(shape) with AmqpConnectorLogic {
-      override val settings = stage.replyToSettings
+       override val settings = stage.replyToSettings
 
-      override def whenConnected(): Unit = pull(in)
+       override def whenConnected(): Unit = pull(in)
 
-      override def postStop(): Unit = {
-        streamCompletion.tryFailure(new RuntimeException("stage stopped unexpectedly"))
-        super.postStop()
-      }
+       override def postStop(): Unit = {
+         streamCompletion.tryFailure(new RuntimeException("stage stopped unexpectedly"))
+         super.postStop()
+       }
 
-      override def onFailure(ex: Throwable): Unit = {
-        streamCompletion.tryFailure(ex)
-        super.onFailure(ex)
-      }
+       override def onFailure(ex: Throwable): Unit = {
+         streamCompletion.tryFailure(ex)
+         super.onFailure(ex)
+       }
 
-      setHandler(
-        in,
-        new InHandler {
+       setHandler(
+         in,
+         new InHandler {
 
-          override def onUpstreamFailure(ex: Throwable): Unit = {
-            streamCompletion.failure(ex)
-            super.onUpstreamFailure(ex)
-          }
+           override def onUpstreamFailure(ex: Throwable): Unit = {
+             streamCompletion.failure(ex)
+             super.onUpstreamFailure(ex)
+           }
 
-          override def onUpstreamFinish(): Unit = {
-            streamCompletion.success(Done)
-            super.onUpstreamFinish()
-          }
+           override def onUpstreamFinish(): Unit = {
+             streamCompletion.success(Done)
+             super.onUpstreamFinish()
+           }
 
-          override def onPush(): Unit = {
-            val elem = grab(in)
+           override def onPush(): Unit = {
+             val elem = grab(in)
 
-            val replyTo = elem.properties.flatMap(properties => Option(properties.getReplyTo))
+             val replyTo = elem.properties.flatMap(properties => Option(properties.getReplyTo))
 
-            if (replyTo.isDefined) {
-              channel.basicPublish(
-                elem.routingKey.getOrElse(""),
-                replyTo.get,
-                elem.mandatory,
-                elem.immediate,
-                elem.properties.orNull,
-                elem.bytes.toArray
-              )
-            } else if (replyToSettings.failIfReplyToMissing) {
-              onFailure(new RuntimeException("Reply-to header was not set"))
-            }
+             if (replyTo.isDefined) {
+               channel.basicPublish(
+                 elem.routingKey.getOrElse(""),
+                 replyTo.get,
+                 elem.mandatory,
+                 elem.immediate,
+                 elem.properties.orNull,
+                 elem.bytes.toArray
+               )
+             } else if (replyToSettings.failIfReplyToMissing) {
+               onFailure(new RuntimeException("Reply-to header was not set"))
+             }
 
-            tryPull(in)
-          }
-        }
-      )
+             tryPull(in)
+           }
+         }
+       )
 
-    }, streamCompletion.future)
+     },
+     streamCompletion.future
+    )
   }
 
   override def toString: String = "AmqpReplyToSink"

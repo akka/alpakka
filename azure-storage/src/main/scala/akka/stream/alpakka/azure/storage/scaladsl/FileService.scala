@@ -86,7 +86,8 @@ object FileService {
    */
   def updateRange(objectPath: String,
                   requestBuilder: UpdateFileRange,
-                  payload: Source[ByteString, _]): Source[Option[ObjectMetadata], NotUsed] = {
+                  payload: Source[ByteString, _]
+  ): Source[Option[ObjectMetadata], NotUsed] = {
     AzureStorageStream.updateRange(
       objectPath,
       HttpEntity(requestBuilder.contentType, requestBuilder.range.last - requestBuilder.range.first + 1, payload),

@@ -159,6 +159,7 @@ import io.pravega.client.tables.TableKey
                                                       tableWriterSettings.tableKey,
                                                       scope,
                                                       streamName,
-                                                      tableWriterSettings)
+                                                      tableWriterSettings
+    )
 
 }

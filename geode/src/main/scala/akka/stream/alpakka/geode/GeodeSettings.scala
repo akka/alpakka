@@ -13,12 +13,14 @@ final class GeodeSettings private (val hostname: String,
                                    val port: Int = 10334,
                                    val configure: Option[ClientCacheFactory => ClientCacheFactory] = None,
                                    val pdxCompat: (Class[_], Class[_]) => Boolean = (c1, c2) =>
-                                     c1.getSimpleName equals c2.getSimpleName) {
+                                     c1.getSimpleName equals c2.getSimpleName
+) {
 
   private def copy(hostname: String = hostname,
                    port: Int = port,
                    configure: Option[ClientCacheFactory => ClientCacheFactory] = configure,
-                   pdxCompat: (Class[_], Class[_]) => Boolean = pdxCompat) =
+                   pdxCompat: (Class[_], Class[_]) => Boolean = pdxCompat
+  ) =
     new GeodeSettings(hostname, port, configure, pdxCompat)
 
   /**

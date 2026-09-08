@@ -76,11 +76,13 @@ object BlobService {
    */
   def putBlockBlob(objectPath: String,
                    requestBuilder: PutBlockBlob,
-                   payload: Source[ByteString, _]): Source[Option[ObjectMetadata], NotUsed] =
+                   payload: Source[ByteString, _]
+  ): Source[Option[ObjectMetadata], NotUsed] =
     AzureStorageStream
       .putBlob(objectPath,
                requestBuilder,
-               Some(HttpEntity(requestBuilder.contentType, requestBuilder.contentLength, payload)))
+               Some(HttpEntity(requestBuilder.contentType, requestBuilder.contentLength, payload))
+      )
 
   /**
    * Uploads a block blob using streaming Put Block / Put Block List operations.
@@ -98,7 +100,8 @@ object BlobService {
    *         from the Put Block List response
    */
   def putBlockBlobStreaming(objectPath: String,
-                            requestBuilder: PutBlockBlobStreaming): Sink[ByteString, Future[ObjectMetadata]] =
+                            requestBuilder: PutBlockBlobStreaming
+  ): Sink[ByteString, Future[ObjectMetadata]] =
     AzureStorageStream.putBlockBlobStreaming(objectPath, requestBuilder)
 
   /**

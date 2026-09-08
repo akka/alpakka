@@ -26,57 +26,66 @@ object BigQueryAvroStorage {
                         datasetId: String,
                         tableId: String,
                         readOptions: Option[TableReadOptions] = None,
-                        maxNumStreams: Int = 0): Source[Seq[BigQueryRecord], Future[NotUsed]] =
+                        maxNumStreams: Int = 0
+  ): Source[Seq[BigQueryRecord], Future[NotUsed]] =
     readAndMapTo(projectId,
                  datasetId,
                  tableId,
                  readOptions,
                  maxNumStreams,
-                 (_, client, session) => AvroSource.readRecordsMerged(client, session))
+                 (_, client, session) => AvroSource.readRecordsMerged(client, session)
+    )
       .flatMapConcat(a => a)
 
   def readRecords(projectId: String,
                   datasetId: String,
                   tableId: String,
                   readOptions: Option[TableReadOptions] = None,
-                  maxNumStreams: Int = 0): Source[Seq[Source[BigQueryRecord, NotUsed]], Future[NotUsed]] =
+                  maxNumStreams: Int = 0
+  ): Source[Seq[Source[BigQueryRecord, NotUsed]], Future[NotUsed]] =
     readAndMapTo(projectId,
                  datasetId,
                  tableId,
                  readOptions,
                  maxNumStreams,
-                 (_, client, session) => AvroSource.readRecords(client, session))
+                 (_, client, session) => AvroSource.readRecords(client, session)
+    )
 
   def readMerged(projectId: String,
                  datasetId: String,
                  tableId: String,
                  readOptions: Option[TableReadOptions] = None,
-                 maxNumStreams: Int = 0): Source[(AvroSchema, Source[AvroRows, NotUsed]), Future[NotUsed]] =
+                 maxNumStreams: Int = 0
+  ): Source[(AvroSchema, Source[AvroRows, NotUsed]), Future[NotUsed]] =
     readAndMapTo(projectId,
                  datasetId,
                  tableId,
                  readOptions,
                  maxNumStreams,
-                 (schema, client, session) => (schema, AvroSource.readMerged(client, session)))
+                 (schema, client, session) => (schema, AvroSource.readMerged(client, session))
+    )
 
   def read(projectId: String,
            datasetId: String,
            tableId: String,
            readOptions: Option[TableReadOptions] = None,
-           maxNumStreams: Int = 0): Source[(AvroSchema, Seq[Source[AvroRows, NotUsed]]), Future[NotUsed]] =
+           maxNumStreams: Int = 0
+  ): Source[(AvroSchema, Seq[Source[AvroRows, NotUsed]]), Future[NotUsed]] =
     readAndMapTo(projectId,
                  datasetId,
                  tableId,
                  readOptions,
                  maxNumStreams,
-                 (schema, client, session) => (schema, AvroSource.read(client, session)))
+                 (schema, client, session) => (schema, AvroSource.read(client, session))
+    )
 
   private def readAndMapTo[T](projectId: String,
                               datasetId: String,
                               tableId: String,
                               readOptions: Option[TableReadOptions],
                               maxNumStreams: Int,
-                              fx: (AvroSchema, BigQueryReadClient, ReadSession) => T): Source[T, Future[NotUsed]] =
+                              fx: (AvroSchema, BigQueryReadClient, ReadSession) => T
+  ): Source[T, Future[NotUsed]] =
     Source.fromMaterializer { (mat, attr) =>
       val client = reader(mat.system, attr).client
       readSession(client, projectId, datasetId, tableId, DataFormat.AVRO, readOptions, maxNumStreams)

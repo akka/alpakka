@@ -17,7 +17,8 @@ object KinesisSink {
 
   def create(streamName: String,
              settings: KinesisFlowSettings,
-             kinesisClient: KinesisAsyncClient): Sink[PutRecordsRequestEntry, NotUsed] =
+             kinesisClient: KinesisAsyncClient
+  ): Sink[PutRecordsRequestEntry, NotUsed] =
     scaladsl.KinesisSink(streamName, settings)(kinesisClient).asJava
 
 }

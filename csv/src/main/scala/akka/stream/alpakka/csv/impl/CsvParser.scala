@@ -40,7 +40,8 @@ import scala.collection.mutable
 @InternalApi private[csv] final class CsvParser(delimiter: Byte,
                                                 quoteChar: Byte,
                                                 escapeChar: Byte,
-                                                maximumLineLength: Int) {
+                                                maximumLineLength: Int
+) {
 
   import CsvParser._
 
@@ -148,7 +149,8 @@ import scala.collection.mutable
     fieldStart = 0
   }
 
-  /** FieldBuilder will just cut the required part out of the incoming ByteBuffer
+  /**
+   * FieldBuilder will just cut the required part out of the incoming ByteBuffer
    * as long as non escaping is used.
    */
   private final class FieldBuilder {
@@ -159,7 +161,8 @@ import scala.collection.mutable
     private[this] var useBuilder = false
     private[this] var builder: ByteStringBuilder = _
 
-    /** Set up the ByteString builder instead of relying on `ByteString.slice`.
+    /**
+     * Set up the ByteString builder instead of relying on `ByteString.slice`.
      */
     @inline def init(): Unit =
       if (!useBuilder) {
@@ -181,7 +184,8 @@ import scala.collection.mutable
   private[this] def noCharEscaped() =
     throw new MalformedCsvException(currentLineNo,
                                     lineLength,
-                                    s"wrong escaping at $currentLineNo:$lineLength, no character after escape")
+                                    s"wrong escaping at $currentLineNo:$lineLength, no character after escape"
+    )
 
   private[this] def checkForByteOrderMark(): Unit =
     if (buffer.length >= 2) {

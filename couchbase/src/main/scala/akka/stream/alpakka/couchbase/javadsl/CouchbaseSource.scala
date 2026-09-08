@@ -20,12 +20,14 @@ object CouchbaseSource {
    */
   def fromQuery(sessionSettings: CouchbaseSessionSettings,
                 bucketName: String,
-                query: String): Source[JsonObject, NotUsed] =
+                query: String
+  ): Source[JsonObject, NotUsed] =
     scaladsl.CouchbaseSource.fromQuery(sessionSettings, bucketName, query).asJava
 
   def fromQuery(sessionSettings: CouchbaseSessionSettings,
                 bucketName: String,
                 query: String,
-                queryOptions: QueryOptions): Source[JsonObject, NotUsed] =
+                queryOptions: QueryOptions
+  ): Source[JsonObject, NotUsed] =
     scaladsl.CouchbaseSource.fromQuery(sessionSettings, bucketName, query, queryOptions).asJava
 }

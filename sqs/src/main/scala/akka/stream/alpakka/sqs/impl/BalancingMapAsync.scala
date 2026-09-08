@@ -54,19 +54,18 @@ import scala.util.{Failure, Success}
       var buffer: Buffer[Holder[Out]] = _
       var parallelism = maxParallelism
 
-      private val futureCB = getAsyncCallback[Holder[Out]](
-        holder =>
-          holder.elem match {
-            case Success(value) =>
-              parallelism = balancingF(value, parallelism)
-              pushNextIfPossible()
-            case Failure(ex) =>
-              holder.supervisionDirectiveFor(decider, ex) match {
-                // fail fast as if supervision says so
-                case Supervision.Stop => failStage(ex)
-                case _ => pushNextIfPossible()
-              }
-          }
+      private val futureCB = getAsyncCallback[Holder[Out]](holder =>
+        holder.elem match {
+          case Success(value) =>
+            parallelism = balancingF(value, parallelism)
+            pushNextIfPossible()
+          case Failure(ex) =>
+            holder.supervisionDirectiveFor(decider, ex) match {
+              // fail fast as if supervision says so
+              case Supervision.Stop => failStage(ex)
+              case _ => pushNextIfPossible()
+            }
+        }
       )
 
       override def preStart(): Unit = buffer = BufferImpl(parallelism, inheritedAttributes)

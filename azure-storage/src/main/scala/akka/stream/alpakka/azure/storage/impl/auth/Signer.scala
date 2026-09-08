@@ -19,7 +19,8 @@ import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import scala.jdk.FutureConverters._
 
-/** Takes initial request and add signed `Authorization` header and essential XMS headers.
+/**
+ * Takes initial request and add signed `Authorization` header and essential XMS headers.
  *
  * @param initialRequest
  *   - Initial HTTP request without authorization and XMS headers
@@ -116,8 +117,8 @@ final case class Signer(initialRequest: HttpRequest, settings: StorageSettings)(
     val queries =
       uri.queryString() match {
         case Some(queryString) =>
-          Uri.Query(queryString).toMap.toSeq.sortBy(_._1).map {
-            case (key, value) => s"${key.toLowerCase}:$value"
+          Uri.Query(queryString).toMap.toSeq.sortBy(_._1).map { case (key, value) =>
+            s"${key.toLowerCase}:$value"
           }
 
         case None => Seq.empty[String]

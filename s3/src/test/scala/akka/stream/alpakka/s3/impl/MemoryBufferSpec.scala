@@ -36,7 +36,7 @@ class MemoryBufferSpec(_system: ActorSystem)
       .runWith(Sink.seq)
       .futureValue
 
-    result should have size (1)
+    result should have size 1
     val chunk = result.head
     chunk.size should be(14)
 

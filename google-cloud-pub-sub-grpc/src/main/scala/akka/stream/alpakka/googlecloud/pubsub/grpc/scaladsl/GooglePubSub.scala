@@ -101,11 +101,10 @@ object GooglePubSub {
     Flow
       .fromMaterializer { (mat, attr) =>
         Flow[AcknowledgeRequest]
-          .mapAsync(1)(
-            req =>
-              subscriber(mat, attr).client
-                .acknowledge(req)
-                .map(_ => req)(mat.executionContext)
+          .mapAsync(1)(req =>
+            subscriber(mat, attr).client
+              .acknowledge(req)
+              .map(_ => req)(mat.executionContext)
           )
       }
       .mapMaterializedValue(_ => NotUsed)

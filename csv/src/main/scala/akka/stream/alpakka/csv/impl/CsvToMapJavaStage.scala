@@ -25,8 +25,8 @@ import akka.util.ByteString
                                                                   charset: Charset,
                                                                   combineAll: Boolean,
                                                                   customFieldValuePlaceholder: ju.Optional[V],
-                                                                  headerPlaceholder: ju.Optional[String])
-    extends GraphStage[FlowShape[ju.Collection[ByteString], ju.Map[String, V]]] {
+                                                                  headerPlaceholder: ju.Optional[String]
+) extends GraphStage[FlowShape[ju.Collection[ByteString], ju.Map[String, V]]] {
 
   override protected def initialAttributes: Attributes = Attributes.name("CsvToMap")
 
@@ -73,9 +73,11 @@ import akka.util.ByteString
         }
       }
 
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit = pull(in)
-      })
+      setHandler(out,
+                 new OutHandler {
+                   override def onPull(): Unit = pull(in)
+                 }
+      )
 
       private def zipWithHeaders(elem: ju.Collection[V]): ju.Map[String, V] = {
         val map = new ju.HashMap[String, V]()
@@ -129,12 +131,13 @@ import akka.util.ByteString
                                                   charset: Charset,
                                                   combineAll: Boolean,
                                                   customFieldValuePlaceholder: ju.Optional[ByteString],
-                                                  headerPlaceholder: ju.Optional[String])
-    extends CsvToMapJavaStageBase[ByteString](columnNames,
-                                              charset,
-                                              combineAll,
-                                              customFieldValuePlaceholder,
-                                              headerPlaceholder) {
+                                                  headerPlaceholder: ju.Optional[String]
+) extends CsvToMapJavaStageBase[ByteString](columnNames,
+                                            charset,
+                                            combineAll,
+                                            customFieldValuePlaceholder,
+                                            headerPlaceholder
+    ) {
 
   override val fieldValuePlaceholder: ByteString = ByteString("")
 
@@ -149,12 +152,13 @@ import akka.util.ByteString
                                                            charset: Charset,
                                                            combineAll: Boolean,
                                                            customFieldValuePlaceholder: ju.Optional[String],
-                                                           headerPlaceholder: ju.Optional[String])
-    extends CsvToMapJavaStageBase[String](columnNames,
-                                          charset,
-                                          combineAll,
-                                          customFieldValuePlaceholder,
-                                          headerPlaceholder) {
+                                                           headerPlaceholder: ju.Optional[String]
+) extends CsvToMapJavaStageBase[String](columnNames,
+                                        charset,
+                                        combineAll,
+                                        customFieldValuePlaceholder,
+                                        headerPlaceholder
+    ) {
 
   override val fieldValuePlaceholder: String = ""
 

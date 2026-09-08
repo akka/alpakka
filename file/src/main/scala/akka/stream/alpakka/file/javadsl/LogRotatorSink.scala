@@ -64,7 +64,7 @@ object LogRotatorSink {
    * @param sinkFactory creates sinks for `ByteString`s from the value returned by `triggerGenerator`
    * @tparam C criterion type (for files a `Path`)
    * @tparam R result type in materialized futures of `sinkFactory`
-    **/
+   */
   def withSinkFactory[C, R](
       triggerGeneratorCreator: function.Creator[function.Function[ByteString, Optional[C]]],
       sinkFactory: function.Function[C, Sink[ByteString, CompletionStage[R]]]

@@ -68,7 +68,8 @@ class SignerSpec
     signer.generateAuthorizationHeader shouldBe generateAuthorizationHeader(BlobType,
                                                                             objectPath,
                                                                             HttpMethods.GET.name(),
-                                                                            Map(`Content-Length`.name -> "0"))
+                                                                            Map(`Content-Length`.name -> "0")
+    )
   }
 
   it should "sign request with one optional parameter" in {
@@ -78,7 +79,8 @@ class SignerSpec
     val expectedValue = generateAuthorizationHeader(BlobType,
                                                     objectPath,
                                                     HttpMethods.GET.name(),
-                                                    Map(`Content-Length`.name -> "0", LeaseIdHeaderKey -> leaseId))
+                                                    Map(`Content-Length`.name -> "0", LeaseIdHeaderKey -> leaseId)
+    )
     Signer(request, storageSettings).generateAuthorizationHeader shouldBe expectedValue
   }
 
@@ -93,7 +95,8 @@ class SignerSpec
         HttpMethods.GET.name(),
         Map(`Content-Length`.name -> "0",
             LeaseIdHeaderKey -> leaseId,
-            Range.name -> s"bytes=${range.first}-${range.last}")
+            Range.name -> s"bytes=${range.first}-${range.last}"
+        )
       )
     Signer(request, storageSettings).generateAuthorizationHeader shouldBe expectedValue
   }
@@ -109,7 +112,8 @@ class SignerSpec
         HttpMethods.GET.name(),
         Map(`Content-Length`.name -> "0",
             LeaseIdHeaderKey -> leaseId,
-            Range.name -> s"bytes=${range.first}-${range.last}"),
+            Range.name -> s"bytes=${range.first}-${range.last}"
+        ),
         Some(s"versionId=$versionId")
       )
     Signer(request, storageSettings).generateAuthorizationHeader shouldBe expectedValue
@@ -159,7 +163,8 @@ class SignerSpec
         HttpMethods.PUT.name(),
         Map(`Content-Length`.name -> "1024",
             `Content-Type`.name -> ContentTypes.`text/csv(UTF-8)`.value,
-            "x-ms-blob-type" -> BlockBlobType)
+            "x-ms-blob-type" -> BlockBlobType
+        )
       )
     Signer(request, storageSettings).generateAuthorizationHeader shouldBe expectedValue
   }
@@ -209,7 +214,8 @@ class SignerSpec
                                           objectPath: String,
                                           httpMethod: String,
                                           headers: Map[String, String],
-                                          maybeQueryString: Option[String] = None) = {
+                                          maybeQueryString: Option[String] = None
+  ) = {
     val queryString = maybeQueryString.map(value => s"?$value").getOrElse("")
     val allHeaders = headers ++ Map("x-ms-date" -> getFormattedDate, "x-ms-version" -> storageSettings.apiVersion)
     val url = new URL(
@@ -279,7 +285,8 @@ class SignerSpec
                                                contentMd5: String,
                                                contentType: String,
                                                xmsHeaders: Seq[(String, String)],
-                                               canonicalizedResource: String): String = {
+                                               canonicalizedResource: String
+  ): String = {
     val canonicalizedHeaders =
       xmsHeaders.sortBy(_._1.toLowerCase).map { case (k, v) => s"${k.toLowerCase}:$v" }
     val stringToSign =

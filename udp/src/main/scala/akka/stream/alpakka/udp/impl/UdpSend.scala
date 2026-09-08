@@ -20,8 +20,9 @@ import scala.collection.immutable.Iterable
  * is passed-through to the output for possible further processing.
  */
 @InternalApi private[udp] final class UdpSendLogic(val shape: FlowShape[Datagram, Datagram],
-                                                   options: Iterable[SocketOption])(
-    implicit val system: ActorSystem
+                                                   options: Iterable[SocketOption]
+)(implicit
+    val system: ActorSystem
 ) extends GraphStageLogic(shape) {
 
   implicit def self: ActorRef = stageActor.ref
@@ -70,8 +71,8 @@ import scala.collection.immutable.Iterable
   )
 }
 
-@InternalApi private[udp] final class UdpSendFlow(options: Iterable[SocketOption] = Nil)(
-    implicit val system: ActorSystem
+@InternalApi private[udp] final class UdpSendFlow(options: Iterable[SocketOption] = Nil)(implicit
+    val system: ActorSystem
 ) extends GraphStage[FlowShape[Datagram, Datagram]] {
 
   val in: Inlet[Datagram] = Inlet("UdpSendFlow.in")

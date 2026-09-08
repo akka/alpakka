@@ -28,7 +28,8 @@ object CouchbaseCollectionSession {
   def create(bucketSession: CouchbaseSession,
              scopeName: String,
              collectionName: String,
-             executor: Executor): CompletionStage[CouchbaseSession] = null
+             executor: Executor
+  ): CompletionStage[CouchbaseSession] = null
 
 }
 
@@ -169,7 +170,8 @@ abstract class CouchbaseCollectionSession {
    */
   def createIndex(indexName: String,
                   createQueryIndexOptions: CreateQueryIndexOptions,
-                  fields: String*): CompletionStage[Done]
+                  fields: String*
+  ): CompletionStage[Done]
 
   /**
    * List the existing secondary indexes for the collection

@@ -6,7 +6,7 @@ package akka.stream.alpakka.google.firebase.fcm
 
 import akka.stream.alpakka.google.firebase.fcm.FcmNotificationModels._
 
-/** Use class from package akka.stream.alpakka.google.firebase.fcm.v1.models*/
+/** Use class from package akka.stream.alpakka.google.firebase.fcm.v1.models */
 @deprecated("Use class from package akka.stream.alpakka.google.firebase.fcm.v1.models", "3.0.2")
 @Deprecated
 object FcmNotificationModels {

@@ -42,7 +42,8 @@ object MessageFactory {
   @ApiMayChange
   def createWriteResult(message: ReferenceWriteMessage,
                         metrics: java.util.Map[String, java.lang.Long],
-                        status: Int): ReferenceWriteResult =
+                        status: Int
+  ): ReferenceWriteResult =
     new ReferenceWriteResult(message, metrics.asScala.iterator.map { case (k, v) => k -> Long.unbox(v) }.toMap, status)
 
 }

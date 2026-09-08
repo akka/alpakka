@@ -417,12 +417,16 @@ abstract class StorageWireMockBase(_system: ActorSystem, val _wireMockServer: Wi
   protected def mock404s(): StubMapping =
     mock.register(
       any(anyUrl())
-        .willReturn(aResponse().withStatus(404).withBody("""
+        .willReturn(
+          aResponse()
+            .withStatus(404)
+            .withBody("""
           |<Error>
           | <Code>ResourceNotFound</Code>
           | <Message>The specified resource doesn't exist.</Message>
           |</Error>
-          |""".stripMargin))
+          |""".stripMargin)
+        )
     )
 
   private def toStringValuePattern(maybeValue: Option[String]) = maybeValue.map(equalTo).getOrElse(absent())

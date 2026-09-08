@@ -39,7 +39,8 @@ class GoogleOAuth2ExceptionSpec
     "unmarshal a successful response" in {
       val response = HttpResponse(
         entity = HttpEntity(ContentTypes.`application/json`,
-                            """{"access_token": "token", "token_type": "String", "expires_in": 3600}""")
+                            """{"access_token": "token", "token_type": "String", "expires_in": 3600}"""
+        )
       )
 
       GoogleOAuth2Exception.unmarshalOrFail[AccessToken](uri, response).futureValue should matchPattern {

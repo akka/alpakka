@@ -12,8 +12,8 @@ import spray.json.{deserializationError, DeserializationException, JsArray, JsVa
  */
 trait BigQueryProductFormats extends BigQueryProductFormatsInstances { this: ProductFormats with StandardFormats =>
 
-  protected def fromBigQueryField[T](value: JsValue, fieldName: String, index: Int)(
-      implicit reader: BigQueryJsonReader[T]
+  protected def fromBigQueryField[T](value: JsValue, fieldName: String, index: Int)(implicit
+      reader: BigQueryJsonReader[T]
   ): T =
     value match {
       case x: JsArray =>

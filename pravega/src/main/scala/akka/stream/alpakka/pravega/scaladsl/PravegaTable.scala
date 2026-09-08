@@ -24,7 +24,8 @@ object PravegaTable {
    */
   def source[K, V](scope: String,
                    tableName: String,
-                   tableReaderSettings: TableReaderSettings[K, V]): Source[TableEntry[V], Future[Done]] =
+                   tableReaderSettings: TableReaderSettings[K, V]
+  ): Source[TableEntry[V], Future[Done]] =
     Source.fromGraph(
       new PravegaTableSource[K, V](
         scope,
@@ -38,7 +39,8 @@ object PravegaTable {
    */
   def readFlow[K, V](scope: String,
                      tableName: String,
-                     tableSettings: TableSettings[K, V]): Flow[K, Option[V], NotUsed] =
+                     tableSettings: TableSettings[K, V]
+  ): Flow[K, Option[V], NotUsed] =
     Flow.fromGraph(new PravegaTableReadFlow(scope, tableName, tableSettings))
 
   /**
@@ -47,7 +49,8 @@ object PravegaTable {
    */
   def writeFlow[K, V](scope: String,
                       tableName: String,
-                      tableWriterSettings: TableWriterSettings[K, V]): Flow[(K, V), (K, V), NotUsed] =
+                      tableWriterSettings: TableWriterSettings[K, V]
+  ): Flow[(K, V), (K, V), NotUsed] =
     Flow.fromGraph(
       new PravegaTableWriteFlow[(K, V), K, V]((o: (K, V)) => o, scope, tableName, tableWriterSettings)
     )
@@ -57,7 +60,8 @@ object PravegaTable {
    */
   def sink[K, V](scope: String,
                  tableName: String,
-                 tableWriterSettings: TableWriterSettings[K, V]): Sink[(K, V), Future[Done]] =
+                 tableWriterSettings: TableWriterSettings[K, V]
+  ): Sink[(K, V), Future[Done]] =
     Flow[(K, V)].via(writeFlow(scope, tableName, tableWriterSettings)).toMat(Sink.ignore)(Keep.right)
 
 }

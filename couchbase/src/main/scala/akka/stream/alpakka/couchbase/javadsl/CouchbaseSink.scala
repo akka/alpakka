@@ -23,7 +23,8 @@ object CouchbaseSink {
   def upsert(sessionSettings: CouchbaseSessionSettings,
              bucketName: String,
              scopeName: String,
-             collectionName: String): Sink[CouchbaseDocument[JsonValue], CompletionStage[Done]] =
+             collectionName: String
+  ): Sink[CouchbaseDocument[JsonValue], CompletionStage[Done]] =
     CouchbaseFlow
       .upsert(sessionSettings, bucketName, scopeName, collectionName)
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
@@ -35,7 +36,8 @@ object CouchbaseSink {
              upsertOptions: UpsertOptions,
              bucketName: String,
              scopeName: String,
-             collectionName: String): Sink[CouchbaseDocument[JsonValue], CompletionStage[Done]] =
+             collectionName: String
+  ): Sink[CouchbaseDocument[JsonValue], CompletionStage[Done]] =
     CouchbaseFlow
       .upsert(sessionSettings, upsertOptions, bucketName, scopeName, collectionName)
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
@@ -46,7 +48,8 @@ object CouchbaseSink {
   def replace(sessionSettings: CouchbaseSessionSettings,
               bucketName: String,
               scopeName: String,
-              collectionName: String): Sink[CouchbaseDocument[Any], CompletionStage[Done]] =
+              collectionName: String
+  ): Sink[CouchbaseDocument[Any], CompletionStage[Done]] =
     CouchbaseFlow
       .replace(sessionSettings, bucketName, scopeName, collectionName)
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
@@ -58,7 +61,8 @@ object CouchbaseSink {
               replaceOptions: ReplaceOptions,
               bucketName: String,
               scopeName: String,
-              collectionName: String): Sink[CouchbaseDocument[Any], CompletionStage[Done]] =
+              collectionName: String
+  ): Sink[CouchbaseDocument[Any], CompletionStage[Done]] =
     CouchbaseFlow
       .replace(sessionSettings, replaceOptions, bucketName, scopeName, collectionName)
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
@@ -69,7 +73,8 @@ object CouchbaseSink {
   def delete(sessionSettings: CouchbaseSessionSettings,
              bucketName: String,
              scopeName: String,
-             collectionName: String): Sink[String, CompletionStage[Done]] =
+             collectionName: String
+  ): Sink[String, CompletionStage[Done]] =
     CouchbaseFlow
       .delete(sessionSettings, bucketName, scopeName, collectionName)
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
@@ -81,7 +86,8 @@ object CouchbaseSink {
              removeOptions: RemoveOptions,
              bucketName: String,
              scopeName: String,
-             collectionName: String): Sink[String, CompletionStage[Done]] =
+             collectionName: String
+  ): Sink[String, CompletionStage[Done]] =
     CouchbaseFlow
       .delete(sessionSettings, removeOptions, bucketName, scopeName, collectionName)
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])

@@ -53,8 +53,8 @@ final class Proxy private (
   override def equals(other: Any): Boolean = other match {
     case that: Proxy =>
       Objects.equals(this.host, that.host) &&
-      Objects.equals(this.port, that.port) &&
-      Objects.equals(this.scheme, that.scheme)
+        Objects.equals(this.port, that.port) &&
+        Objects.equals(this.scheme, that.scheme)
     case _ => false
   }
 
@@ -96,7 +96,7 @@ final class ForwardProxyCredentials private (val username: String, val password:
   override def equals(other: Any): Boolean = other match {
     case that: ForwardProxyCredentials =>
       Objects.equals(this.username, that.username) &&
-      Objects.equals(this.password, that.password)
+        Objects.equals(this.password, that.password)
     case _ => false
   }
 
@@ -120,7 +120,8 @@ object ForwardProxyCredentials {
 final class ForwardProxy private (val scheme: String,
                                   val host: String,
                                   val port: Int,
-                                  val credentials: Option[ForwardProxyCredentials]) {
+                                  val credentials: Option[ForwardProxyCredentials]
+) {
 
   require(scheme == "http" || scheme == "https", "scheme must be either `http` or `https`")
 
@@ -144,7 +145,8 @@ final class ForwardProxy private (val scheme: String,
   private def copy(scheme: String = scheme,
                    host: String = host,
                    port: Int = port,
-                   credentials: Option[ForwardProxyCredentials] = credentials) =
+                   credentials: Option[ForwardProxyCredentials] = credentials
+  ) =
     new ForwardProxy(scheme, host, port, credentials)
 
   override def toString: String =
@@ -157,9 +159,9 @@ final class ForwardProxy private (val scheme: String,
   override def equals(other: Any): Boolean = other match {
     case that: ForwardProxy =>
       Objects.equals(this.scheme, that.scheme) &&
-      Objects.equals(this.host, that.host) &&
-      Objects.equals(this.port, that.port) &&
-      Objects.equals(this.credentials, that.credentials)
+        Objects.equals(this.host, that.host) &&
+        Objects.equals(this.port, that.port) &&
+        Objects.equals(this.credentials, that.credentials)
     case _ => false
   }
 
@@ -227,7 +229,8 @@ object AccessStyle {
 final class RetrySettings private (val maxRetries: Int,
                                    val minBackoff: FiniteDuration,
                                    val maxBackoff: FiniteDuration,
-                                   val randomFactor: Double) {
+                                   val randomFactor: Double
+) {
 
   /** Java API */
   def getMaxRetries: Int = maxRetries
@@ -260,7 +263,8 @@ final class RetrySettings private (val maxRetries: Int,
   private def copy(maxRetries: Int = maxRetries,
                    minBackoff: FiniteDuration = minBackoff,
                    maxBackoff: FiniteDuration = maxBackoff,
-                   randomFactor: Double = randomFactor) =
+                   randomFactor: Double = randomFactor
+  ) =
     new RetrySettings(maxRetries, minBackoff, maxBackoff, randomFactor)
 
   override def toString: String =
@@ -273,9 +277,9 @@ final class RetrySettings private (val maxRetries: Int,
   override def equals(other: Any): Boolean = other match {
     case that: RetrySettings =>
       Objects.equals(this.maxRetries, that.maxRetries) &&
-      Objects.equals(this.minBackoff, that.minBackoff) &&
-      Objects.equals(this.maxBackoff, that.maxBackoff) &&
-      Objects.equals(this.randomFactor, that.randomFactor)
+        Objects.equals(this.minBackoff, that.minBackoff) &&
+        Objects.equals(this.maxBackoff, that.maxBackoff) &&
+        Objects.equals(this.randomFactor, that.randomFactor)
     case _ => false
   }
 
@@ -290,7 +294,8 @@ object RetrySettings {
   def apply(maxRetries: Int,
             minBackoff: FiniteDuration,
             maxBackoff: FiniteDuration,
-            randomFactor: Double): RetrySettings =
+            randomFactor: Double
+  ): RetrySettings =
     new RetrySettings(maxRetries, minBackoff, maxBackoff, randomFactor)
 
   /** Java API */
@@ -298,7 +303,8 @@ object RetrySettings {
     apply(maxRetries,
           FiniteDuration(minBackoff.toNanos, TimeUnit.NANOSECONDS),
           FiniteDuration(maxBackoff.toNanos, TimeUnit.NANOSECONDS),
-          randomFactor)
+          randomFactor
+    )
 
   def apply(config: Config): RetrySettings = {
     RetrySettings(
@@ -455,16 +461,16 @@ final class S3Settings private (
   override def equals(other: Any): Boolean = other match {
     case that: S3Settings =>
       java.util.Objects.equals(this.bufferType, that.bufferType) &&
-      Objects.equals(this.credentialsProvider, that.credentialsProvider) &&
-      Objects.equals(this.s3RegionProvider, that.s3RegionProvider) &&
-      Objects.equals(this.accessStyle, that.accessStyle) &&
-      Objects.equals(this.endpointUrl, that.endpointUrl) &&
-      Objects.equals(this.listBucketApiVersion, that.listBucketApiVersion) &&
-      Objects.equals(this.forwardProxy, that.forwardProxy) &&
-      this.validateObjectKey == that.validateObjectKey &&
-      Objects.equals(this.retrySettings, that.retrySettings) &&
-      Objects.equals(this.multipartUploadSettings, multipartUploadSettings) &&
-      this.signAnonymousRequests == that.signAnonymousRequests
+        Objects.equals(this.credentialsProvider, that.credentialsProvider) &&
+        Objects.equals(this.s3RegionProvider, that.s3RegionProvider) &&
+        Objects.equals(this.accessStyle, that.accessStyle) &&
+        Objects.equals(this.endpointUrl, that.endpointUrl) &&
+        Objects.equals(this.listBucketApiVersion, that.listBucketApiVersion) &&
+        Objects.equals(this.forwardProxy, that.forwardProxy) &&
+        this.validateObjectKey == that.validateObjectKey &&
+        Objects.equals(this.retrySettings, that.retrySettings) &&
+        Objects.equals(this.multipartUploadSettings, multipartUploadSettings) &&
+        this.signAnonymousRequests == that.signAnonymousRequests
     case _ => false
   }
 

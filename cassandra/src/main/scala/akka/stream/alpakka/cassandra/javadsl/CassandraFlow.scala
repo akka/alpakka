@@ -28,7 +28,8 @@ object CassandraFlow {
   def create[T](session: CassandraSession,
                 writeSettings: CassandraWriteSettings,
                 cqlStatement: String,
-                statementBinder: akka.japi.Function2[T, PreparedStatement, BoundStatement]): Flow[T, T, NotUsed] =
+                statementBinder: akka.japi.Function2[T, PreparedStatement, BoundStatement]
+  ): Flow[T, T, NotUsed] =
     scaladsl.CassandraFlow
       .create(writeSettings, cqlStatement, (t, preparedStatement) => statementBinder.apply(t, preparedStatement))(
         session.delegate
@@ -84,12 +85,14 @@ object CassandraFlow {
                                 writeSettings: CassandraWriteSettings,
                                 cqlStatement: String,
                                 statementBinder: (T, PreparedStatement) => BoundStatement,
-                                groupingKey: akka.japi.Function[T, K]): Flow[T, T, NotUsed] = {
+                                groupingKey: akka.japi.Function[T, K]
+  ): Flow[T, T, NotUsed] = {
     scaladsl.CassandraFlow
       .createBatch(writeSettings,
                    cqlStatement,
                    (t, preparedStatement) => statementBinder.apply(t, preparedStatement),
-                   t => groupingKey.apply(t))(session.delegate)
+                   t => groupingKey.apply(t)
+      )(session.delegate)
       .asJava
   }
 

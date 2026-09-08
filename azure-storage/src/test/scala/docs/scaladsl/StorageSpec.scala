@@ -137,7 +137,8 @@ class StorageSpec
 
       val source: Source[Option[ObjectMetadata], NotUsed] =
         BlobService.putAppendBlock(objectPath = s"$containerName/$blobName",
-                                   requestBuilder = PutAppendBlock(ContentTypes.`text/plain(UTF-8)`))
+                                   requestBuilder = PutAppendBlock(ContentTypes.`text/plain(UTF-8)`)
+        )
 
       val eventualMaybeMetadata: Future[Option[ObjectMetadata]] = source.runWith(Sink.head)
       //#put-append-blob
@@ -205,7 +206,8 @@ class StorageSpec
 
       val source: Source[ByteString, Future[ObjectMetadata]] =
         BlobService.getBlob(objectPath = s"$containerName/$blobName",
-                            GetBlob().withServerSideEncryption(ServerSideEncryption.customerKey("SGVsbG9Xb3JsZA==")))
+                            GetBlob().withServerSideEncryption(ServerSideEncryption.customerKey("SGVsbG9Xb3JsZA=="))
+        )
 
       val eventualText = source.toMat(Sink.seq)(Keep.right).run()
 
@@ -422,7 +424,8 @@ class StorageSpec
 
       val source: Source[Option[ObjectMetadata], NotUsed] =
         FileService.createFile(objectPath = s"$containerName/$blobName",
-                               requestBuilder = CreateFile(contentLength, ContentTypes.`text/plain(UTF-8)`))
+                               requestBuilder = CreateFile(contentLength, ContentTypes.`text/plain(UTF-8)`)
+        )
 
       val eventualMaybeMetadata: Future[Option[ObjectMetadata]] = source.runWith(Sink.head)
       //#create-file

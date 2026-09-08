@@ -13,7 +13,8 @@ import akka.http.scaladsl.model.{HttpHeader, HttpMethod, HttpRequest, Uri}
 import akka.stream.alpakka.azure.storage.headers.ServerSideEncryption
 
 abstract class RequestBuilder(val sse: Option[ServerSideEncryption] = None,
-                              val additionalHeaders: Seq[HttpHeader] = Seq.empty) {
+                              val additionalHeaders: Seq[HttpHeader] = Seq.empty
+) {
 
   protected val method: HttpMethod
 
@@ -42,7 +43,8 @@ abstract class RequestBuilder(val sse: Option[ServerSideEncryption] = None,
   private def createUri(settings: StorageSettings,
                         storageType: String,
                         objectPath: String,
-                        queryString: Option[String]): Uri = {
+                        queryString: Option[String]
+  ): Uri = {
     val accountName = settings.azureNameKeyCredential.accountName
     val path = if (objectPath.startsWith("/")) objectPath else s"/$objectPath"
     settings.endPointUrl

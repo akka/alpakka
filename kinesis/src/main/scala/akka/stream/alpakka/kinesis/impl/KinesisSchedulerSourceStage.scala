@@ -103,9 +103,7 @@ private[kinesis] class KinesisSchedulerSourceStage(
         failStage(SchedulerUnexpectedShutdown(e))
     }
     override def postStop(): Unit =
-      schedulerOpt.foreach(
-        scheduler => if (!scheduler.shutdownComplete()) scheduler.shutdown()
-      )
+      schedulerOpt.foreach(scheduler => if (!scheduler.shutdownComplete()) scheduler.shutdown())
 
     protected def executionContext(attributes: Attributes): ExecutionContext = {
       val dispatcherId = (attributes.get[ActorAttributes.Dispatcher](ActorAttributes.IODispatcher) match {

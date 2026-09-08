@@ -69,8 +69,8 @@ class HdfsWriterSpec
             SyncStrategy.none,
             RotationStrategy.none,
             HdfsWritingSettings()
-              .withPathGenerator(FilePathGenerator {
-                case (_, _) => existentFile.toString
+              .withPathGenerator(FilePathGenerator { case (_, _) =>
+                existentFile.toString
               })
               .withOverwrite(true)
           )
@@ -275,8 +275,8 @@ class HdfsWriterSpec
           }
           message
         }
-        .collect {
-          case rm: RotationMessage => rm
+        .collect { case rm: RotationMessage =>
+          rm
         }
         .runWith(Sink.seq)
       //#kafka-example
@@ -526,9 +526,7 @@ class HdfsWriterSpec
   private def documentation(): HdfsWritingSettings = {
     //#define-generator
     val pathGenerator =
-      FilePathGenerator(
-        (rotationCount: Long, timestamp: Long) => s"/tmp/alpakka/$rotationCount-$timestamp"
-      )
+      FilePathGenerator((rotationCount: Long, timestamp: Long) => s"/tmp/alpakka/$rotationCount-$timestamp")
     //#define-generator
     //#define-settings
     val settings =

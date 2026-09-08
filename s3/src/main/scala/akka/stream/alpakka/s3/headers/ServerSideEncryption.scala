@@ -98,7 +98,7 @@ final class KMS private[headers] (val keyId: String, val context: Option[String]
   override def equals(other: Any): Boolean = other match {
     case that: KMS =>
       Objects.equals(this.keyId, that.keyId) &&
-      Objects.equals(this.context, that.context)
+        Objects.equals(this.context, that.context)
     case _ => false
   }
 
@@ -118,11 +118,13 @@ final class CustomerKeys private[headers] (val key: String, val md5: Option[Stri
   @InternalApi private[s3] override def headers: immutable.Seq[HttpHeader] =
     RawHeader("x-amz-server-side-encryption-customer-algorithm", "AES256") ::
     RawHeader("x-amz-server-side-encryption-customer-key", key) ::
-    RawHeader("x-amz-server-side-encryption-customer-key-MD5", md5.getOrElse({
-      val decodedKey = BinaryUtils.fromBase64(key)
-      val md5 = Md5Utils.md5AsBase64(decodedKey)
-      md5
-    })) :: Nil
+    RawHeader("x-amz-server-side-encryption-customer-key-MD5",
+              md5.getOrElse {
+                val decodedKey = BinaryUtils.fromBase64(key)
+                val md5 = Md5Utils.md5AsBase64(decodedKey)
+                md5
+              }
+    ) :: Nil
 
   @InternalApi private[s3] override def headersFor(request: S3Request): immutable.Seq[HttpHeader] = request match {
     case GetObject | HeadObject | PutObject | InitiateMultipartUpload | UploadPart =>
@@ -133,11 +135,11 @@ final class CustomerKeys private[headers] (val key: String, val md5: Option[Stri
         RawHeader("x-amz-copy-source-server-side-encryption-customer-key", key) ::
         RawHeader(
           "x-amz-copy-source-server-side-encryption-customer-key-MD5",
-          md5.getOrElse({
+          md5.getOrElse {
             val decodedKey = BinaryUtils.fromBase64(key)
             val md5 = Md5Utils.md5AsBase64(decodedKey)
             md5
-          })
+          }
         ) :: Nil
       headers ++: copyHeaders
     case _ => Nil
@@ -163,7 +165,7 @@ final class CustomerKeys private[headers] (val key: String, val md5: Option[Stri
   override def equals(other: Any): Boolean = other match {
     case that: CustomerKeys =>
       Objects.equals(this.key, that.key) &&
-      Objects.equals(this.md5, that.md5)
+        Objects.equals(this.md5, that.md5)
     case _ => false
   }
 

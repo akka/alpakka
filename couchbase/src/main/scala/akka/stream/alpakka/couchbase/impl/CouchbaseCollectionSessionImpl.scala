@@ -29,8 +29,8 @@ import scala.reflect.ClassTag
 @InternalApi
 private[couchbase] class CouchbaseCollectionSessionImpl(bucketSession: CouchbaseSession,
                                                         scopeName: String,
-                                                        collectionName: String)
-    extends CouchbaseCollectionSession {
+                                                        collectionName: String
+) extends CouchbaseCollectionSession {
 
   override def bucket: CouchbaseSession = bucketSession
 
@@ -45,7 +45,8 @@ private[couchbase] class CouchbaseCollectionSessionImpl(bucketSession: Couchbase
               document,
               InsertOptions
                 .insertOptions()
-                .transcoder(chooseTranscoder(document.getClass)))
+                .transcoder(chooseTranscoder(document.getClass))
+      )
       .asScala
       .map(_ => Done)(ExecutionContext.parasitic)
   }
@@ -104,7 +105,8 @@ private[couchbase] class CouchbaseCollectionSessionImpl(bucketSession: Couchbase
               document,
               UpsertOptions
                 .upsertOptions()
-                .transcoder(chooseTranscoder(document.getClass)))
+                .transcoder(chooseTranscoder(document.getClass))
+      )
       .asScala
       .map(_ => Done)(ExecutionContext.parasitic)
   }
@@ -119,7 +121,8 @@ private[couchbase] class CouchbaseCollectionSessionImpl(bucketSession: Couchbase
   override def upsert[T](id: String,
                          document: T,
                          upsertOptions: UpsertOptions,
-                         timeout: FiniteDuration): Future[Done] = {
+                         timeout: FiniteDuration
+  ): Future[Done] = {
     underlying
       .upsert(id, document, upsertOptions)
       .orTimeout(timeout.toMillis, TimeUnit.MILLISECONDS)
@@ -146,7 +149,8 @@ private[couchbase] class CouchbaseCollectionSessionImpl(bucketSession: Couchbase
   override def replace[T](id: String,
                           document: T,
                           replaceOptions: ReplaceOptions,
-                          timeout: FiniteDuration): Future[Done] = {
+                          timeout: FiniteDuration
+  ): Future[Done] = {
     underlying
       .replace(id, document, replaceOptions)
       .orTimeout(timeout.toMillis, TimeUnit.MILLISECONDS)
@@ -175,7 +179,8 @@ private[couchbase] class CouchbaseCollectionSessionImpl(bucketSession: Couchbase
 
   override def createIndex(indexName: String,
                            createQueryIndexOptions: CreateQueryIndexOptions,
-                           fields: String*): Future[Done] =
+                           fields: String*
+  ): Future[Done] =
     underlying
       .queryIndexes()
       .createIndex(indexName, util.Arrays.asList(fields: _*), createQueryIndexOptions)

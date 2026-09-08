@@ -61,8 +61,8 @@ import scala.concurrent.Promise
   }
 
   private def asAsyncCallback(confirmCallback: (DeliveryTag, Boolean) => Unit): ConfirmCallback = {
-    val callback = getAsyncCallback[(DeliveryTag, Boolean)] {
-      case (tag: DeliveryTag, multiple: Boolean) => confirmCallback(tag, multiple)
+    val callback = getAsyncCallback[(DeliveryTag, Boolean)] { case (tag: DeliveryTag, multiple: Boolean) =>
+      confirmCallback(tag, multiple)
     }
     new ConfirmCallback { // cant use function literal because it doesn't work with 2.11
       override def handle(tag: DeliveryTag, multiple: Boolean): Unit = callback.invoke((tag, multiple))
@@ -94,15 +94,14 @@ import scala.concurrent.Promise
   }
 
   private def pushOrEnqueueResults(results: Iterable[(WriteResult, T)]): Unit = {
-    results.foreach(
-      result =>
-        if (isAvailable(out) && exitQueue.isEmpty) {
-          log.debug("Pushing {} downstream.", result)
-          push(out, result)
-        } else {
-          log.debug("Message {} queued for downstream push.", result)
-          exitQueue.enqueue(result)
-        }
+    results.foreach(result =>
+      if (isAvailable(out) && exitQueue.isEmpty) {
+        log.debug("Pushing {} downstream.", result)
+        push(out, result)
+      } else {
+        log.debug("Message {} queued for downstream push.", result)
+        exitQueue.enqueue(result)
+      }
     )
     if (isFinished) closeStage()
   }

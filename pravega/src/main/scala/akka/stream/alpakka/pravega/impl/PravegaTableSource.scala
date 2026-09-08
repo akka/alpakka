@@ -99,7 +99,8 @@ import io.pravega.common.util.AsyncIterator
 
               val entry = new TableEntry(tableEntry.getKey(),
                                          tableEntry.getVersion(),
-                                         tableReaderSettings.valueSerializer.deserialize(tableEntry.getValue()))
+                                         tableReaderSettings.valueSerializer.deserialize(tableEntry.getValue())
+              )
               onElement.invoke(entry)
             }
             nextIteration(iterator)

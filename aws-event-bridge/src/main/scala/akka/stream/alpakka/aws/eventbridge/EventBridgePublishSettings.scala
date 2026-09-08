@@ -12,7 +12,7 @@ package akka.stream.alpakka.aws.eventbridge
  * put into the stream. Use concurrency 1 for having control over failures.
  *
  * @param concurrency maps to parallelism in in async stream operations
- * */
+ */
 final class EventBridgePublishSettings private (val concurrency: Int) {
   require(concurrency > 0)
 

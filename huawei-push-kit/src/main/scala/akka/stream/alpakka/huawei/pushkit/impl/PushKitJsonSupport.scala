@@ -30,7 +30,8 @@ private[pushkit] object PushKitJsonSupport extends DefaultJsonProtocol with Spra
       case JsObject(fields) if fields.contains("access_token") =>
         OAuthResponse(fields("access_token").convertTo[String],
                       fields("token_type").convertTo[String],
-                      fields("expires_in").convertTo[Int])
+                      fields("expires_in").convertTo[Int]
+        )
       case other => throw DeserializationException(s"object containing `access_token` expected, but we get $other")
     }
   }

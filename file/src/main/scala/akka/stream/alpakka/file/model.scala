@@ -46,10 +46,10 @@ final class TarArchiveMetadata private (
     obj match {
       case that: TarArchiveMetadata =>
         this.filePathPrefix == that.filePathPrefix &&
-        this.filePathName == that.filePathName &&
-        this.size == that.size &&
-        this.lastModification == that.lastModification &&
-        this.linkIndicatorByte == that.linkIndicatorByte
+          this.filePathName == that.filePathName &&
+          this.size == that.size &&
+          this.lastModification == that.lastModification &&
+          this.linkIndicatorByte == that.linkIndicatorByte
       case _ => false
     }
   }
@@ -95,7 +95,8 @@ object TarArchiveMetadata {
           filePathName,
           size,
           lastModification,
-          linkIndicatorNormal)
+          linkIndicatorNormal
+    )
   }
 
   /**
@@ -105,19 +106,22 @@ object TarArchiveMetadata {
             filePathName: String,
             size: Long,
             lastModification: Instant,
-            linkIndicatorByte: Byte): TarArchiveMetadata = {
+            linkIndicatorByte: Byte
+  ): TarArchiveMetadata = {
     apply(if (filePathPrefix.isEmpty) None else Some(filePathPrefix),
           filePathName,
           size,
           lastModification,
-          linkIndicatorByte)
+          linkIndicatorByte
+    )
   }
 
   private def apply(filePathPrefix: Option[String],
                     filePathName: String,
                     size: Long,
                     lastModification: Instant,
-                    linkIndicatorByte: Byte): TarArchiveMetadata = {
+                    linkIndicatorByte: Byte
+  ): TarArchiveMetadata = {
     filePathPrefix.foreach { value =>
       require(
         value.length <= 154,
@@ -125,14 +129,16 @@ object TarArchiveMetadata {
       )
     }
     require(filePathName.length >= 0 && filePathName.length <= 99,
-            s"File path name must be between 0 and 99 characters long, was ${filePathName.length}")
+            s"File path name must be between 0 and 99 characters long, was ${filePathName.length}"
+    )
 
     new TarArchiveMetadata(filePathPrefix,
                            filePathName,
                            size,
                            // tar timestamp granularity is in seconds
                            lastModification.`with`(ChronoField.NANO_OF_SECOND, 0L),
-                           linkIndicatorByte)
+                           linkIndicatorByte
+    )
   }
 
   def create(filePath: String, size: Long): TarArchiveMetadata = apply(filePath, size, Instant.now)
@@ -148,7 +154,8 @@ object TarArchiveMetadata {
              filePathName: String,
              size: Long,
              lastModification: Instant,
-             linkIndicatorByte: Byte): TarArchiveMetadata =
+             linkIndicatorByte: Byte
+  ): TarArchiveMetadata =
     apply(filePathPrefix, filePathName, size, lastModification, linkIndicatorByte)
 
   /**

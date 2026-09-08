@@ -76,7 +76,8 @@ final class SourceSettings private (
   private def copy(clientId: String = clientId,
                    traceId: Option[String] = traceId,
                    authentication: Authentication = authentication,
-                   pollInterval: FiniteDuration = pollInterval) =
+                   pollInterval: FiniteDuration = pollInterval
+  ) =
     new SourceSettings(clientId, traceId, authentication, pollInterval)
 
   override def toString: String =

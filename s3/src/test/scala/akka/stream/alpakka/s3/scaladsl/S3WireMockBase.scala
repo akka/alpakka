@@ -24,7 +24,8 @@ abstract class S3WireMockBase(_system: ActorSystem, val _wireMockServer: WireMoc
 
   private def this(mock: WireMockServer) =
     this(ActorSystem(getCallerName(S3WireMockBase.getClass), config(mock.port()).withFallback(ConfigFactory.load())),
-         mock)
+         mock
+    )
 
   def this() = {
     this(initServer())
@@ -451,7 +452,8 @@ abstract class S3WireMockBase(_system: ActorSystem, val _wireMockServer: WireMoc
 
   private def mockMultipartPartUploadWithTransientError(expectedBody: String,
                                                         response: ResponseDefinitionBuilder,
-                                                        numFailures: Int): Unit = {
+                                                        numFailures: Int
+  ): Unit = {
     val scenarioName = "UploadWithTransientErrors"
 
     mockMultipartInitiation()
@@ -678,14 +680,16 @@ abstract class S3WireMockBase(_system: ActorSystem, val _wireMockServer: WireMoc
         .withHeader("x-amz-copy-source",
                     new EqualToPattern(
                       s"/$bucket/$bucketKey?versionId=3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo"
-                    ))
+                    )
+        )
         .willReturn(
           aResponse()
             .withStatus(200)
             .withHeader("x-amz-id-2", "Zn8bf8aEFQ+kBnGPBc/JaAf9SoWM68QDPS9+SyFwkIZOHUG2BiRLZi5oXw4cOCEt")
             .withHeader("x-amz-request-id", "5A37448A37622243")
             .withHeader("x-amz-copy-source-version-id",
-                        "3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo")
+                        "3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo"
+            )
             .withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
                          |<CopyPartResult>
                          |  <ETag>"$etag"</ETag>

@@ -26,7 +26,8 @@ object MqttSource {
    */
   def atMostOnce(settings: MqttConnectionSettings,
                  subscriptions: MqttSubscriptions,
-                 bufferSize: Int): Source[MqttMessage, Future[Done]] =
+                 bufferSize: Int
+  ): Source[MqttMessage, Future[Done]] =
     Source.maybe
       .viaMat(
         MqttFlow.atMostOnce(settings, subscriptions, bufferSize, defaultQos = MqttQoS.AtLeastOnce)
@@ -41,7 +42,8 @@ object MqttSource {
    */
   def atLeastOnce(settings: MqttConnectionSettings,
                   subscriptions: MqttSubscriptions,
-                  bufferSize: Int): Source[MqttMessageWithAck, Future[Done]] =
+                  bufferSize: Int
+  ): Source[MqttMessageWithAck, Future[Done]] =
     Source.maybe.viaMat(
       MqttFlow.atLeastOnce(settings, subscriptions, bufferSize, defaultQos = MqttQoS.AtLeastOnce)
     )(Keep.right)

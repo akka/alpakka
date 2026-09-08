@@ -20,11 +20,12 @@ private[auth] final case class AccessToken(token: String, expiresAt: Long) {
 
 @InternalApi
 private[auth] object AccessToken {
-  implicit def unmarshaller[T](implicit unmarshaller: Unmarshaller[T, AccessTokenResponse],
-                               clock: Clock): Unmarshaller[T, AccessToken] =
-    unmarshaller.map {
-      case AccessTokenResponse(access_token, _, expires_in) =>
-        AccessToken(access_token, JwtTime.nowSeconds + expires_in)
+  implicit def unmarshaller[T](implicit
+      unmarshaller: Unmarshaller[T, AccessTokenResponse],
+      clock: Clock
+  ): Unmarshaller[T, AccessToken] =
+    unmarshaller.map { case AccessTokenResponse(access_token, _, expires_in) =>
+      AccessToken(access_token, JwtTime.nowSeconds + expires_in)
     }
 }
 

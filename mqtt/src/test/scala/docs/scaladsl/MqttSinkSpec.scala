@@ -30,7 +30,8 @@ class MqttSinkSpec extends MqttSpecBase("MqttSinkSpec") {
       val (subscribed, message) = MqttSource
         .atMostOnce(connectionSettings.withClientId(clientId = "sink-spec/source"),
                     MqttSubscriptions(topic, MqttQoS.AtLeastOnce),
-                    8)
+                    8
+        )
         .toMat(Sink.head)(Keep.both)
         .run()
 
@@ -48,7 +49,8 @@ class MqttSinkSpec extends MqttSpecBase("MqttSinkSpec") {
         MqttSource
           .atMostOnce(connectionSettings.withClientId(clientId = "sink-spec/source"),
                       mqtt.MqttSubscriptions(topic2, MqttQoS.atLeastOnce),
-                      8)
+                      8
+          )
           .take(numOfMessages)
           .toMat(Sink.seq)(Keep.both)
           .run()
@@ -105,7 +107,8 @@ class MqttSinkSpec extends MqttSpecBase("MqttSinkSpec") {
         MqttSource
           .atMostOnce(connectionSettings.withClientId("source-spec/retained"),
                       mqtt.MqttSubscriptions(topic, MqttQoS.atLeastOnce),
-                      8)
+                      8
+          )
           .runWith(Sink.head)
 
       val message = messageFuture.futureValue

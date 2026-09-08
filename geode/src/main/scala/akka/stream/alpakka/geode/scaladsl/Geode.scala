@@ -87,7 +87,8 @@ trait PoolSubscription extends Geode {
 
   def continuousQuery[V <: AnyRef](queryName: Symbol,
                                    query: String,
-                                   serializer: AkkaPdxSerializer[V]): Source[V, Future[Done]] = {
+                                   serializer: AkkaPdxSerializer[V]
+  ): Source[V, Future[Done]] = {
 
     registerPDXSerializer(serializer, serializer.clazz)
 

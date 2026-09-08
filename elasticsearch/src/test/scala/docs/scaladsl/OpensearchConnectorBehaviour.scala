@@ -28,7 +28,8 @@ trait OpensearchConnectorBehaviour {
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(10.seconds)
 
   def opensearchConnector(apiVersion: OpensearchApiVersion, connectionSettings: ElasticsearchConnectionSettings)(
-      implicit system: ActorSystem,
+      implicit
+      system: ActorSystem,
       http: HttpExt
   ): Unit = {
 
@@ -132,9 +133,8 @@ trait OpensearchConnectorBehaviour {
 
         val indexName = "sink3-1"
         val createBooks = Source(books).zipWithIndex
-          .map {
-            case (book, index) =>
-              (WriteMessage.createIndexMessage(index.toString, Book(book)), book)
+          .map { case (book, index) =>
+            (WriteMessage.createIndexMessage(index.toString, Book(book)), book)
           }
           .via(
             ElasticsearchFlow.createWithContext(
@@ -144,10 +144,9 @@ trait OpensearchConnectorBehaviour {
           )
           .runWith(Sink.seq)
 
-        forAll(createBooks.futureValue) {
-          case (writeMessage, title) =>
-            val book = writeMessage.message.source
-            book.map(_.title) should contain(title)
+        forAll(createBooks.futureValue) { case (writeMessage, title) =>
+          val book = writeMessage.message.source
+          book.map(_.title) should contain(title)
         }
       }
 
@@ -159,9 +158,8 @@ trait OpensearchConnectorBehaviour {
 
         val indexName = "sink4"
         val createBooks = Source(books.zipWithIndex)
-          .map {
-            case (book: String, index: Int) =>
-              WriteMessage.createIndexMessage(index.toString, Book(book))
+          .map { case (book: String, index: Int) =>
+            WriteMessage.createIndexMessage(index.toString, Book(book))
           }
           .via(
             ElasticsearchFlow.create[Book](
@@ -194,17 +192,15 @@ trait OpensearchConnectorBehaviour {
             )
             .zipWithIndex
         ).map {
-            case (book: JsObject, index: Int) =>
-              WriteMessage.createIndexMessage(index.toString, book)
-            case _ => ??? // Keep the compiler from complaining
-          }
-          .via(
-            ElasticsearchFlow.create(
-              constructElasticsearchParams(indexName, "_doc", apiVersion),
-              baseWriteSettings.withRetryLogic(RetryAtFixedRate(5, 100.millis))
-            )
+          case (book: JsObject, index: Int) =>
+            WriteMessage.createIndexMessage(index.toString, book)
+          case _ => ??? // Keep the compiler from complaining
+        }.via(
+          ElasticsearchFlow.create(
+            constructElasticsearchParams(indexName, "_doc", apiVersion),
+            baseWriteSettings.withRetryLogic(RetryAtFixedRate(5, 100.millis))
           )
-          .runWith(Sink.seq)
+        ).runWith(Sink.seq)
 
         val start = System.currentTimeMillis()
         val writeResults = createBooks.futureValue
@@ -237,19 +233,18 @@ trait OpensearchConnectorBehaviour {
           .take(bookNr)
           .grouped(5)
           .zipWithIndex
-          .flatMap {
-            case (numBlock, index) =>
-              val writeMsgBlock = numBlock.map { n =>
-                WriteMessage
-                  .createCreateMessage(n.toString, Book(s"Book ${n}"))
-                  .withPassThrough(n)
-              }
+          .flatMap { case (numBlock, index) =>
+            val writeMsgBlock = numBlock.map { n =>
+              WriteMessage
+                .createCreateMessage(n.toString, Book(s"Book ${n}"))
+                .withPassThrough(n)
+            }
 
-              val writeMsgFailed = WriteMessage
-                .createCreateMessage("0", Book(s"Failed"))
-                .withPassThrough(bookNr + index)
+            val writeMsgFailed = WriteMessage
+              .createCreateMessage("0", Book(s"Failed"))
+              .withPassThrough(bookNr + index)
 
-              (writeMsgBlock ++ Iterator(writeMsgFailed)).toList
+            (writeMsgBlock ++ Iterator(writeMsgFailed)).toList
           }
           .toList
 
@@ -269,7 +264,10 @@ trait OpensearchConnectorBehaviour {
         flushAndRefresh(connectionSettings, indexName)
 
         val expectedBookTitles = Iterator.from(0).map(n => s"Book ${n}").take(bookNr).toSet
-        readTitlesFrom(apiVersion, baseSourceSettings, indexName).futureValue should contain theSameElementsAs expectedBookTitles
+        readTitlesFrom(apiVersion,
+                       baseSourceSettings,
+                       indexName
+        ).futureValue should contain theSameElementsAs expectedBookTitles
       }
 
       "retry a failed document and pass retried documents to downstream (createWithContext)" in {
@@ -287,17 +285,15 @@ trait OpensearchConnectorBehaviour {
             )
             .zipWithIndex
         ).map {
-            case (book: JsObject, index: Int) =>
-              WriteMessage.createIndexMessage(index.toString, book) -> index
-            case _ => ??? // Keep the compiler from complaining
-          }
-          .via(
-            ElasticsearchFlow.createWithContext(
-              constructElasticsearchParams(indexName, "_doc", apiVersion),
-              baseWriteSettings.withRetryLogic(RetryAtFixedRate(5, 100.millis))
-            )
+          case (book: JsObject, index: Int) =>
+            WriteMessage.createIndexMessage(index.toString, book) -> index
+          case _ => ??? // Keep the compiler from complaining
+        }.via(
+          ElasticsearchFlow.createWithContext(
+            constructElasticsearchParams(indexName, "_doc", apiVersion),
+            baseWriteSettings.withRetryLogic(RetryAtFixedRate(5, 100.millis))
           )
-          .runWith(Sink.seq)
+        ).runWith(Sink.seq)
 
         val start = System.currentTimeMillis()
         val writeResults = createBooks.futureValue
@@ -335,17 +331,16 @@ trait OpensearchConnectorBehaviour {
           .take(bookNr)
           .grouped(5)
           .zipWithIndex
-          .flatMap {
-            case (numBlock, index) =>
-              val writeMsgBlock = numBlock.map { n =>
-                WriteMessage
-                  .createCreateMessage(n.toString, Book(s"Book ${n}")) -> n
-              }
+          .flatMap { case (numBlock, index) =>
+            val writeMsgBlock = numBlock.map { n =>
+              WriteMessage
+                .createCreateMessage(n.toString, Book(s"Book ${n}")) -> n
+            }
 
-              val writeMsgFailed = WriteMessage
-                  .createCreateMessage("0", Book(s"Failed")) -> (bookNr + index)
+            val writeMsgFailed = WriteMessage
+              .createCreateMessage("0", Book(s"Failed")) -> (bookNr + index)
 
-              (writeMsgBlock ++ Iterator(writeMsgFailed)).toList
+            (writeMsgBlock ++ Iterator(writeMsgFailed)).toList
           }
           .toList
 
@@ -366,7 +361,10 @@ trait OpensearchConnectorBehaviour {
         flushAndRefresh(connectionSettings, indexName)
 
         val expectedBookTitles = Iterator.from(0).map(n => s"Book ${n}").take(bookNr).toSet
-        readTitlesFrom(apiVersion, baseSourceSettings, indexName).futureValue should contain theSameElementsAs expectedBookTitles
+        readTitlesFrom(apiVersion,
+                       baseSourceSettings,
+                       indexName
+        ).futureValue should contain theSameElementsAs expectedBookTitles
       }
 
       "store new documents using upsert method and partially update existing ones" in {
@@ -398,15 +396,18 @@ trait OpensearchConnectorBehaviour {
           ("00001",
            JsObject(
              "rating" -> JsNumber(4)
-           )),
+           )
+          ),
           ("00002",
            JsObject(
              "rating" -> JsNumber(3)
-           )),
+           )
+          ),
           ("00003",
            JsObject(
              "rating" -> JsNumber(3)
-           ))
+           )
+          )
         )
 
         // Update sink7/_doc with the second dataset
@@ -432,9 +433,8 @@ trait OpensearchConnectorBehaviour {
           """{"match_all": {}}""",
           baseSourceSettings
         ).map { message =>
-            message.source
-          }
-          .runWith(Sink.seq)
+          message.source
+        }.runWith(Sink.seq)
 
         // Docs should contain both columns
         readBooks.futureValue.sortBy(_.fields("title").compactPrint) shouldEqual Seq(
@@ -679,7 +679,8 @@ trait OpensearchConnectorBehaviour {
                                                       "Scala for Spark in Production",
                                                       "Scala Puzzlers",
                                                       "Effective Akka",
-                                                      "Akka Concurrency"))
+                                                      "Akka Concurrency"
+        ))
       }
 
       "sort by user defined field" in {

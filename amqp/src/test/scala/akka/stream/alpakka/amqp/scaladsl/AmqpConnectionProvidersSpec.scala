@@ -210,7 +210,7 @@ class AmqpConnectionProvidersSpec extends AmqpSpec {
       reusableConnectionProvider.release(originalConnection)
 
       val newConnection = reusableConnectionProvider.get
-      newConnection should not be (originalConnection)
+      newConnection should not be originalConnection
       newConnection.isOpen shouldBe true
       originalConnection.isOpen should not be true
     }

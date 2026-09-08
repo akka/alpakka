@@ -25,7 +25,8 @@ import scala.jdk.OptionConverters._
  */
 final case class Job private (configuration: Option[JobConfiguration],
                               jobReference: Option[JobReference],
-                              status: Option[JobStatus]) {
+                              status: Option[JobStatus]
+) {
 
   def getConfiguration = configuration.toJava
   def getJobReference = jobReference.toJava
@@ -60,7 +61,8 @@ object Job {
    */
   def create(configuration: util.Optional[JobConfiguration],
              jobReference: util.Optional[JobReference],
-             status: util.Optional[JobStatus]) =
+             status: util.Optional[JobStatus]
+  ) =
     Job(configuration.toScala, jobReference.toScala, status.toScala)
 
   implicit val format: RootJsonFormat[Job] = jsonFormat3(apply)
@@ -138,7 +140,8 @@ final case class JobConfigurationLoad private (schema: Option[TableSchema],
                                                destinationTable: Option[TableReference],
                                                createDisposition: Option[CreateDisposition],
                                                writeDisposition: Option[WriteDisposition],
-                                               sourceFormat: Option[SourceFormat]) {
+                                               sourceFormat: Option[SourceFormat]
+) {
 
   def getSchema = schema.toJava
   def getDestinationTable = destinationTable.toJava
@@ -189,7 +192,8 @@ object JobConfigurationLoad {
              destinationTable: util.Optional[TableReference],
              createDisposition: util.Optional[CreateDisposition],
              writeDisposition: util.Optional[WriteDisposition],
-             sourceFormat: util.Optional[SourceFormat]) =
+             sourceFormat: util.Optional[SourceFormat]
+  ) =
     JobConfigurationLoad(
       schema.toScala,
       destinationTable.toScala,
@@ -266,7 +270,8 @@ final case class JobReference private (projectId: Option[String], jobId: Option[
   @JsonCreator
   private def this(@JsonProperty("projectId") projectId: String,
                    @JsonProperty("jobId") jobId: String,
-                   @JsonProperty("location") location: String) =
+                   @JsonProperty("location") location: String
+  ) =
     this(Option(projectId), Option(jobId), Option(location))
 
   def getProjectId = projectId.toJava

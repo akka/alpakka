@@ -98,8 +98,8 @@ private[impl] trait Encoding {
 private[impl] class DecodingLogic(in: Inlet[ByteString],
                                   out: Outlet[String],
                                   shape: FlowShape[ByteString, String],
-                                  incoming: Charset)
-    extends GraphStageLogic(shape)
+                                  incoming: Charset
+) extends GraphStageLogic(shape)
     with Decoding
     with InHandler
     with OutHandler {
@@ -131,8 +131,8 @@ private[impl] class DecodingLogic(in: Inlet[ByteString],
 private[impl] class EncodingLogic(in: Inlet[String],
                                   out: Outlet[ByteString],
                                   shape: FlowShape[String, ByteString],
-                                  outgoing: Charset)
-    extends GraphStageLogic(shape)
+                                  outgoing: Charset
+) extends GraphStageLogic(shape)
     with Encoding
     with InHandler
     with OutHandler {
@@ -161,8 +161,8 @@ private[impl] class TranscodingLogic(in: Inlet[ByteString],
                                      out: Outlet[ByteString],
                                      shape: FlowShape[ByteString, ByteString],
                                      incoming: Charset,
-                                     outgoing: Charset)
-    extends GraphStageLogic(shape)
+                                     outgoing: Charset
+) extends GraphStageLogic(shape)
     with Encoding
     with Decoding
     with InHandler

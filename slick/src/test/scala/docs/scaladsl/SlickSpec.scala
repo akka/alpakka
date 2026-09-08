@@ -189,7 +189,7 @@ class SlickSpec
         .runWith(Sink.seq)
         .futureValue
 
-      inserted must have size (4)
+      inserted must have size 4
       // we do single inserts without auto-commit but it only returns the result of the last insert
       inserted.toSet mustBe Set(1)
 
@@ -207,7 +207,7 @@ class SlickSpec
         .futureValue
 
       inserted must have size (users.size)
-      inserted.map(_._1).toSet mustBe (users)
+      inserted.map(_._1).toSet mustBe users
       inserted.map(_._2).toSet mustBe Set(1)
 
       getAllUsersFromDb.futureValue mustBe users
@@ -215,14 +215,18 @@ class SlickSpec
 
     "insert 40 records into a table (parallelism = 4)" in {
       val inserted = Source(users)
-        .via(Slick.flowWithPassThrough(parallelism = 4, user => {
-          insertUser(user).map(insertCount => (user, insertCount))
-        }))
+        .via(
+          Slick.flowWithPassThrough(parallelism = 4,
+                                    user => {
+                                      insertUser(user).map(insertCount => (user, insertCount))
+                                    }
+          )
+        )
         .runWith(Sink.seq)
         .futureValue
 
       inserted must have size (users.size)
-      inserted.map(_._1).toSet mustBe (users)
+      inserted.map(_._1).toSet mustBe users
       inserted.map(_._2).toSet mustBe Set(1)
 
       getAllUsersFromDb.futureValue mustBe users
@@ -244,7 +248,7 @@ class SlickSpec
         .futureValue
 
       inserted must have size (users.size)
-      inserted.map(_._1).toSet mustBe (users)
+      inserted.map(_._1).toSet mustBe users
       inserted.map(_._2).toSet mustBe Set(1)
 
       getAllUsersFromDb.futureValue mustBe users

@@ -20,11 +20,10 @@ import akka.util.ByteString
   ): Flow[(ArchiveMetadata, Source[ByteString, Any]), ByteString, NotUsed] = {
     val archiveZipFlow = new ZipArchiveFlow(deflateCompression)
     Flow[(ArchiveMetadata, Source[ByteString, Any])]
-      .flatMapConcat {
-        case (metadata, stream) =>
-          val prependElem = Source.single(FileByteStringSeparators.createStartingByteString(metadata.filePath))
-          val appendElem = Source.single(FileByteStringSeparators.createEndingByteString())
-          stream.prepend(prependElem).concat(appendElem)
+      .flatMapConcat { case (metadata, stream) =>
+        val prependElem = Source.single(FileByteStringSeparators.createStartingByteString(metadata.filePath))
+        val appendElem = Source.single(FileByteStringSeparators.createEndingByteString())
+        stream.prepend(prependElem).concat(appendElem)
       }
       .via(archiveZipFlow)
   }

@@ -33,7 +33,8 @@ object SolrFlow {
   ], NotUsed] =
     Flow
       .fromFunction[java.util.List[WriteMessage[SolrInputDocument, NotUsed]],
-                    immutable.Seq[WriteMessage[SolrInputDocument, NotUsed]]](
+                    immutable.Seq[WriteMessage[SolrInputDocument, NotUsed]]
+      ](
         _.asScala.toIndexedSeq
       )
       .via(
@@ -97,10 +98,12 @@ object SolrFlow {
       settings: SolrUpdateSettings,
       client: SolrClient
   ): javadsl.Flow[java.util.List[WriteMessage[SolrInputDocument, PT]], java.util.List[WriteResult[SolrInputDocument,
-                                                                                                  PT]], NotUsed] =
+                                                                                                  PT
+  ]], NotUsed] =
     Flow
       .fromFunction[java.util.List[WriteMessage[SolrInputDocument, PT]], immutable.Seq[WriteMessage[SolrInputDocument,
-                                                                                                    PT]]](
+                                                                                                    PT
+      ]]](
         _.asScala.toIndexedSeq
       )
       .via(

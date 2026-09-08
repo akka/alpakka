@@ -79,8 +79,7 @@ class BigQueryEndToEndSpec
 
     "create table" in {
       BigQuery.createTable[A](datasetId, tableId).map { table =>
-        table.tableReference should matchPattern {
-          case TableReference(_, `datasetId`, Some(`tableId`)) =>
+        table.tableReference should matchPattern { case TableReference(_, `datasetId`, Some(`tableId`)) =>
         }
       }
     }

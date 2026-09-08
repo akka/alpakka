@@ -15,7 +15,8 @@ object KinesisErrors {
       with KinesisSourceError
   class GetRecordsError(val shardId: String, e: Throwable)
       extends RuntimeException(s"Failed to fetch records from Kinesis for shard [$shardId]. Reason : ${e.getMessage}",
-                               e)
+                               e
+      )
       with KinesisSourceError
 
   sealed trait KinesisFlowErrors extends NoStackTrace

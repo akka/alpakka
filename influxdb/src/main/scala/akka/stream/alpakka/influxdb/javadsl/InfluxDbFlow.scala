@@ -24,7 +24,8 @@ object InfluxDbFlow {
       influxDB: InfluxDB
   ): Flow[java.util.List[InfluxDbWriteMessage[Point, NotUsed]],
           java.util.List[InfluxDbWriteResult[Point, NotUsed]],
-          NotUsed] =
+          NotUsed
+  ] =
     akka.stream.scaladsl
       .Flow[java.util.List[InfluxDbWriteMessage[Point, NotUsed]]]
       .map(_.asScala.toList)
