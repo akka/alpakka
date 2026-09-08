@@ -127,7 +127,7 @@ object Dependencies {
         "com.azure" % "azure-core" % AzureCoreVersion, // MIT - TokenCredential API
         "com.azure" % "azure-identity" % AzureIdentityVersion % "provided,test", // MIT - optional, needed for DefaultAzureCredential
         // for testing authorization signature
-        "com.azure" % "azure-storage-common" % "12.34.0" % Test,
+        "com.azure" % "azure-storage-common" % "12.34.1" % Test,
         wiremock
       )
   )
