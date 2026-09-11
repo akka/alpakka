@@ -117,8 +117,8 @@ object Dependencies {
       )
   )
 
-  val AzureCoreVersion = "1.55.5"
-  val AzureIdentityVersion = "1.18.4"
+  val AzureCoreVersion = "1.59.0"
+  val AzureIdentityVersion = "1.18.5"
 
   val AzureStorage = Seq(
     libraryDependencies ++= Seq(
@@ -127,7 +127,7 @@ object Dependencies {
         "com.azure" % "azure-core" % AzureCoreVersion, // MIT - TokenCredential API
         "com.azure" % "azure-identity" % AzureIdentityVersion % "provided,test", // MIT - optional, needed for DefaultAzureCredential
         // for testing authorization signature
-        "com.azure" % "azure-storage-common" % "12.34.0" % Test,
+        "com.azure" % "azure-storage-common" % "12.34.1" % Test,
         wiremock
       )
   )
