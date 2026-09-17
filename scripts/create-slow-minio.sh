@@ -19,6 +19,7 @@ sudo losetup -P "$LO_DEV" "$LO_FILE"
 # - Set CONFIG_BLK_CGROUP and CONFIG_BLK_DEV_THROTTLING to enable throttling, following this guide:
 #   https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v1/blkio-controller.html#throttling-upper-limit-policy
 # - MINIO_FS_OSYNC needs to be set so that Mionio fsyncs to the disk, and throttling can take effect
+# Minio image by https://hub.docker.com/r/firstfinger/minio/tags
 docker run -i --rm \
   --name minio \
   --device "$LO_DEV" \
@@ -27,7 +28,7 @@ docker run -i --rm \
   -e CONFIG_BLK_CGROUP=y -e CONFIG_BLK_DEV_THROTTLING=y \
   --mount "type=volume,source=miniodata,target=/data,volume-driver=local,volume-opt=type=ext4,volume-opt=device=$LO_DEV" \
   -p 9001:9000 \
-  minio/minio \
+  firstfinger/minio:1.7.3 \
   server /data
 
 # We can verify that the throttling is properly configured by running dd

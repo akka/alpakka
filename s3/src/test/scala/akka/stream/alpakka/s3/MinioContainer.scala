@@ -11,7 +11,8 @@ import java.time.Duration
 
 class MinioContainer(accessKey: String, secretKey: String, domain: String)
     extends GenericContainer(
-      "minio/minio:RELEASE.2020-03-09T18-26-53Z",
+      // https://hub.docker.com/r/firstfinger/minio/tags
+      "firstfinger/minio:1.7.3",
       exposedPorts = List(9000),
       waitStrategy = Some(Wait.forHttp("/minio/health/ready").forPort(9000).withStartupTimeout(Duration.ofSeconds(10))),
       command = List("server", "/data"),
