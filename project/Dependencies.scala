@@ -8,8 +8,8 @@ object Dependencies {
 
   val CronBuild = sys.env.get("GITHUB_EVENT_NAME").contains("schedule")
 
-  val Scala213 = "2.13.17" // update even in link-validator.conf
-  val Scala3 = "3.3.8"
+  val Scala213 = "2.13.18" // update even in link-validator.conf
+  val Scala3 = "3.9.0"
   val Scala2Versions = Seq(Scala213)
   val ScalaVersions = Dependencies.Scala2Versions :+ Dependencies.Scala3
 
@@ -91,7 +91,7 @@ object Dependencies {
 
   val Amqp = Seq(
     libraryDependencies ++= Seq(
-        "com.rabbitmq" % "amqp-client" % "5.34.0" // APLv2
+        "com.rabbitmq" % "amqp-client" % "5.35.0" // APLv2
       ) ++ Mockito
   )
 
@@ -195,7 +195,7 @@ object Dependencies {
 
   val File = Seq(
     libraryDependencies ++= Seq(
-        "com.google.jimfs" % "jimfs" % "1.3.1" % Test // ApacheV2
+        "com.google.jimfs" % "jimfs" % "1.3.2" % Test // ApacheV2
       )
   )
 
@@ -222,7 +222,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "commons-net" % "commons-net" % "3.13.0",
         "com.hierynomus" % "sshj" % "0.40.0",
-        ("io.github.hakky54" % "ayza-for-pem" % "10.0.5" % Test)
+        ("io.github.hakky54" % "ayza-for-pem" % "10.0.7" % Test)
       )
   )
 
@@ -236,7 +236,7 @@ object Dependencies {
       Seq(
         "com.chuusai" %% "shapeless" % "2.3.13",
         // https://logging.apache.org/log4j/2.x/release-notes.html
-        "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.25.5" % Test
+        "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.26.1" % Test
       ) ++ JacksonDatabindDependencies
   )
 
@@ -366,8 +366,8 @@ object Dependencies {
   val JakartaJms = Seq(
     libraryDependencies ++= Seq(
         "jakarta.jms" % "jakarta.jms-api" % "3.1.0", // Eclipse Public License 2.0 + + GPLv2
-        ("org.apache.activemq" % "artemis-jakarta-server" % "2.38.0" % Test),
-        ("org.apache.activemq" % "artemis-jakarta-client" % "2.38.0" % Test)
+        ("org.apache.activemq" % "artemis-jakarta-server" % "2.56.0" % Test),
+        ("org.apache.activemq" % "artemis-jakarta-client" % "2.56.0" % Test)
       ) ++ Mockito
   )
 
@@ -375,8 +375,8 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "javax.jms" % "javax.jms-api" % "2.0.1" % Provided, // CDDL + GPLv2
         "com.ibm.mq" % "com.ibm.mq.allclient" % "9.4.3.1" % Test, // IBM International Program License Agreement https://public.dhe.ibm.com/ibmdl/export/pub/software/websphere/messaging/mqdev/maven/licenses/L-APIG-AZYF2E/LI_en.html
-        "org.apache.activemq" % "activemq-broker" % "5.19.9" % Test, // ApacheV2
-        "org.apache.activemq" % "activemq-client" % "5.19.9" % Test, // ApacheV2
+        "org.apache.activemq" % "activemq-broker" % "5.19.10" % Test, // ApacheV2
+        "org.apache.activemq" % "activemq-client" % "5.19.10" % Test, // ApacheV2
         "io.github.sullis" %% "jms-testkit" % "1.0.4" % Test // ApacheV2
       ) ++ Mockito,
     // Having JBoss as a first resolver is a workaround for https://github.com/coursier/coursier/issues/200
@@ -399,7 +399,7 @@ object Dependencies {
       ) ++ Seq(
         "software.amazon.awssdk" % "kinesis" % AwsSdk2Version, // ApacheV2
         "software.amazon.awssdk" % "firehose" % AwsSdk2Version, // ApacheV2
-        "software.amazon.kinesis" % "amazon-kinesis-client" % "2.4.8", // ApacheV2
+        "software.amazon.kinesis" % "amazon-kinesis-client" % "2.7.3", // ApacheV2
         "com.google.protobuf" % "protobuf-java" % KinesisProtobufJavaVersion // CVE in older transitive dependency
       ).map(
         _.excludeAll(
@@ -412,7 +412,7 @@ object Dependencies {
   val MongoDb = Seq(
     libraryDependencies ++= Seq(
         // https://github.com/mongodb/mongo-java-driver/releases
-        "org.mongodb.scala" %% "mongo-scala-driver" % "5.6.5" // ApacheV2
+        "org.mongodb.scala" %% "mongo-scala-driver" % "5.10.0" // ApacheV2
       )
   )
 
@@ -463,7 +463,7 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http-xml" % AkkaHttpVersion,
         "software.amazon.awssdk" % "auth" % AwsSdk2Version,
         // in-memory filesystem for file related tests
-        "com.google.jimfs" % "jimfs" % "1.3.1" % Test, // ApacheV2
+        "com.google.jimfs" % "jimfs" % "1.3.2" % Test, // ApacheV2
         wiremock
       )
   )
@@ -561,14 +561,14 @@ object Dependencies {
 
   val UnixDomainSocket = Seq(
     libraryDependencies ++= Seq(
-        "com.github.jnr" % "jffi" % "1.3.15", // classifier "complete", // Is the classifier needed anymore?
+        "com.github.jnr" % "jffi" % "1.4.0", // classifier "complete", // Is the classifier needed anymore?
         "com.github.jnr" % "jnr-unixsocket" % "0.38.25" // BSD/ApacheV2/CPL/MIT as per https://github.com/akka/alpakka/issues/620#issuecomment-348727265
       )
   )
 
   val Xml = Seq(
     libraryDependencies ++= Seq(
-        "com.fasterxml" % "aalto-xml" % "1.3.4" // ApacheV2
+        "com.fasterxml" % "aalto-xml" % "1.4.0" // ApacheV2
       )
   )
 
