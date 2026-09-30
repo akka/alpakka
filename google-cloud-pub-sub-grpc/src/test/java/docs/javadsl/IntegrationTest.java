@@ -64,7 +64,8 @@ public class IntegrationTest {
 
     assertTrue(
         "number of published messages should be more than 0",
-        publishedMessageIds.toCompletableFuture().get(TIMEOUT_SECONDS, TimeUnit.SECONDS).size() > 0);
+        publishedMessageIds.toCompletableFuture().get(TIMEOUT_SECONDS, TimeUnit.SECONDS).size()
+            > 0);
   }
 
   @Test
