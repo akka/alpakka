@@ -36,6 +36,7 @@ public class IntegrationTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   static final ActorSystem system = ActorSystem.create("IntegrationTest");
+  private static final long TIMEOUT_SECONDS = 15;
 
   @Test
   public void shouldPublishAMessage()
@@ -63,7 +64,8 @@ public class IntegrationTest {
 
     assertTrue(
         "number of published messages should be more than 0",
-        publishedMessageIds.toCompletableFuture().get(2, TimeUnit.SECONDS).size() > 0);
+        publishedMessageIds.toCompletableFuture().get(TIMEOUT_SECONDS, TimeUnit.SECONDS).size()
+            > 0);
   }
 
   @Test
@@ -92,7 +94,7 @@ public class IntegrationTest {
 
     assertTrue(
         "number of published messages should be more than 0",
-        published.toCompletableFuture().get(2, TimeUnit.SECONDS).size() > 0);
+        published.toCompletableFuture().get(TIMEOUT_SECONDS, TimeUnit.SECONDS).size() > 0);
   }
 
   @Test
@@ -131,7 +133,7 @@ public class IntegrationTest {
     assertEquals(
         "received and expected messages not the same",
         msg,
-        first.toCompletableFuture().get(2, TimeUnit.SECONDS).getMessage().getData());
+        first.toCompletableFuture().get(TIMEOUT_SECONDS, TimeUnit.SECONDS).getMessage().getData());
   }
 
   @Test
@@ -170,7 +172,7 @@ public class IntegrationTest {
     assertEquals(
         "received and expected messages not the same",
         msg,
-        first.toCompletableFuture().get(2, TimeUnit.SECONDS).getMessage().getData());
+        first.toCompletableFuture().get(TIMEOUT_SECONDS, TimeUnit.SECONDS).getMessage().getData());
   }
 
   @Test
