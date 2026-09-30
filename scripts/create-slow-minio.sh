@@ -29,7 +29,7 @@ docker run -i --rm \
   --mount "type=volume,source=miniodata,target=/data,volume-driver=local,volume-opt=type=ext4,volume-opt=device=$LO_DEV" \
   -p 9001:9000 \
   firstfinger/minio:1.7.3 \
-  server /data
+  /usr/bin/minio server /data
 
 # We can verify that the throttling is properly configured by running dd
 # This command should take about 5 seconds to write 5 x 1mb blocks to our disk throttled to 1mb/s throttle

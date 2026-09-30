@@ -15,7 +15,7 @@ class MinioContainer(accessKey: String, secretKey: String, domain: String)
       "firstfinger/minio:1.7.3",
       exposedPorts = List(9000),
       waitStrategy = Some(Wait.forHttp("/minio/health/ready").forPort(9000).withStartupTimeout(Duration.ofSeconds(10))),
-      command = List("server", "/data"),
+      command = List("/usr/bin/minio", "server", "/data"),
       env = Map(
         "MINIO_ACCESS_KEY" -> accessKey,
         "MINIO_SECRET_KEY" -> secretKey,
