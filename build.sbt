@@ -423,7 +423,7 @@ lazy val docs = project
         "couchbase.version" -> Dependencies.CouchbaseVersion,
         "extref.couchbase.base_url" -> s"https://docs.couchbase.com/java-sdk/${Dependencies.CouchbaseVersionForDocs}/%s",
         // Java
-        "extref.geode.base_url" -> s"https://geode.apache.org/docs/guide/${Dependencies.GeodeVersionForDocs}/%s",
+        "extref.geode.base_url" -> "https://geode.apache.org/docs/geode/%s",
         "extref.paho-api.base_url" -> "https://www.eclipse.org/paho/files/javadoc/index.html?%s.html",
         "extref.pravega.base_url" -> s"https://cncf.pravega.io/docs/latest/%s",
         "extref.slick.base_url" -> s"https://scala-slick.org/doc/${Dependencies.SlickVersion}/%s",
