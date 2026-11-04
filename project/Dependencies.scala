@@ -117,7 +117,7 @@ object Dependencies {
       )
   )
 
-  val AzureCoreVersion = "1.59.1"
+  val AzureCoreVersion = "1.60.0"
   val AzureIdentityVersion = "1.18.6"
 
   val AzureStorage = Seq(
