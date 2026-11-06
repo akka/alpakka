@@ -7,7 +7,6 @@ package docs.javadsl;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.unmarshalling.Unmarshaller;
-import akka.stream.ActorMaterializer;
 // #read-all
 import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryRecord;
 import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryStorageSettings;
@@ -30,7 +29,6 @@ import scala.Tuple2;
 public class ExampleReader {
 
   static final ActorSystem sys = ActorSystem.create("ExampleReader");
-  static final ActorMaterializer mat = ActorMaterializer.create(sys);
 
   // #read-all
   Source<

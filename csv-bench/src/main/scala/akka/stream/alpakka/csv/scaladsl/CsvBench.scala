@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) since 2016 Lightbend Inc. <https://akka.io>
  */
 
 package akka.stream.alpakka.csv.scaladsl
@@ -8,7 +8,6 @@ import java.util.concurrent.TimeUnit
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import org.openjdk.jmh.annotations._
@@ -51,7 +50,6 @@ class CsvBench {
 
   implicit val system = ActorSystem()
   implicit val executionContext = system.dispatcher
-  implicit val mat = ActorMaterializer()
 
   /**
    * Size of [[ByteString]] chunks in bytes.
@@ -86,7 +84,6 @@ class CsvBench {
 
   @TearDown
   def tearDown(): Unit = {
-    mat.shutdown()
     system.terminate()
   }
 
