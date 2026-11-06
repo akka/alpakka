@@ -438,18 +438,6 @@ object Dependencies {
       )
   )
 
-  val PravegaVersion = "0.13.0"
-  val PravegaVersionForDocs = s"v${PravegaVersion}"
-
-  val Pravega = {
-    Seq(
-      libraryDependencies ++= Seq(
-          "io.pravega" % "pravega-client" % PravegaVersion,
-          "org.slf4j" % "log4j-over-slf4j" % log4jOverSlf4jVersion % Test // MIT like: http://www.slf4j.org/license.html
-        )
-    )
-  }
-
   val Reference = Seq(
     // connector specific library dependencies and resolver settings
     libraryDependencies ++= Seq(

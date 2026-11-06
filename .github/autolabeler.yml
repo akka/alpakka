@@ -38,7 +38,6 @@ dependency-change: "/project/Dependencies.scala"
 'p:mongodb': ["/mongodb"]
 'p:mqtt': ["/mqtt"]
 'p:mqtt-streaming': ["/mqtt-streaming", "/mqtt-streaming-bench"]
-'p:pravega': ["/pravega"]
 'p:recordio': ["/simple-codecs"]
 'p:reference': ["/reference"]
 'p:slick': ["/slick"]

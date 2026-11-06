@@ -41,7 +41,6 @@ lazy val alpakka = project
     mongodb,
     mqtt,
     mqttStreaming,
-    pravega,
     reference,
     s3,
     springWeb,
@@ -344,14 +343,6 @@ lazy val reference = internalProject("reference", Dependencies.Reference)
 
 lazy val s3 = alpakkaProject("s3", "aws.s3", Dependencies.S3, Scala3.settings)
 
-lazy val pravega = alpakkaProject(
-  "pravega",
-  "pravega",
-  Dependencies.Pravega,
-  Scala3.settings,
-  Test / fork := true
-)
-
 lazy val springWeb = alpakkaProject(
   "spring-web",
   "spring.web",
@@ -398,7 +389,6 @@ lazy val docs = project
          _ => s"https://doc\\.akka\\.io/api/akka-grpc/${akka.grpc.gen.BuildInfo.version}/akka/grpc/"),
         // http links
         ("http://www\\.eclipse\\.org/".r, _ => "https://www\\.eclipse\\.org/"),
-        ("http://pravega\\.io/".r, _ => "https://pravega\\.io/"),
         ("http://www\\.scala-lang\\.org/".r, _ => "https://www\\.scala-lang\\.org/"),
         ("https://javadoc\\.io/page/".r, _ => "https://javadoc\\.io/static/")
       ),
@@ -425,7 +415,6 @@ lazy val docs = project
         // Java
         "extref.geode.base_url" -> "https://geode.apache.org/docs/geode/%s",
         "extref.paho-api.base_url" -> "https://www.eclipse.org/paho/files/javadoc/index.html?%s.html",
-        "extref.pravega.base_url" -> s"https://cncf.pravega.io/docs/latest/%s",
         "extref.slick.base_url" -> s"https://scala-slick.org/doc/${Dependencies.SlickVersion}/%s",
         // Cassandra
         "extref.cassandra.base_url" -> s"https://cassandra.apache.org/doc/${Dependencies.CassandraVersionInDocs}/%s",
