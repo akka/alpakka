@@ -188,6 +188,8 @@ import scala.util.{Either, Failure, Success}
                                              local: Promise[Consumer.ForwardPublish.type])
       extends Event(connectionId)
 
+  private final case class RetryPublication(publication: PublishReceivedFromRemote) extends Event(ByteString.empty)
+
   final case class ConsumerFree(topicName: String) extends Event(ByteString.empty)
 
   final case class PublishReceivedLocally(publish: Publish, publishData: Producer.PublishData)
@@ -456,8 +458,20 @@ import scala.util.{Either, Failure, Success}
                 serverConnected(data.copy(activeConsumers = data.activeConsumers + (publish.topicName -> consumer)),
                                 resetPingReqTimer = false)
 
-              case Some(consumer) if publish.flags.contains(ControlPacketFlags.DUP) =>
-                consumer ! Consumer.DupPublishReceivedFromRemote(local)
+              case Some(_) if publish.flags.contains(ControlPacketFlags.DUP) =>
+                // Routing tracks the reply even if the consumer stops while the duplicate is in flight.
+                val reply = Promise[Consumer.ForwardPublish.type]()
+                data.consumerPacketRouter ! RemotePacketRouter.Route(
+                  None,
+                  packetId,
+                  Consumer.DupPublishReceivedFromRemote(reply),
+                  reply
+                )
+                reply.future.onComplete {
+                  case Success(value) => local.trySuccess(value)
+                  case Failure(_: RemotePacketRouter.CannotRoute) => context.self ! RetryPublication(prfr)
+                  case Failure(ex) => local.tryFailure(ex)
+                }(context.executionContext)
                 serverConnected(data, resetPingReqTimer = false)
 
               case Some(_) =>
@@ -465,6 +479,18 @@ import scala.util.{Either, Failure, Success}
                   data.copy(pendingRemotePublications = data.pendingRemotePublications :+ (publish.topicName -> prfr)),
                   resetPingReqTimer = false
                 )
+            }
+
+          case (context, RetryPublication(publication)) =>
+            val topicName = publication.publish.topicName
+            if (data.activeConsumers.contains(topicName)) {
+              serverConnected(
+                data.copy(pendingRemotePublications = data.pendingRemotePublications :+ (topicName -> publication)),
+                resetPingReqTimer = false
+              )
+            } else {
+              context.self ! publication
+              Behaviors.same
             }
 
           case (context, ConsumerFree(topicName)) =>
