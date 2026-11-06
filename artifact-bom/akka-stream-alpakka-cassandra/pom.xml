@@ -90,47 +90,47 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-buffer</artifactId>
-                <version>4.1.130.Final</version>
+                <version>4.1.138.Final</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-codec</artifactId>
-                <version>4.1.130.Final</version>
+                <version>4.1.138.Final</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-common</artifactId>
-                <version>4.1.130.Final</version>
+                <version>4.1.138.Final</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-handler</artifactId>
-                <version>4.1.130.Final</version>
+                <version>4.1.138.Final</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-resolver</artifactId>
-                <version>4.1.130.Final</version>
+                <version>4.1.138.Final</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-transport</artifactId>
-                <version>4.1.130.Final</version>
+                <version>4.1.138.Final</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-transport-native-unix-common</artifactId>
-                <version>4.1.130.Final</version>
+                <version>4.1.138.Final</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.cassandra</groupId>
                 <artifactId>java-driver-core</artifactId>
-                <version>4.19.3</version>
+                <version>4.19.4</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.cassandra</groupId>
                 <artifactId>java-driver-guava-shaded</artifactId>
-                <version>4.19.3</version>
+                <version>4.19.4</version>
             </dependency>
             <dependency>
                 <groupId>org.hdrhistogram</groupId>
@@ -264,47 +264,47 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-buffer</artifactId>
-            <version>4.1.130.Final</version>
+            <version>4.1.138.Final</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-codec</artifactId>
-            <version>4.1.130.Final</version>
+            <version>4.1.138.Final</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-common</artifactId>
-            <version>4.1.130.Final</version>
+            <version>4.1.138.Final</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-handler</artifactId>
-            <version>4.1.130.Final</version>
+            <version>4.1.138.Final</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-resolver</artifactId>
-            <version>4.1.130.Final</version>
+            <version>4.1.138.Final</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-transport</artifactId>
-            <version>4.1.130.Final</version>
+            <version>4.1.138.Final</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-transport-native-unix-common</artifactId>
-            <version>4.1.130.Final</version>
+            <version>4.1.138.Final</version>
         </dependency>
         <dependency>
             <groupId>org.apache.cassandra</groupId>
             <artifactId>java-driver-core</artifactId>
-            <version>4.19.3</version>
+            <version>4.19.4</version>
         </dependency>
         <dependency>
             <groupId>org.apache.cassandra</groupId>
             <artifactId>java-driver-guava-shaded</artifactId>
-            <version>4.19.3</version>
+            <version>4.19.4</version>
         </dependency>
         <dependency>
             <groupId>org.hdrhistogram</groupId>
