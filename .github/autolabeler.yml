@@ -30,7 +30,6 @@ dependency-change: "/project/Dependencies.scala"
 'p:hdfs': ["/hdfs"]
 'p:huawei-push-kit': ["/huawei-push-kit"]
 'p:influxdb': ["/influxdb"]
-'p:ironmq': ["/ironmq"]
 'p:jms': ["/jms"]
 'p:jakarta-jms': ["/jakarta-jms"]
 'p:json-streaming': ["/json-streaming"]
