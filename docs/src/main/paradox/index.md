@@ -44,7 +44,6 @@ The [Alpakka project](https://doc.akka.io/libraries/alpakka/current/) is an init
 * [HTTP](external/http.md)
 * [IBM Bluemix Cloud Object storage](bluemix-cos.md)
 * [InfluxDB](influxdb.md)
-* [IronMQ](ironmq.md)
 * [Jakarta Messaging](jakarta-jms/index.md)
 * [JMS](jms/index.md)
 * [MongoDB](mongodb.md)

@@ -355,13 +355,6 @@ object Dependencies {
       )
   )
 
-  val IronMq = Seq(
-    libraryDependencies ++= Seq(
-        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
-        "de.heikoseeberger" %% "akka-http-circe" % "1.39.2" // ApacheV2
-      )
-  )
-
   val JakartaJms = Seq(
     libraryDependencies ++= Seq(
         "jakarta.jms" % "jakarta.jms-api" % "3.1.0", // Eclipse Public License 2.0 + + GPLv2

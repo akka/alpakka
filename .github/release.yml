@@ -85,9 +85,6 @@ changelog:
     - title: 'InfluxDB'
       labels:
         - 'p:influxdb'
-    - title: 'IronMQ'
-      labels:
-        - 'p:ironmq'
     - title: 'JDBC'
       labels:
         - 'p:jdbc'

@@ -33,7 +33,6 @@ lazy val alpakka = project
     hdfs,
     huaweiPushKit,
     influxdb,
-    ironmq,
     jakartaJms,
     jms,
     jsonStreaming,
@@ -310,13 +309,6 @@ lazy val influxdb = alpakkaProject(
       // JDK 11: method isAccessible in class AccessibleObject is deprecated
       "-Wconf:cat=deprecation:s"
     )
-)
-
-lazy val ironmq = alpakkaProject(
-  "ironmq",
-  "ironmq",
-  Dependencies.IronMq,
-  Test / fork := true
 )
 
 lazy val jakartaJms = alpakkaProject("jakarta-jms", "jakarta-jms", Dependencies.JakartaJms, Scala3.settings)
