@@ -6,6 +6,7 @@ To understand the forces on version numbers, read about @ref:[Alpakka's versioni
 
 @@@ index
 
+* [11.0.x](11.0.x.md)
 * [5.0.x](5.0.x.md)
 * [4.0.x](4.0.x.md)
 * [3.0.x](3.0.x.md)
