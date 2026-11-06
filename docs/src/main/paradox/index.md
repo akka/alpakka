@@ -53,7 +53,6 @@ The [Alpakka project](https://doc.akka.io/libraries/alpakka/current/) is an init
 * [Pulsar](external/pulsar.md)
 * [Server-sent Events (SSE)](sse.md)
 * [Slick (JDBC)](slick.md)
-* [Spring Web](spring-web.md)
 * [TCP](external/tcp.md)
 * [UDP](udp.md)
 * [Unix Domain Sockets](unix-domain-socket.md)
