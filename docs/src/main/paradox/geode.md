@@ -33,7 +33,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 ### Connection
 
-The connection to Geode is handled by a @extref[ClientCache](geode:basic_config/the_cache/managing_a_client_cache.html). A single  `ClientCache` per application is enough. `ClientCache` also holds a single `PDXSerializer`.
+The connection to Geode is handled by a @extref[ClientCache](geode:basic_config/the_cache/managing_a_client_cache/). A single  `ClientCache` per application is enough. `ClientCache` also holds a single `PDXSerializer`.
 
 The Geode client should be closed after use, it is recommended to close it on actor system termination.
 
@@ -53,7 +53,7 @@ Java
 
 ### Region
 
-Define a @extref[region](geode:/basic_config/data_regions/chapter_overview.html) setting to describe how to access region and the key extraction function.
+Define a @extref[region](geode:basic_config/data_regions/chapter_overview/) setting to describe how to access region and the key extraction function.
 
 Scala
 : @@snip [snip](/geode/src/test/scala/docs/scaladsl/GeodeBaseSpec.scala) { #region }
@@ -65,7 +65,7 @@ Java
 ### Serialization
 
 Objects must be serialized to be stored in or retrieved from Geode. Only **PDX format** is available with Alpakka Geode.
-`PDXEncoder`s support many options as described in @extref[Geode PDX Serialization](geode:/developing/data_serialization/gemfire_pdx_serialization.html).
+`PDXEncoder`s support many options as described in @extref[Geode PDX Serialization](geode:developing/data_serialization/geode_pdx_serialization/gemfire_pdx_serialization/).
 A `PdxSerializer` must be provided to Geode when reading from or writing to a region.
 
 Scala
@@ -77,7 +77,7 @@ Java
 
 This Alpakka Geode provides a generic solution for Scala users based on [Shapeless](https://github.com/milessabin/shapeless) which may generate serializers for case classes at compile time.
 
-Java users need to implement custom serializers manually, or use runtime reflection as described in @extref[Using Automatic Reflection-Based PDX Serialization](geode:/developing/data_serialization/auto_serialization.html).
+Java users need to implement custom serializers manually, or use runtime reflection as described in @extref[Using Automatic Reflection-Based PDX Serialization](geode:developing/data_serialization/geode_pdx_serialization/reflection_based_pdx/auto_serialization/).
 
 
 ## Writing to Geode
