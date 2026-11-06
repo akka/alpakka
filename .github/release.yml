@@ -106,9 +106,6 @@ changelog:
     - title: 'MQTT Streaming'
       labels:
         - 'p:mqtt-streaming'
-    - title: 'Pravega'
-      labels:
-        - 'p:pravega'
     - title: 'Reference'
       labels:
         - 'p:reference'

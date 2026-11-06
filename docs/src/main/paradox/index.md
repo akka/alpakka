@@ -52,7 +52,6 @@ The [Alpakka project](https://doc.akka.io/libraries/alpakka/current/) is an init
 * [MQTT Streaming](mqtt-streaming.md)
 * [Opensearch](opensearch.md)
 * [Pulsar](external/pulsar.md)
-* [Pravega](pravega.md)
 * [Server-sent Events (SSE)](sse.md)
 * [Slick (JDBC)](slick.md)
 * [Spring Web](spring-web.md)
