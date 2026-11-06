@@ -40,7 +40,6 @@ The [Alpakka project](https://doc.akka.io/libraries/alpakka/current/) is an init
 * [gRPC](external/grpc.md)
 * [Hadoop Distributed File System](hdfs.md)
 * [HBase](hbase.md)
-* [Huawei Push Kit](huawei-push-kit.md)
 * [HTTP](external/http.md)
 * [IBM Bluemix Cloud Object storage](bluemix-cos.md)
 * [InfluxDB](influxdb.md)

@@ -31,7 +31,6 @@ lazy val alpakka = project
     googleFcm,
     hbase,
     hdfs,
-    huaweiPushKit,
     influxdb,
     jakartaJms,
     jms,
@@ -296,9 +295,6 @@ lazy val googleFcm = alpakkaProject("google-fcm", "google.firebase.fcm", Depende
 lazy val hbase = alpakkaProject("hbase", "hbase", Dependencies.HBase, Scala3.settings, Test / fork := true)
 
 lazy val hdfs = alpakkaProject("hdfs", "hdfs", Dependencies.Hdfs, Scala3.settings)
-
-lazy val huaweiPushKit =
-  alpakkaProject("huawei-push-kit", "huawei.pushkit", Dependencies.HuaweiPushKit)
 
 lazy val influxdb = alpakkaProject(
   "influxdb",
