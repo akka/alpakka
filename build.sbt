@@ -259,6 +259,8 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
   "google-cloud-pub-sub-grpc",
   "google.cloud.pubsub.grpc",
   Dependencies.GooglePubSubGrpc,
+  // This unused protobuf feature schema generates a `java` field that shadows `java.lang` in Scala 3.
+  Compile / PB.generate / excludeFilter ~= (_ || "java_features.proto"),
   akkaGrpcCodeGeneratorSettings ~= { _.filterNot(_ == "flat_package") },
   akkaGrpcGeneratedSources := Seq(AkkaGrpc.Client),
   akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala, AkkaGrpc.Java),
