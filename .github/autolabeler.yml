@@ -42,7 +42,6 @@ dependency-change: "/project/Dependencies.scala"
 'p:slick': ["/slick"]
 'p:sns': ["/sns"]
 'p:solr': ["/solr"]
-'p:spring-web': ["/spring-web"]
 'p:sqs': ["/sqs"]
 'p:sse': ["/sse"]
 'p:testkit': ["/testkit"]

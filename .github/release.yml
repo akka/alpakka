@@ -115,9 +115,6 @@ changelog:
     - title: 'Slick'
       labels:
         - 'p:slick'
-    - title: 'Spring Web'
-      labels:
-        - 'p:spring-web'
     - title: 'Text'
       labels:
         - 'p:text'

@@ -92,7 +92,6 @@ jobs:
           - { connector: mqtt-streaming,               pre_cmd: 'docker compose up -d mqtt' }
           - { connector: reference }
           - { connector: s3 }
-          - { connector: spring-web }
           - { connector: simple-codecs }
           - { connector: slick }
           - { connector: sns,                          pre_cmd: 'docker compose up -d amazonsns' }

@@ -447,21 +447,6 @@ object Dependencies {
       )
   )
 
-  val SpringWeb = {
-    val SpringVersion = "5.3.39"
-    val SpringBootVersion = "2.7.18"
-    Seq(
-      libraryDependencies ++= Seq(
-          "org.springframework" % "spring-core" % SpringVersion,
-          "org.springframework" % "spring-context" % SpringVersion,
-          "org.springframework.boot" % "spring-boot-autoconfigure" % SpringBootVersion, // TODO should this be provided?
-          "org.springframework.boot" % "spring-boot-configuration-processor" % SpringBootVersion % Optional,
-          // for examples
-          "org.springframework.boot" % "spring-boot-starter-web" % SpringBootVersion % Test
-        )
-    )
-  }
-
   val SlickVersion = "3.6.1"
   val Slick = Seq(
     libraryDependencies ++= Seq(
