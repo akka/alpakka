@@ -1,0 +1,2 @@
+# The updated Pub/Sub dependency no longer includes the unrelated gRPC load-balancer schema.
+ProblemFilters.exclude[MissingClassProblem]("io.grpc.lb.v1.*")
