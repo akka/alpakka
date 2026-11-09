@@ -79,9 +79,6 @@ changelog:
     - title: 'HBase'
       labels:
         - 'p:hbase'
-    - title: 'Huawei Push Kit'
-      labels:
-        - 'p:huawei-push-kit'
     - title: 'InfluxDB'
       labels:
         - 'p:influxdb'

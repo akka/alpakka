@@ -81,7 +81,6 @@ jobs:
           # hbase disabled until we resolve why new docker image fails our build: https://github.com/akka/alpakka/issues/2185
           # - { connector: hbase,                        pre_cmd: 'docker compose up -d hbase' }
           - { connector: hdfs,                         pre_cmd: 'file ${HOME}/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_2.13/2.0.0/cats-kernel_2.13-2.0.0.jar' }
-          - { connector:  huawei-push-kit }
           - { connector: influxdb,                     pre_cmd: 'docker compose up -d influxdb' }
           - { connector: jakarta-jms }
           - { connector: jms,                          pre_cmd: 'docker compose up -d ibmmq' }
