@@ -238,7 +238,8 @@ object Dependencies {
       ) ++ JacksonDatabindDependencies
   )
 
-  val GoogleAuthVersion = "1.39.1"
+  // https://github.com/googleapis/google-cloud-java/blob/main/google-auth-library-java/pom.xml#L8
+  val GoogleAuthVersion = "1.56.0"
 
   val GoogleCommon = Seq(
     libraryDependencies ++= Seq(
@@ -289,8 +290,8 @@ object Dependencies {
   val GooglePubSubGrpc = Seq(
     // see Akka gRPC version in plugins.sbt
     libraryDependencies ++= Seq(
-        // https://github.com/googleapis/java-pubsub/tree/master/proto-google-cloud-pubsub-v1/
-        "com.google.cloud" % "google-cloud-pubsub" % "1.141.5" % "protobuf-src", // ApacheV2
+        // https://github.com/googleapis/google-cloud-java/blob/main/java-pubsub/proto-google-cloud-pubsub-v1/pom.xml#L7
+        "com.google.cloud" % "google-cloud-pubsub" % "1.159.0" % "protobuf-src",
         "io.grpc" % "grpc-auth" % akka.grpc.gen.BuildInfo.grpcVersion,
         // https://github.com/googleapis/google-auth-library-java
         "com.google.auth" % "google-auth-library-oauth2-http" % GoogleAuthVersion,
