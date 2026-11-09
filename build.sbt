@@ -41,7 +41,6 @@ lazy val alpakka = project
     mqttStreaming,
     reference,
     s3,
-    springWeb,
     simpleCodecs,
     slick,
     sns,
@@ -90,9 +89,7 @@ lazy val alpakka = project
         mqttStreamingBench,
         // googleCloudPubSubGrpc and googleCloudBigQueryStorage contain the same gRPC generated classes
         // don't include ScalaDocs for googleCloudBigQueryStorage to make it work
-        googleCloudBigQueryStorage,
-        // springWeb triggers an esoteric ScalaDoc bug (from Java code)
-        springWeb
+        googleCloudBigQueryStorage
       ),
     licenses := Seq(("BUSL-1.1", url("https://raw.githubusercontent.com/akka/alpakka/main/LICENSE"))), // FIXME change s/master/v5.0.1/ when released
     crossScalaVersions := List() // workaround for https://github.com/sbt/sbt/issues/3465
@@ -330,12 +327,6 @@ lazy val reference = internalProject("reference", Dependencies.Reference)
   .dependsOn(testkit % Test)
 
 lazy val s3 = alpakkaProject("s3", "aws.s3", Dependencies.S3, Scala3.settings)
-
-lazy val springWeb = alpakkaProject(
-  "spring-web",
-  "spring.web",
-  Dependencies.SpringWeb
-)
 
 lazy val simpleCodecs = alpakkaProject("simple-codecs", "simplecodecs", Scala3.settings)
 

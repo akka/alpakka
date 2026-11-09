@@ -19,7 +19,7 @@ object Dependencies {
   val InfluxDBJavaVersion = "2.15"
 
   // https://github.com/aws/aws-sdk-java-v2
-  val AwsSdk2Version = "2.55.2"
+  val AwsSdk2Version = "2.55.16"
   val AwsSpiAkkaHttpVersion = "1.0.1"
   // Sync with plugins.sbt
   val AkkaGrpcBinaryVersion = "2.5"
@@ -34,7 +34,7 @@ object Dependencies {
   val TestContainersScalaTestVersion = "0.40.3" // pulls Testcontainers 1.16.2
 
   // https://github.com/mockito
-  val mockitoVersion = "5.23.0"
+  val mockitoVersion = "5.24.0"
   val hoverflyVersion = "0.20.2"
 
   val CouchbaseVersion = "3.9.1"
@@ -117,8 +117,8 @@ object Dependencies {
       )
   )
 
-  val AzureCoreVersion = "1.59.1"
-  val AzureIdentityVersion = "1.18.6"
+  val AzureCoreVersion = "1.61.0"
+  val AzureIdentityVersion = "1.19.0"
 
   val AzureStorage = Seq(
     libraryDependencies ++= Seq(
@@ -133,7 +133,7 @@ object Dependencies {
   )
 
   val CassandraVersionInDocs = "4.0"
-  val CassandraDriverVersion = "4.19.3"
+  val CassandraDriverVersion = "4.19.4"
   val CassandraDriverVersionInDocs = "4.19.0"
 
   val Cassandra = Seq(
@@ -201,9 +201,8 @@ object Dependencies {
 
   val AvroParquet = Seq(
     libraryDependencies ++= Seq(
-        "org.apache.parquet" % "parquet-avro" % "1.17.1", //Apache2
-        // override the version brought in by parquet-avro to fix CVE-2023-39410
-        "org.apache.avro" % "avro" % "1.12.1" //Apache2
+        "org.apache.parquet" % "parquet-avro" % "1.18.0",
+        "org.apache.avro" % "avro" % "1.12.2"
       )
   )
 
@@ -269,7 +268,7 @@ object Dependencies {
     // see Akka gRPC version in plugins.sbt
     libraryDependencies ++= Seq(
         // https://github.com/googleapis/java-bigquerystorage/tree/master/proto-google-cloud-bigquerystorage-v1
-        "com.google.api.grpc" % "proto-google-cloud-bigquerystorage-v1" % "3.32.0" % "protobuf-src", // ApacheV2
+        "com.google.api.grpc" % "proto-google-cloud-bigquerystorage-v1" % "3.35.0" % "protobuf-src", // ApacheV2
         "org.apache.avro" % "avro" % "1.12.1" % "provided",
         "org.apache.arrow" % "arrow-vector" % "19.0.0" % "provided",
         "io.grpc" % "grpc-auth" % akka.grpc.gen.BuildInfo.grpcVersion, // ApacheV2
@@ -439,21 +438,6 @@ object Dependencies {
         wiremock
       )
   )
-
-  val SpringWeb = {
-    val SpringVersion = "5.3.39"
-    val SpringBootVersion = "2.7.18"
-    Seq(
-      libraryDependencies ++= Seq(
-          "org.springframework" % "spring-core" % SpringVersion,
-          "org.springframework" % "spring-context" % SpringVersion,
-          "org.springframework.boot" % "spring-boot-autoconfigure" % SpringBootVersion, // TODO should this be provided?
-          "org.springframework.boot" % "spring-boot-configuration-processor" % SpringBootVersion % Optional,
-          // for examples
-          "org.springframework.boot" % "spring-boot-starter-web" % SpringBootVersion % Test
-        )
-    )
-  }
 
   val SlickVersion = "3.6.1"
   val Slick = Seq(

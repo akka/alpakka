@@ -63,7 +63,7 @@ jobs:
           - { connector: aws-event-bridge,             pre_cmd: 'docker compose up -d amazoneventbridge' }
           - { connector: azure-storage }
           - { connector: azure-storage-queue }
-          - { connector: cassandra,                    pre_cmd: 'docker compose up -d cassandra' }
+          - { connector: cassandra,                    pre_cmd: 'docker compose up --wait --wait-timeout 300 cassandra' }
           - { connector: couchbase,                    pre_cmd: 'docker compose up -d couchbase_prep' }
           - { connector: csv }
           - { connector: dynamodb,                     pre_cmd: 'docker compose up -d dynamodb' }
@@ -91,7 +91,6 @@ jobs:
           - { connector: mqtt-streaming,               pre_cmd: 'docker compose up -d mqtt' }
           - { connector: reference }
           - { connector: s3 }
-          - { connector: spring-web }
           - { connector: simple-codecs }
           - { connector: slick }
           - { connector: sns,                          pre_cmd: 'docker compose up -d amazonsns' }
