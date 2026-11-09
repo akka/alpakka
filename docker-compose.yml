@@ -25,6 +25,12 @@ services:
     image: cassandra:4.1
     ports:
       - "9042:9042"
+    healthcheck:
+      test: ["CMD", "cqlsh", "127.0.0.1", "9042", "-e", "SELECT release_version FROM system.local;"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
   couchbase:
     image: couchbase:community-7.6.2
     ports:
