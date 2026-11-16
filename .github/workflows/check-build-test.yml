@@ -47,6 +47,11 @@ jobs:
       - name: "Code style, compile tests, MiMa. Run locally with: sbt \"verifyCodeStyle; +Test/compile; mimaReportBinaryIssues\""
         run: sbt "verifyCodeStyle; +Test/compile; mimaReportBinaryIssues"
 
+      # Scaladoc for every module and Scala version, as run during release by +publishSigned.
+      # Unidoc (link validator) excludes some modules, so this is the only check covering them.
+      - name: "Scaladoc. Run locally with: sbt +Compile/doc"
+        run: sbt "+Compile/doc"
+
       - name: Artifact BOM validation
         uses: akka/github-actions-scripts/artifact_bom_validation@main
 
