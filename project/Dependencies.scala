@@ -8,12 +8,12 @@ object Dependencies {
 
   val CronBuild = sys.env.get("GITHUB_EVENT_NAME").contains("schedule")
 
-  val Scala213 = "2.13.17" // update even in link-validator.conf
+  val Scala213 = "2.13.18" // update even in link-validator.conf
   val Scala3 = "3.3.8"
   val Scala2Versions = Seq(Scala213)
   val ScalaVersions = Dependencies.Scala2Versions :+ Dependencies.Scala3
 
-  val AkkaVersion = "2.10.11"
+  val AkkaVersion = "2.11.0"
   val AkkaBinaryVersion = VersionNumber(AkkaVersion).numbers match { case Seq(major, minor, _*) => s"$major.$minor" }
 
   val InfluxDBJavaVersion = "2.15"
@@ -22,14 +22,14 @@ object Dependencies {
   val AwsSdk2Version = "2.55.16"
   val AwsSpiAkkaHttpVersion = "1.0.1"
   // Sync with plugins.sbt
-  val AkkaGrpcBinaryVersion = "2.5"
+  val AkkaGrpcBinaryVersion = "2.6"
   // sync ignore prefix in scripts/link-validator.conf#L30
-  val AkkaHttpVersion = "10.7.3"
+  val AkkaHttpVersion = "10.8.0"
   val AkkaHttpBinaryVersion = VersionNumber(AkkaHttpVersion).numbers match {
     case Seq(major, minor, _*) => s"$major.$minor"
   }
 
-  val AlpakkaKafkaVersion = "8.1.1"
+  val AlpakkaKafkaVersion = "9.0.0"
   val ScalaTestVersion = "3.2.20"
   val TestContainersScalaTestVersion = "0.40.3" // pulls Testcontainers 1.16.2
 
@@ -46,12 +46,12 @@ object Dependencies {
   val JwtScalaVersion = "11.0.3"
 
   // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L16
-  val slf4jVersion = "2.0.19"
+  val slf4jVersion = "2.0.20"
   val log4jOverSlf4jVersion = slf4jVersion
   val jclOverSlf4jVersion = slf4jVersion
 
   // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L26
-  val LogbackVersion = "1.5.18"
+  val LogbackVersion = "1.6.6"
   val wiremock = ("com.github.tomakehurst" % "wiremock" % "3.0.1" % Test)
 
   val Common = Seq(
@@ -373,7 +373,7 @@ object Dependencies {
       ) ++ JacksonDatabindDependencies
   )
 
-  val KinesisProtobufJavaVersion = "3.24.4" // sync with Akka gRPC
+  val KinesisProtobufJavaVersion = "3.25.9" // sync with Akka gRPC
   val Kinesis = Seq(
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
