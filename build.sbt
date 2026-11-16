@@ -228,7 +228,7 @@ lazy val googleCloudBigQueryStorage = alpakkaProject(
   Dependencies.GoogleBigQueryStorage,
   // This unused protobuf feature schema generates a `java` field that shadows `java.lang` in Scaladoc and Scala 3.
   Compile / PB.generate / excludeFilter ~= (_ || "java_features.proto"),
-  akkaGrpcCodeGeneratorSettings ~={ _.filterNot(_ == "flat_package") },
+  akkaGrpcCodeGeneratorSettings ~= { _.filterNot(_ == "flat_package") },
   akkaGrpcCodeGeneratorSettings += "server_power_apis",
   // FIXME only generate the server for the tests again
   akkaGrpcGeneratedSources := Seq(AkkaGrpc.Client, AkkaGrpc.Server),
