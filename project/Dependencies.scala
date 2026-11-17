@@ -82,7 +82,8 @@ object Dependencies {
   // CVE issues https://github.com/FasterXML/jackson-databind/issues?utf8=%E2%9C%93&q=+label%3ACVE
   // This should align with the Jackson minor version used in Akka
   // https://github.com/akka/akka/blob/main/project/Dependencies.scala#L29
-  val JacksonVersion = "2.18.11" // 2.18 is LTS
+  val JacksonVersion = "2.21.8" // 2.21 is LTS
+  val JacksonAnnotationsVersion = "2.21"
   val JacksonDatabindVersion = JacksonVersion
   val JacksonDatabindDependencies = Seq(
     "com.fasterxml.jackson.core" % "jackson-core" % JacksonVersion,
@@ -259,7 +260,7 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-pki" % AkkaVersion,
         "io.spray" %% "spray-json" % "1.3.6",
-        "com.fasterxml.jackson.core" % "jackson-annotations" % JacksonVersion,
+        "com.fasterxml.jackson.core" % "jackson-annotations" % JacksonAnnotationsVersion,
         "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % JacksonVersion % Test, // used from `hoverfly-java`
         "io.specto" % "hoverfly-java" % hoverflyVersion % Test //ApacheV2
       ) ++ Mockito ++ JacksonDatabindDependencies // pick possibly later version then `akka-http-jackson`
