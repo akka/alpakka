@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.lightbend.akka</groupId>
+        <artifactId>alpakka-maven-tests</artifactId>
+        <version>1.0</version>
+    </parent>
+    <artifactId>alpakka-maven-tests-aws-event-bridge</artifactId>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.lightbend.akka</groupId>
+            <artifactId>akka-stream-alpakka-aws-event-bridge_${scala.binary.version}</artifactId>
+            <version>${alpakka.version}</version>
+        </dependency>
+    </dependencies>
+</project>

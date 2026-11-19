@@ -55,6 +55,52 @@ jobs:
       - name: Artifact BOM validation
         uses: akka/github-actions-scripts/artifact_bom_validation@main
 
+  maven-tests:
+    name: Maven tests
+    runs-on: Akka-Default
+    env:
+      JAVA_OPTS: -Xms2G -Xmx2G -Xss2M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8
+
+    steps:
+      - name: Checkout
+        # https://github.com/actions/checkout/releases
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Cache Coursier cache
+        # https://github.com/coursier/cache-action/releases
+        uses: coursier/cache-action@v8.1.0
+
+      - name: Set up JDK 11
+        # https://github.com/coursier/setup-action/releases
+        uses: coursier/setup-action@v3.0.0
+        with:
+          jvm: temurin:1.11
+
+      - name: Run akka/github-actions-scripts
+        uses: akka/github-actions-scripts/setup_global_resolver@main
+        with:
+          maven-mirror-control: "NO_MIRROR"
+
+      - name: Gather version
+        run: |-
+          sbt --no-colors "print dynamodb/version" | tail -n 1 | tr -d '\n' > ~/.version
+          echo [$(cat ~/.version)]
+
+      - name: Publish connectors locally
+        # the connectors in maven-tests/pom.xml, and the modules they depend on
+        run: |-
+          sbt "set ThisBuild / Compile / packageDoc / publishArtifact := false" \
+            aws-event-bridge/publishM2 awslambda/publishM2 dynamodb/publishM2 kinesis/publishM2 sns/publishM2 sqs/publishM2 \
+            google-common/publishM2 google-cloud-bigquery-storage/publishM2 google-cloud-pub-sub-grpc/publishM2
+
+      - name: Maven test
+        # checks the dependencies that Maven resolves, and calls each connector's client
+        run: |-
+          cd maven-tests
+          mvn -B -nsu -ntp test -Dalpakka.version=`cat ~/.version`
+
   connectors:
     runs-on: Akka-Default
 
