@@ -21,6 +21,14 @@ object Dependencies {
   // https://github.com/aws/aws-sdk-java-v2
   val AwsSdk2Version = "2.55.16"
   val AwsSpiAkkaHttpVersion = "1.0.1"
+  val AwsSpiAkkaHttp = Seq(
+    // Its http-client-spi 2.11.4 would win in Maven over the newer one from the AWS SDK, so take that from the SDK.
+    ("com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion) // ApacheV2
+      .excludeAll(ExclusionRule(organization = "com.typesafe.akka"),
+                  ExclusionRule(organization = "software.amazon.awssdk")),
+    // It uses scala-java8-compat, which it only got from the Akka version it was built with
+    "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"
+  )
   // Sync with plugins.sbt
   val AkkaGrpcBinaryVersion = "2.6"
   // sync ignore prefix in scripts/link-validator.conf#L30
@@ -97,13 +105,9 @@ object Dependencies {
   )
 
   val AwsLambda = Seq(
-    libraryDependencies ++= Seq(
+    libraryDependencies ++= AwsSpiAkkaHttp ++ Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-pki" % AkkaVersion,
-        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll // ApacheV2
-        (
-          ExclusionRule(organization = "com.typesafe.akka")
-        ),
         "software.amazon.awssdk" % "lambda" % AwsSdk2Version excludeAll // ApacheV2
         (
           ExclusionRule("software.amazon.awssdk", "apache-client"),
@@ -169,12 +173,7 @@ object Dependencies {
   )
 
   val DynamoDB = Seq(
-    libraryDependencies ++= Seq(
-        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll // ApacheV2
-        (
-          ExclusionRule(organization = "com.typesafe.akka")
-        ),
-        "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2",
+    libraryDependencies ++= AwsSpiAkkaHttp ++ Seq(
         "software.amazon.awssdk" % "dynamodb" % AwsSdk2Version excludeAll // ApacheV2
         (
           ExclusionRule("software.amazon.awssdk", "apache-client"),
@@ -266,7 +265,16 @@ object Dependencies {
       ) ++ Mockito ++ JacksonDatabindDependencies // pick possibly later version then `akka-http-jackson`
   )
 
+  // Akka gRPC's sbt plugin adds protobuf-java 3.24.4 for the Java code that protoc generates, though protoc and
+  // akka-grpc-runtime are on googleProtobufVersion. Maven would pick 3.24.4, which the generated code fails on.
+  val AkkaGrpcProtobufJava = libraryDependencies ~= (_.map { module =>
+        if (module.organization == "com.google.protobuf" && module.name == "protobuf-java" && module.configurations.isEmpty)
+          module.withRevision(akka.grpc.gen.BuildInfo.googleProtobufVersion)
+        else module
+      })
+
   val GoogleBigQueryStorage = Seq(
+    AkkaGrpcProtobufJava,
     // see Akka gRPC version in plugins.sbt
     libraryDependencies ++= Seq(
         // https://github.com/googleapis/java-bigquerystorage/tree/master/proto-google-cloud-bigquerystorage-v1
@@ -289,6 +297,7 @@ object Dependencies {
   )
 
   val GooglePubSubGrpc = Seq(
+    AkkaGrpcProtobufJava,
     // see Akka gRPC version in plugins.sbt
     libraryDependencies ++= Seq(
         // https://github.com/googleapis/google-cloud-java/blob/main/java-pubsub/proto-google-cloud-pubsub-v1/pom.xml#L7
@@ -376,11 +385,8 @@ object Dependencies {
 
   val KinesisProtobufJavaVersion = "3.25.9" // sync with Akka gRPC
   val Kinesis = Seq(
-    libraryDependencies ++= Seq(
-        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
-        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll ExclusionRule(
-          organization = "com.typesafe.akka"
-        )
+    libraryDependencies ++= AwsSpiAkkaHttp ++ Seq(
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion
       ) ++ Seq(
         "software.amazon.awssdk" % "kinesis" % AwsSdk2Version, // ApacheV2
         "software.amazon.awssdk" % "firehose" % AwsSdk2Version, // ApacheV2
@@ -450,29 +456,19 @@ object Dependencies {
       )
   )
   val Eventbridge = Seq(
-    libraryDependencies ++= Seq(
-        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll // ApacheV2
-        (
-          ExclusionRule(organization = "com.typesafe.akka")
-        ),
+    libraryDependencies ++= AwsSpiAkkaHttp ++ Seq(
         "software.amazon.awssdk" % "eventbridge" % AwsSdk2Version excludeAll // ApacheV2
         (
           ExclusionRule("software.amazon.awssdk", "apache-client"),
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         ),
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
-        "com.typesafe.akka" %% "akka-pki" % AkkaVersion,
-        "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"
+        "com.typesafe.akka" %% "akka-pki" % AkkaVersion
       ) ++ Mockito
   )
 
   val Sns = Seq(
-    libraryDependencies ++= Seq(
-        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll // ApacheV2
-        (
-          ExclusionRule(organization = "com.typesafe.akka")
-        ),
-        "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2",
+    libraryDependencies ++= AwsSpiAkkaHttp ++ Seq(
         "software.amazon.awssdk" % "sns" % AwsSdk2Version excludeAll // ApacheV2
         (
           ExclusionRule("software.amazon.awssdk", "apache-client"),
@@ -495,12 +491,7 @@ object Dependencies {
   )
 
   val Sqs = Seq(
-    libraryDependencies ++= Seq(
-        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll // ApacheV2
-        (
-          ExclusionRule(organization = "com.typesafe.akka")
-        ),
-        "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2",
+    libraryDependencies ++= AwsSpiAkkaHttp ++ Seq(
         "software.amazon.awssdk" % "sqs" % AwsSdk2Version excludeAll // ApacheV2
         (
           ExclusionRule("software.amazon.awssdk", "apache-client"),
