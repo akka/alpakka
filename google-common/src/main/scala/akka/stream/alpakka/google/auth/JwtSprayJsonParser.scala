@@ -8,7 +8,7 @@
 package akka.stream.alpakka.google.auth
 
 import akka.annotation.InternalApi
-import pdi.jwt.{JwtAlgorithm, JwtClaim, JwtHeader, JwtJsonCommon}
+import pdi.jwt.{Jwk, JwkSet, JwtAlgorithm, JwtClaim, JwtHeader, JwtJsonCommon}
 
 import java.time.Clock
 import pdi.jwt.exceptions.JwtNonStringException
@@ -70,6 +70,14 @@ private[auth] class JwtSprayJson(override val clock: Clock) extends JwtSprayJson
       jwtId = safeGetField[String](jsObj, "jti")
     )
   }
+
+  // JWK parsing was added to JwtJsonCommon in jwt-scala 12. Alpakka only uses this class to sign
+  // service account assertions, never to verify tokens against a JWK Set, so it is not supported.
+  override def parseJwk(json: String): Jwk =
+    throw new UnsupportedOperationException("JWK parsing is not supported by Alpakka's JwtSprayJson")
+
+  override def parseJwkSet(json: String): JwkSet =
+    throw new UnsupportedOperationException("JWK Set parsing is not supported by Alpakka's JwtSprayJson")
 
   private[this] def safeRead[A: JsonReader](js: JsValue) =
     safeReader[A].read(js).fold(_ => None, a => Option(a))
